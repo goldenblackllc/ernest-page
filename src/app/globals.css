@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: var(--font-sans);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    @apply bg-white text-gray-900 font-sans text-base leading-[1.5] text-[#212529] font-normal;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Strict Typography System */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-sans font-bold leading-[1.1] text-gray-900;
+  }
+
+  h1 {
+    @apply text-[1.53rem] md:text-[4.05rem];
+  }
+
+  h2 {
+    @apply text-[1.395rem] md:text-[2.7rem];
+  }
+
+  h3 {
+    @apply text-[1.305rem] md:text-[1.8rem];
+  }
+
+  h4 {
+    @apply text-[1.26rem] md:text-[1.35rem];
+  }
+
+  h5 {
+    @apply text-[1.125rem];
+  }
+
+  h6 {
+    @apply text-[0.9rem];
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+
+  /* Strict Component Classes */
+  .hero-heading {
+    @apply uppercase tracking-[0.1em] mb-8 font-bold;
+  }
+
+  /* Strict Button System */
+  .btn {
+    @apply inline-block font-bold leading-[1.5] text-center no-underline align-middle cursor-pointer select-none border-2 border-transparent py-4 px-6 text-sm rounded-none uppercase tracking-widest transition-colors w-full;
+  }
+
+  .btn-primary {
+    @apply bg-black text-white hover:bg-gray-800 border-transparent;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-black hover:bg-gray-50 border-black;
+  }
+
+  .btn-outline-dark {
+    @apply text-black border-black bg-transparent hover:bg-black hover:text-white;
+  }
+
+  /* Strict Input System */
+  .form-control {
+    @apply block w-full border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-black focus:ring-0 rounded-none;
+  }
 }
