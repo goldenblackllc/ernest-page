@@ -2,6 +2,7 @@
 
 import { RefreshCw, Fingerprint, Zap, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface ControlButtonProps {
     icon: React.ReactNode;
@@ -29,6 +30,8 @@ interface ControlDeckProps {
 }
 
 export function ControlDeck({ onIdentityClick, onTakeActionClick }: ControlDeckProps) {
+    const router = useRouter();
+
     return (
         <div className="grid grid-cols-4 gap-2 md:gap-4 mt-6">
             <ControlButton
@@ -48,6 +51,7 @@ export function ControlDeck({ onIdentityClick, onTakeActionClick }: ControlDeckP
             <ControlButton
                 icon={<Star className="w-4 h-4 md:w-6 md:h-6" />}
                 label="I Want"
+                onClick={() => router.push('/vision')}
             />
         </div>
     );

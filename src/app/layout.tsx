@@ -39,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${hkGrotesk.variable} antialiased font-sans bg-white text-gray-900`}
+        className={`${hkGrotesk.variable} antialiased font-sans bg-zinc-950 text-white`}
       >
         <AuthProvider>
           <LockedProvider>

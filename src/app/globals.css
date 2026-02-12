@@ -5,71 +5,50 @@
 }
 
 @layer base {
-  body {
-    @apply bg-white text-gray-900 font-sans text-base leading-[1.5] text-[#212529] font-normal;
+  html {
+    @apply bg-zinc-950;
   }
 
-  /* Strict Typography System */
+  body {
+    /* Cinematic Dark Mode: Deep charcoal background, off-white text */
+    @apply bg-zinc-950 text-zinc-300 font-sans antialiased;
+  }
+
+  /* The Cinematic Highlight */
+  ::selection {
+    @apply bg-zinc-700 text-white;
+  }
+
+  /* Global Typography: Heavy, serious, tight */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-sans font-bold leading-[1.1] text-gray-900;
+    @apply font-black tracking-tighter text-zinc-100;
   }
 
-  h1 {
-    @apply text-[1.53rem] md:text-[4.05rem];
+  /* 
+   * THE GLOBAL RESTRAINT (RELAXED)
+   * We still prefer sharp edges for inputs and structure, 
+   * but we allow buttons to opt-in to rounded shapes (like the FAB).
+   */
+  input,
+  textarea,
+  select {
+    @apply !rounded-none;
   }
 
-  h2 {
-    @apply text-[1.395rem] md:text-[2.7rem];
+  /* Buttons default to sharp, but can be overridden */
+  button {
+    @apply rounded-none;
   }
 
-  h3 {
-    @apply text-[1.305rem] md:text-[1.8rem];
-  }
-
-  h4 {
-    @apply text-[1.26rem] md:text-[1.35rem];
-  }
-
-  h5 {
-    @apply text-[1.125rem];
-  }
-
-  h6 {
-    @apply text-[0.9rem];
-  }
-}
-
-@layer components {
-
-  /* Strict Component Classes */
-  .hero-heading {
-    @apply uppercase tracking-[0.1em] mb-8 font-bold;
-  }
-
-  /* Strict Button System */
-  .btn {
-    @apply inline-block font-bold leading-[1.5] text-center no-underline align-middle cursor-pointer select-none border-2 border-transparent py-4 px-6 text-sm rounded-none uppercase tracking-widest transition-colors w-full;
-  }
-
-  .btn-primary {
-    @apply bg-black text-white hover:bg-gray-800 border-transparent;
-  }
-
-  .btn-secondary {
-    @apply bg-white text-black hover:bg-gray-50 border-black;
-  }
-
-  .btn-outline-dark {
-    @apply text-black border-black bg-transparent hover:bg-black hover:text-white;
-  }
-
-  /* Strict Input System */
-  .form-control {
-    @apply block w-full border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-black focus:ring-0 rounded-none;
+  /* Remove default blue browser halos, enforce zinc borders on focus */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply !outline-none !ring-0 !border-zinc-500;
   }
 }
