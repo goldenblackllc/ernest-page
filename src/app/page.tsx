@@ -1,7 +1,7 @@
 "use client";
 
 
-import { IdentityAnchor } from "@/components/IdentityAnchor";
+
 import { CharacterShowcase } from "@/components/CharacterShowcase";
 import { TriagePanel } from "@/components/TriagePanel";
 import { Ledger } from "@/components/Ledger";
@@ -15,8 +15,7 @@ export default function Home() {
             <main className="min-h-screen text-zinc-300 font-sans">
                 <DashboardHeader />
 
-                {/* Section -1: Identity Anchor (The Header) */}
-                <IdentityAnchor />
+
 
                 <div className="container mx-auto px-4 pt-24 pb-32 max-w-3xl">
                     {/* Section 0: Character Showcase (The Engine) */}

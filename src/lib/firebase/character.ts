@@ -54,34 +54,30 @@ export async function updateCharacterBible(uid: string, updates: Partial<Charact
     // Deep merge logic specific to arrays (union)
     const merged: CharacterBible = { ...currentBible };
 
-    // 1. Core Beliefs (Dedupe strings)
-    if (updates.core_beliefs) {
-        merged.core_beliefs = Array.from(new Set([...currentBible.core_beliefs, ...updates.core_beliefs]));
-    }
+    // 1. Arrays - simple overwrite if provided (Trust the client state, e.g. from Sheet Editor)
+    if (updates.core_beliefs) merged.core_beliefs = updates.core_beliefs;
+    if (updates.rules) merged.rules = updates.rules;
+    if (updates.thoughts) merged.thoughts = updates.thoughts;
+    if (updates.habits) merged.habits = updates.habits;
+    if (updates.positive_events) merged.positive_events = updates.positive_events;
+    if (updates.wants) merged.wants = updates.wants;
+    if (updates.goals) merged.goals = updates.goals;
+    if (updates.relationships) merged.relationships = updates.relationships;
+    if (updates.role_models) merged.role_models = updates.role_models;
+    if (updates.music) merged.music = updates.music;
+    if (updates.movies) merged.movies = updates.movies;
+    if (updates.tv_shows) merged.tv_shows = updates.tv_shows;
+    if (updates.visual_board) merged.visual_board = updates.visual_board;
+    if (updates.consumption) merged.consumption = updates.consumption;
+    if (updates.suggested_actions) merged.suggested_actions = updates.suggested_actions;
 
-    // 2. Rules (Dedupe by ID or Content)
-    if (updates.rules) {
-        const existingRules = currentBible.rules || [];
-        const newRules = updates.rules;
-        // Simple append for now, but in future could check for semantic dupes
-        // Using Map to dedupe by ID if provided, otherwise append
-        const ruleMap = new Map(existingRules.map(r => [r.id || r.rule, r]));
-        newRules.forEach(r => ruleMap.set(r.id || r.rule, r));
-        merged.rules = Array.from(ruleMap.values());
-    }
-
-    // 3. Simple Arrays (Goals, Wants, Habits)
-    (['goals', 'wants', 'habits', 'thoughts', 'positive_events'] as const).forEach(key => {
-        if (updates[key]) {
-            // @ts-ignore
-            merged[key] = Array.from(new Set([...(currentBible[key] || []), ...updates[key]]));
-        }
-    });
-
-    // 4. Overwrite scalars
+    // 2. Overwrite scalars
     if (updates.title) merged.title = updates.title;
     if (updates.summary) merged.summary = updates.summary;
     if (updates.avatar_url) merged.avatar_url = updates.avatar_url;
+    if (updates.living_situation) merged.living_situation = updates.living_situation;
+    if (updates.birthday) merged.birthday = updates.birthday;
+    if (updates.gender) merged.gender = updates.gender;
 
     merged.last_updated = Date.now();
 

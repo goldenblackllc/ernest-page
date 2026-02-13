@@ -6,6 +6,7 @@ import { updateCharacterBible } from "@/lib/firebase/character";
 import { X, Save, Plus, Trash2, Camera, Calendar, User, Heart, Brain, Zap, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { Loader2 } from "lucide-react";
 
 type Tab = 'IDENTITY' | 'CODE' | 'LIFESTYLE' | 'CONTEXT';
 
@@ -97,45 +98,53 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                     {/* --- TAB 1: IDENTITY --- */}
                     {activeTab === 'IDENTITY' && (
                         <div className="space-y-8 max-w-2xl mx-auto">
-                            <InputGroup label="Archetype Title">
-                                <input
-                                    type="text"
-                                    value={formData.title}
-                                    onChange={e => updateField('title', e.target.value)}
-                                    className="w-full bg-transparent border-b border-zinc-700 pb-2 text-2xl font-black uppercase tracking-tight text-white focus:border-emerald-500 focus:outline-none placeholder-zinc-700"
-                                    placeholder="E.g. THE ARCHITECT"
-                                />
-                            </InputGroup>
+                            <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
+                                <InputGroup label="Archetype Title">
+                                    <input
+                                        type="text"
+                                        value={formData.title}
+                                        onChange={e => updateField('title', e.target.value)}
+                                        className="w-full bg-transparent border-b border-zinc-700 pb-2 text-2xl font-black uppercase tracking-tight text-white focus:border-emerald-500 focus:outline-none placeholder-zinc-700"
+                                        placeholder="E.g. THE ARCHITECT"
+                                    />
+                                </InputGroup>
 
-                            <InputGroup label="Manifesto / Summary">
-                                <textarea
-                                    value={formData.summary}
-                                    onChange={e => updateField('summary', e.target.value)}
-                                    className="w-full bg-zinc-900/30 border border-zinc-800 rounded-xl p-4 text-zinc-300 font-serif leading-relaxed focus:border-emerald-500 focus:outline-none min-h-[150px] resize-none"
-                                    placeholder="I am..."
-                                />
-                            </InputGroup>
+                                <InputGroup label="Manifesto / Summary">
+                                    <textarea
+                                        value={formData.summary}
+                                        onChange={e => updateField('summary', e.target.value)}
+                                        className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-zinc-300 font-serif leading-relaxed focus:border-emerald-500 focus:outline-none min-h-[150px] resize-none"
+                                        placeholder="I am..."
+                                    />
+                                </InputGroup>
+                            </div>
 
-                            <InputGroup label="Role Models">
-                                <ObjectArrayInput
-                                    items={formData.role_models}
-                                    onChange={val => updateField('role_models', val)}
-                                    fields={[
-                                        { key: 'name', placeholder: 'Name (e.g. Steve Jobs)', width: '40%' },
-                                        { key: 'reason', placeholder: 'Why? (e.g. Visionary)', width: '60%' }
-                                    ]}
-                                />
-                            </InputGroup>
+                            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                                <InputGroup label="Role Models">
+                                    <ObjectArrayInput
+                                        items={formData.role_models}
+                                        onChange={val => updateField('role_models', val)}
+                                        fields={[
+                                            { key: 'name', placeholder: 'Name', width: '40%' },
+                                            { key: 'reason', placeholder: 'Reason', width: '60%' }
+                                        ]}
+                                        chipStyle
+                                    />
+                                </InputGroup>
+                            </div>
 
-                            {/* Visual Board Hint */}
-                            <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl flex items-center gap-4">
-                                <div className="p-3 bg-zinc-800 rounded-full">
-                                    <Camera className="w-5 h-5 text-zinc-400" />
+                            {/* Visual Board */}
+                            <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Visual Board</label>
+                                    <span className="text-[10px] text-zinc-600">{formData.visual_board.length} Images</span>
                                 </div>
-                                <div className="text-xs text-zinc-500">
-                                    <strong className="text-zinc-300 block mb-1">VISUAL BOARD</strong>
-                                    Upload feature coming soon. For now, URLs are managed via direct DB entry.
-                                </div>
+
+                                <VisualBoardInput
+                                    items={formData.visual_board}
+                                    onChange={val => updateField('visual_board', val)}
+                                    userId={user?.uid}
+                                />
                             </div>
                         </div>
                     )}
@@ -297,11 +306,17 @@ function InputGroup({ label, children }: { label: string, children: React.ReactN
 function TagInput({ tags, onChange, placeholder }: { tags: string[], onChange: (val: string[]) => void, placeholder: string }) {
     const [input, setInput] = useState("");
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && input.trim()) {
-            e.preventDefault();
+    const addTag = () => {
+        if (input.trim()) {
             onChange([...tags, input.trim()]);
             setInput("");
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addTag();
         }
     };
 
@@ -315,6 +330,7 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[], onChange: (
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onBlur={addTag}
                 placeholder={placeholder}
                 className="w-full bg-transparent border-b border-zinc-700 pb-2 text-zinc-300 focus:border-emerald-500 focus:outline-none"
             />
@@ -332,7 +348,7 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[], onChange: (
     );
 }
 
-function ObjectArrayInput({ items, onChange, fields, generateId }: { items: any[], onChange: (val: any[]) => void, fields: { key: string, placeholder: string, width: string }[], generateId?: boolean }) {
+function ObjectArrayInput({ items, onChange, fields, generateId, chipStyle }: { items: any[], onChange: (val: any[]) => void, fields: { key: string, placeholder: string, width: string }[], generateId?: boolean, chipStyle?: boolean }) {
     const [newItem, setNewItem] = useState<any>({});
 
     const handleAdd = () => {
@@ -353,27 +369,40 @@ function ObjectArrayInput({ items, onChange, fields, generateId }: { items: any[
     return (
         <div className="space-y-3">
             {/* List Existing */}
-            <div className="space-y-2">
+            <div className={cn("space-y-2", chipStyle && "flex flex-wrap gap-2 space-y-0")}>
                 {items.map((item, i) => (
-                    <div key={i} className="flex gap-2 items-start group">
-                        <div className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 flex gap-4">
+                    <div key={i} className={cn(
+                        "flex gap-2 items-start group relative pr-8",
+                        chipStyle ? "bg-blue-900/30 border border-blue-800/50 rounded-full px-4 py-1.5 items-center" : "flex-1"
+                    )}>
+                        <div className={cn(
+                            "flex gap-4",
+                            chipStyle ? "items-center" : "flex-1 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3"
+                        )}>
                             {fields.map(f => (
-                                <div key={f.key} style={{ width: f.width }} className="truncate text-sm text-zinc-300">
-                                    <span className="text-zinc-600 text-[10px] uppercase mr-2">{f.key}:</span>
+                                <div key={f.key} style={chipStyle ? {} : { width: f.width }} className={cn("truncate text-sm", chipStyle ? "text-blue-100" : "text-zinc-300")}>
+                                    {!chipStyle && <span className="text-zinc-600 text-[10px] uppercase mr-2">{f.key}:</span>}
+                                    {chipStyle && f.key === 'reason' && <span className="opacity-50 mx-1">•</span>}
                                     {item[f.key]}
                                 </div>
                             ))}
                         </div>
-                        <button onClick={() => handleRemove(i)} className="p-3 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 className="w-4 h-4" />
+                        <button
+                            onClick={() => handleRemove(i)}
+                            className={cn(
+                                "text-zinc-600 hover:text-red-400 transition-opacity",
+                                chipStyle ? "ml-2" : "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2"
+                            )}
+                        >
+                            <Trash2 className="w-3 h-3" />
                         </button>
                     </div>
                 ))}
             </div>
 
             {/* Add New */}
-            <div className="flex gap-2 items-end">
-                {fields.map(f => (
+            <div className="flex gap-2 items-end mt-4">
+                {fields.map((f, index) => (
                     <div key={f.key} style={{ width: f.width }}>
                         <input
                             value={newItem[f.key] || ""}
@@ -381,6 +410,12 @@ function ObjectArrayInput({ items, onChange, fields, generateId }: { items: any[
                             placeholder={f.placeholder}
                             className="w-full bg-transparent border-b border-zinc-700 pb-1 text-sm text-zinc-300 focus:border-emerald-500 focus:outline-none"
                             onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                            onBlur={() => {
+                                // Attempt auto-add if this is the last field and user is clicking away
+                                if (index === fields.length - 1 && newItem[fields[0].key]) {
+                                    handleAdd();
+                                }
+                            }}
                         />
                     </div>
                 ))}
@@ -393,5 +428,87 @@ function ObjectArrayInput({ items, onChange, fields, generateId }: { items: any[
                 </button>
             </div>
         </div>
-    )
+    );
+}
+
+function VisualBoardInput({ items, onChange, userId }: { items: any[], onChange: (val: any[]) => void, userId?: string }) {
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !userId) return;
+
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("userId", userId);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.details || "Upload failed");
+            }
+
+            const data = await res.json();
+            onChange([...items, { image_url: data.url, label: "inspiration" }]);
+        } catch (error) {
+            console.error("Upload failed:", error);
+            alert("Failed to upload image. Please try again.");
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const handleRemove = (index: number) => {
+        onChange(items.filter((_, i) => i !== index));
+    };
+
+    return (
+        <div className="space-y-4">
+            <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileSelect}
+            />
+
+            {/* Grid */}
+            <div className="grid grid-cols-3 gap-2">
+                {items.map((item, i) => (
+                    <div key={i} className="aspect-square relative group rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800">
+                        <img src={item.image_url} alt={item.label} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button onClick={() => handleRemove(i)} className="p-2 bg-red-500/80 rounded-full text-white hover:bg-red-600">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Add Button */}
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="aspect-square rounded-lg border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center text-zinc-600 hover:border-zinc-600 hover:text-zinc-400 transition-all gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isUploading ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                    ) : (
+                        <Plus className="w-6 h-6" />
+                    )}
+                    <span className="text-[10px] font-bold uppercase tracking-widest">
+                        {isUploading ? "Uploading..." : "Add Image"}
+                    </span>
+                </button>
+            </div>
+        </div>
+    );
 }
