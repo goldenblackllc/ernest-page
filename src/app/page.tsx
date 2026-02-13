@@ -2,6 +2,7 @@
 
 
 import { IdentityAnchor } from "@/components/IdentityAnchor";
+import { CharacterShowcase } from "@/components/CharacterShowcase";
 import { TriagePanel } from "@/components/TriagePanel";
 import { Ledger } from "@/components/Ledger";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -18,7 +19,8 @@ export default function Home() {
                 <IdentityAnchor />
 
                 <div className="container mx-auto px-4 pt-24 pb-32 max-w-3xl">
-                    {/* Section 0: Active Mission (Forced Decision) - MOVED TO HEADER */}
+                    {/* Section 0: Character Showcase (The Engine) */}
+                    <CharacterShowcase />
 
                     {/* Section 1: Triage Panel (The Intake Valve) - NOW FIXED BOTTOM */}
                     <TriagePanel />
