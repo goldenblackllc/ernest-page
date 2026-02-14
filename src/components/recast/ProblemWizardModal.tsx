@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
-import { useProblemWizard, Belief } from '@/hooks/useProblemWizard';
+import { useProblemWizard, Belief, Rule } from '@/hooks/useProblemWizard';
 import { Button } from '@/components/ui/Button';
-import { X, Check, ArrowRight, RefreshCw, ChevronLeft } from 'lucide-react';
+import { X, Check, ArrowRight, RefreshCw, ChevronLeft, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { createPost } from '@/lib/firebase/posts';
+import { useRouter } from 'next/navigation';
 
 interface ProblemWizardModalProps {
     isOpen: boolean;
@@ -13,6 +15,7 @@ interface ProblemWizardModalProps {
 }
 
 export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps) {
+    const router = useRouter();
     const {
         state,
         isLoading,
@@ -24,14 +27,29 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
         toggleThought,
         generateRules,
         toggleRule,
-        generateActions,
-        toggleAction,
+        updateRule,
         regenerateStep,
         nextStep,
         prevStep
     } = useProblemWizard();
 
     const { user } = useAuth();
+
+    // --- EDIT STATE ---
+    const [editingRuleIndex, setEditingRuleIndex] = React.useState<number | null>(null);
+    const [editTitle, setEditTitle] = React.useState("");
+    const [editDesc, setEditDesc] = React.useState("");
+
+    const handleEditClick = (index: number, rule: Rule) => {
+        setEditingRuleIndex(index);
+        setEditTitle(rule.title);
+        setEditDesc(rule.description);
+    };
+
+    const handleSaveRule = (index: number) => {
+        updateRule(index, { title: editTitle, description: editDesc });
+        setEditingRuleIndex(null);
+    };
 
     // Prevent scrolling when modal is open
     useEffect(() => {
@@ -50,31 +68,56 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
         if (!user) return;
 
         try {
+            // 2. Update Character Bible
             const bibleRef = doc(db, 'users', user.uid);
 
+            // Merge core_beliefs (strings of positive beliefs) - user requested "New Beliefs"
+            const newBeliefs = state.selectedBeliefs.map(b => b.positive);
+            // Merge strategies (objects)
             const newRules = state.selectedRules.map(r => ({
                 id: crypto.randomUUID(),
-                rule: r,
-                description: "Operating Protocol",
-                category: 'recast'
+                rule: r.title,
+                description: r.description,
+                category: 'recast',
+                active: true // default to active?
             }));
 
+            // Assuming state.selectedActions exists and newActions is derived from it
+            // If not, you'll need to define state.selectedActions in useProblemWizard
             const newActions = state.selectedActions.map(a => ({
                 id: crypto.randomUUID(),
-                text: a,
-                created_at: Date.now(),
-                expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-                is_completed: false
+                action: a,
+                category: 'recast',
+                active: true
             }));
 
             await updateDoc(bibleRef, {
+                "character_bible.core_beliefs": arrayUnion(...newBeliefs),
                 "character_bible.rules": arrayUnion(...newRules),
                 "character_bible.thoughts": arrayUnion(...state.selectedThoughts),
                 "character_bible.suggested_actions": arrayUnion(...newActions),
                 "character_bible.last_updated": Date.now()
             });
 
-            alert("RECAST COMPLETE. SYSTEM UPDATED.");
+            // Create Feed Post
+            await createPost(
+                user.uid,
+                state.rant,
+                state.selectedBeliefs,
+                state.selectedRules,
+                state.selectedActions
+            );
+
+            // Refresh Data
+            router.refresh();
+
+            // Success UI
+            const toast = document.createElement('div');
+            toast.className = "fixed top-4 right-4 bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-xl z-[100] animate-in slide-in-from-top-2 font-bold uppercase tracking-widest text-sm";
+            toast.innerText = "CHARACTER UPDATED & POST CREATED";
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+
             onClose();
 
         } catch (err) {
@@ -88,7 +131,7 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
 
     const renderProgressBar = () => (
         <div className="w-full h-1 bg-zinc-900 mb-6 flex">
-            {[1, 2, 3, 4, 5, 6].map(s => (
+            {[1, 2, 3, 4, 5].map(s => (
                 <div
                     key={s}
                     className={cn(
@@ -138,15 +181,9 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
                 };
             case 5:
                 return {
-                    text: isLoading ? "GENERATING..." : "NEXT",
-                    action: generateActions,
-                    disabled: state.selectedRules.length === 0
-                };
-            case 6:
-                return {
                     text: "FINISH & POST",
                     action: handleFinish,
-                    disabled: state.selectedActions.length === 0
+                    disabled: state.selectedRules.length === 0
                 };
             default:
                 return { text: "NEXT", action: nextStep, disabled: false };
@@ -163,7 +200,7 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
                 <div className="h-14 border-b border-zinc-900 flex items-center justify-end px-4 shrink-0">
                     {/* (Back Button moved to footer) */}
                     <div className="text-zinc-700 text-xs font-black tracking-widest">
-                        STEP {state.step} / 6
+                        STEP {state.step} / 5
                     </div>
                 </div>
 
@@ -297,19 +334,56 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
                         </div>
                     )}
 
-                    {/* STEP 5: RULES */}
+                    {/* STEP 5: RULES / STRATEGY */}
                     {state.step === 5 && (
                         <div className="animate-in slide-in-from-right-8 duration-300">
-                            {renderHeader("New Rules", "Lock this mindset in with these operating instructions.")}
+                            {renderHeader("STRATEGY SELECTION", "Here are suggestions based on your Ideal Character. Edit them to fit your life, then select the ones you want to keep.")}
                             <div className="space-y-2">
                                 {state.generatedRules.map((rule, i) => {
                                     const isSelected = state.selectedRules.some(r => r.title === rule.title);
+                                    const isEditing = editingRuleIndex === i;
+
+                                    if (isEditing) {
+                                        return (
+                                            <div key={i} className="p-3 border border-zinc-700 bg-zinc-900 rounded-lg flex flex-col gap-2">
+                                                <input
+                                                    className="bg-transparent border-b border-zinc-700 text-white font-bold text-sm focus:outline-none focus:border-red-500 pb-1"
+                                                    value={editTitle}
+                                                    onChange={(e) => setEditTitle(e.target.value)}
+                                                    placeholder="Strategy Title"
+                                                    autoFocus
+                                                />
+                                                <textarea
+                                                    className="bg-transparent border-b border-zinc-700 text-zinc-400 text-xs focus:outline-none focus:border-red-500 resize-none pb-1"
+                                                    value={editDesc}
+                                                    onChange={(e) => setEditDesc(e.target.value)}
+                                                    placeholder="Implementation details..."
+                                                    rows={2}
+                                                />
+                                                <div className="flex justify-end gap-2 mt-1">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setEditingRuleIndex(null); }}
+                                                        className="text-[10px] text-zinc-500 font-bold uppercase hover:text-white"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleSaveRule(i); }}
+                                                        className="text-[10px] text-red-500 font-bold uppercase hover:text-red-400"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
                                     return (
                                         <div
                                             key={i}
                                             onClick={() => toggleRule(rule)}
                                             className={cn(
-                                                "p-3 border border-zinc-800 bg-zinc-900/50 cursor-pointer flex items-center gap-3 hover:border-zinc-700 transition-colors rounded-lg",
+                                                "group relative p-3 border border-zinc-800 bg-zinc-900/50 cursor-pointer flex items-center gap-3 hover:border-zinc-700 transition-colors rounded-lg",
                                                 isSelected && "border-emerald-900/50 bg-emerald-950/10"
                                             )}
                                         >
@@ -319,14 +393,22 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
                                             )}>
                                                 {isSelected && <Check className="w-3 h-3" />}
                                             </div>
-                                            <div>
+                                            <div className="flex-1 pr-6">
                                                 <p className={cn("text-sm font-bold", isSelected ? "text-white" : "text-zinc-300")}>
-                                                    "{rule.title}"
+                                                    "{rule.title.replace(/^["']|["']$/g, '')}"
                                                 </p>
                                                 <p className={cn("text-xs leading-relaxed mt-0.5", isSelected ? "text-emerald-100/70" : "text-zinc-500")}>
                                                     {rule.description}
                                                 </p>
                                             </div>
+
+                                            {/* Edit Button */}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleEditClick(i, rule); }}
+                                                className="absolute right-3 top-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                                            >
+                                                <Pencil className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     );
                                 })}
@@ -334,48 +416,6 @@ export function ProblemWizardModal({ isOpen, onClose }: ProblemWizardModalProps)
                             <div className="flex justify-center mt-4">
                                 <button
                                     onClick={() => regenerateStep(5)}
-                                    disabled={isLoading}
-                                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-400 transition-colors"
-                                >
-                                    <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
-                                    Regenerate Unselected
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STEP 6: ACTIONS */}
-                    {state.step === 6 && (
-                        <div className="animate-in slide-in-from-right-8 duration-300">
-                            {renderHeader("Immediate Actions", "What would the Ideal You do right now?")}
-                            <div className="space-y-2">
-                                {state.generatedActions.map((action, i) => {
-                                    const isSelected = state.selectedActions.includes(action);
-                                    return (
-                                        <div
-                                            key={i}
-                                            onClick={() => toggleAction(action)}
-                                            className={cn(
-                                                "p-3 border border-zinc-800 bg-zinc-900/50 cursor-pointer flex items-center gap-3 hover:border-zinc-700 transition-colors rounded-lg",
-                                                isSelected && "border-blue-900/50 bg-blue-950/10"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "w-4 h-4 border flex items-center justify-center shrink-0 rounded-sm",
-                                                isSelected ? "bg-blue-600 border-blue-600 text-white" : "border-zinc-700 bg-transparent"
-                                            )}>
-                                                {isSelected && <Check className="w-3 h-3" />}
-                                            </div>
-                                            <p className={cn("text-sm font-serif", isSelected ? "text-blue-200" : "text-zinc-500")}>
-                                                "{action}"
-                                            </p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={() => regenerateStep(6)}
                                     disabled={isLoading}
                                     className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-400 transition-colors"
                                 >

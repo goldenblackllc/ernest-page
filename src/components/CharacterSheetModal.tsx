@@ -383,7 +383,8 @@ function ObjectArrayInput({ items, onChange, fields, generateId, chipStyle }: { 
                                 <div key={f.key} style={chipStyle ? {} : { width: f.width }} className={cn("truncate text-sm", chipStyle ? "text-blue-100" : "text-zinc-300")}>
                                     {!chipStyle && <span className="text-zinc-600 text-[10px] uppercase mr-2">{f.key}:</span>}
                                     {chipStyle && f.key === 'reason' && <span className="opacity-50 mx-1">•</span>}
-                                    {item[f.key]}
+                                    {chipStyle && item[f.key]}
+                                    {!chipStyle && <p className="break-words whitespace-normal">{item[f.key]}</p>}
                                 </div>
                             ))}
                         </div>

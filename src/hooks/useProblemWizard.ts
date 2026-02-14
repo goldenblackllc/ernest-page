@@ -10,8 +10,13 @@ export interface Belief {
     positive: string;
 }
 
+export interface Rule {
+    title: string;
+    description: string;
+}
+
 export interface WizardState {
-    step: number; // 1 to 6
+    step: number; // 1 to 5
     rant: string;
 
     // Step 2: Beliefs
@@ -23,10 +28,11 @@ export interface WizardState {
     selectedThoughts: string[];
 
     // Step 5: Rules (New Operating Instructions)
-    generatedRules: string[];
-    selectedRules: string[];
+    // Step 5: Rules (New Operating Instructions)
+    generatedRules: Rule[];
+    selectedRules: Rule[];
 
-    // Step 6: Actions (To-Do List)
+    // Step 6: Actions (Immediate Steps)
     generatedActions: string[];
     selectedActions: string[];
 }
@@ -219,7 +225,7 @@ export function useProblemWizard() {
         }
 
         const result = await callApi('actions', {
-            selected_rules: state.selectedRules,
+            selected_rules: state.selectedRules.map(r => r.title),
             rant: state.rant
         });
 
@@ -262,7 +268,7 @@ export function useProblemWizard() {
             payload = { selected_thoughts: state.selectedThoughts, rant: state.rant, kept_items: state.selectedRules };
         } else if (stepNumber === 6) {
             mode = 'actions';
-            payload = { selected_rules: state.selectedRules, rant: state.rant, kept_items: state.selectedActions };
+            payload = { selected_rules: state.selectedRules.map(r => r.title), rant: state.rant, kept_items: state.selectedActions };
         } else {
             return;
         }
@@ -284,6 +290,30 @@ export function useProblemWizard() {
                 setState(prev => ({ ...prev, generatedActions: result.actions }));
             }
         }
+    };
+
+    // --- NAVIGATION ---
+
+    const updateRule = (index: number, newRule: Rule) => {
+        setState(prev => {
+            const oldRule = prev.generatedRules[index];
+            const newGenerated = [...prev.generatedRules];
+            newGenerated[index] = newRule;
+
+            // Update selected if applicable (check by reference or title)
+            const isSelected = prev.selectedRules.some(r => r === oldRule || r.title === oldRule.title);
+            let newSelected = prev.selectedRules;
+
+            if (isSelected) {
+                newSelected = prev.selectedRules.map(r => (r === oldRule || r.title === oldRule.title) ? newRule : r);
+            }
+
+            return {
+                ...prev,
+                generatedRules: newGenerated,
+                selectedRules: newSelected
+            };
+        });
     };
 
     // --- NAVIGATION ---
@@ -311,6 +341,7 @@ export function useProblemWizard() {
         toggleThought,
         generateRules,
         toggleRule,
+        updateRule,
         generateActions,
         toggleAction,
         regenerateStep,

@@ -69,6 +69,14 @@ TASK:
 5. GOAL: Bridge the gap between the Old Beliefs and the New Beliefs using the Character's voice.
 6. Total Output: 5 distinct, first-person thoughts.
 
+CRITICAL INSTRUCTION: THE REALITY BRIDGE
+1. Acknowledge the Gap: The user wants to be the [Ideal Character] but is currently living the [Rant Reality].
+2. Respect the Constraints: If the rant says "I have no money," do not suggest spending money. That is delusional.
+3. Apply the Mindset: Ask: "How would a [Rich/Successful Character] handle being broke?"
+   - They wouldn't spend recklessly.
+   - They would be resourceful, creative, or disciplined.
+4. The Output: Suggest thoughts that solve the emotional need (connection, fun, safety) using the resources actually available (creativity, time, effort), while moving them toward the Ideal Identity.
+
 Kept Items: {KEPT_ITEMS}
 
 Return JSON:
@@ -76,7 +84,7 @@ Return JSON:
 `;
 
 const RULES_PROMPT = `
-STEP 3: GENERATE OPERATING RULES (IMPERATIVE COMMANDS)
+STEP 3: GENERATE STRATEGY PROPOSALS
 
 CONTEXT:
 User Roles: {ROLES}
@@ -85,11 +93,12 @@ Current Situation (Rant): "{RANT}"
 Selected Thoughts (Mental Models): {SELECTED_THOUGHTS}
 
 TASK:
-1. Turn the Selected Thoughts into actionable "Operating Rules" or "Protocols".
+1. Turn the Selected Thoughts into actionable "Strategy Proposals" or "Protocols".
 2. CONSTRAINT 1: The Title (The Command)
    - GRAMMAR: Must start with a VERB (Imperative).
+   - CONSTRAINT: Do NOT wrap the titles in quotation marks.
    - LENGTH: Maximum 6 words.
-   - TONE: Direct instruction. No fluff.
+   - TONE: Strategic & Direct.
    - Example: "Date Iris Twice a Month." or "Review budget every Friday."
 3. CONSTRAINT 2: The Description (The Commitment)
    - GRAMMAR: specific "I" statement.
@@ -97,6 +106,14 @@ TASK:
    - Example: "I schedule the babysitter on the 1st and 15th to ensure we have time alone."
 4. Filter: If 'Kept Items' are provided, do NOT generate duplicates.
 5. Total Output: 5 Objects { title, description }.
+
+CRITICAL INSTRUCTION: THE REALITY BRIDGE
+1. Acknowledge the Gap: The user wants to be the [Ideal Character] but is currently living the [Rant Reality].
+2. Respect the Constraints: If the rant says "I have no money," do not suggest spending money. That is delusional.
+3. Apply the Mindset: Ask: "How would a [Rich/Successful Character] handle being broke?"
+   - They wouldn't spend recklessly.
+   - They would be resourceful, creative, or disciplined.
+4. The Output: Suggest rules that solve the emotional need (connection, fun, safety) using the resources actually available (creativity, time, effort), while moving them toward the Ideal Identity.
 
 Kept Items: {KEPT_ITEMS}
 
