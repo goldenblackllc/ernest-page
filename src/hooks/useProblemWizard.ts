@@ -13,24 +13,46 @@ export interface Belief {
 export interface Rule {
     title: string;
     description: string;
+    action?: 'add' | 'remove' | 'keep';
+}
+
+export interface Vision {
+    title: string;
+    description: string;
+}
+
+export interface Patch {
+    new_rules: Rule[];
+    deprecated_ids: string[];
+    reason: string;
 }
 
 export interface WizardState {
     step: number; // 1 to 5
     rant: string;
 
+    // Step 3.5: User Calibration
+    calibration: {
+        title: string;
+        summary: string;
+    };
+
     // Step 2: Beliefs
     generatedBeliefs: Belief[];
     selectedBeliefs: Belief[];
 
-    // Step 4: Thoughts (New Mental Models)
-    generatedThoughts: string[];
-    selectedThoughts: string[];
+    // Step 4: Vision (Micro-Scenes) - Replaces Thoughts
+    generatedVision: Vision[];
+    selectedVision: Vision[];
 
-    // Step 5: Rules (New Operating Instructions)
-    // Step 5: Rules (New Operating Instructions)
-    generatedRules: Rule[];
-    selectedRules: Rule[];
+    // Step 5: Strategies (System Update)
+    patch: Patch | null;
+
+    // For UI compatibility, we might filter these from the patch
+    selectedRules: Rule[]; // We'll store the "New Rules" here for selection? 
+    // Or just "Proposed" vs "Selected"?
+    // Let's keep it simple: "New Rules" are auto-selected. 
+    // "Deprecated" are auto-selected for removal.
 
     // Step 6: Actions (Immediate Steps)
     generatedActions: string[];
@@ -47,11 +69,12 @@ export function useProblemWizard() {
     const [state, setState] = useState<WizardState>({
         step: 1,
         rant: "",
+        calibration: { title: "", summary: "" },
         generatedBeliefs: [],
         selectedBeliefs: [],
-        generatedThoughts: [],
-        selectedThoughts: [],
-        generatedRules: [],
+        generatedVision: [],
+        selectedVision: [],
+        patch: null,
         selectedRules: [],
         generatedActions: [],
         selectedActions: [],
@@ -71,8 +94,13 @@ export function useProblemWizard() {
                 method: 'POST',
                 body: JSON.stringify({ mode, uid: user.uid, ...payload }),
             });
-            if (!res.ok) throw new Error(`API call failed: ${res.statusText}`);
+
             const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || `API Request Failed: ${res.statusText}`);
+            }
+
             return data;
         } catch (err: any) {
             setError(err.message || "An unexpected error occurred");
@@ -81,6 +109,30 @@ export function useProblemWizard() {
             setIsLoading(false);
         }
     }, [user]);
+
+    // --- INITIALIZATION ---
+    // Fetch Character Context on load
+    useState(() => {
+        const init = async () => {
+            if (user) {
+                try {
+                    const res = await callApi('get_context', {});
+                    if (res?.bible) {
+                        setState(prev => ({
+                            ...prev,
+                            calibration: {
+                                title: res.bible.title || res.bible.roles?.[0] || "",
+                                summary: res.bible.summary || ""
+                            }
+                        }));
+                    }
+                } catch (e) {
+                    console.error("Failed to load context", e);
+                }
+            }
+        };
+        init();
+    });
 
 
     // --- ACTIONS ---
@@ -95,15 +147,21 @@ export function useProblemWizard() {
         });
     };
 
+    const updateCalibration = (field: 'title' | 'summary', value: string) => {
+        setState(prev => ({
+            ...prev,
+            calibration: { ...prev.calibration, [field]: value }
+        }));
+    };
+
+    const saveCalibration = async () => {
+        await callApi('update_bible', state.calibration);
+        await generateVision(); // Generate Vision based on new calibration
+    };
+
     // STEP 1 -> 2: GENERATE BELIEFS
     const generateBeliefs = async () => {
         if (!state.rant.trim()) return;
-
-        // If we already have beliefs, just move to step 2 (prevent accidental regen)
-        if (state.generatedBeliefs.length > 0) {
-            setState(prev => ({ ...prev, step: 2 }));
-            return;
-        }
 
         const result = await callApi('beliefs', { rant: state.rant });
         if (result?.beliefs) {
@@ -113,7 +171,6 @@ export function useProblemWizard() {
             setState(prev => ({
                 ...prev,
                 generatedBeliefs: mappedBeliefs,
-                selectedBeliefs: mappedBeliefs, // Select ALL by default
                 step: 2
             }));
         }
@@ -122,213 +179,154 @@ export function useProblemWizard() {
     const toggleBelief = (belief: Belief) => {
         setState(prev => {
             const exists = prev.selectedBeliefs.find(b => b.negative === belief.negative);
-            return {
-                ...prev,
-                selectedBeliefs: exists
-                    ? prev.selectedBeliefs.filter(b => b.negative !== belief.negative)
-                    : [...prev.selectedBeliefs, belief]
-            };
+            if (exists) {
+                return { ...prev, selectedBeliefs: prev.selectedBeliefs.filter(b => b.negative !== belief.negative) };
+            }
+            if (prev.selectedBeliefs.length >= 3) return prev; // Max 3
+            return { ...prev, selectedBeliefs: [...prev.selectedBeliefs, belief] };
         });
     };
 
-    // GENERATE THOUGHTS (Step 4)
-    const generateThoughts = async () => {
+    // STEP 2 -> 3: CONFIRM THE SHIFT (UI Transition only, no API)
+    // The UI handles this transition once beliefs are selected.
+
+    // STEP 3 -> 4: GENERATE VISION (Was Thoughts)
+    const generateVision = async () => {
         if (state.selectedBeliefs.length === 0) {
             setError("Please select at least one belief to proceed.");
             return;
         }
 
-        // If we already have thoughts, just move to step 4
-        if (state.generatedThoughts.length > 0) {
-            setState(prev => ({ ...prev, step: 4 }));
-            return;
-        }
-
-        const result = await callApi('thoughts', {
+        const result = await callApi('vision', {
             selected_beliefs: state.selectedBeliefs,
-            rant: state.rant
+            rant: state.rant,
+            calibration: state.calibration // Pass calibration data
         });
 
-        if (result?.empowered_thoughts) {
+        if (result?.vision) {
             setState(prev => ({
                 ...prev,
-                generatedThoughts: result.empowered_thoughts,
-                selectedThoughts: [],
+                generatedVision: result.vision,
+                selectedVision: [], // User must select
                 step: 4
             }));
         }
     };
 
-    const toggleThought = (thought: string) => {
+    const toggleVision = (vision: Vision) => {
         setState(prev => {
-            const exists = prev.selectedThoughts.includes(thought);
-            return {
-                ...prev,
-                selectedThoughts: exists
-                    ? prev.selectedThoughts.filter(t => t !== thought)
-                    : [...prev.selectedThoughts, thought]
-            };
+            const exists = prev.selectedVision.find(v => v.title === vision.title);
+            if (exists) {
+                return { ...prev, selectedVision: prev.selectedVision.filter(v => v.title !== vision.title) };
+            }
+
+            if (prev.selectedVision.length >= 3) return prev; // Max 3
+            return { ...prev, selectedVision: [...prev.selectedVision, vision] };
         });
     };
 
-    // GENERATE RULES (Step 5)
-    const generateRules = async () => {
-        if (state.selectedThoughts.length === 0) {
-            setError("Please select at least one thought to proceed.");
+    // STEP 4 -> 5: GENERATE CONSTRAINTS (System Update)
+    const generateConstraints = async () => {
+        if (state.selectedVision.length === 0) {
+            setError("Please select at least one vision card to proceed.");
             return;
         }
 
-        // If we already have rules, just move to step 5
-        if (state.generatedRules.length > 0) {
-            setState(prev => ({ ...prev, step: 5 }));
-            return;
-        }
-
-        const result = await callApi('rules', {
-            selected_thoughts: state.selectedThoughts,
+        const result = await callApi('constraints', {
+            selected_vision: state.selectedVision,
             rant: state.rant
         });
 
-        if (result?.rules) {
+        if (result?.patch) {
+            // result.patch includes { new_rules, deprecated_ids, reason }
+
             setState(prev => ({
                 ...prev,
-                generatedRules: result.rules,
-                selectedRules: [],
+                patch: result.patch,
+                selectedRules: result.patch.new_rules, // Auto-select new rules for "Install"
                 step: 5
             }));
         }
     };
 
     const toggleRule = (rule: Rule) => {
+        // Toggle "New Rules" selection
         setState(prev => {
             const exists = prev.selectedRules.find(r => r.title === rule.title);
-            return {
-                ...prev,
-                selectedRules: exists
-                    ? prev.selectedRules.filter(r => r.title !== rule.title)
-                    : [...prev.selectedRules, rule]
-            };
+            if (exists) {
+                return { ...prev, selectedRules: prev.selectedRules.filter(r => r.title !== rule.title) };
+            }
+            return { ...prev, selectedRules: [...prev.selectedRules, rule] };
         });
     };
 
-    // GENERATE ACTIONS (Step 6)
-    const generateActions = async () => {
-        if (state.selectedRules.length === 0) {
-            setError("Please select at least one rule to proceed.");
-            return;
-        }
-
-        // If we already have actions, just move to step 6
-        if (state.generatedActions.length > 0) {
-            setState(prev => ({ ...prev, step: 6 }));
-            return;
-        }
-
-        const result = await callApi('actions', {
-            selected_rules: state.selectedRules.map(r => r.title),
-            rant: state.rant
-        });
-
-        if (result?.actions) {
-            setState(prev => ({
-                ...prev,
-                generatedActions: result.actions,
-                selectedActions: [],
-                step: 6
-            }));
-        }
-    };
-
-    const toggleAction = (action: string) => {
+    const updateRule = (index: number, updatedRule: Rule) => {
+        // Update Title/Description of a NEW rule (in the patch)
         setState(prev => {
-            const exists = prev.selectedActions.includes(action);
-            return {
-                ...prev,
-                selectedActions: exists
-                    ? prev.selectedActions.filter(a => a !== action)
-                    : [...prev.selectedActions, action]
-            };
-        });
-    };
+            if (!prev.patch) return prev;
 
-    // --- REGENERATE ---
-
-    const regenerateStep = async (stepNumber: number) => {
-        let mode = '';
-        let payload: any = {};
-
-        if (stepNumber === 2) {
-            mode = 'beliefs';
-            payload = { rant: state.rant, kept_items: state.selectedBeliefs };
-        } else if (stepNumber === 4) {
-            mode = 'thoughts';
-            payload = { selected_beliefs: state.selectedBeliefs, rant: state.rant, kept_items: state.selectedThoughts };
-        } else if (stepNumber === 5) {
-            mode = 'rules';
-            payload = { selected_thoughts: state.selectedThoughts, rant: state.rant, kept_items: state.selectedRules };
-        } else if (stepNumber === 6) {
-            mode = 'actions';
-            payload = { selected_rules: state.selectedRules.map(r => r.title), rant: state.rant, kept_items: state.selectedActions };
-        } else {
-            return;
-        }
-
-        const result = await callApi(mode, payload);
-
-        if (result) {
-            if (mode === 'beliefs' && result.beliefs) {
-                const mappedBeliefs = mapBeliefs(result.beliefs);
-                setState(prev => ({ ...prev, generatedBeliefs: mappedBeliefs }));
+            const newRules = [...prev.patch.new_rules];
+            if (index >= 0 && index < newRules.length) {
+                newRules[index] = updatedRule;
             }
-            if (mode === 'thoughts' && result.empowered_thoughts) {
-                setState(prev => ({ ...prev, generatedThoughts: result.empowered_thoughts }));
-            }
-            if (mode === 'rules' && result.rules) {
-                setState(prev => ({ ...prev, generatedRules: result.rules }));
-            }
-            if (mode === 'actions' && result.actions) {
-                setState(prev => ({ ...prev, generatedActions: result.actions }));
-            }
-        }
-    };
 
-    // --- NAVIGATION ---
-
-    const updateRule = (index: number, newRule: Rule) => {
-        setState(prev => {
-            const oldRule = prev.generatedRules[index];
-            const newGenerated = [...prev.generatedRules];
-            newGenerated[index] = newRule;
-
-            // Update selected if applicable (check by reference or title)
-            const isSelected = prev.selectedRules.some(r => r === oldRule || r.title === oldRule.title);
-            let newSelected = prev.selectedRules;
-
-            if (isSelected) {
-                newSelected = prev.selectedRules.map(r => (r === oldRule || r.title === oldRule.title) ? newRule : r);
-            }
+            // Also update selected
+            const newSelected = prev.selectedRules.map(r => r.title === prev.patch!.new_rules[index].title ? updatedRule : r);
 
             return {
                 ...prev,
-                generatedRules: newGenerated,
+                patch: { ...prev.patch!, new_rules: newRules },
                 selectedRules: newSelected
             };
         });
     };
 
-    // --- NAVIGATION ---
+    // NAVIGATION
+    const nextStep = () => setState(prev => ({ ...prev, step: prev.step + 1 }));
+    const prevStep = () => setState(prev => ({ ...prev, step: prev.step - 1 }));
 
-    const nextStep = () => {
-        setState(prev => ({ ...prev, step: prev.step + 1 }));
-        setError(null);
+    // GENERATE GHOST STORY (Final Step)
+    const generateGhostStory = async () => {
+        // Generate actions silently if we skipped Step 6
+        let actions: string[] = [];
+
+        try {
+            const actionRes = await callApi('actions', {
+                selected_vision: state.selectedVision,
+                new_rules: state.selectedRules,
+                rant: state.rant
+            });
+            if (actionRes?.actions) actions = actionRes.actions;
+        } catch (e) {
+            console.warn("Failed to generate actions silently", e);
+        }
+
+        const result = await callApi('ghost_writer', {
+            rant: state.rant,
+            beliefs: state.selectedBeliefs,
+            vision: state.selectedVision[0], // Use primary vision
+            rules: state.selectedRules,
+            deprecated_rules: state.patch?.deprecated_ids.map(id => ({ id })),
+            actions: actions,
+            reason: state.patch?.reason
+        });
+
+        return result?.story;
     };
 
-    const prevStep = () => {
-        if (state.step > 1) {
-            setState(prev => ({ ...prev, step: prev.step - 1 }));
-            setError(null);
+
+    // --- REGENERATE ---
+
+    const regenerateStep = async (stepNumber: number) => {
+        if (stepNumber === 2) {
+            generateBeliefs();
+        } else if (stepNumber === 4) {
+            generateVision();
+        } else if (stepNumber === 5) {
+            generateConstraints();
         }
     };
+
 
     return {
         state,
@@ -337,15 +335,16 @@ export function useProblemWizard() {
         setRant,
         generateBeliefs,
         toggleBelief,
-        generateThoughts,
-        toggleThought,
-        generateRules,
+        generateVision, // Replaces generateThoughts
+        toggleVision,   // Replaces toggleThought
+        generateConstraints, // Replaces generateRules
         toggleRule,
         updateRule,
-        generateActions,
-        toggleAction,
         regenerateStep,
         nextStep,
-        prevStep
+        prevStep,
+        updateCalibration,
+        saveCalibration,
+        generateGhostStory
     };
 }

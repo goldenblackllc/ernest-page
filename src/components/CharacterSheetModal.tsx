@@ -369,22 +369,28 @@ function ObjectArrayInput({ items, onChange, fields, generateId, chipStyle }: { 
     return (
         <div className="space-y-3">
             {/* List Existing */}
-            <div className={cn("space-y-2", chipStyle && "flex flex-wrap gap-2 space-y-0")}>
+            <div className={cn("space-y-4", chipStyle && "space-y-4 flex flex-col gap-0")}>
                 {items.map((item, i) => (
                     <div key={i} className={cn(
                         "flex gap-2 items-start group relative pr-8",
-                        chipStyle ? "bg-blue-900/30 border border-blue-800/50 rounded-full px-4 py-1.5 items-center" : "flex-1"
+                        chipStyle ? "bg-zinc-900/40 border border-zinc-800/50 rounded-lg px-4 py-3 items-center" : "flex-1"
                     )}>
                         <div className={cn(
-                            "flex gap-4",
-                            chipStyle ? "items-center" : "flex-1 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3"
+                            "flex flex-col gap-1 w-full",
+                            chipStyle ? "" : "flex-1 bg-zinc-900/50 border border-zinc-800 rounded-lg p-4"
                         )}>
-                            {fields.map(f => (
-                                <div key={f.key} style={chipStyle ? {} : { width: f.width }} className={cn("truncate text-sm", chipStyle ? "text-blue-100" : "text-zinc-300")}>
-                                    {!chipStyle && <span className="text-zinc-600 text-[10px] uppercase mr-2">{f.key}:</span>}
-                                    {chipStyle && f.key === 'reason' && <span className="opacity-50 mx-1">•</span>}
-                                    {chipStyle && item[f.key]}
-                                    {!chipStyle && <p className="break-words whitespace-normal">{item[f.key]}</p>}
+                            {fields.map((f, index) => (
+                                <div
+                                    key={f.key}
+                                    className="w-full"
+                                >
+                                    {/* Render First Field as Title, others as Description */}
+                                    <p className={cn(
+                                        "break-words whitespace-normal",
+                                        index === 0 ? "text-base font-bold text-white mb-0.5" : "text-sm text-zinc-400"
+                                    )}>
+                                        {item[f.key]}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -392,10 +398,10 @@ function ObjectArrayInput({ items, onChange, fields, generateId, chipStyle }: { 
                             onClick={() => handleRemove(i)}
                             className={cn(
                                 "text-zinc-600 hover:text-red-400 transition-opacity",
-                                chipStyle ? "ml-2" : "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2"
+                                chipStyle ? "ml-auto" : "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2"
                             )}
                         >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                         </button>
                     </div>
                 ))}

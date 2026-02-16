@@ -2,7 +2,7 @@ import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firest
 import { db } from "./config";
 import { CharacterBible, CharacterProfile } from "@/types/character";
 
-const DEFAULT_BIBLE: CharacterBible = {
+export const DEFAULT_BIBLE: CharacterBible = {
     title: "Good Successful Happy Human",
     summary: "I am a good person who is successful, unconditionally loved, and I enjoy my life.",
     avatar_url: "",
@@ -90,10 +90,33 @@ export async function updateCharacterBible(uid: string, updates: Partial<Charact
     return merged;
 }
 
+// ... (existing code)
+
 /**
  * Returns valid Suggested Actions (not expired).
  */
 export function getValidActions(bible: CharacterBible) {
     const now = Date.now();
     return (bible.suggested_actions || []).filter(action => action.expires_at > now && !action.is_completed);
+}
+
+import { onSnapshot } from "firebase/firestore";
+
+/**
+ * Subscribes to the Character Bible for real-time updates.
+ */
+export function subscribeToCharacterBible(uid: string, onUpdate: (bible: CharacterBible) => void) {
+    const docRef = doc(db, "users", uid);
+    return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data() as CharacterProfile;
+            if (data.character_bible) {
+                onUpdate({ ...DEFAULT_BIBLE, ...data.character_bible });
+            } else {
+                onUpdate(DEFAULT_BIBLE);
+            }
+        } else {
+            onUpdate(DEFAULT_BIBLE);
+        }
+    });
 }

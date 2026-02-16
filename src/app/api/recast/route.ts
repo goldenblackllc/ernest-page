@@ -4,10 +4,18 @@ import { z } from 'zod';
 import { db } from '@/lib/firebase/admin';
 
 const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
 export const maxDuration = 60;
+
+// --- SAFETY SETTINGS ---
+const SAFETY_SETTINGS = [
+    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+];
 
 // --- PERSONAS ---
 
@@ -49,76 +57,65 @@ Return JSON:
 - 'beliefs': Array of strings (e.g. ["I am Powerless.", "Life is Hard."]).
 `;
 
-const THOUGHTS_PROMPT = `
-STEP 2: GENERATE EMPOWERED THOUGHTS
+const VISION_PROMPT = `
+STEP 2: GENERATE THE VISION (LENSES)
 
 CONTEXT:
-User Roles: {ROLES}
-Character Context: {CHARACTER_BIBLE}
-Current Situation (Rant): "{RANT}"
+Specific Problem (Rant): "{RANT}"
+User's Core Identity: "{CALIBRATION_TITLE}"
+Identity Summary: "{CALIBRATION_SUMMARY}"
 
 TRANSFORMATION:
 FROM (Old Beliefs): {SELECTED_BELIEFS}
-TO (New Beliefs): {NEW_BELIEFS}
+TO (New Beliefs): {New Beliefs}
 
 TASK:
-1. You are the inner voice of this specific character.
-2. Rewrite the user's internal monologue about these specific problems (from the Rant).
-3. FILTER: Adopt the specific tone, vocabulary, and habits of the Character Bible.
-4. CONSTRAINT: You MUST reference specific details from the Rant (e.g. if they mentioned "skiing", use that).
-5. GOAL: Bridge the gap between the Old Beliefs and the New Beliefs using the Character's voice.
-6. Total Output: 5 distinct, first-person thoughts.
-
-CRITICAL INSTRUCTION: THE REALITY BRIDGE
-1. Acknowledge the Gap: The user wants to be the [Ideal Character] but is currently living the [Rant Reality].
-2. Respect the Constraints: If the rant says "I have no money," do not suggest spending money. That is delusional.
-3. Apply the Mindset: Ask: "How would a [Rich/Successful Character] handle being broke?"
-   - They wouldn't spend recklessly.
-   - They would be resourceful, creative, or disciplined.
-4. The Output: Suggest thoughts that solve the emotional need (connection, fun, safety) using the resources actually available (creativity, time, effort), while moving them toward the Ideal Identity.
-
-Kept Items: {KEPT_ITEMS}
+1. Analyze the User's "Core Identity" ({CALIBRATION_TITLE}).
+2. Deconstruct this identity into 3 distinct "Lenses" or "Aspects" that would handle this specific problem differently.
+   - Example: If Title is "Stoic Father & Investor", lenses might be: "The Stoic", "The Father", "The Investor".
+   - Example: If Title is "Creative Director", lenses might be: "The Visionary", "The Manager", "The Artist".
+3. GENERATE 3 MICRO-SCENES, one for each Lens.
+   - VISUAL: Describe what they DO, not just what they think.
+   - SPECIFIC: Use details from the Rant.
+   - EMPOWERED: Show the solution in action.
 
 Return JSON:
-- 'empowered_thoughts': Array of 5 strings.
+- 'vision': Array of objects { title, description }.
+  - title: The Lens Name (e.g. "The Stoic").
+  - description: The visual Micro-Scene.
 `;
 
-const RULES_PROMPT = `
-STEP 3: GENERATE STRATEGY PROPOSALS
+const CONSTRAINTS_PROMPT = `
+STEP 3: SYSTEM UPDATE (CONSTRAINTS)
 
 CONTEXT:
 User Roles: {ROLES}
-Character Context: {CHARACTER_BIBLE}
-Current Situation (Rant): "{RANT}"
-Selected Thoughts (Mental Models): {SELECTED_THOUGHTS}
+Current Vision: {SELECTED_VISION}
+Current Config: {CURRENT_RULES_COUNT} Active Rules.
+Rules to Analyze: {CURRENT_RULES}
+Specific Problem (Rant): "{RANT}"
 
 TASK:
-1. Turn the Selected Thoughts into actionable "Strategy Proposals" or "Protocols".
-2. CONSTRAINT 1: The Title (The Command)
-   - GRAMMAR: Must start with a VERB (Imperative).
-   - CONSTRAINT: Do NOT wrap the titles in quotation marks.
-   - LENGTH: Maximum 6 words.
-   - TONE: Strategic & Direct.
-   - Example: "Date Iris Twice a Month." or "Review budget every Friday."
-3. CONSTRAINT 2: The Description (The Commitment)
-   - GRAMMAR: specific "I" statement.
-   - PURPOSE: Verify the command with a measurable action.
-   - Example: "I schedule the babysitter on the 1st and 15th to ensure we have time alone."
-4. Filter: If 'Kept Items' are provided, do NOT generate duplicates.
-5. Total Output: 5 Objects { title, description }.
+1. Analyze the "Current Rules" vs the "New Vision".
+2. Create a "Patch" to update the User's System.
+   - NEW RULES: Generate 3-5 specific, binary rules to enforce the New Vision.
+   - DEPRECATED RULES: Identify old rules that CONFLICT with the New Vision or are obsolete.
 
-CRITICAL INSTRUCTION: THE REALITY BRIDGE
-1. Acknowledge the Gap: The user wants to be the [Ideal Character] but is currently living the [Rant Reality].
-2. Respect the Constraints: If the rant says "I have no money," do not suggest spending money. That is delusional.
-3. Apply the Mindset: Ask: "How would a [Rich/Successful Character] handle being broke?"
-   - They wouldn't spend recklessly.
-   - They would be resourceful, creative, or disciplined.
-4. The Output: Suggest rules that solve the emotional need (connection, fun, safety) using the resources actually available (creativity, time, effort), while moving them toward the Ideal Identity.
+CRITICAL SAFETY CHECK:
+- If {CURRENT_RULES_COUNT} < 20, you are STRICTLY FORBIDDEN from deprecating any rules.
+- In that case, return an empty array for "deprecated_ids".
+- You must ONLY add new rules to build up their system.
 
-Kept Items: {KEPT_ITEMS}
+RULES FOR RULES:
+- BINARY: Must be Yes/No or Do/Don't.
+- IMPERATIVE: Start with a Verb.
+- ANTI-ECHO: Do NOT create a rule if it already exists.
 
 Return JSON:
-- 'rules': Array of objects { title, description }.
+- 'patch':
+  - new_rules: Array of { title, description }.
+  - deprecated_ids: Array of strings (The EXACT "id" or "title" of the rule to remove).
+  - reason: Short engineer log explaining the update.
 `;
 
 const ACTIONS_PROMPT = `
@@ -126,12 +123,13 @@ STEP 4: GENERATE IMMEDIATE ACTIONS
 
 CONTEXT:
 User Roles: {ROLES}
-Selected Rules: {SELECTED_RULES}
+Selected Vision: {SELECTED_VISION}
+New Rules: {NEW_RULES}
 Original Rant: "{RANT}"
 
 TASK:
-1. Based on the new Rules AND the original Rant, generate 5 specific, immediate ACTIONS.
-2. These should be things the user can do TODAY to prove the new Rule is true.
+1. Based on the Vision and New Rules, generate 5 specific, immediate ACTIONS.
+2. These should be things the user can do TODAY to prove the new Reality.
 3. Filter: If 'Kept Items' are provided, do NOT generate duplicates.
 4. Total Output: 5 Actions.
 
@@ -139,6 +137,27 @@ Kept Items: {KEPT_ITEMS}
 
 Return JSON:
 - 'actions': Array of 5 strings.
+`;
+
+const GHOSTWRITER_PROMPT = `
+You are an expert Ghostwriter and Editor.
+Input: User Rant
+Task: Polish this rant into a compelling first-person narrative.
+
+CONSTRAINT:
+- Do NOT include the solution or the ending.
+- Do NOT summarize the outcome.
+- Only rewrite the problem state (The Rant).
+- Maintain the original tone/voice.
+- Make it punchy, raw, and real.
+- Aggressively replace ALL proper nouns with generic roles (e.g. "My Boss" -> "The Director").
+
+Output Format (Strict Plain Text):
+[The Polished Narrative Story]
+
+CONTEXT:
+User Roles: {ROLES}
+Rant: "{RANT}"
 `;
 
 // --- HELPERS ---
@@ -164,6 +183,29 @@ async function getUserContext(uid: string) {
     }
 }
 
+// --- HELPER: FALLBACK GENERATION ---
+const PRIMARY_MODEL = 'gemini-3-pro-preview';
+const FALLBACK_MODEL = 'gemini-2.5-pro';
+
+async function generateWithFallback(options: any) {
+    try {
+        // Try Primary
+        console.log(`Attempting generation with ${PRIMARY_MODEL}...`);
+        return await generateObject({
+            ...options,
+            model: google(PRIMARY_MODEL)
+        });
+    } catch (error: any) {
+        console.warn(`Primary model ${PRIMARY_MODEL} failed. Falling back to ${FALLBACK_MODEL}. Error:`, error.message);
+
+        // Try Fallback
+        return await generateObject({
+            ...options,
+            model: google(FALLBACK_MODEL)
+        });
+    }
+}
+
 // --- HANDLER ---
 
 export async function POST(req: Request) {
@@ -179,10 +221,34 @@ export async function POST(req: Request) {
         // Common replacements
         const keptItemsStr = payload.kept_items ? JSON.stringify(payload.kept_items) : "None";
 
+        // Provider Options (Safety)
+        const providerOptions = {
+            google: { safetySettings: SAFETY_SETTINGS },
+        };
+
+        if (mode === 'get_context') {
+            return Response.json({ bible: context.bible });
+        }
+
+        if (mode === 'update_bible') {
+            const { title, summary } = payload;
+            await db.collection('users').doc(uid).set({
+                character_bible: {
+                    ...context.bible,
+                    roles: [title], // Assuming title maps to roles for now, or add a specific title field?
+                    // The prompt uses "Roles". Let's assume Title = Main Role.
+                    // Actually, let's just save title and summary as is in the bible.
+                    title: title,
+                    summary: summary
+                }
+            }, { merge: true });
+            return Response.json({ success: true });
+        }
+
         if (mode === 'beliefs') {
             const { rant } = payload;
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+            const result = await generateWithFallback({
+                providerOptions,
                 system: DIRECTOR_PERSONA,
                 prompt: BELIEFS_PROMPT
                     .replace("{ROLES}", rolesStr)
@@ -194,85 +260,83 @@ export async function POST(req: Request) {
                 }),
             });
 
-            // Merge kept items if logic requires it, but prompt says "Total Output: 5". 
-            // The prompt asks the AI to generate the FULL list including replacements. 
-            // However, to be safe, we might want to manually merge. 
-            // But let's trust the AI to return 5 items, some of which might be the kept ones if it decided to keep them?
-            // Wait, the prompt instruction "If 'Kept Items' are provided, do NOT generate duplicates of them. Generate NEW items to fill the quota."
-            // This implies the AI returns ONLY the new items? 
-            // "Total Output: 5 Negative Beliefs." implies it returns the full set. 
-            // Let's assume it returns a fresh list of 5, intending to replace the current generation state.
-            // If the user "kept" items, they are passed in "kept_items". 
-            // If the AI returns 5 items, and 3 were kept, does it return the 3 kept + 2 new? 
-            // The prompt says "Generate NEW items to fill the quota." 
-            // It's safer if the AI returns the *complement* or the *full list*. 
-            // Let's adjust the prompt to be explicit: "Output a list of 5 items. The list MUST include the 'Kept Items' exactly as they are, and then fill the rest with new generated items."
-
-            // Actually, client side `regenerateStep` logic: 
-            // "Result: The UI updates with a mix of 'Old Kept' and 'New Generated' items."
-            // If I return 5 items, the client just replaces the list.
-
             return Response.json(result.object);
         }
 
-        if (mode === 'thoughts') {
-            const { selected_beliefs, rant } = payload;
+        if (mode === 'vision') {
+            const { selected_beliefs, rant, calibration } = payload;
 
             const oldBeliefsStr = selected_beliefs.map((b: any) => `"${b.negative}"`).join(", ");
             const newBeliefsStr = selected_beliefs.map((b: any) => `"${b.positive}"`).join(", ");
-            const bibleStr = JSON.stringify(context.bible);
 
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+            // Use Calibration or Fallback to Context
+            const titleStr = calibration?.title || context.roles[0] || "High Value Individual";
+            const summaryStr = calibration?.summary || "A person striving for excellence.";
+
+            const result = await generateWithFallback({
+                providerOptions,
                 system: DIRECTOR_PERSONA,
-                prompt: THOUGHTS_PROMPT
-                    .replace("{ROLES}", rolesStr)
+                prompt: VISION_PROMPT
+                    .replace("{CALIBRATION_TITLE}", titleStr)
+                    .replace("{CALIBRATION_SUMMARY}", summaryStr)
                     .replace("{SELECTED_BELIEFS}", oldBeliefsStr)
                     .replace("{NEW_BELIEFS}", newBeliefsStr)
-                    .replace("{CHARACTER_BIBLE}", bibleStr)
-                    .replace("{RANT}", rant)
-                    .replace("{KEPT_ITEMS}", keptItemsStr),
+                    .replace("{RANT}", rant), // Removed KeptItems from prompt template to match logic
                 schema: z.object({
-                    empowered_thoughts: z.array(z.string()).length(5).describe("5 Empowered Thoughts"),
+                    vision: z.array(z.object({
+                        title: z.string(),
+                        description: z.string()
+                    })).length(3).describe("3 Micro-Scenes of the Vision"),
                 }),
             });
             return Response.json(result.object);
         }
 
-        if (mode === 'rules') {
-            const { selected_thoughts, rant } = payload;
-            const thoughtsStr = selected_thoughts.join(", ");
-            const bibleStr = JSON.stringify(context.bible);
+        if (mode === 'constraints') {
+            const { selected_vision, rant } = payload;
+            const currentRules = context.bible.rules || [];
+            // Optimize: Only send titles if list is huge? For now send all.
+            // Actually, we need to send IDs if we want them back.
+            // If rules are objects { id, rule, ... }
+            const currentRulesSimple = currentRules.map((r: any) => ({ id: r.id, title: r.rule }));
+            const currentRulesStr = JSON.stringify(currentRulesSimple);
+            const visionStr = JSON.stringify(selected_vision);
 
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+            const result = await generateWithFallback({
+                providerOptions,
                 system: DIRECTOR_PERSONA,
-                prompt: RULES_PROMPT
+                prompt: CONSTRAINTS_PROMPT
                     .replace("{ROLES}", rolesStr)
-                    .replace("{SELECTED_THOUGHTS}", thoughtsStr)
-                    .replace("{CHARACTER_BIBLE}", bibleStr)
-                    .replace("{RANT}", rant || "")
-                    .replace("{KEPT_ITEMS}", keptItemsStr),
+                    .replace("{SELECTED_VISION}", visionStr)
+                    .replace("{CURRENT_RULES}", currentRulesStr)
+                    .replace("{CURRENT_RULES_COUNT}", currentRules.length.toString())
+                    .replace("{RANT}", rant || ""),
                 schema: z.object({
-                    rules: z.array(z.object({
-                        title: z.string().describe("Imperative Command (Start with Verb)"),
-                        description: z.string().describe("Specific I-statement commitment")
-                    })).length(5).describe("5 Operating Rules"),
+                    patch: z.object({
+                        new_rules: z.array(z.object({
+                            title: z.string(),
+                            description: z.string()
+                        })),
+                        deprecated_ids: z.array(z.string()),
+                        reason: z.string()
+                    }).describe("System Update Patch"),
                 }),
             });
             return Response.json(result.object);
         }
 
         if (mode === 'actions') {
-            const { selected_rules, rant } = payload;
-            const rulesStr = selected_rules.join("; ");
+            const { selected_vision, new_rules, rant } = payload;
+            const visionStr = JSON.stringify(selected_vision);
+            const rulesStr = JSON.stringify(new_rules);
 
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+            const result = await generateWithFallback({
+                providerOptions,
                 system: DIRECTOR_PERSONA,
                 prompt: ACTIONS_PROMPT
                     .replace("{ROLES}", rolesStr)
-                    .replace("{SELECTED_RULES}", rulesStr)
+                    .replace("{SELECTED_VISION}", visionStr)
+                    .replace("{NEW_RULES}", rulesStr)
                     .replace("{RANT}", rant)
                     .replace("{KEPT_ITEMS}", keptItemsStr),
                 schema: z.object({
@@ -280,6 +344,34 @@ export async function POST(req: Request) {
                 }),
             });
             return Response.json(result.object);
+        }
+
+        if (mode === 'ghost_writer') {
+            const { rant, beliefs, vision, rules, deprecated_rules, actions, reason } = payload;
+
+            const visionStr = vision ? `${vision.title}: ${vision.description}` : "";
+            const rulesStr = rules.map((r: any) => `[+] ${r.title}: ${r.description}`).join("\n");
+
+            // Format deprecated rules
+            const deprecatedStr = deprecated_rules ? deprecated_rules.map((r: any) => `[-] ${r.title || r.id}`).join("\n") : "None";
+
+            const actionsStr = actions.join("\n");
+
+            const result = await generateWithFallback({
+                providerOptions,
+                system: DIRECTOR_PERSONA,
+                prompt: GHOSTWRITER_PROMPT
+                    .replace("{ROLES}", rolesStr)
+                    .replace("{RANT}", rant),
+                schema: z.object({
+                    story: z.string().describe("The polished first-person narrative."),
+                }),
+            });
+            // Return just the string? Or object? 
+            // modal expects a string.
+            // If result.object.story is returned.
+            const output = result.object as any;
+            return Response.json(output?.story || "");
         }
 
         return Response.json({ error: "Invalid mode" }, { status: 400 });

@@ -62,6 +62,9 @@ export interface CharacterBible {
 
     // --- SYSTEM METADATA ---
     last_updated: number;   // Timestamp for the "Batch Post" logic.
+    version?: number;       // e.g. 1.0, 1.1
+    last_commit?: any;      // Firestore Timestamp of last "Finish & Commit"
+    status?: 'stable' | 'compiling'; // Lockout state during updates
 }
 
 export interface CharacterProfile {

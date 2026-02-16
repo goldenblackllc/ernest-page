@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { getCharacterBible } from "@/lib/firebase/character";
+import { subscribeToCharacterBible } from "@/lib/firebase/character";
 import { CharacterBible } from "@/types/character";
 import { cn } from "@/lib/utils";
 import { User, Scroll, Target, Crown, Sparkles } from "lucide-react";
@@ -16,17 +16,15 @@ export function CharacterShowcase() {
 
     useEffect(() => {
         if (!user) return;
-        const fetchBible = async () => {
-            try {
-                const data = await getCharacterBible(user.uid);
-                setBible(data);
-            } catch (error) {
-                console.error("Failed to fetch bible:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchBible();
+        setLoading(true);
+
+        // Real-time subscription
+        const unsubscribe = subscribeToCharacterBible(user.uid, (data) => {
+            setBible(data);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [user]);
 
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
@@ -166,13 +164,6 @@ export function CharacterShowcase() {
                 isOpen={isSheetOpen}
                 onClose={() => {
                     setIsSheetOpen(false);
-                    // Refresh data on close in case of save
-                    const fetchBible = async () => {
-                        if (!user) return;
-                        const data = await getCharacterBible(user.uid);
-                        setBible(data);
-                    };
-                    fetchBible();
                 }}
                 initialData={bible}
             />
