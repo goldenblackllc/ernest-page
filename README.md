@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Project Documentation
+*   **[Core Vision & Manifesto](./MANIFESTO.md)**: The primary source of truth for the project's philosophy, goals, and architecture.
+*   **[Design System](./DESIGN_SYSTEM.md)**: UI/UX standards, color palettes, and component guidelines (Cinematic Dark Mode).
+*   **[Recast Engine Specs](./MANIFESTO_RECAST_ENGINE.md)**: Detailed specifications for the "Recast" debugging tool.
+
+
 ## Getting Started
 
 First, run the development server:

@@ -1,6 +1,6 @@
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { Belief, Rule } from "@/hooks/useProblemWizard";
+import { Driver, Vision } from "@/types/recast";
 
 export interface CreatePostParams {
     content: string;
@@ -13,8 +13,8 @@ export interface CreatePostParams {
     type?: 'text' | 'recast' | 'recast_event';
     // Optional structured data for extended display
     rant?: string;
-    core_beliefs?: { negative: string, positive: string }[];
-    vision?: { title: string, description: string }[];
+    core_beliefs?: string[] | Driver[]; // Relaxed to support both
+    vision?: Vision[];
 }
 
 export async function createPost(params: CreatePostParams) {

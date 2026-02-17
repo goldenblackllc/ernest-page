@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
-import { ProblemWizardModal } from "@/components/recast/ProblemWizardModal";
+import RecastWizardModal from "@/components/recast/RecastWizardModal";
 import { Plus, X, ArrowUp, Zap, AlertCircle, Target, Radio, Check, ArrowRight } from "lucide-react";
 
 type AnalysisResult = {
@@ -39,7 +39,7 @@ export function TriagePanel() {
     const [momentumLines, setMomentumLines] = useState<string[]>([""]);
 
     // Recast State (Wizard)
-    const [isProblemWizardOpen, setIsProblemWizardOpen] = useState(false);
+    const [recastState, setRecastState] = useState<{ isOpen: boolean; mode: 'PROBLEM' | 'DESIRE' }>({ isOpen: false, mode: 'PROBLEM' });
 
     const resetPanel = () => {
         setActiveMode('idle');
@@ -50,11 +50,13 @@ export function TriagePanel() {
         setIsSubmitting(false);
         setIsAnalyzing(false);
         setBroadcast(true);
+        setRecastState({ isOpen: false, mode: 'PROBLEM' });
     };
 
     // Auto-focus logic
     useEffect(() => {
-        if (activeMode !== 'idle' && !analysisResult) {
+        // Only auto-focus if activeMode is 'next' and no analysis result is shown
+        if (activeMode === 'next' && !analysisResult) {
             setTimeout(() => {
                 textareaRef.current?.focus();
             }, 100);
@@ -65,7 +67,12 @@ export function TriagePanel() {
 
     const handleModeSelect = (mode: Mode) => {
         if (mode === 'problem') {
-            setIsProblemWizardOpen(true);
+            setRecastState({ isOpen: true, mode: 'PROBLEM' });
+            setIsMenuOpen(false);
+            return;
+        }
+        if (mode === 'want') {
+            setRecastState({ isOpen: true, mode: 'DESIRE' });
             setIsMenuOpen(false);
             return;
         }
@@ -406,10 +413,13 @@ export function TriagePanel() {
                 </div>
             )}
 
-            <ProblemWizardModal
-                isOpen={isProblemWizardOpen}
-                onClose={() => setIsProblemWizardOpen(false)}
-            />
+            {recastState.isOpen && (
+                <RecastWizardModal
+                    isOpen={true}
+                    onClose={() => setRecastState({ ...recastState, isOpen: false })}
+                    mode={recastState.mode}
+                />
+            )}
         </>
     );
 }

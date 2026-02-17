@@ -28,7 +28,10 @@ THE LOGIC:
 
 // --- PROMPTS ---
 
-const BELIEFS_PROMPT = `
+// --- PROMPTS ---
+
+// === PROBLEM MODE PROMPTS ===
+const PROBLEM_BELIEFS_PROMPT = `
 STEP 1: IDENTIFY CORE NEGATIVE BELIEFS (CLASSIFICATION ONLY)
 
 CONTEXT:
@@ -54,10 +57,10 @@ TASK:
 3. STRICT CONSTRAINT: You CANNOT invent new beliefs. You MUST return exact strings from the menu.
 
 Return JSON:
-- 'beliefs': Array of strings (e.g. ["I am Powerless.", "Life is Hard."]).
+- 'drivers': Array of strings (e.g. ["I am Powerless.", "Life is Hard."]).
 `;
 
-const VISION_PROMPT = `
+const PROBLEM_VISION_PROMPT = `
 STEP 2: GENERATE THE VISION (LENSES)
 
 CONTEXT:
@@ -66,14 +69,13 @@ User's Core Identity: "{CALIBRATION_TITLE}"
 Identity Summary: "{CALIBRATION_SUMMARY}"
 
 TRANSFORMATION:
-FROM (Old Beliefs): {SELECTED_BELIEFS}
-TO (New Beliefs): {New Beliefs}
+FROM (Old Beliefs): {SELECTED_DRIVERS}
+TO (New Beliefs): {OPPOSITE_DRIVERS}
 
 TASK:
 1. Analyze the User's "Core Identity" ({CALIBRATION_TITLE}).
 2. Deconstruct this identity into 3 distinct "Lenses" or "Aspects" that would handle this specific problem differently.
    - Example: If Title is "Stoic Father & Investor", lenses might be: "The Stoic", "The Father", "The Investor".
-   - Example: If Title is "Creative Director", lenses might be: "The Visionary", "The Manager", "The Artist".
 3. GENERATE 3 MICRO-SCENES, one for each Lens.
    - VISUAL: Describe what they DO, not just what they think.
    - SPECIFIC: Use details from the Rant.
@@ -85,7 +87,7 @@ Return JSON:
   - description: The visual Micro-Scene.
 `;
 
-const CONSTRAINTS_PROMPT = `
+const PROBLEM_CONSTRAINTS_PROMPT = `
 STEP 3: SYSTEM UPDATE (CONSTRAINTS)
 
 CONTEXT:
@@ -104,7 +106,6 @@ TASK:
 CRITICAL SAFETY CHECK:
 - If {CURRENT_RULES_COUNT} < 20, you are STRICTLY FORBIDDEN from deprecating any rules.
 - In that case, return an empty array for "deprecated_ids".
-- You must ONLY add new rules to build up their system.
 
 RULES FOR RULES:
 - BINARY: Must be Yes/No or Do/Don't.
@@ -114,50 +115,115 @@ RULES FOR RULES:
 Return JSON:
 - 'patch':
   - new_rules: Array of { title, description }.
-  - deprecated_ids: Array of strings (The EXACT "id" or "title" of the rule to remove).
+  - deprecated_ids: Array of strings.
   - reason: Short engineer log explaining the update.
 `;
 
-const ACTIONS_PROMPT = `
-STEP 4: GENERATE IMMEDIATE ACTIONS
+// === DESIRE MODE PROMPTS ===
+
+const DESIRE_DRIVERS_PROMPT = `
+STEP 1: IDENTIFY TARGET EMOTIONS (CLASSIFICATION ONLY)
 
 CONTEXT:
 User Roles: {ROLES}
-Selected Vision: {SELECTED_VISION}
-New Rules: {NEW_RULES}
-Original Rant: "{RANT}"
+Existing Beliefs: {EXISTING_BELIEFS}
+Desire Statement: "{RANT}"
+
+MASTER EMOTION MENU (STRICT OPTION LIST):
+1. "Significance"
+2. "Connection"
+3. "Contribution"
+4. "Growth"
+5. "Certainty"
+6. "Variety"
+7. "Freedom"
+8. "Power"
+9. "Peace"
+10. "Clarity"
 
 TASK:
-1. Based on the Vision and New Rules, generate 5 specific, immediate ACTIONS.
-2. These should be things the user can do TODAY to prove the new Reality.
-3. Filter: If 'Kept Items' are provided, do NOT generate duplicates.
-4. Total Output: 5 Actions.
-
-Kept Items: {KEPT_ITEMS}
+1. Analyze the Desire Statement.
+2. Select the top 3-5 items from the MASTER EMOTION MENU that represent the emotional fuel the user is seeking.
+3. STRICT CONSTRAINT: You CANNOT invent new emotions. You MUST return exact strings from the menu.
 
 Return JSON:
-- 'actions': Array of 5 strings.
+- 'drivers': Array of strings (e.g. ["Significance", "Freedom"]).
+`;
+
+const DESIRE_VISION_PROMPT = `
+STEP 2: GENERATE THE VISION (FUTURE MEMORY)
+
+CONTEXT:
+Specific Desire: "{RANT}"
+User's Core Identity: "{CALIBRATION_TITLE}"
+Identity Summary: "{CALIBRATION_SUMMARY}"
+Target Emotions: {SELECTED_DRIVERS}
+
+TASK:
+1. Analyze the User's "Core Identity" ({CALIBRATION_TITLE}).
+2. Deconstruct this identity into 3 distinct "Lenses" or "Aspects".
+3. GENERATE 3 MICRO-SCENES where the character is ALREADY experiencing the desire.
+   - VISUAL: Show the "After State". How does their behavior change in mundane moments?
+   - MUNDANE MAGIC: Don't show the award ceremony. Show the quiet confidence *after* winning.
+   - SPECIFIC: Use details from the Desire Statement.
+
+Return JSON:
+- 'vision': Array of objects { title, description }.
+  - title: The Lens Name.
+  - description: The visual Micro-Scene.
+`;
+
+const DESIRE_CONSTRAINTS_PROMPT = `
+STEP 3: SYSTEM UPDATE (MAINTENANCE HABIITS)
+
+CONTEXT:
+User Roles: {ROLES}
+Current Vision: {SELECTED_VISION}
+Current Config: {CURRENT_RULES_COUNT} Active Rules.
+Rules to Analyze: {CURRENT_RULES}
+Specific Desire: "{RANT}"
+
+TASK:
+1. Analyze the "New Vision".
+2. Create a "Patch" to update the User's System.
+   - NEW RULES: Generate 3-5 specific, binary rules to SUSTAIN this new reality.
+   - NOTE: If they want wealth, the rule isn't "Get Rich", it is "Review P&L Daily".
+
+CRITICAL SAFETY CHECK:
+- If {CURRENT_RULES_COUNT} < 20, you are STRICTLY FORBIDDEN from deprecating any rules.
+
+RULES FOR RULES:
+- BINARY: Must be Yes/No or Do/Don't.
+- IMPERATIVE: Start with a Verb.
+- ANTI-ECHO: Do NOT create a rule if it already exists.
+
+Return JSON:
+- 'patch':
+  - new_rules: Array of { title, description }.
+  - deprecated_ids: Array of strings.
+  - reason: Short engineer log explaining the update.
 `;
 
 const GHOSTWRITER_PROMPT = `
 You are an expert Ghostwriter and Editor.
-Input: User Rant
-Task: Polish this rant into a compelling first-person narrative.
+Input: {INPUT_LABEL}
+Task: Polish this into a compelling first-person narrative.
+
+MODE: {MODE}
 
 CONSTRAINT:
 - Do NOT include the solution or the ending.
 - Do NOT summarize the outcome.
-- Only rewrite the problem state (The Rant).
 - Maintain the original tone/voice.
 - Make it punchy, raw, and real.
 - Aggressively replace ALL proper nouns with generic roles (e.g. "My Boss" -> "The Director").
 
 Output Format (Strict Plain Text):
-[The Polished Narrative Story]
+[The Polished Narrative]
 
 CONTEXT:
 User Roles: {ROLES}
-Rant: "{RANT}"
+Input Text: "{RANT}"
 `;
 
 // --- HELPERS ---
@@ -211,7 +277,9 @@ async function generateWithFallback(options: any) {
 export async function POST(req: Request) {
     try {
         const payload = await req.json();
-        const { mode, uid } = payload;
+        const { mode: apiMode, uid, recastMode = 'PROBLEM' } = payload; // 'mode' is api function, 'recastMode' is PROBLEM/DESIRE
+
+        const isProblem = recastMode === 'PROBLEM';
 
         // Context
         const context = await getUserContext(uid);
@@ -226,11 +294,11 @@ export async function POST(req: Request) {
             google: { safetySettings: SAFETY_SETTINGS },
         };
 
-        if (mode === 'get_context') {
+        if (apiMode === 'get_context') {
             return Response.json({ bible: context.bible });
         }
 
-        if (mode === 'update_bible') {
+        if (apiMode === 'update_bible') {
             const { title, summary } = payload;
             await db.collection('users').doc(uid).set({
                 character_bible: {
@@ -245,43 +313,61 @@ export async function POST(req: Request) {
             return Response.json({ success: true });
         }
 
-        if (mode === 'beliefs') {
+        // STEP 1 -> 2: DIAGNOSIS (Beliefs or Desires)
+        if (apiMode === 'beliefs' || apiMode === 'diagnosis') {
             const { rant } = payload;
+
+            const promptTemplate = isProblem ? PROBLEM_BELIEFS_PROMPT : DESIRE_DRIVERS_PROMPT;
+
             const result = await generateWithFallback({
                 providerOptions,
                 system: DIRECTOR_PERSONA,
-                prompt: BELIEFS_PROMPT
+                prompt: promptTemplate
                     .replace("{ROLES}", rolesStr)
                     .replace("{EXISTING_BELIEFS}", existingBeliefsStr)
                     .replace("{RANT}", rant)
-                    .replace("{KEPT_ITEMS}", keptItemsStr),
+                    .replace("{KEPT_ITEMS}", keptItemsStr), // Kept strictly for problem mode backward compat if needed
                 schema: z.object({
-                    beliefs: z.array(z.string()).min(1).max(5).describe("List of selected Master Beliefs"),
+                    drivers: z.array(z.string()).min(1).max(5).describe(isProblem ? "List of selected Master Beliefs" : "List of selected Master Emotions"),
                 }),
             });
 
-            return Response.json(result.object);
+            // Compatibility: Function returns 'beliefs' if problem mode was expecting it, but new UI will expect 'drivers'
+            // Let's standardise on returning what was asked, map to 'beliefs' for problem mode if UI is legacy.
+            // But we are updating UI too. Let's return Generic 'drivers'.
+            // For older client compat, we can copy drivers to 'beliefs'
+            const output = result.object as any;
+            return Response.json({
+                drivers: output.drivers,
+                beliefs: output.drivers // Legacy compat
+            });
         }
 
-        if (mode === 'vision') {
-            const { selected_beliefs, rant, calibration } = payload;
+        if (apiMode === 'vision') {
+            const { selected_drivers, rant, calibration } = payload; // selected_drivers replaces selected_beliefs
 
-            const oldBeliefsStr = selected_beliefs.map((b: any) => `"${b.negative}"`).join(", ");
-            const newBeliefsStr = selected_beliefs.map((b: any) => `"${b.positive}"`).join(", ");
+            // Handle Legacy 'selected_beliefs' if present
+            const drivers = selected_drivers || payload.selected_beliefs;
+
+            const driversStr = drivers.map((d: any) => typeof d === 'string' ? d : (d.negative || d.id || d)).join(", ");
+            // For Problem Mode: we need 'Opposite' beliefs if they are passed as objects {negative, positive}
+            const oppositeDriversStr = drivers.map((d: any) => d.positive || "Freedom").join(", ");
 
             // Use Calibration or Fallback to Context
             const titleStr = calibration?.title || context.roles[0] || "High Value Individual";
             const summaryStr = calibration?.summary || "A person striving for excellence.";
 
+            const promptTemplate = isProblem ? PROBLEM_VISION_PROMPT : DESIRE_VISION_PROMPT;
+
             const result = await generateWithFallback({
                 providerOptions,
                 system: DIRECTOR_PERSONA,
-                prompt: VISION_PROMPT
+                prompt: promptTemplate
                     .replace("{CALIBRATION_TITLE}", titleStr)
                     .replace("{CALIBRATION_SUMMARY}", summaryStr)
-                    .replace("{SELECTED_BELIEFS}", oldBeliefsStr)
-                    .replace("{NEW_BELIEFS}", newBeliefsStr)
-                    .replace("{RANT}", rant), // Removed KeptItems from prompt template to match logic
+                    .replace("{SELECTED_DRIVERS}", driversStr)
+                    .replace("{OPPOSITE_DRIVERS}", oppositeDriversStr) // Only relevant for Problem
+                    .replace("{RANT}", rant),
                 schema: z.object({
                     vision: z.array(z.object({
                         title: z.string(),
@@ -292,20 +378,20 @@ export async function POST(req: Request) {
             return Response.json(result.object);
         }
 
-        if (mode === 'constraints') {
+        if (apiMode === 'constraints') {
             const { selected_vision, rant } = payload;
             const currentRules = context.bible.rules || [];
-            // Optimize: Only send titles if list is huge? For now send all.
-            // Actually, we need to send IDs if we want them back.
-            // If rules are objects { id, rule, ... }
+
             const currentRulesSimple = currentRules.map((r: any) => ({ id: r.id, title: r.rule }));
             const currentRulesStr = JSON.stringify(currentRulesSimple);
             const visionStr = JSON.stringify(selected_vision);
 
+            const promptTemplate = isProblem ? PROBLEM_CONSTRAINTS_PROMPT : DESIRE_CONSTRAINTS_PROMPT;
+
             const result = await generateWithFallback({
                 providerOptions,
                 system: DIRECTOR_PERSONA,
-                prompt: CONSTRAINTS_PROMPT
+                prompt: promptTemplate
                     .replace("{ROLES}", rolesStr)
                     .replace("{SELECTED_VISION}", visionStr)
                     .replace("{CURRENT_RULES}", currentRulesStr)
@@ -325,53 +411,24 @@ export async function POST(req: Request) {
             return Response.json(result.object);
         }
 
-        if (mode === 'actions') {
-            const { selected_vision, new_rules, rant } = payload;
-            const visionStr = JSON.stringify(selected_vision);
-            const rulesStr = JSON.stringify(new_rules);
-
-            const result = await generateWithFallback({
-                providerOptions,
-                system: DIRECTOR_PERSONA,
-                prompt: ACTIONS_PROMPT
-                    .replace("{ROLES}", rolesStr)
-                    .replace("{SELECTED_VISION}", visionStr)
-                    .replace("{NEW_RULES}", rulesStr)
-                    .replace("{RANT}", rant)
-                    .replace("{KEPT_ITEMS}", keptItemsStr),
-                schema: z.object({
-                    actions: z.array(z.string()).length(5).describe("5 Immediate Actions"),
-                }),
-            });
-            return Response.json(result.object);
-        }
-
-        if (mode === 'ghost_writer') {
-            const { rant, beliefs, vision, rules, deprecated_rules, actions, reason } = payload;
-
-            const visionStr = vision ? `${vision.title}: ${vision.description}` : "";
-            const rulesStr = rules.map((r: any) => `[+] ${r.title}: ${r.description}`).join("\n");
-
-            // Format deprecated rules
-            const deprecatedStr = deprecated_rules ? deprecated_rules.map((r: any) => `[-] ${r.title || r.id}`).join("\n") : "None";
-
-            const actionsStr = actions.join("\n");
+        if (apiMode === 'ghost_writer') {
+            const { rant } = payload;
 
             const result = await generateWithFallback({
                 providerOptions,
                 system: DIRECTOR_PERSONA,
                 prompt: GHOSTWRITER_PROMPT
                     .replace("{ROLES}", rolesStr)
-                    .replace("{RANT}", rant),
+                    .replace("{RANT}", rant)
+                    .replace("{MODE}", recastMode)
+                    .replace("{INPUT_LABEL}", isProblem ? "User Rant" : "User Desire Statement"),
                 schema: z.object({
                     story: z.string().describe("The polished first-person narrative."),
                 }),
             });
-            // Return just the string? Or object? 
-            // modal expects a string.
-            // If result.object.story is returned.
+
             const output = result.object as any;
-            return Response.json(output?.story || "");
+            return Response.json(output);
         }
 
         return Response.json({ error: "Invalid mode" }, { status: 400 });
@@ -381,3 +438,4 @@ export async function POST(req: Request) {
         return Response.json({ error: error.message || "An unexpected error occurred." }, { status: 500 });
     }
 }
+

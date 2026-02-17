@@ -3,7 +3,7 @@
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/Button";
 import { useState } from "react";
-import { ProblemWizardModal } from "@/components/recast/ProblemWizardModal";
+import RecastWizardModal from "@/components/recast/RecastWizardModal";
 import { Sparkles } from "lucide-react";
 
 export default function RecastPage() {
@@ -37,9 +37,10 @@ export default function RecastPage() {
                 </div>
             </div>
 
-            <ProblemWizardModal
+            <RecastWizardModal
                 isOpen={isWizardOpen}
                 onClose={() => setIsWizardOpen(false)}
+                mode="PROBLEM"
             />
         </main>
     );

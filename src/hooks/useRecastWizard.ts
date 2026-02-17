@@ -1,77 +1,22 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { MASTER_BELIEFS } from '@/lib/constants/beliefs';
-
-// --- TYPES ---
-
-
-export interface Belief {
-    negative: string;
-    positive: string;
-}
-
-export interface Rule {
-    title: string;
-    description: string;
-    action?: 'add' | 'remove' | 'keep';
-}
-
-export interface Vision {
-    title: string;
-    description: string;
-}
-
-export interface Patch {
-    new_rules: Rule[];
-    deprecated_ids: string[];
-    reason: string;
-}
-
-export interface WizardState {
-    step: number; // 1 to 5
-    rant: string;
-
-    // Step 3.5: User Calibration
-    calibration: {
-        title: string;
-        summary: string;
-    };
-
-    // Step 2: Beliefs
-    generatedBeliefs: Belief[];
-    selectedBeliefs: Belief[];
-
-    // Step 4: Vision (Micro-Scenes) - Replaces Thoughts
-    generatedVision: Vision[];
-    selectedVision: Vision[];
-
-    // Step 5: Strategies (System Update)
-    patch: Patch | null;
-
-    // For UI compatibility, we might filter these from the patch
-    selectedRules: Rule[]; // We'll store the "New Rules" here for selection? 
-    // Or just "Proposed" vs "Selected"?
-    // Let's keep it simple: "New Rules" are auto-selected. 
-    // "Deprecated" are auto-selected for removal.
-
-    // Step 6: Actions (Immediate Steps)
-    generatedActions: string[];
-    selectedActions: string[];
-}
+import { RecastMode, RecastState, Driver, Vision, Rule, Patch } from '@/types/recast';
 
 // --- HOOK ---
 
-export function useProblemWizard() {
+export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [state, setState] = useState<WizardState>({
+    const [state, setState] = useState<RecastState>({
+        mode: mode,
         step: 1,
-        rant: "",
+        input_text: "",
         calibration: { title: "", summary: "" },
-        generatedBeliefs: [],
-        selectedBeliefs: [],
+        generatedDrivers: [],
+        selectedDrivers: [],
         generatedVision: [],
         selectedVision: [],
         patch: null,
@@ -82,7 +27,7 @@ export function useProblemWizard() {
 
     // --- GENERIC API CALLER ---
 
-    const callApi = useCallback(async (mode: string, payload: any) => {
+    const callApi = useCallback(async (apiMode: string, payload: any) => {
         if (!user) {
             setError("User not authenticated");
             return null;
@@ -92,7 +37,7 @@ export function useProblemWizard() {
         try {
             const res = await fetch('/api/recast', {
                 method: 'POST',
-                body: JSON.stringify({ mode, uid: user.uid, ...payload }),
+                body: JSON.stringify({ mode: apiMode, recastMode: state.mode, uid: user.uid, ...payload }),
             });
 
             const data = await res.json();
@@ -108,7 +53,7 @@ export function useProblemWizard() {
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [user, state.mode]);
 
     // --- INITIALIZATION ---
     // Fetch Character Context on load
@@ -137,13 +82,20 @@ export function useProblemWizard() {
 
     // --- ACTIONS ---
 
-    const setRant = (rant: string) => setState(prev => ({ ...prev, rant }));
+    const setInputText = (text: string) => setState(prev => ({ ...prev, input_text: text }));
+    const setRant = setInputText; // Alias for backward compatibility if needed
 
-    // HELPER: Map strings to Belief Objects
-    const mapBeliefs = (beliefStrings: string[]): Belief[] => {
-        return beliefStrings.map(s => {
-            const found = MASTER_BELIEFS.find(b => b.negative === s);
-            return found ? { negative: found.negative, positive: found.positive } : { negative: s, positive: "I am Free." }; // Fallback
+    // HELPER: Map strings to Driver Objects
+    const mapDrivers = (driverStrings: string[]): Driver[] => {
+        return driverStrings.map(s => {
+            if (state.mode === 'PROBLEM') {
+                const found = MASTER_BELIEFS.find(b => b.negative === s);
+                return found ?
+                    { id: found.negative, type: 'BELIEF', negative: found.negative, positive: found.positive } :
+                    { id: s, type: 'BELIEF', negative: s, positive: "I am Free." };
+            } else {
+                return { id: s, type: 'EMOTION' };
+            }
         });
     };
 
@@ -159,48 +111,52 @@ export function useProblemWizard() {
         await generateVision(); // Generate Vision based on new calibration
     };
 
-    // STEP 1 -> 2: GENERATE BELIEFS
-    const generateBeliefs = async () => {
-        if (!state.rant.trim()) return;
+    // STEP 1 -> 2: DIAGNOSIS (Beliefs or Emotions)
+    const generateDiagnosis = async () => {
+        if (!state.input_text.trim()) return;
 
-        const result = await callApi('beliefs', { rant: state.rant });
-        if (result?.beliefs) {
-            // result.beliefs is string[]
-            const mappedBeliefs = mapBeliefs(result.beliefs);
+        const result = await callApi('diagnosis', { rant: state.input_text });
+        if (result?.drivers) {
+            // result.drivers is string[]
+            const mappedDrivers = mapDrivers(result.drivers);
 
             setState(prev => ({
                 ...prev,
-                generatedBeliefs: mappedBeliefs,
+                generatedDrivers: mappedDrivers,
                 step: 2
             }));
         }
     };
+    // Alias for backward compatibility
+    const generateBeliefs = generateDiagnosis;
 
-    const toggleBelief = (belief: Belief) => {
+    const toggleDriver = (driver: Driver) => {
         setState(prev => {
-            const exists = prev.selectedBeliefs.find(b => b.negative === belief.negative);
+            const exists = prev.selectedDrivers.find(d => d.id === driver.id);
             if (exists) {
-                return { ...prev, selectedBeliefs: prev.selectedBeliefs.filter(b => b.negative !== belief.negative) };
+                return { ...prev, selectedDrivers: prev.selectedDrivers.filter(d => d.id !== driver.id) };
             }
-            if (prev.selectedBeliefs.length >= 3) return prev; // Max 3
-            return { ...prev, selectedBeliefs: [...prev.selectedBeliefs, belief] };
+            if (prev.selectedDrivers.length >= 3) return prev; // Max 3
+            return { ...prev, selectedDrivers: [...prev.selectedDrivers, driver] };
         });
     };
+    // Alias
+    const toggleBelief = (belief: any) => toggleDriver({ id: belief.negative, type: 'BELIEF', ...belief });
 
     // STEP 2 -> 3: CONFIRM THE SHIFT (UI Transition only, no API)
-    // The UI handles this transition once beliefs are selected.
+    // The UI handles this transition once drivers are selected.
 
     // STEP 3 -> 4: GENERATE VISION (Was Thoughts)
     const generateVision = async () => {
-        if (state.selectedBeliefs.length === 0) {
-            setError("Please select at least one belief to proceed.");
+        if (state.selectedDrivers.length === 0) {
+            setError("Please select at least one item to proceed.");
             return;
         }
 
         const result = await callApi('vision', {
-            selected_beliefs: state.selectedBeliefs,
-            rant: state.rant,
-            calibration: state.calibration // Pass calibration data
+            selected_drivers: state.selectedDrivers,
+            rant: state.input_text,
+            calibration: state.calibration
         });
 
         if (result?.vision) {
@@ -234,12 +190,10 @@ export function useProblemWizard() {
 
         const result = await callApi('constraints', {
             selected_vision: state.selectedVision,
-            rant: state.rant
+            rant: state.input_text
         });
 
         if (result?.patch) {
-            // result.patch includes { new_rules, deprecated_ids, reason }
-
             setState(prev => ({
                 ...prev,
                 patch: result.patch,
@@ -287,31 +241,15 @@ export function useProblemWizard() {
 
     // GENERATE GHOST STORY (Final Step)
     const generateGhostStory = async () => {
-        // Generate actions silently if we skipped Step 6
-        let actions: string[] = [];
-
         try {
-            const actionRes = await callApi('actions', {
-                selected_vision: state.selectedVision,
-                new_rules: state.selectedRules,
-                rant: state.rant
+            const result = await callApi('ghost_writer', {
+                rant: state.input_text
             });
-            if (actionRes?.actions) actions = actionRes.actions;
+            return result?.story;
         } catch (e) {
-            console.warn("Failed to generate actions silently", e);
+            console.error("Ghostwriter failed", e);
+            return null;
         }
-
-        const result = await callApi('ghost_writer', {
-            rant: state.rant,
-            beliefs: state.selectedBeliefs,
-            vision: state.selectedVision[0], // Use primary vision
-            rules: state.selectedRules,
-            deprecated_rules: state.patch?.deprecated_ids.map(id => ({ id })),
-            actions: actions,
-            reason: state.patch?.reason
-        });
-
-        return result?.story;
     };
 
 
@@ -319,7 +257,7 @@ export function useProblemWizard() {
 
     const regenerateStep = async (stepNumber: number) => {
         if (stepNumber === 2) {
-            generateBeliefs();
+            generateDiagnosis();
         } else if (stepNumber === 4) {
             generateVision();
         } else if (stepNumber === 5) {
@@ -332,12 +270,15 @@ export function useProblemWizard() {
         state,
         isLoading,
         error,
-        setRant,
-        generateBeliefs,
-        toggleBelief,
-        generateVision, // Replaces generateThoughts
-        toggleVision,   // Replaces toggleThought
-        generateConstraints, // Replaces generateRules
+        setInputText,
+        setRant, // Compat alias
+        generateDiagnosis,
+        generateBeliefs, // Compat alias
+        toggleDriver,
+        toggleBelief, // Compat alias
+        generateVision,
+        toggleVision,
+        generateConstraints,
         toggleRule,
         updateRule,
         regenerateStep,
@@ -348,3 +289,4 @@ export function useProblemWizard() {
         generateGhostStory
     };
 }
+
