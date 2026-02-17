@@ -17,7 +17,7 @@ The app must look indistinguishable from Instagram, X (Twitter), or TikTok.
 *   **The Hook:** It leverages the same powerful dopamine loops and frictionless interactions of addictive social media, but redirects them toward **Self-Correction** and **Growth** rather than distraction.
 *   **The Ethical North Star:** Our metric for success is NOT "Time on App," but "User Empowerment." We win when the user feels happier, stronger, and more capable *offline*.
 
-## 2. The Mechanics (The Toolkit)
+## 4. The Mechanics (The Toolkit)
 The app provides a suite of tools to manage this "Character Build":
 
 ### A. The Character Bible (The Config File)
@@ -38,7 +38,7 @@ The core profile. It holds the user's "Source Code":
     *   *Purpose:* To live as the character.
     *   *Logic:* Tracking the daily execution of the new Rules and Protocols. Proof of work.
 
-## 3. Privacy, Anonymity, and Globalization
+## 5. Privacy, Anonymity, and Globalization
 The platform is designed for **radical honesty** through **complete anonymity**.
 
 ### A. The "Raw vs. Public" Architecture
@@ -57,7 +57,7 @@ The app is global-first.
 *   **On-Demand Translation:** When a user views a post in a different language, we generate a translation *of the Public Version* and store it within the post document.
 *   **Cache Strategy:** We never re-translate. Once a language variant exists, it is served to all future requests for that language.
 
-## 4. Technical Architecture
+## 6. Technical Architecture
 **Stack:**
 *   **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS (v4).
 *   **UX Pattern:** Infinite feeds, rapid-fire posting, visual-heavy interfaces (resembling TikTok/Twitter mechanics).
@@ -74,6 +74,6 @@ The app is global-first.
     *   `is_public`: (Boolean).
 *   **`rules`:** The logic blocks governing behavior.
 
-## 5. Current Implementation Status
+## 7. Current Implementation Status
 *   **Active:** The **Recast Engine** (The Debugging Tool) is the current primary interface.
 *   **In Development:** The Social Feed, Character Bible customization, and "Desire/Action" modules are being built out to complete the "Character Editor" suite. 
