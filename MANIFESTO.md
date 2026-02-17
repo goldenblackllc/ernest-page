@@ -1,6 +1,17 @@
 # Project Overview: Earnest Page
 
-## 1. Core Vision: "Mainstream Social Media for Self-Actualization"
+## 1. Visual Aesthetic (Strict Adherence)
+**North Star:** "Premium Native Mobile Social."
+The app must look indistinguishable from Instagram, X (Twitter), or TikTok.
+*   **Style Guide:** Minimalist, clean, content-first. Standard bottom navigation bars, standard profile headers, standard feed layouts.
+*   **Negative Constraints (DO NOT DO):** Do not make it look like a video game, a sci-fi interface, or a dashboard. Do not use "techy" fonts or "HUD" aesthetics. If it wouldn't look out of place on an influencer's phone, it's wrong.
+
+## 2. Conceptual Function (The Logic Only)
+**Metaphor:** "Character Editor."
+*   **Note:** This is purely how the *backend and data* function. The user is "editing their character" (Data), but the UI remains a standard social feed (View).
+*   **The Magic:** The "gameplay" is in the text/content, not the buttons.
+
+## 3. Core Vision: "Mainstream Social Media for Self-Actualization"
 **Earnest Page is a designed to feel like Instagram or TikTok, but built to function like a Character Editor for Reality.**
 *   **The Aesthetic:** High-gloss, cinematic, "Mainstream Social" UI/UX. It uses the familiar visual language of top-tier apps (Insta/TikTok/Twitter) to ensure immediate adoption and intuitive use.
 *   **The Hook:** It leverages the same powerful dopamine loops and frictionless interactions of addictive social media, but redirects them toward **Self-Correction** and **Growth** rather than distraction.

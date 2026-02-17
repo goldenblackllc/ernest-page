@@ -37,5 +37,10 @@ Immersive, cinematic, premium. No longer clinical.
 - **Border**: None or extremely subtle `border-b border-white/5`.
 
 ### Status Indicators
-- **Active Code**: Ticker style, Monospace.
 - **Live**: Pulsing green dot.
+
+## Negative Constraints (DO NOT DO)
+- **No Video Game UI:** Avoid HP bars, XP bars, or "Level Up" animations that look like a game.
+- **No Sci-Fi / HUD:** Avoid "techy" fonts, scanning lines, holographic effects, or "Terminator" vision.
+- **No Dashboard:** Avoid dense data tables or admin-panel aesthetics.
+- **Rule of Thumb:** If it wouldn't look out of place on an influencer's phone (Instagram/TikTok), it's correct. If it looks like a cockpit, it's wrong.
