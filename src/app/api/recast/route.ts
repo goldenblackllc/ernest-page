@@ -35,56 +35,71 @@ const PROBLEM_BELIEFS_PROMPT = `
 STEP 1: IDENTIFY CORE NEGATIVE BELIEFS (CLASSIFICATION ONLY)
 
 CONTEXT:
-User Roles: {ROLES}
-Existing Beliefs: {EXISTING_BELIEFS}
+Important People: {RELATIONSHIPS}
 Rant: "{RANT}"
 
 MASTER MENU (STRICT OPTION LIST):
-1. "I am Powerless."
-2. "I am Restricted."
-3. "I am Not Enough."
-4. "I am Unsafe."
-5. "I am Disconnected."
-6. "Life is Hard."
-7. "Life is Scarce."
-8. "Life is Dangerous."
-9. "Life is Unfair."
-10. "Life is Joyless."
+1. "I am powerless."
+2. "I am a victim."
+3. "I am not enough."
+4. "I am empty."
+5. "I am a fraud."
+6. "I am unloved."
+7. "I am unlovable."
+8. "I am not important."
+9. "I am invisible."
+10. "I am a bad person."
+11. "I am poison."
+12. "I cannot express myself fully."
+13. "I am silenced."
+14. "I am suffocating."
+15. "I am broken."
+16. "I am incompetent."
+17. "I always fail."
+18. "Life is hard."
+19. "Life is a punishment."
+20. "Life is not enjoyable."
 
 TASK:
 1. Analyze the Rant.
-2. Select the top 3-5 items from the MASTER MENU that best explain the root emotion.
+2. Select the **TOP 5** items from the MASTER MENU that best explain the root emotion.
 3. STRICT CONSTRAINT: You CANNOT invent new beliefs. You MUST return exact strings from the menu.
 
 Return JSON:
-- 'drivers': Array of strings (e.g. ["I am Powerless.", "Life is Hard."]).
+- 'drivers': Array of strings (e.g. ["I am powerless.", "Life is hard."]).
 `;
 
 const PROBLEM_VISION_PROMPT = `
-STEP 2: GENERATE THE VISION (LENSES)
+STEP 2: GENERATE THE VISION (INTEGRATED REALITY)
 
 CONTEXT:
 Specific Problem (Rant): "{RANT}"
 User's Core Identity: "{CALIBRATION_TITLE}"
 Identity Summary: "{CALIBRATION_SUMMARY}"
+New Operating Code (Positive Drivers): {SELECTED_DRIVERS}
 
-TRANSFORMATION:
-FROM (Old Beliefs): {SELECTED_DRIVERS}
-TO (New Beliefs): {OPPOSITE_DRIVERS}
+DEEP CONTEXT (Character Bible):
+{FULL_BIBLE_CONTEXT}
 
 TASK:
-1. Analyze the User's "Core Identity" ({CALIBRATION_TITLE}).
-2. Deconstruct this identity into 3 distinct "Lenses" or "Aspects" that would handle this specific problem differently.
-   - Example: If Title is "Stoic Father & Investor", lenses might be: "The Stoic", "The Father", "The Investor".
-3. GENERATE 3 MICRO-SCENES, one for each Lens.
-   - VISUAL: Describe what they DO, not just what they think.
-   - SPECIFIC: Use details from the Rant.
-   - EMPOWERED: Show the solution in action.
+1. Analyze the "New Identity" against the "Deep Context".
+2. Generate 3 DISTINCT Micro-Scenes where the user acts out this New Identity.
+   - DO NOT deconstruct into lenses. Show the **Complete, Integrated Character**.
+   - SCENE 1: Internal/Personal Moment (Solitude or mundane task).
+   - SCENE 2: Interpersonal/Relational Moment (Involving specific people from the Bible).
+   - SCENE 3: High-Stakes/Professional Moment (Work or core challenge).
+
+CRITICAL CONSTRAINTS:
+1. **Use EVERYTHING:** grounding the scenes in the user's actual life (Role Models, specific Relationships, Memories).
+2. **Realism Check:** Strictly adhere to the user's constraints (Finances, Location). Do not hallucinate resources they don't have.
+3. **No Negative Beliefs:** The user is operating purely on the New Code.
+4. **First Person Mode:** Write as "I". (e.g. "I walk into the room", not "The user walks...").
+5. **No Quotes:** Do NOT wrap the description in quotation marks.
 
 Return JSON:
 - 'vision': Array of objects { title, description }.
-  - title: The Lens Name (e.g. "The Stoic").
-  - description: The visual Micro-Scene.
+  - title: A short, punchy title for the scene (e.g. "The Sunday Coffee").
+  - description: The visual Micro-Scene (2-3 sentences, First Person, No Quotes).
 `;
 
 const PROBLEM_CONSTRAINTS_PROMPT = `
@@ -97,24 +112,26 @@ Current Config: {CURRENT_RULES_COUNT} Active Rules.
 Rules to Analyze: {CURRENT_RULES}
 Specific Problem (Rant): "{RANT}"
 
+DEEP CONTEXT (Character Bible):
+{FULL_BIBLE_CONTEXT}
+
 TASK:
 1. Analyze the "Current Rules" vs the "New Vision".
-2. Create a "Patch" to update the User's System.
-   - NEW RULES: Generate 3-5 specific, binary rules to enforce the New Vision.
-   - DEPRECATED RULES: Identify old rules that CONFLICT with the New Vision or are obsolete.
+2. **SMART MERGE:** Check if any *existing* rules are close but need a tweak.
+3. Create a "Patch" to update the User's System.
+   - NEW RULES: Generate 3-5 specific, binary rules.
+   - UPDATED RULES: Identify existing rules to REFINE (e.g. "Wake at 7" -> "Wake at 6").
+   - DEPRECATED RULES: Identify old rules that CONFLICT or are obsolete.
 
-CRITICAL SAFETY CHECK:
-- If {CURRENT_RULES_COUNT} < 20, you are STRICTLY FORBIDDEN from deprecating any rules.
-- In that case, return an empty array for "deprecated_ids".
-
-RULES FOR RULES:
-- BINARY: Must be Yes/No or Do/Don't.
-- IMPERATIVE: Start with a Verb.
-- ANTI-ECHO: Do NOT create a rule if it already exists.
+CRITICAL CONSTRAINTS:
+1. **ACTIONABLE TITLES:** Title must be an IMPERATIVE ACTION (e.g. "Call Mom", "Do 50 Pushups"). Do NOT use abstract categories (e.g. "Connection Protocol").
+2. **CONTEXT AWARE:** If a rule involves a person (e.g. Sage), USE THEIR NAME in the title.
+3. **BINARY:** Must be Yes/No or Do/Don't.
 
 Return JSON:
 - 'patch':
   - new_rules: Array of { title, description }.
+  - updated_rules: Array of { id, title, description, reason }.  <-- NEW
   - deprecated_ids: Array of strings.
   - reason: Short engineer log explaining the update.
 `;
@@ -122,32 +139,44 @@ Return JSON:
 // === DESIRE MODE PROMPTS ===
 
 const DESIRE_DRIVERS_PROMPT = `
-STEP 1: IDENTIFY TARGET EMOTIONS (CLASSIFICATION ONLY)
+# Role: The Immersive Director
+You are an AI designed to capture the **Atmospheric Emotion** of a wish fulfilled.
+
+# The Problem to Solve
+Users often focus on the *struggle* to get something (e.g., "I can't afford Paris").
+If you focus on the struggle, you generate relief-based feelings ("Relieved", "Secure").
+**WE DO NOT WANT RELIEF.** We want the magic of the destination.
+
+# Task
+1. Read the user's desire.
+2. Fast forward the timeline: The struggle is over. They are NOT at the ATM. They are **IN THE MOMENT**.
+   - *Example:* They are standing on the balcony in Paris.
+   - *Example:* They are holding the finished book in their hands.
+3. Generate 3 adjectives that describe that specific **sensory experience**.
+
+# The "Vibe Check" Rules
+- **Ban "Transaction" Words:** Do not use "Relieved", "Proud", "Successful", "Affluent", "Secure". These are about *status*.
+- **Prioritize "Sensation" Words:** Use words that describe the air, the light, and the mood.
+- **The "Magical" Filter:** If the wish is romantic or travel-based, lean into *wonder*.
+
+# Examples
+User: "I want to take my wife to Paris but I'm broke."
+- *Bad (Transaction):* Relieved, Proud, Capable.
+- *Good (Experience):* **Enchanted, Romantic, Awestruck.**
+
+User: "I want to finally finish my novel."
+- *Bad (Transaction):* Productive, disciplined, validated.
+- *Good (Experience):* **Alive, Flowing, Electric.**
+
+User: "I want a quiet house in the woods."
+- *Bad (Transaction):* Independent, owner, secluded.
+- *Good (Experience):* **Peaceful, Cozy, Grounded.**
 
 CONTEXT:
-User Roles: {ROLES}
-Existing Beliefs: {EXISTING_BELIEFS}
 Desire Statement: "{RANT}"
 
-MASTER EMOTION MENU (STRICT OPTION LIST):
-1. "Significance"
-2. "Connection"
-3. "Contribution"
-4. "Growth"
-5. "Certainty"
-6. "Variety"
-7. "Freedom"
-8. "Power"
-9. "Peace"
-10. "Clarity"
-
-TASK:
-1. Analyze the Desire Statement.
-2. Select the top 3-5 items from the MASTER EMOTION MENU that represent the emotional fuel the user is seeking.
-3. STRICT CONSTRAINT: You CANNOT invent new emotions. You MUST return exact strings from the menu.
-
-Return JSON:
-- 'drivers': Array of strings (e.g. ["Significance", "Freedom"]).
+# Output Format
+JSON Array: ["Word1", "Word2", "Word3"]
 `;
 
 const DESIRE_VISION_PROMPT = `
@@ -157,24 +186,34 @@ CONTEXT:
 Specific Desire: "{RANT}"
 User's Core Identity: "{CALIBRATION_TITLE}"
 Identity Summary: "{CALIBRATION_SUMMARY}"
-Target Emotions: {SELECTED_DRIVERS}
+Target Emotional Frequency: {SELECTED_DRIVERS}
+
+DEEP CONTEXT (Character Bible):
+{FULL_BIBLE_CONTEXT}
 
 TASK:
-1. Analyze the User's "Core Identity" ({CALIBRATION_TITLE}).
-2. Deconstruct this identity into 3 distinct "Lenses" or "Aspects".
-3. GENERATE 3 MICRO-SCENES where the character is ALREADY experiencing the desire.
-   - VISUAL: Show the "After State". How does their behavior change in mundane moments?
-   - MUNDANE MAGIC: Don't show the award ceremony. Show the quiet confidence *after* winning.
-   - SPECIFIC: Use details from the Desire Statement.
+1. Analyze the "New Identity" and "Target Frequency".
+2. Generate 3 DISTINCT Micro-Scenes where the user is ALREADY living this desire.
+   - DO NOT deconstruct into lenses. Show the **Complete, Integrated Character**.
+   - SCENE 1: Internal/Personal Moment.
+   - SCENE 2: Interpersonal/Relational Moment (Involving specific people).
+   - SCENE 3: High-Stakes/Professional Moment.
+
+CRITICAL CONSTRAINTS:
+1. **Use EVERYTHING:** grounding the scenes in the user's actual life details.
+2. **Mundane Magic:** Don't show the award ceremony. Show the quiet confidence *after* winning.
+3. **Realism Check:** Adhere to known constraints unless the Desire explicitly transcends them.
+4. **First Person Mode:** Write as "I". (e.g. "I walk into the room").
+5. **No Quotes:** Do NOT wrap the description in quotation marks.
 
 Return JSON:
 - 'vision': Array of objects { title, description }.
-  - title: The Lens Name.
-  - description: The visual Micro-Scene.
+  - title: A short, punchy title for the scene.
+  - description: The visual Micro-Scene (2-3 sentences, First Person, No Quotes).
 `;
 
 const DESIRE_CONSTRAINTS_PROMPT = `
-STEP 3: SYSTEM UPDATE (MAINTENANCE HABIITS)
+STEP 3: SYSTEM UPDATE (MAINTENANCE PROTOCOLS)
 
 CONTEXT:
 User Roles: {ROLES}
@@ -183,23 +222,25 @@ Current Config: {CURRENT_RULES_COUNT} Active Rules.
 Rules to Analyze: {CURRENT_RULES}
 Specific Desire: "{RANT}"
 
+DEEP CONTEXT (Character Bible):
+{FULL_BIBLE_CONTEXT}
+
 TASK:
 1. Analyze the "New Vision".
-2. Create a "Patch" to update the User's System.
+2. **SMART MERGE:** Check if any *existing* rules can be upgraded.
+3. Create a "Patch" to update the User's System.
    - NEW RULES: Generate 3-5 specific, binary rules to SUSTAIN this new reality.
-   - NOTE: If they want wealth, the rule isn't "Get Rich", it is "Review P&L Daily".
+   - UPDATED RULES: Refine existing rules to match the new frequency.
 
-CRITICAL SAFETY CHECK:
-- If {CURRENT_RULES_COUNT} < 20, you are STRICTLY FORBIDDEN from deprecating any rules.
-
-RULES FOR RULES:
-- BINARY: Must be Yes/No or Do/Don't.
-- IMPERATIVE: Start with a Verb.
-- ANTI-ECHO: Do NOT create a rule if it already exists.
+CRITICAL CONSTRAINTS:
+1. **ACTIONABLE TITLES:** Title must be an IMPERATIVE ACTION (e.g. "Review P&L", "Buy Flowers").
+2. **CONTEXT AWARE:** Use specific names and places from the Bible.
+3. **BINARY:** Must be Yes/No or Do/Don't.
 
 Return JSON:
 - 'patch':
   - new_rules: Array of { title, description }.
+  - updated_rules: Array of { id, title, description, reason }.
   - deprecated_ids: Array of strings.
   - reason: Short engineer log explaining the update.
 `;
@@ -283,8 +324,9 @@ export async function POST(req: Request) {
 
         // Context
         const context = await getUserContext(uid);
-        const rolesStr = context.roles.join(", ");
-        const existingBeliefsStr = context.beliefs.join(", ");
+        const relationshipsStr = (context.bible.relationships || []).join(", ") || "None";
+        const rolesStr = context.roles.join(", "); // Keep for other prompts
+        const existingBeliefsStr = context.beliefs.join(", "); // Keep for other prompts
 
         // Common replacements
         const keptItemsStr = payload.kept_items ? JSON.stringify(payload.kept_items) : "None";
@@ -319,14 +361,19 @@ export async function POST(req: Request) {
 
             const promptTemplate = isProblem ? PROBLEM_BELIEFS_PROMPT : DESIRE_DRIVERS_PROMPT;
 
+            let finalPrompt = promptTemplate.replace("{RANT}", rant);
+
+            if (isProblem) {
+                finalPrompt = finalPrompt
+                    .replace("{RELATIONSHIPS}", relationshipsStr)
+                    .replace("{KEPT_ITEMS}", keptItemsStr);
+            }
+            // For DESIRE mode, we deliberately ignore ROLES and EXISTING_BELIEFS to get pure emotional simulation.
+
             const result = await generateWithFallback({
                 providerOptions,
                 system: DIRECTOR_PERSONA,
-                prompt: promptTemplate
-                    .replace("{ROLES}", rolesStr)
-                    .replace("{EXISTING_BELIEFS}", existingBeliefsStr)
-                    .replace("{RANT}", rant)
-                    .replace("{KEPT_ITEMS}", keptItemsStr), // Kept strictly for problem mode backward compat if needed
+                prompt: finalPrompt,
                 schema: z.object({
                     drivers: z.array(z.string()).min(1).max(5).describe(isProblem ? "List of selected Master Beliefs" : "List of selected Master Emotions"),
                 }),
@@ -344,18 +391,27 @@ export async function POST(req: Request) {
         }
 
         if (apiMode === 'vision') {
-            const { selected_drivers, rant, calibration } = payload; // selected_drivers replaces selected_beliefs
+            const { selected_drivers, rant, calibration } = payload;
 
-            // Handle Legacy 'selected_beliefs' if present
-            const drivers = selected_drivers || payload.selected_beliefs;
+            // 1. Context Preparation
+            // Global Context (Full Bible) + Local Overrides (Calibration)
+            const effectiveBible = {
+                ...context.bible,
+                title: calibration.title || context.bible.title || "High Value Individual",
+                summary: calibration.summary || context.bible.summary || "A person striving for excellence."
+            };
+            const fullBibleStr = JSON.stringify(effectiveBible, null, 2);
 
-            const driversStr = drivers.map((d: any) => typeof d === 'string' ? d : (d.negative || d.id || d)).join(", ");
-            // For Problem Mode: we need 'Opposite' beliefs if they are passed as objects {negative, positive}
-            const oppositeDriversStr = drivers.map((d: any) => d.positive || "Freedom").join(", ");
-
-            // Use Calibration or Fallback to Context
-            const titleStr = calibration?.title || context.roles[0] || "High Value Individual";
-            const summaryStr = calibration?.summary || "A person striving for excellence.";
+            // 2. Driver Filtering (Positive Only)
+            const drivers = selected_drivers || payload.selected_beliefs || [];
+            // If Problem Mode, drivers might be objects {negative, positive}. We want ONLY positives.
+            // If Desire Mode, drivers are objects {type: 'EMOTION', id: 'Alive'}. We want 'id'.
+            const activeDrivers = drivers.map((d: any) => {
+                if (typeof d === 'string') return d;
+                if (d.positive) return d.positive; // Problem Mode: Return Positive
+                return d.id; // Desire/Emotion Mode
+            });
+            const driversStr = activeDrivers.join(", ");
 
             const promptTemplate = isProblem ? PROBLEM_VISION_PROMPT : DESIRE_VISION_PROMPT;
 
@@ -363,10 +419,10 @@ export async function POST(req: Request) {
                 providerOptions,
                 system: DIRECTOR_PERSONA,
                 prompt: promptTemplate
-                    .replace("{CALIBRATION_TITLE}", titleStr)
-                    .replace("{CALIBRATION_SUMMARY}", summaryStr)
+                    .replace("{CALIBRATION_TITLE}", effectiveBible.title)
+                    .replace("{CALIBRATION_SUMMARY}", effectiveBible.summary)
                     .replace("{SELECTED_DRIVERS}", driversStr)
-                    .replace("{OPPOSITE_DRIVERS}", oppositeDriversStr) // Only relevant for Problem
+                    .replace("{FULL_BIBLE_CONTEXT}", fullBibleStr)
                     .replace("{RANT}", rant),
                 schema: z.object({
                     vision: z.array(z.object({
@@ -379,10 +435,18 @@ export async function POST(req: Request) {
         }
 
         if (apiMode === 'constraints') {
-            const { selected_vision, rant } = payload;
-            const currentRules = context.bible.rules || [];
+            const { selected_vision, rant, calibration } = payload;
 
-            const currentRulesSimple = currentRules.map((r: any) => ({ id: r.id, title: r.rule }));
+            // 1. Context Preparation (Same as Vision)
+            const effectiveBible = {
+                ...context.bible,
+                title: calibration?.title || context.bible.title || "High Value Individual",
+                summary: calibration?.summary || context.bible.summary || "A person striving for excellence."
+            };
+            const fullBibleStr = JSON.stringify(effectiveBible, null, 2);
+
+            const currentRules = context.bible.rules || [];
+            const currentRulesSimple = currentRules.map((r: any) => ({ id: r.id, title: r.rule, description: r.description }));
             const currentRulesStr = JSON.stringify(currentRulesSimple);
             const visionStr = JSON.stringify(selected_vision);
 
@@ -395,6 +459,7 @@ export async function POST(req: Request) {
                     .replace("{ROLES}", rolesStr)
                     .replace("{SELECTED_VISION}", visionStr)
                     .replace("{CURRENT_RULES}", currentRulesStr)
+                    .replace("{FULL_BIBLE_CONTEXT}", fullBibleStr)
                     .replace("{CURRENT_RULES_COUNT}", currentRules.length.toString())
                     .replace("{RANT}", rant || ""),
                 schema: z.object({
@@ -403,6 +468,12 @@ export async function POST(req: Request) {
                             title: z.string(),
                             description: z.string()
                         })),
+                        updated_rules: z.array(z.object({
+                            id: z.string(),
+                            title: z.string(),
+                            description: z.string(),
+                            reason: z.string().optional()
+                        })).optional().describe("Rules to update instead of create"),
                         deprecated_ids: z.array(z.string()),
                         reason: z.string()
                     }).describe("System Update Patch"),

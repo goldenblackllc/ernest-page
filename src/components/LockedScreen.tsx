@@ -22,14 +22,14 @@ export function LockedScreen() {
     return (
         <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center p-8 text-center text-zinc-300">
             <div className="max-w-2xl border border-zinc-800 p-8 md:p-12 bg-zinc-900/30 backdrop-blur-md rounded-2xl">
-                <h2 className="font-mono font-bold uppercase tracking-widest mb-4 text-xs md:text-sm text-zinc-500">
+                <h2 className="font-bold uppercase tracking-widest mb-4 text-xs md:text-sm text-zinc-500">
                     Current Assignment
                 </h2>
                 <h1 className="font-black text-4xl md:text-6xl mb-8 leading-tight text-white uppercase tracking-tighter">
                     {activeAction.title}
                 </h1>
 
-                <p className="font-serif text-xl mb-12 max-w-lg mx-auto text-zinc-400 italic">
+                <p className="text-xl mb-12 max-w-lg mx-auto text-zinc-400">
                     "The only way out is through. Report back when this action is complete."
                 </p>
 

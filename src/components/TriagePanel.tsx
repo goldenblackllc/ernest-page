@@ -221,8 +221,8 @@ export function TriagePanel() {
                         else setIsMenuOpen(!isMenuOpen);
                     }}
                     className={cn(
-                        "w-16 h-16 rounded-full bg-zinc-950 text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-1 ring-white/10 hover:ring-white/30",
-                        isMenuOpen ? "rotate-45 scale-110 shadow-[0_0_30px_rgba(255,255,255,0.1)]" : "hover:scale-110 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] animate-pulse-slow active:scale-95"
+                        "w-16 h-16 rounded-full bg-white text-black shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black",
+                        isMenuOpen ? "rotate-45 scale-110" : "hover:scale-110 active:scale-95"
                     )}
                 >
                     {activeMode !== 'idle' ? <X className="w-8 h-8" /> : <Plus className="w-8 h-8" />}
@@ -232,7 +232,7 @@ export function TriagePanel() {
             {/* 2. BACKDROP BLUR */}
             {(isMenuOpen || activeMode !== 'idle') && (
                 <div
-                    className="fixed inset-0 z-40 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-300"
+                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
                     onClick={() => {
                         if (activeMode === 'idle') setIsMenuOpen(false);
                     }}
@@ -241,73 +241,67 @@ export function TriagePanel() {
 
             {/* 3. FAN OUT MENU */}
             {isMenuOpen && activeMode === 'idle' && (
-                <div className="fixed bottom-28 left-1/2 -translate-x-1/2 flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 zoom-in-95 duration-200 w-64">
+                <div className="fixed bottom-28 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 animate-in slide-in-from-bottom-5 zoom-in-95 duration-200 w-64">
                     <button
                         onClick={() => handleModeSelect('want')}
-                        className="bg-zinc-900 border border-zinc-800 shadow-xl rounded-2xl py-4 px-6 flex items-center gap-4 text-left hover:scale-105 transition-transform group"
+                        className="bg-zinc-900 border border-white/10 shadow-xl rounded-full py-4 px-6 flex items-center gap-4 text-left hover:bg-zinc-800 transition-colors group"
                     >
-                        <div className="bg-blue-900/30 p-2 rounded-full text-blue-400 border border-blue-800/50 group-hover:bg-blue-800/50">
+                        <div className="bg-blue-500/10 p-2 rounded-full text-blue-400 group-hover:bg-blue-500/20">
                             <Target className="w-5 h-5" />
                         </div>
                         <div>
-                            <div className="text-xs font-black uppercase tracking-widest text-blue-400">I WANT</div>
-                            <div className="text-[10px] text-zinc-500 font-medium">Define a new target</div>
+                            <div className="text-sm font-bold text-white">Set Goal</div>
+                            <div className="text-xs text-zinc-500">Define a new target</div>
                         </div>
                     </button>
 
                     <button
                         onClick={() => handleModeSelect('problem')}
-                        className="bg-zinc-900 border border-zinc-800 shadow-xl rounded-2xl py-4 px-6 flex items-center gap-4 text-left hover:scale-105 transition-transform group"
+                        className="bg-zinc-900 border border-white/10 shadow-xl rounded-full py-4 px-6 flex items-center gap-4 text-left hover:bg-zinc-800 transition-colors group"
                     >
-                        <div className="bg-red-900/30 p-2 rounded-full text-red-500 border border-red-800/50 group-hover:bg-red-800/50">
+                        <div className="bg-red-500/10 p-2 rounded-full text-red-500 group-hover:bg-red-500/20">
                             <AlertCircle className="w-5 h-5" />
                         </div>
                         <div>
-                            <div className="text-xs font-black uppercase tracking-widest text-red-500">PROBLEM</div>
-                            <div className="text-[10px] text-zinc-500 font-medium">Rewire a limitation</div>
+                            <div className="text-sm font-bold text-white">Recast Tension</div>
+                            <div className="text-xs text-zinc-500">Transform negative energy</div>
                         </div>
                     </button>
 
                     <button
                         onClick={() => handleModeSelect('next')}
-                        className="bg-zinc-900 border border-zinc-800 shadow-xl rounded-2xl py-4 px-6 flex items-center gap-4 text-left hover:scale-105 transition-transform group"
+                        className="bg-zinc-900 border border-white/10 shadow-xl rounded-full py-4 px-6 flex items-center gap-4 text-left hover:bg-zinc-800 transition-colors group"
                     >
-                        <div className="bg-emerald-900/30 p-2 rounded-full text-emerald-500 border border-emerald-800/50 group-hover:bg-emerald-800/50">
+                        <div className="bg-emerald-500/10 p-2 rounded-full text-emerald-500 group-hover:bg-emerald-500/20">
                             <Zap className="w-5 h-5" />
                         </div>
                         <div>
-                            <div className="text-xs font-black uppercase tracking-widest text-emerald-500">GO</div>
-                            <div className="text-[10px] text-zinc-500 font-medium">Quick task entry</div>
+                            <div className="text-sm font-bold text-white">Quick Log</div>
+                            <div className="text-xs text-zinc-500">Task entry</div>
                         </div>
                     </button>
                 </div>
             )}
 
 
-            {/* 4. INPUT MODAL */}
+            {/* 4. INPUT MODAL (Legacy "Next" or "Want" basic modes if used) */}
             {activeMode !== 'idle' && (
                 <div className="fixed bottom-0 left-0 right-0 top-0 z-50 flex items-center justify-center p-4 animate-in slide-in-from-bottom-10 fade-in duration-300 pointer-events-none">
                     <div className={cn(
                         "w-full max-w-lg overflow-hidden border shadow-2xl transition-all duration-300 pointer-events-auto flex flex-col max-h-[80vh]",
-                        "bg-white rounded-3xl border-gray-100"
+                        "bg-zinc-950 border-zinc-800 rounded-3xl"
                     )}>
                         {/* Header */}
-                        {/* Header */}
                         <div className={cn(
-                            "px-6 py-6 flex justify-between items-center shrink-0",
-                            activeMode === 'want' ? "bg-blue-50 border-b border-gray-100" :
-                                "bg-emerald-50 border-b border-gray-100"
+                            "px-6 py-6 flex justify-between items-center shrink-0 border-b border-zinc-800",
+                            "bg-zinc-900/50"
                         )}>
-                            <span className={cn(
-                                "tracking-widest",
-                                activeMode === 'want' ? "text-xs font-bold uppercase text-blue-600" :
-                                    "text-xs font-bold uppercase text-emerald-600"
-                            )}>
-                                {activeMode === 'want' ? "TARGET IDENTITY" : "MAKE A MOVE"}
+                            <span className="text-sm font-bold text-zinc-200">
+                                {activeMode === 'want' ? "Target Identity" : "Quick Action"}
                             </span>
                         </div>
 
-                        {/* Analysis Result View - Blueprint Only */}
+                        {/* Analysis Result View */}
                         {analysisResult ? (
                             <div className="p-6 max-h-[60vh] overflow-y-auto">
                                 {analysisResult.type === 'blueprint_traits' ? (
@@ -340,8 +334,8 @@ export function TriagePanel() {
                                         }} />
                                 ) : (
                                     <>
-                                        <p className="text-lg font-medium mb-6">{analysisResult.analysis}</p>
-                                        <button onClick={resetPanel} className="w-full bg-black text-white py-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors">
+                                        <p className="text-lg font-medium mb-6 text-zinc-300">{analysisResult.analysis}</p>
+                                        <button onClick={resetPanel} className="w-full bg-white text-black py-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors">
                                             ACKNOWLEDGE
                                         </button>
                                     </>
@@ -359,7 +353,7 @@ export function TriagePanel() {
                                                 value={line}
                                                 onChange={(e) => handleMomentumLineChange(i, e.target.value)}
                                                 placeholder={`Task ${i + 1}...`}
-                                                className="w-full bg-gray-50 border-b border-gray-200 py-3 px-2 focus:outline-none focus:border-emerald-500 text-lg font-medium"
+                                                className="w-full bg-transparent border-b border-zinc-800 py-3 px-2 focus:outline-none focus:border-emerald-500 text-lg font-medium text-white placeholder-zinc-700"
                                                 autoFocus={i === 0}
                                             />
                                         ))}
@@ -371,20 +365,20 @@ export function TriagePanel() {
                                         onChange={(e) => setInput(e.target.value)}
                                         placeholder={activeMode === 'want' ? "What do you desire?" : "What's the next action?"}
                                         className={cn(
-                                            "w-full p-0 text-base leading-normal resize-none focus:outline-none min-h-[200px] flex-1",
-                                            "bg-white text-black placeholder-gray-400"
+                                            "w-full p-4 text-base leading-normal resize-none focus:outline-none min-h-[200px] flex-1",
+                                            "bg-zinc-900/50 text-zinc-200 placeholder-zinc-600 rounded-xl"
                                         )}
                                     />
                                 )}
 
-                                <div className="p-4 pt-0 shrink-0">
+                                <div className="p-4 pt-0 shrink-0 mt-4">
                                     {(activeMode === 'want') && (
                                         <div className="flex items-center gap-2 mb-6 px-2">
                                             <button
                                                 onClick={() => setBroadcast(!broadcast)}
                                                 className={cn(
                                                     "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-colors",
-                                                    broadcast ? "text-black" : "text-gray-400"
+                                                    broadcast ? "text-zinc-400" : "text-zinc-600"
                                                 )}
                                             >
                                                 <Radio className={cn("w-4 h-4", broadcast && "animate-pulse text-red-500")} />
@@ -398,12 +392,12 @@ export function TriagePanel() {
                                             onClick={handleSubmit}
                                             disabled={isSubmitting || (activeMode !== 'next' && !input.trim())}
                                             className={cn(
-                                                "w-full py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:grayscale",
-                                                activeMode === 'want' ? "bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-md" :
-                                                    "bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-md"
+                                                "w-full py-4 rounded-full text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:grayscale",
+                                                activeMode === 'want' ? "bg-blue-600 hover:bg-blue-500 text-white" :
+                                                    "bg-emerald-600 hover:bg-emerald-500 text-white"
                                             )}
                                         >
-                                            {isAnalyzing ? "ANALYZING..." : "SUBMIT"}
+                                            {isAnalyzing ? "Analyzing..." : "Submit"}
                                         </button>
                                     </div>
                                 </div>
@@ -424,8 +418,6 @@ export function TriagePanel() {
     );
 }
 
-// Sub-component for Blueprint Flow
-// 3-Step Flow: Traits -> Prompts -> Action
 // Sub-component for Blueprint Flow
 function BlueprintFlow({ initialResult, originalInput, onCommit }: { initialResult: AnalysisResult, originalInput: string, onCommit: (action: string, traits: string[]) => void }) {
     const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -477,7 +469,7 @@ function BlueprintFlow({ initialResult, originalInput, onCommit }: { initialResu
     if (step === 1) {
         return (
             <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-300">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">REQUIRED TRAITS:</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">REQUIRED TRAITS:</div>
 
                 <div className="flex flex-col gap-3">
                     {traits.map((t, i) => (
@@ -486,10 +478,10 @@ function BlueprintFlow({ initialResult, originalInput, onCommit }: { initialResu
                                 <input
                                     value={t}
                                     onChange={(ev) => updateTrait(i, ev.target.value)}
-                                    className="w-full text-center text-2xl font-black uppercase tracking-tight text-blue-600 border-b-2 border-blue-100 focus:border-blue-500 focus:outline-none bg-transparent"
+                                    className="w-full text-center text-2xl font-bold bg-transparent text-blue-400 border-b-2 border-blue-900 focus:border-blue-500 focus:outline-none"
                                 />
                             ) : (
-                                <div className="text-2xl font-black text-blue-600 tracking-tight uppercase">
+                                <div className="text-2xl font-bold text-blue-400 tracking-tight">
                                     {t}
                                 </div>
                             )}
@@ -499,17 +491,17 @@ function BlueprintFlow({ initialResult, originalInput, onCommit }: { initialResu
 
                 <button
                     onClick={() => setIsEditingTraits(!isEditingTraits)}
-                    className="text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:text-blue-400 underline decoration-dotted underline-offset-4"
+                    className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-blue-400 underline decoration-dotted underline-offset-4"
                 >
-                    {isEditingTraits ? "Done Editing" : "ADJUST TRAITS"}
+                    {isEditingTraits ? "Done Editing" : "Adjust Traits"}
                 </button>
 
                 <button
                     onClick={handleConfirmTraits}
                     disabled={isLoadingPrompts}
-                    className="w-full bg-black text-white py-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 transition-all disabled:opacity-50 disabled:scale-100"
+                    className="w-full bg-white text-black py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:scale-105 transition-all disabled:opacity-50 disabled:scale-100"
                 >
-                    {isLoadingPrompts ? "CALIBRATING..." : "CONFIRM IDENTITY"}
+                    {isLoadingPrompts ? "Calibrating..." : "Confirm Identity"}
                 </button>
             </div>
         );
@@ -518,15 +510,15 @@ function BlueprintFlow({ initialResult, originalInput, onCommit }: { initialResu
     if (step === 2) {
         return (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-10 duration-300">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 text-center mb-2">Stage Direction</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 text-center mb-2">Stage Direction</div>
                 <div className="grid grid-cols-1 gap-3">
                     {prompts.map((p, i) => (
                         <button
                             key={i}
                             onClick={() => { setSelectedPrompt(p); setStep(3); }}
-                            className="bg-gray-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-200 py-4 px-6 rounded-xl text-left transition-all group"
+                            className="bg-zinc-900 hover:bg-zinc-800 border border-white/10 hover:border-white/20 py-4 px-6 rounded-2xl text-left transition-all group"
                         >
-                            <span className="text-xs font-bold uppercase tracking-widest text-gray-500 group-hover:text-blue-600 block mb-1">
+                            <span className="text-sm font-bold text-zinc-400 group-hover:text-blue-400 block mb-1">
                                 {p.label}
                             </span>
                         </button>
@@ -539,25 +531,25 @@ function BlueprintFlow({ initialResult, originalInput, onCommit }: { initialResu
     if (step === 3 && selectedPrompt) {
         return (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-10 duration-300">
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <div className="bg-blue-950/20 p-4 rounded-2xl border border-blue-900/50">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">{selectedPrompt.label}</div>
-                    <div className="text-lg font-bold text-blue-900 leading-tight">{selectedPrompt.question}</div>
+                    <div className="text-lg font-bold text-blue-100 leading-tight">{selectedPrompt.question}</div>
                 </div>
 
                 <textarea
                     value={actionInput}
                     onChange={(e) => setActionInput(e.target.value)}
                     placeholder="By the end of today, I will..."
-                    className="w-full p-4 bg-gray-50 rounded-xl text-lg font-medium resize-none focus:outline-none focus:ring-2 focus:ring-black min-h-[100px]"
+                    className="w-full p-4 bg-zinc-900 rounded-2xl text-lg font-medium resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[100px] text-zinc-200 placeholder-zinc-600"
                     autoFocus
                 />
 
                 <button
                     onClick={() => onCommit(actionInput, traits)}
                     disabled={!actionInput.trim()}
-                    className="w-full bg-blue-600 text-white py-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-lg shadow-blue-200"
+                    className="w-full bg-blue-600 text-white py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-blue-500 transition-colors disabled:opacity-50 shadow-lg shadow-blue-900/20"
                 >
-                    COMMIT TO CHARACTER
+                    Commit to Character
                 </button>
             </div>
         );

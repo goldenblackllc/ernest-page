@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+// useRecastWizard.ts - Force Update 2026/02/18
 import { useAuth } from '@/lib/auth/AuthContext';
 import { MASTER_BELIEFS } from '@/lib/constants/beliefs';
 import { RecastMode, RecastState, Driver, Vision, Rule, Patch } from '@/types/recast';
@@ -89,10 +90,15 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
     const mapDrivers = (driverStrings: string[]): Driver[] => {
         return driverStrings.map(s => {
             if (state.mode === 'PROBLEM') {
-                const found = MASTER_BELIEFS.find(b => b.negative === s);
+                // Fuzzy Match: Normalize strings (lowercase, trim, remove period)
+                const clean = (str: string) => str.toLowerCase().replace(/\.$/, "").trim();
+                const target = clean(s);
+
+                const found = MASTER_BELIEFS.find(b => clean(b.negative) === target);
+
                 return found ?
                     { id: found.negative, type: 'BELIEF', negative: found.negative, positive: found.positive } :
-                    { id: s, type: 'BELIEF', negative: s, positive: "I am Free." };
+                    { id: s, type: 'BELIEF', negative: s, positive: "I am Free." }; // Fallback
             } else {
                 return { id: s, type: 'EMOTION' };
             }
@@ -136,7 +142,6 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
             if (exists) {
                 return { ...prev, selectedDrivers: prev.selectedDrivers.filter(d => d.id !== driver.id) };
             }
-            if (prev.selectedDrivers.length >= 3) return prev; // Max 3
             return { ...prev, selectedDrivers: [...prev.selectedDrivers, driver] };
         });
     };
@@ -164,7 +169,7 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
                 ...prev,
                 generatedVision: result.vision,
                 selectedVision: [], // User must select
-                step: 4
+                step: 5 // Updated to 5 (was 4)
             }));
         }
     };
@@ -181,7 +186,7 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
         });
     };
 
-    // STEP 4 -> 5: GENERATE CONSTRAINTS (System Update)
+    // STEP 5 -> 6: GENERATE CONSTRAINTS (System Update)
     const generateConstraints = async () => {
         if (state.selectedVision.length === 0) {
             setError("Please select at least one vision card to proceed.");
@@ -198,7 +203,7 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
                 ...prev,
                 patch: result.patch,
                 selectedRules: result.patch.new_rules, // Auto-select new rules for "Install"
-                step: 5
+                step: 6 // Updated to 6 (was 5)
             }));
         }
     };
@@ -258,9 +263,9 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
     const regenerateStep = async (stepNumber: number) => {
         if (stepNumber === 2) {
             generateDiagnosis();
-        } else if (stepNumber === 4) {
+        } else if (stepNumber === 5) { // Updated to 5
             generateVision();
-        } else if (stepNumber === 5) {
+        } else if (stepNumber === 6) { // Updated to 6
             generateConstraints();
         }
     };

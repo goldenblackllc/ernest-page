@@ -26,15 +26,15 @@ export default function PressPage() {
         <main className="min-h-screen pb-20">
             <Header />
             <div className="container mx-auto px-4 max-w-4xl text-center">
-                <h2 className="font-serif text-4xl font-black mb-8">THE PRESS ROLLS</h2>
-                <p className="font-sans text-xl mb-12 uppercase tracking-widest text-black">Select one action. The others will be discarded.</p>
+                <h2 className="text-4xl font-black mb-8">THE PRESS ROLLS</h2>
+                <p className="text-xl mb-12 uppercase tracking-widest text-black">Select one action. The others will be discarded.</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {MOCK_ACTIONS.map((action) => (
                         <div key={action.id} className="border-2 border-black p-8 flex flex-col justify-between hover:bg-black hover:text-white transition-colors group">
-                            <h3 className="font-serif text-3xl font-bold mb-4">{action.title}</h3>
+                            <h3 className="text-3xl font-bold mb-4">{action.title}</h3>
                             <div className="mt-8">
-                                <span className="block font-sans text-xs uppercase tracking-widest mb-2 border-b border-black pb-1 group-hover:border-white">Excitement Index: {action.excitement_score}/10</span>
+                                <span className="block text-xs uppercase tracking-widest mb-2 border-b border-black pb-1 group-hover:border-white">Excitement Index: {action.excitement_score}/10</span>
                                 <Button onClick={() => handleSelect(action)} className="w-full mt-4 group-hover:border-white group-hover:bg-white group-hover:text-black">
                                     INITIALIZE
                                 </Button>

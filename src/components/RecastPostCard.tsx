@@ -107,7 +107,7 @@ export function RecastPostCard({ post }: RecastPostProps) {
                             <span className="text-sm font-bold text-gray-200">
                                 {displayName}
                             </span>
-                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
                                 <Clock className="w-3 h-3" />
                                 <span>{timeAgo}</span>
                             </div>
@@ -122,7 +122,7 @@ export function RecastPostCard({ post }: RecastPostProps) {
 
                 {/* Body (The Story) */}
                 <div className="p-6">
-                    <div className="text-gray-100 whitespace-pre-wrap font-serif text-base leading-relaxed opacity-100 transition-all">
+                    <div className="text-gray-100 whitespace-pre-wrap text-base leading-relaxed opacity-100 transition-all">
                         {displayedText}
                     </div>
 
@@ -151,7 +151,7 @@ export function RecastPostCard({ post }: RecastPostProps) {
                             </h4>
                             <ul className="space-y-1">
                                 {post.new_rules.slice(0, 3).map((rule, idx) => (
-                                    <li key={idx} className="text-xs text-zinc-400 font-mono">
+                                    <li key={idx} className="text-xs text-zinc-400">
                                         <span className="text-emerald-500/50 mr-2">::</span>
                                         {rule.title}
                                     </li>
@@ -234,7 +234,7 @@ export function RecastPostCard({ post }: RecastPostProps) {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-bold text-zinc-500">Legacy Post</span>
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">
                             <Clock className="w-3 h-3" />
                             <span>{timeAgo}</span>
                         </div>
@@ -250,7 +250,7 @@ export function RecastPostCard({ post }: RecastPostProps) {
                 {/* Section A: The Friction (The Rant) */}
                 <div className="px-5 py-4 bg-zinc-950/30">
                     <div className={cn(
-                        "relative text-sm text-gray-200 italic font-serif leading-relaxed transition-all duration-300",
+                        "relative text-sm text-gray-200 leading-relaxed transition-all duration-300",
                         !expandedRant && "line-clamp-3"
                     )}>
                         "{post.rant}"
@@ -290,7 +290,7 @@ export function RecastPostCard({ post }: RecastPostProps) {
                     </div>
                     {remainingBeliefsCount > 0 && (
                         <div className="px-4 py-1.5 bg-zinc-950 border-t border-zinc-900 text-center">
-                            <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                            <span className="text-[10px] text-zinc-600 uppercase tracking-widest">
                                 + {remainingBeliefsCount} more beliefs shifted
                             </span>
                         </div>

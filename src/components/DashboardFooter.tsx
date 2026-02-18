@@ -1,14 +1,14 @@
 // This component was extracted from page.tsx to resolve duplication issues.
 export function DashboardFooter() {
     return (
-        <footer className="border-t-2 border-black mt-24">
-            {/* Simple Brutalist Footer */}
-            <div className="bg-white text-black py-16">
+        <footer className="border-t border-white/5 mt-24 pb-24">
+            {/* Simple Minimalist Footer */}
+            <div className="bg-black text-zinc-500 py-16">
                 <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div>
-                        <div className="text-xl font-black uppercase mb-4 tracking-widest">Earnest Page</div>
-                        <p className="text-xs mb-4 font-mono">
-                            SYSTEM ACTIVE. MONITORING INPUTS.
+                        <div className="text-sm font-bold uppercase mb-4 tracking-widest text-zinc-400">Earnest Page</div>
+                        <p className="text-xs mb-4">
+                            Character Editor for Reality.
                         </p>
                     </div>
 

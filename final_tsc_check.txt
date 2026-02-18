@@ -1,0 +1,217 @@
+node_modules/next/dist/build/templates/app-page.d.ts(3,25): error TS2307: Cannot find module 'VAR_MODULE_GLOBAL_ERROR' or its corresponding type declarations.
+node_modules/next/dist/build/webpack-config.d.ts(10,104): error TS2694: Namespace '"/Users/davidjohnson/Development/earnest-page/node_modules/next/dist/compiled/webpack/webpack".webpack' has no exported member 'RuleSetUseItem'.
+node_modules/next/dist/build/webpack/loaders/next-app-loader/index.d.ts(1,13): error TS2613: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/next/dist/compiled/webpack/webpack"' has no default export. Did you mean to use 'import { webpack } from "/Users/davidjohnson/Development/earnest-page/node_modules/next/dist/compiled/webpack/webpack"' instead?
+node_modules/next/dist/client/components/error-boundary.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/components/http-access-fallback/error-boundary.d.ts(11,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/components/layout-router.d.ts(2,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/with-router.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/lib/metadata/metadata.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/server/app-render/entry-base.d.ts(1,114): error TS2307: Cannot find module 'react-server-dom-webpack/server' or its corresponding type declarations.
+node_modules/next/dist/server/app-render/entry-base.d.ts(2,27): error TS2307: Cannot find module 'react-server-dom-webpack/static' or its corresponding type declarations.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(39,16): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(40,13): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(41,15): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(42,26): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/shared/lib/app-router-context.shared-runtime.d.ts(4,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/app-router-types.d.ts(7,13): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/head-manager-context.shared-runtime.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/image-config-context.shared-runtime.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/loadable-context.shared-runtime.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/loadable.shared-runtime.d.ts(21,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/router-context.shared-runtime.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/server-inserted-html.shared-runtime.d.ts(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/utils.d.ts(10,13): error TS1192: Module '"fs"' has no default export.
+src/app/recast/page.tsx(3,24): error TS2307: Cannot find module '@/components/Header' or its corresponding type declarations.
+src/app/recast/page.tsx(4,24): error TS2307: Cannot find module '@/components/ui/Button' or its corresponding type declarations.
+src/app/recast/page.tsx(6,36): error TS2307: Cannot find module '@/components/recast/ProblemWizardModal' or its corresponding type declarations.
+src/app/recast/page.tsx(13,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(14,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(16,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(17,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(19,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(20,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(23,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(24,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(27,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(31,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(40,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/app/recast/page.tsx(40,14): error TS2304: Cannot find name 'RecastWizardModal'.
+src/components/recast/RecastWizardModal.tsx(1,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+src/components/recast/RecastWizardModal.tsx(2,41): error TS2307: Cannot find module 'framer-motion' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(3,33): error TS2307: Cannot find module '@/hooks/useRecastWizard' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(4,28): error TS2307: Cannot find module '@/types/recast' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(5,24): error TS2307: Cannot find module '@/components/ui/Button' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(7,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(9,20): error TS2307: Cannot find module '@/lib/firebase/config' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(10,25): error TS2307: Cannot find module '@/lib/auth/AuthContext' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(11,28): error TS2307: Cannot find module '@/lib/firebase/posts' or its corresponding type declarations.
+src/components/recast/RecastWizardModal.tsx(218,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(220,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(227,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(228,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(229,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(231,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(239,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(240,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(243,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(248,34): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(248,83): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(249,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(257,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(258,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(259,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(260,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(263,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(267,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(277,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(278,33): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(281,48): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(288,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(289,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(290,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(291,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(298,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(312,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(313,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(314,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(315,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(318,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(319,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(320,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(321,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(328,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(329,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(330,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(339,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(340,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(341,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(346,34): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(346,83): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(347,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(355,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(356,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(357,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(358,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(361,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(365,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(373,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(374,33): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(378,52): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(380,33): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(384,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(391,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(392,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(393,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(394,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(401,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(406,38): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(406,87): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(407,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(416,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(417,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(418,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(419,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(422,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(424,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(425,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(430,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(431,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(432,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(433,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(438,33): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(439,37): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(440,41): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(441,45): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(442,64): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(445,41): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(446,45): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(451,45): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(466,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(467,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(468,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(473,37): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(473,86): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(474,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(483,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(484,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(492,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(493,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(494,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(495,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(500,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(505,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/recast/RecastWizardModal.tsx(513,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(3,8): error TS1259: Module '"/Users/davidjohnson/Development/earnest-page/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+src/components/TriagePanel.tsx(5,20): error TS2307: Cannot find module '@/lib/firebase/config' or its corresponding type declarations.
+src/components/TriagePanel.tsx(6,25): error TS2307: Cannot find module '@/lib/auth/AuthContext' or its corresponding type declarations.
+src/components/TriagePanel.tsx(7,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/TriagePanel.tsx(8,36): error TS2307: Cannot find module '@/components/recast/ProblemWizardModal' or its corresponding type declarations.
+src/components/TriagePanel.tsx(208,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(210,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(211,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(221,46): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(221,74): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(227,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(237,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(238,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(242,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(243,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(245,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(246,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(247,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(251,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(255,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(256,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(258,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(259,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(260,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(264,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(268,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(269,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(271,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(272,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(273,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(282,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(283,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(289,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(294,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(305,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(307,37): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(335,37): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(336,41): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(337,41): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(345,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(347,37): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(349,45): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(361,37): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(373,33): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(375,41): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(376,45): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(383,49): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(389,37): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(390,41): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(410,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(410,18): error TS2304: Cannot find name 'RecastWizardModal'.
+src/components/TriagePanel.tsx(472,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(473,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(475,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(477,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(479,33): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(485,33): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(493,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(500,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(513,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(514,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(515,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(517,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(522,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(534,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(535,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(536,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(537,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(540,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(548,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/components/TriagePanel.tsx(564,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/lib/firebase/posts.ts(1,20): error TS2307: Cannot find module '@/lib/firebase/config' or its corresponding type declarations.
+src/lib/firebase/posts.ts(3,32): error TS2307: Cannot find module '@/types/recast' or its corresponding type declarations.

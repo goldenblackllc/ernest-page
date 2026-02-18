@@ -11,12 +11,12 @@
 
   body {
     /* Cinematic Dark Mode: Deep charcoal background, off-white text */
-    @apply bg-zinc-950 text-zinc-300 font-sans antialiased;
+    @apply bg-black text-zinc-200 font-sans antialiased;
   }
 
   /* The Cinematic Highlight */
   ::selection {
-    @apply bg-zinc-700 text-white;
+    @apply bg-zinc-800 text-white;
   }
 
   /* Global Typography: Heavy, serious, tight */
@@ -26,29 +26,28 @@
   h4,
   h5,
   h6 {
-    @apply font-black tracking-tighter text-zinc-100;
+    @apply font-bold tracking-tight text-white;
   }
 
   /* 
    * THE GLOBAL RESTRAINT (RELAXED)
-   * We still prefer sharp edges for inputs and structure, 
-   * but we allow buttons to opt-in to rounded shapes (like the FAB).
+   * We allow rounded shapes (like the FAB) and cleaner inputs.
    */
   input,
   textarea,
   select {
-    @apply !rounded-none;
+    @apply rounded-xl;
   }
 
-  /* Buttons default to sharp, but can be overridden */
+  /* Buttons default to rounded-xl */
   button {
-    @apply rounded-none;
+    @apply rounded-xl;
   }
 
   /* Remove default blue browser halos, enforce zinc borders on focus */
   input:focus,
   textarea:focus,
   select:focus {
-    @apply !outline-none !ring-0 !border-zinc-500;
+    @apply !outline-none !ring-0 !border-zinc-700;
   }
 }

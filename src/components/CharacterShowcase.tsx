@@ -68,8 +68,8 @@ export function CharacterShowcase() {
                             <h3 className="text-2xl font-black uppercase tracking-tighter text-white leading-none mb-2">
                                 {bible.title}
                             </h3>
-                            <p className="text-sm font-serif text-zinc-300 leading-relaxed opacity-90">
-                                "{bible.summary}"
+                            <p className="text-sm text-zinc-300 leading-relaxed opacity-90">
+                                {bible.summary}
                             </p>
                         </div>
 
@@ -95,7 +95,7 @@ export function CharacterShowcase() {
 
                         <div className="flex-1 overflow-y-auto space-y-3 relative z-10 pr-2 custom-scrollbar">
                             {bible.core_beliefs.length > 0 ? bible.core_beliefs.map((belief, i) => (
-                                <div key={i} className="text-sm font-serif text-zinc-300 border-l-2 border-zinc-800 pl-3 py-1">
+                                <div key={i} className="text-sm text-zinc-300 border-l-2 border-zinc-800 pl-3 py-1">
                                     {belief}
                                 </div>
                             )) : (

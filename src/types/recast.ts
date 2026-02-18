@@ -6,10 +6,11 @@ export interface Belief {
 }
 
 export interface Rule {
+    id: string; // Made required
     title: string;
     description: string;
     action?: 'add' | 'remove' | 'keep';
-    id?: string;
+    reason?: string; // Add reason for updates
 }
 
 export interface Vision {
@@ -19,6 +20,7 @@ export interface Vision {
 
 export interface Patch {
     new_rules: Rule[];
+    updated_rules?: Rule[];
     deprecated_ids: string[];
     reason: string;
 }

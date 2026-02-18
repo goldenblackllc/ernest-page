@@ -187,10 +187,10 @@ export function VisionForm() {
                 </div>
 
                 <div className="text-center space-y-4 max-w-2xl mx-auto">
-                    <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-black uppercase font-serif">
+                    <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-black uppercase">
                         What Do You Want?
                     </h2>
-                    <p className="text-lg md:text-xl text-gray-700 font-serif leading-relaxed italic">
+                    <p className="text-lg md:text-xl text-gray-700 leading-relaxed">
                         "The distance between where you are and what you want is determined by your frequency. Define the target. Generate the frequency."
                     </p>
                 </div>
@@ -230,7 +230,7 @@ export function VisionForm() {
                 {/* The Stream */}
                 <section className="space-y-6">
                     <div className="border-b-2 border-black pb-2">
-                        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-black uppercase font-serif">
+                        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-black uppercase">
                             The Stream
                         </h2>
                     </div>

@@ -24,7 +24,7 @@ export default function RecastPage() {
                         Problem<br />Recast
                     </h1>
 
-                    <p className="text-xl font-serif text-zinc-400 max-w-md mx-auto leading-relaxed">
+                    <p className="text-xl text-zinc-400 max-w-md mx-auto leading-relaxed">
                         Turn your friction into fuel. A 6-step protocol to debug your reality and install new operating rules.
                     </p>
 
