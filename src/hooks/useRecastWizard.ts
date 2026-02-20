@@ -22,6 +22,7 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
         selectedVision: [],
         patch: null,
         selectedRules: [],
+        selectedUpdates: [], // NEW: Initialize
         generatedActions: [],
         selectedActions: [],
     });
@@ -151,10 +152,10 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
     // STEP 2 -> 3: CONFIRM THE SHIFT (UI Transition only, no API)
     // The UI handles this transition once drivers are selected.
 
-    // STEP 3 -> 4: GENERATE VISION (Was Thoughts)
+    // STEP 4 -> 5: GENERATE VISION (Was Thoughts)
     const generateVision = async () => {
-        if (state.selectedDrivers.length === 0) {
-            setError("Please select at least one item to proceed.");
+        if (!state.calibration.title || !state.calibration.summary) {
+            setError("Please complete the Identity Lock to proceed.");
             return;
         }
 
@@ -169,7 +170,7 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
                 ...prev,
                 generatedVision: result.vision,
                 selectedVision: [], // User must select
-                step: 5 // Updated to 5 (was 4)
+                step: 5 // Updated to 5
             }));
         }
     };
@@ -203,7 +204,8 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
                 ...prev,
                 patch: result.patch,
                 selectedRules: result.patch.new_rules, // Auto-select new rules for "Install"
-                step: 6 // Updated to 6 (was 5)
+                selectedUpdates: result.patch.updated_rules || [], // Auto-select ALL updates (opt-out)
+                step: 6 // Updated to 6
             }));
         }
     };
@@ -240,15 +242,27 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
         });
     };
 
+    // NEW: Toggle "Protocol Updates" selection
+    const toggleUpdate = (rule: Rule) => {
+        setState(prev => {
+            const exists = prev.selectedUpdates.find(r => r.id === rule.id);
+            if (exists) {
+                return { ...prev, selectedUpdates: prev.selectedUpdates.filter(r => r.id !== rule.id) };
+            }
+            return { ...prev, selectedUpdates: [...prev.selectedUpdates, rule] };
+        });
+    };
+
     // NAVIGATION
     const nextStep = () => setState(prev => ({ ...prev, step: prev.step + 1 }));
     const prevStep = () => setState(prev => ({ ...prev, step: prev.step - 1 }));
 
     // GENERATE GHOST STORY (Final Step)
-    const generateGhostStory = async () => {
+    const generateGhostStory = async (fullContext: string) => {
         try {
             const result = await callApi('ghost_writer', {
-                rant: state.input_text
+                full_context: fullContext,
+                rant: state.input_text // Keep for logging/compatibility if needed
             });
             return result?.story;
         } catch (e) {
@@ -263,9 +277,9 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
     const regenerateStep = async (stepNumber: number) => {
         if (stepNumber === 2) {
             generateDiagnosis();
-        } else if (stepNumber === 5) { // Updated to 5
+        } else if (stepNumber === 5) {
             generateVision();
-        } else if (stepNumber === 6) { // Updated to 6
+        } else if (stepNumber === 6) {
             generateConstraints();
         }
     };
@@ -286,6 +300,7 @@ export function useRecastWizard(mode: RecastMode = 'PROBLEM') {
         generateConstraints,
         toggleRule,
         updateRule,
+        toggleUpdate, // EXPORT
         regenerateStep,
         nextStep,
         prevStep,

@@ -55,6 +55,7 @@ export interface RecastState {
     // Step 5: System Update (Constraints/Rules)
     patch: Patch | null;
     selectedRules: Rule[];
+    selectedUpdates: Rule[]; // NEW: Track which "Updated Rules" are accepted
 
     // Legacy support or extra
     generatedActions: string[];

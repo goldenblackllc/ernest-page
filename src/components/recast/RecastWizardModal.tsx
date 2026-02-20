@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { createPost } from '@/lib/firebase/posts';
 import { useRouter } from 'next/navigation';
 import { Driver, Rule, Vision } from '@/types/recast';
+import { RecastThinkingState } from './RecastThinkingState';
 
 interface RecastWizardModalProps {
     isOpen: boolean;
@@ -77,8 +78,10 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
             step3Title: "Who I Want To Be",
             step3Subtitle: "I desire to be this type of person.",
             driverLabel: "Shadow Belief",
-            visionTitle: "The Reframe",
-            visionSubtitle: "New Lenses for this Reality",
+            step5Title: "How does this serve me?",
+            step5Subtitle: "Regardless of what is happening, every situation has the potential to support you. Which of these options resonates most with you? Select 1-3.",
+            visionTitle: "A Fresh Perspective",
+            visionSubtitle: "Which of the three statements feels most like you? Select 1-3",
             constraintsTitle: "System Update",
             constraintsSubtitle: "Installing Corrective Rules"
         },
@@ -134,6 +137,7 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
         generateConstraints,
         toggleRule,
         updateRule,
+        toggleUpdate, // NEW
         nextStep,
         prevStep,
         regenerateStep,
@@ -178,10 +182,31 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
 
             let dbRules = (bible.rules || []) as { id: string, rule: string, description?: string, category?: string, active?: boolean }[];
 
-            // 2. Identify Removed Rules
+            // 2. Identify Removed Rules (Filtered by Acceptance)
             const deprecatedIds = state.patch?.deprecated_ids || [];
+
+            // Logic: Only remove a rule IF its replacement (update) was ACCEPTED.
+            // If the user rejected the update, we KEEP the old rule.
+            const acceptedUpdates = state.selectedUpdates || [];
+            const rejectedUpdates = (state.patch?.updated_rules || []).filter(u => !acceptedUpdates.some(au => au.id === u.id));
+
+            // We need to know which deprecated ID corresponds to which update.
+            // Current API doesn't strictly map them 1:1 in the response structure (it returns a list of deprecated IDs).
+            // ASSUMPTION: The 'updated_rules' id matches the OLD rule id being replaced.
+            // If the API returns a *new* ID for the updated rule, we might need to rely on the 'deprecated_ids' being accurate.
+
+            // Simplified Logic: 
+            // If an ID is in 'deprecated_ids', it should be removed UNLESS it corresponds to a rejected update.
+            // For now, let's assume 'updated_rules.id' IS the ID of the rule being replaced/updated.
+
+            const idsKeep = rejectedUpdates.map(u => u.id);
+
             let finalRules = dbRules.filter(dbRule => {
-                const isDeprecated = deprecatedIds.includes(dbRule.id) || deprecatedIds.includes(dbRule.rule);
+                // If it's in the keep list, keep it (even if deprecated)
+                if (idsKeep.includes(dbRule.id)) return true;
+
+                // Otherwise, check if deprecated
+                const isDeprecated = deprecatedIds.includes(dbRule.id);
                 return !isDeprecated;
             });
 
@@ -195,7 +220,17 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
                 installedAt: Date.now()
             }));
 
-            finalRules = [...finalRules, ...newRuleObjects];
+            // 4. Add UPDATED rules (Accepted Ones)
+            const updatedRuleObjects = acceptedUpdates.map(r => ({
+                id: crypto.randomUUID(), // Valid new ID
+                rule: r.title,
+                description: r.description,
+                category: 'recast',
+                active: true,
+                installedAt: Date.now()
+            }));
+
+            finalRules = [...finalRules, ...newRuleObjects, ...updatedRuleObjects];
 
             // 4. Update Bible
             const updatedTitle = state.calibration.title || bible.title;
@@ -228,8 +263,7 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
             });
 
             // 5. Create Post
-            const story = await generateGhostStory();
-
+            // REFACTOR: Construct Footer FIRST to pass to Ghostwriter
             const driverList = state.selectedDrivers.map(d => d.type === 'BELIEF' ? `- ${d.negative} -> ${d.positive}` : `- ${d.id}`).join("\n");
             const visionList = state.selectedVision.map(v => `- ${v.title}: ${v.description}`).join("\n");
             const ruleList = state.selectedRules.map(r => `- ${r.title}: ${r.description}`).join("\n");
@@ -247,8 +281,14 @@ ${visionList}
 PROTOCOL:
 ${ruleList}`;
 
+            // Full Raw Context for Ghostwriter
             const contentRaw = `${state.input_text}\n\n${footerText}`;
-            const contentPublic = `${story || state.input_text}\n\n${footerText}`;
+
+            // Generate Story using FULL context
+            const story = await generateGhostStory(contentRaw);
+
+            // If story fails, use contentRaw (fallback)
+            const contentPublic = story ? story : contentRaw;
 
             await createPost({
                 content: contentPublic,
@@ -473,7 +513,7 @@ ${ruleList}`;
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-800">
                 <button onClick={prevStep} className="text-zinc-500 hover:text-white text-sm font-bold">Back</button>
                 <button
-                    onClick={saveCalibration}
+                    onClick={generateVision}
                     disabled={!state.calibration.title || !state.calibration.summary || isLoading}
                     className={cn("px-6 py-3 rounded-full text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2", THEME.button)}
                 >
@@ -484,7 +524,7 @@ ${ruleList}`;
         </div>
     );
 
-    // STEP 5: VISION (Was 4)
+    // STEP 5: VISION (Was 6)
     const renderVisionStep = () => (
         <div className="flex flex-col h-full animate-in slide-in-from-right-8 duration-300">
             <div className="mb-8">
@@ -528,7 +568,7 @@ ${ruleList}`;
                 <button onClick={prevStep} className="text-zinc-500 hover:text-white text-sm font-bold">Back</button>
                 <div className="flex items-center gap-6">
                     <button
-                        onClick={() => regenerateStep(5)} // Updated to 5
+                        onClick={() => regenerateStep(6)} // Updated to 6
                         disabled={isLoading}
                         className="text-xs font-bold text-zinc-600 hover:text-zinc-400 transition-colors"
                     >
@@ -547,7 +587,7 @@ ${ruleList}`;
         </div>
     );
 
-    // STEP 6: SYSTEM UPDATE (Was 5)
+    // STEP 7: SYSTEM UPDATE (Was 6)
     const renderSystemUpdateStep = () => (
         <div className="flex flex-col h-full animate-in slide-in-from-right-8 duration-300">
             <div className="mb-8">
@@ -607,24 +647,43 @@ ${ruleList}`;
                             <RefreshCw className="w-4 h-4" />
                             <span>Protocol Updates</span>
                         </div>
-                        {state.patch.updated_rules.map((rule, i) => (
-                            <div key={rule.id} className={cn("group relative p-6 border border-blue-900/30 bg-blue-950/10 rounded-2xl")}>
-                                <div className="flex-1 space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="text-base font-bold text-blue-200">{rule.title}</h4>
-                                        <span className="text-[10px] uppercase font-bold text-blue-500 bg-blue-950/50 px-2 py-1 rounded">Refinement</span>
-                                    </div>
-                                    <p className="text-sm text-blue-300/80 leading-relaxed">
-                                        {rule.description}
-                                    </p>
-                                    {rule.reason && (
-                                        <div className="pt-2 mt-2 border-t border-blue-900/30 text-xs text-blue-500/60 font-mono">
-                                            Logic: {rule.reason}
+                        {state.patch.updated_rules.map((rule, i) => {
+                            const isSelected = state.selectedUpdates.some(u => u.id === rule.id);
+                            return (
+                                <div key={rule.id} className={cn("group relative p-6 border rounded-2xl transition-all",
+                                    isSelected
+                                        ? "border-blue-500/30 bg-blue-950/10"
+                                        : "border-zinc-800 bg-transparent opacity-60"
+                                )}>
+                                    <div className="flex items-start gap-4">
+                                        {/* Toggle */}
+                                        <div onClick={() => toggleUpdate(rule)} className="cursor-pointer pt-1">
+                                            <div className={cn(
+                                                "w-5 h-5 border rounded-full flex items-center justify-center shrink-0 transition-colors",
+                                                isSelected ? "bg-blue-600 border-blue-600" : "border-zinc-700 text-transparent hover:border-zinc-500"
+                                            )}>
+                                                {isSelected && <Check className="w-3 h-3 text-white" />}
+                                            </div>
                                         </div>
-                                    )}
+
+                                        <div className="flex-1 space-y-3">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className={cn("text-base font-bold", isSelected ? "text-blue-200" : "text-zinc-500")}>{rule.title}</h4>
+                                                <span className="text-[10px] uppercase font-bold text-blue-500 bg-blue-950/50 px-2 py-1 rounded">Refinement</span>
+                                            </div>
+                                            <p className="text-sm text-blue-300/80 leading-relaxed">
+                                                {rule.description}
+                                            </p>
+                                            {rule.reason && (
+                                                <div className="pt-2 mt-2 border-t border-blue-900/30 text-xs text-blue-500/60 font-mono">
+                                                    Logic: {rule.reason}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -647,12 +706,18 @@ ${ruleList}`;
 
     return (
         <RecastShell mode={mode} step={state.step} onClose={onClose}>
-            {state.step === 1 && renderInputStep()}
-            {state.step === 2 && renderDiagnosisStep()}
-            {state.step === 3 && renderReversalStep()}
-            {state.step === 4 && renderCalibrationStep()}
-            {state.step === 5 && renderVisionStep()}
-            {state.step === 6 && renderSystemUpdateStep()}
+            {isSubmitting ? (
+                <RecastThinkingState />
+            ) : (
+                <>
+                    {state.step === 1 && renderInputStep()}
+                    {state.step === 2 && renderDiagnosisStep()}
+                    {state.step === 3 && renderReversalStep()}
+                    {state.step === 4 && renderCalibrationStep()}
+                    {state.step === 5 && renderVisionStep()}
+                    {state.step === 6 && renderSystemUpdateStep()}
+                </>
+            )}
             {error && (
                 <div className="mt-8 p-4 bg-red-900/10 border border-red-900/50 text-red-400 text-xs rounded-xl text-center">
                     Error: {error}

@@ -107,15 +107,30 @@ export function RecastPostCard({ post }: RecastPostProps) {
                             <span className="text-sm font-bold text-gray-200">
                                 {displayName}
                             </span>
-                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                                <Clock className="w-3 h-3" />
-                                <span>{timeAgo}</span>
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{timeAgo}</span>
+                                </div>
+                                {/* Audience Badge (Dropdown Style) */}
+                                <button
+                                    onClick={togglePrivacy}
+                                    className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 pl-2 pr-1.5 py-1 rounded-md transition-all group/privacy ml-1"
+                                >
+                                    {post.is_public ? (
+                                        <>
+                                            <Globe className="w-3 h-3 text-blue-400" />
+                                            <span className="text-blue-400">Everyone</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Lock className="w-3 h-3 text-zinc-500" />
+                                            <span className="text-zinc-500">Only Me</span>
+                                        </>
+                                    )}
+                                    <ChevronDown className="w-3 h-3 text-zinc-600 group-hover/privacy:text-zinc-400" />
+                                </button>
                             </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col items-end mr-6">
-                        <div className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 mb-1">
-                            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">PROBLEM RESOLVED</span>
                         </div>
                     </div>
                 </div>
@@ -162,39 +177,32 @@ export function RecastPostCard({ post }: RecastPostProps) {
                 </div>
 
                 {/* Control Bar */}
-                <div className="px-6 py-3 bg-black/40 border-t border-white/5 flex justify-between items-center">
-
-                    {/* Left: View Mode Toggle */}
-                    <button
-                        onClick={() => setViewMode(viewMode === 'public' ? 'raw' : 'public')}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 transition-all group/btn"
-                        title={viewMode === 'public' ? "View Original Rant" : "View Recast Story"}
-                    >
-                        {viewMode === 'public' ? (
-                            <FileText className="w-4 h-4 text-zinc-500 group-hover:text-amber-400 transition-colors" />
-                        ) : (
-                            <Eye className="w-4 h-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
-                        )}
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                            {viewMode === 'public' ? "View Raw" : "View Public"}
-                        </span>
-                    </button>
-
-                    {/* Right: Privacy Toggle */}
-                    <button
-                        onClick={togglePrivacy}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 transition-all group/btn"
-                        title={post.is_public ? "Make Private" : "Make Public"}
-                    >
-                        {post.is_public ? (
-                            <Globe className="w-4 h-4 text-emerald-600 group-hover:text-emerald-400 transition-colors" />
-                        ) : (
-                            <Lock className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-                        )}
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                            {post.is_public ? "Public" : "Private"}
-                        </span>
-                    </button>
+                {/* Control Bar - Segmented Toggle (Left Aligned & Slim) */}
+                <div className="px-6 py-3 bg-black/40 border-t border-white/5 flex justify-start">
+                    <div className="flex items-center bg-zinc-900 border border-white/5 rounded-md p-0.5">
+                        <button
+                            onClick={() => setViewMode('public')}
+                            className={cn(
+                                "px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest transition-all",
+                                viewMode === 'public'
+                                    ? "bg-zinc-700 text-white shadow-sm"
+                                    : "text-zinc-500 hover:text-zinc-300"
+                            )}
+                        >
+                            Public
+                        </button>
+                        <button
+                            onClick={() => setViewMode('raw')}
+                            className={cn(
+                                "px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest transition-all",
+                                viewMode === 'raw'
+                                    ? "bg-zinc-700 text-white shadow-sm"
+                                    : "text-zinc-500 hover:text-zinc-300"
+                            )}
+                        >
+                            Raw
+                        </button>
+                    </div>
                 </div>
 
                 <DeleteConfirmationModal

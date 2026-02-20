@@ -1,0 +1,1060 @@
+
+> earnest-page@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.14:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 398ms
+ GET / 200 in 509ms (compile: 368ms, render: 140ms)
+ GET / 200 in 30ms (compile: 4ms, render: 26ms)
+ POST /api/recast 200 in 565ms (compile: 256ms, render: 309ms)
+ POST /api/recast 200 in 567ms (compile: 247ms, render: 320ms)
+Attempting generation with gemini-3-pro-preview...
+ POST /api/recast 200 in 15.9s (compile: 5ms, render: 15.9s)
+
+=== MICROSCENE GENERATION PROMPT ===
+
+STEP 2: GENERATE THE VISION (INTEGRATED REALITY)
+
+CONTEXT:
+Specific Problem (Rant): "I have to buy groceries and take my dog out."
+User's Core Identity: "Father, Husband, Investor"
+Identity Summary: "I am a good and successful person, unconditionally loved, and I enjoy my life. I live a comfortable lifestyle. Simplicity and quality are cornerstones of my life. I am a good father. I am a good, loving husband. I am a retired investor. I am moderately fit and string with 12-15% body fat."
+New Operating Code (Positive Drivers): I really enjoy being alive.
+
+DEEP CONTEXT (Character Bible):
+{
+  "title": "Father, Husband, Investor",
+  "summary": "I am a good and successful person, unconditionally loved, and I enjoy my life. I live a comfortable lifestyle. Simplicity and quality are cornerstones of my life. I am a good father. I am a good, loving husband. I am a retired investor. I am moderately fit and string with 12-15% body fat.",
+  "avatar_url": "",
+  "thoughts": [
+    "The Devil You Know",
+    "Even though I'm feeling the pinch this month, I am the Architect of my financial reality; I'll review my spending habits tonight, identify where I can optimize, and trust that abundance will flow back to me.",
+    "Brian's silence about skiing stings, but I am loved unconditionally; I'll express my love for him in other ways this week, plan a fun, free evening together, and create connection without financial pressure.",
+    "While a ski trip might not be in the cards right now, Life is Abundant with opportunities for connection; I'll explore free, fun activities with Brian that create lasting memories and strengthen our bond.",
+    "I may feel trapped by competing desires, but I am Free; I'll use time-blocking to dedicate specific slots to Earnest Page, helping Emily, and planning something special for Iris' family, ensuring all my priorities are met.",
+    "Even if I can't give as much as I want right now, I am Connected to a network of resources and creativity; I'll focus on what I can give – my time, my skills, my love – and trust that my support will be felt and appreciated.",
+    "Even though Sage is in the hospital and I feel powerless, I am the Creator of my family's well-being; I will focus on what I can control—my love, my presence, and my support—knowing that these are powerful forces in her healing.",
+    "While I feel disconnected from Sage right now, I am Connected by an unbreakable bond; I'll schedule dedicated time this week to visit her, listen without judgment, and offer comfort, strengthening our connection during this difficult time.",
+    "I may feel like I'm not doing enough, but I am Complete with all the love and resources Sage needs; I will focus on being fully present during our visits, offering my unwavering support and reassurance, knowing that my presence is a valuable gift.",
+    "Even though I worry about losing Sage, I am Secure in the strength of our relationship; I'll prioritize open communication and create a safe space for her to share her feelings, reinforcing the foundation of our bond."
+  ],
+  "habits": [],
+  "consumption": {
+    "food": [
+      "80% Carnivore"
+    ],
+    "media": []
+  },
+  "positive_events": [
+    "All Creates Great and Small"
+  ],
+  "wants": [],
+  "goals": [],
+  "relationships": [
+    {
+      "name": "Iris",
+      "notes": "Loves music, plan b, lana del rey",
+      "relation": "Wife"
+    },
+    {
+      "name": "Brian",
+      "relation": "Son"
+    },
+    {
+      "relation": "Daughter",
+      "name": "Sage",
+      "notes": "Sage is 18 and currently a senior at Minuteman High school. She was accpted to SCAD in George for this fall. She is currenlty at Francisan's Children Hospital in a psych ward."
+    },
+    {
+      "relation": "Son",
+      "name": "Max"
+    },
+    {
+      "name": "Sky",
+      "relation": "Dog"
+    },
+    {
+      "relation": "Dog",
+      "name": "Dug"
+    },
+    {
+      "relation": "Ex-wife",
+      "name": "Tammy",
+      "notes": "This is the biological mother of Sage and Brian. She lives in Concord. She is the present of the company that I started."
+    }
+  ],
+  "role_models": [
+    {
+      "reason": "He's kind. He takes initiative. He's had a major career change. He's willing to try new and completely different genres and shows. ",
+      "name": "Jon Favreau"
+    }
+  ],
+  "music": [],
+  "movies": [],
+  "tv_shows": [],
+  "visual_board": [
+    {
+      "label": "inspiration",
+      "image_url": "https://storage.googleapis.com/earnest-page.firebasestorage.app/users/XtmPR46JQaUKVt9KpkKo2C23mAi2/visual_board/1770997754271_switzerland.jpg?GoogleAccessId=firebase-adminsdk-fbsvc%40earnest-page.iam.gserviceaccount.com&Expires=16730341200&Signature=OR37pGH3lzlgr7tU%2FWTyNOgLFK7j6lHByN5jayMjyCNt1u3CG6Fj5DQB6hF6NM%2BIYcNmAGpab12jtnRgA0qUpBrtXwHDpBNi1giAVIuP4PEZF1uMwnNFXuydjlzqV3fwsbl1ilCLLlDsgf%2Fox1Me%2BN1d8OFnTp%2BocpKoVhFFaP8B8txkLch5Xx6PVa1CKd%2Fy1SVjZzg30BOITXYQ5MqCWQylfX1FZgQU%2FdlB63QC0rpiHHUeCvYFfJ8QRkiPDM%2Br1pWwnnYteclzKtHGySAC%2BM%2FMt3puuKafFoRu2tvWPQM0EOZ6mw5yoYndIoKkCjiQwD608mAXGenvRCbDHe9Zaw%3D%3D"
+    }
+  ],
+  "living_situation": "I am living Carlisle, MA. We have a nice 3 acre property with a fireplace, and a single family home which we are renting. ",
+  "status": "compiling",
+  "roles": [
+    "Father, Husband, Investor"
+  ],
+  "version": 1.1,
+  "last_commit": {
+    "_seconds": 1771181248,
+    "_nanoseconds": 743000000
+  },
+  "suggested_actions": [
+    {
+      "id": "587e4f57-1e3b-48e0-acbb-480a37385027",
+      "category": "recast",
+      "active": true,
+      "action": "The Good Father"
+    },
+    {
+      "active": true,
+      "id": "16279f2e-58f2-461f-83ec-228186cbaa10",
+      "category": "recast",
+      "action": "The Architect of Simplicity"
+    },
+    {
+      "id": "b6b51cc0-e5cb-4392-9474-4817b29cf1f0",
+      "category": "recast",
+      "action": "The Retired Investor",
+      "active": true
+    },
+    {
+      "id": "f6bee0d6-4a34-4b11-8e1a-c6614ed9d912",
+      "active": true,
+      "category": "recast",
+      "action": "The Anchored Patriarch"
+    },
+    {
+      "active": true,
+      "action": "The Essentialist",
+      "id": "d12ec6f2-0943-4a4e-9fc2-63b786426175",
+      "category": "recast"
+    },
+    {
+      "category": "recast",
+      "id": "b3c3f353-68e9-4182-adbb-c3af6e62067e",
+      "action": "The Retired Investor",
+      "active": true
+    },
+    {
+      "action": "The Anchored Father",
+      "category": "recast",
+      "active": true,
+      "id": "bb5f356b-f193-496a-89f2-62ffdbc57d05"
+    },
+    {
+      "active": true,
+      "id": "f70b39c3-570e-4299-98fa-9264bbdb30fa",
+      "category": "recast",
+      "action": "The Essentialist"
+    },
+    {
+      "action": "The Good Father",
+      "active": true,
+      "category": "recast",
+      "id": "b313cf61-e73c-4566-93fb-c9fa9320d210"
+    },
+    {
+      "action": "The Loving Husband",
+      "category": "recast",
+      "id": "fe7f9e0d-f806-42aa-9da8-51835a37891e",
+      "active": true
+    },
+    {
+      "action": "The Retired Investor",
+      "id": "0c372cca-953a-457d-84c0-2d75883f8737",
+      "active": true,
+      "category": "recast"
+    },
+    {
+      "id": "0426737e-9506-4bab-9d71-6de226faa692",
+      "action": "The Architect of Rest",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "b878fbe3-a950-4c41-b1cc-9ce68110cf8e",
+      "action": "The Investor of Solutions",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "724b7a71-7a0c-4973-bbcf-055fc0838906",
+      "action": "The Unwavering Patriarch",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "9513ae4a-04c1-432d-97ae-1693eef680ff",
+      "action": "The Morning Governor",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "2a761cc2-9f8f-4a9c-960d-cbfcf59fc0a1",
+      "action": "The Ritual of Provision",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "083bd603-de63-4371-a6c8-355ddd696a3c",
+      "action": "The Intuitive Pivot",
+      "category": "recast",
+      "active": true
+    }
+  ],
+  "last_updated": 1771505095797,
+  "visions": [
+    {
+      "description": "He treats the malfunctioning app like a child having a tantrum; instead of joining the chaos with anger, he gently closes the laptop lid. He takes a deep breath, stepping back to gain perspective, realizing that force will not fix the code. He walks away to play with his children or call a loved one, knowing the solution will present itself when he returns with a calm, nurturing mind.",
+      "title": "The Good Father"
+    },
+    {
+      "title": "The Architect of Simplicity",
+      "description": "Recognizing that complexity and struggle violate his life's cornerstone of 'Simplicity,' he refuses to fight the screen. He stands up, pours a glass of water, and looks out the window, reconnecting with the reality that he is safe, loved, and successful. He returns to the desk not to battle, but to delete the friction, choosing to start over with a blank slate or a simpler method that honors his comfortable lifestyle."
+    },
+    {
+      "title": "The Retired Investor",
+      "description": "You stare at the broken code and feel the urge to force a solution, but your Investor mindset kicks in. You calculate the emotional ROI of this stress and find it lacking. You calmly close the laptop, choosing to preserve your mental capital. You walk outside to enjoy the sun, knowing the solution will present itself when you are relaxed, treating the project as a long-term hold rather than a frantic trade."
+    },
+    {
+      "title": "The Anchored Patriarch",
+      "description": "When the app fails to compile, you feel the familiar sting of 'not enough,' but you immediately pivot to your role as a Father and Husband. You push the keyboard away and stand up, deciding that your mood affects the household ecosystem. You go find your wife or children, offering a hug and a joke, grounding yourself in the reality that you are loved regardless of the software's performance."
+    },
+    {
+      "title": "The Essentialist",
+      "description": "You look at the complex feature causing the errors and realize it conflicts with your value of Simplicity. Instead of fixing it, you decide to cut it. You highlight the cluttered code and press delete, exhaling with relief. You realize the app now reflects who you are—streamlined, high-quality, and functional—and you move forward with a lighter, cleaner build."
+    },
+    {
+      "title": "The Retired Investor",
+      "description": "He views the stalling development not as a personal failure, but merely as temporary market volatility. He closes the laptop calmly, leaning back in his chair to assess the project as a detached asset, deciding to allocate capital to hire an expert for the specific blocker rather than spending his own emotional energy on the frustration."
+    },
+    {
+      "description": "Feeling the annoyance rise, he physically pushes the keyboard away, reminding himself that his worth is not compiled in the code. He walks out of the office to hug his wife and play with his children, grounding himself in the reality that he is already successful and unconditionally loved, before returning to the desk with a light heart.",
+      "title": "The Anchored Father"
+    },
+    {
+      "title": "The Essentialist",
+      "description": "Confronted with the 'impossible' complexity causing the error, he refuses to struggle against the noise. He picks up a pen and blank paper, aggressively crossing out the features that are cluttering the vision, choosing to build a simpler, higher-quality version that aligns with his peaceful lifestyle."
+    },
+    {
+      "title": "The Good Father",
+      "description": "I walk into the room at Emerson Hospital, not with the trembling energy of a victim, but with the calm presence of a protector. I pull a chair right up to Sage's bedside, closing the physical distance immediately. I take her hand, looking past the events of the night, and I tell her, 'I'm here, and we are going to get through this.' I speak clearly about our plan to cook dinner together the moment she is home, shifting the timeline from current trauma to future connection."
+    },
+    {
+      "title": "The Loving Husband",
+      "description": "Instead of spiraling into the 'bad father' narrative in the waiting room, I anchor myself in my core truth: I am a good person and unconditionally loved. I navigate the logistics with the doctors with clarity and authority, ensuring Sage gets the best care. I call Emily to thank her for her quick action, transforming a moment of panic into a moment of gratitude and community stability. I am the solid ground my family stands on."
+    },
+    {
+      "description": "I treat my relationship with Sage as my most critical asset class. I go home and physically prep the kitchen, clearing the counters to reflect 'simplicity and quality.' I set out the ingredients for the meal we will cook, turning my intention into a tangible reality. I block out my calendar, investing my time—my wealth—directly into her recovery. I stop saying 'I want to' and start executing the plan.",
+      "title": "The Retired Investor"
+    },
+    {
+      "description": "Standing in my kitchen in Carlisle, feeling the urge to numb myself with snacks or busy work, I pause and remember that I am the Architect of my reality. I pour a glass of water and sit by the fireplace, choosing ten minutes of deliberate, high-quality silence to recharge, knowing that my own stability is the most valuable asset I can offer my family right now.",
+      "title": "The Architect of Rest"
+    },
+    {
+      "title": "The Investor of Solutions",
+      "description": "I sit down with Iris to review the DBT Works program in Concord, replacing my feelings of uncertainty with the calm, analytical focus of a retired investor. I map out the logistics and benefits on paper, holding the space with confidence and reassuring my wife that we are capable, resourceful, and in complete control of finding the best path for Sage."
+    },
+    {
+      "description": "Walking into Franciscan Childrens' to visit Sage, I leave the narrative of 'powerlessness' at the door and enter her room as a solid, grounded presence. I look past the hospital setting and connect deeply with her, projecting a future where she is healed and happy, knowing that my unconditional love and steady demeanor are the bedrock she needs to rebuild.",
+      "title": "The Unwavering Patriarch"
+    },
+    {
+      "title": "The Morning Governor",
+      "description": "I sit in bed with my coffee, noticing the fatigue, but instead of analyzing it as a failure, I accept it as a wise internal governor conserving my energy for the people I love. I decide to skip the cream not out of restriction, but because I am choosing simplicity and quality in this moment. I look out the window at the Carlisle trees, feeling completely at peace with doing nothing right now, knowing I am already enough."
+    },
+    {
+      "title": "The Ritual of Provision",
+      "description": "As I drive to fill the propane tank and pick up salts for the water softener, I refuse to see these tasks as a frantic to-do list; I view them as the grounded actions of a Provider ensuring his family's comfort. I think about grinding the meat for the roast with Sage tonight, and I feel a surge of purpose, knowing that preparing this high-quality meal is a tangible act of unconditional love that matters more than any code I could write today."
+    },
+    {
+      "title": "The Intuitive Pivot",
+      "description": "I look at the 'Earnest Page' logic and feel the friction regarding the 'problem procedure,' so I immediately trust my gut as an expert Investor and stop working on that section. I realize this hesitation is a valid audit, so I grab a pen and paper to draft a 'Desire First' model instead, confident that I am in control of the software and allowed to build it exactly as it serves me best."
+    }
+  ],
+  "rules": [
+    {
+      "rule": "20 Push-Ups",
+      "description": "I will do 20 push-ups every day",
+      "id": "db9a7d3e-8e71-49f0-9b0c-cb2b26212709"
+    },
+    {
+      "active": true,
+      "id": "c959f595-eeb6-44ce-9a87-a9db6e929c7c",
+      "rule": "Plan Free Evening With Brian",
+      "category": "recast",
+      "description": "I will express my love for Brian in other ways this week, plan a fun, free evening together, and create connection without financial pressure."
+    },
+    {
+      "active": true,
+      "id": "3c0f396c-482f-4cc2-9b39-2791ef0ddf34",
+      "description": "I will explore free, fun activities with Brian that create lasting memories and strengthen our bond.",
+      "category": "recast",
+      "rule": "Explore Free Family Activities"
+    },
+    {
+      "rule": "Time-Block Personal Projects",
+      "active": true,
+      "id": "fcd94f97-e824-4d71-ac4d-167068c8c710",
+      "description": "I will use time-blocking to dedicate specific slots to Earnest Page, helping Emily, and planning something special for Iris' family, ensuring all my priorities are met.",
+      "category": "recast"
+    },
+    {
+      "description": "When feelings of anger or failure arise during work, immediately close the laptop and walk away for 10 minutes to reset perspective.",
+      "category": "recast",
+      "active": true,
+      "rule": "Execute Physical Reset",
+      "installedAt": 1771254164011,
+      "id": "c325ec35-2b0c-4ecb-b7a8-f16a3267bd11"
+    },
+    {
+      "category": "recast",
+      "installedAt": 1771254164011,
+      "rule": "Deploy Blank Slate",
+      "id": "d623501d-b172-49aa-a710-f7c26f338387",
+      "active": true,
+      "description": "If a technical solution fails repeatedly, delete the current attempt and draft the simplest possible alternative method on paper before coding."
+    },
+    {
+      "active": true,
+      "installedAt": 1771254796955,
+      "description": "If a feature causes repeated errors and does not reflect your identity, delete the code entirely instead of debugging it.",
+      "rule": "Delete Misaligned Features",
+      "category": "recast",
+      "id": "29735f70-8c36-4487-a3e7-2cafdbef96eb"
+    },
+    {
+      "id": "1a3457cc-d83e-4d49-bce0-357834a700d6",
+      "description": "Stop working immediately if the 'Emotional ROI' becomes negative or after 30 minutes of stuck debugging.",
+      "rule": "Cap Frustration Time",
+      "installedAt": 1771254796955,
+      "category": "recast",
+      "active": true
+    },
+    {
+      "category": "recast",
+      "installedAt": 1771254796955,
+      "rule": "Pivot to Connection",
+      "active": true,
+      "description": "When work fails to compile, physically leave the workspace to hug a family member before attempting to fix it.",
+      "id": "106e13da-c9b1-4ddd-9b22-b10b192da8b4"
+    },
+    {
+      "installedAt": 1771256042971,
+      "active": true,
+      "category": "recast",
+      "id": "3cfc23b5-0909-4c7f-b50c-5ff62995dc17",
+      "rule": "Outsource The Block",
+      "description": "If a technical issue stalls progress for more than 60 minutes, immediately stop coding and draft a job description to hire an expert."
+    },
+    {
+      "id": "0a2f87cd-e78e-40d3-a4b5-a90d102cfb90",
+      "rule": "Simplify To Sanity",
+      "description": "When the project feels impossible, immediately cut the most complex feature or reduce the scope by 50%.",
+      "category": "recast",
+      "installedAt": 1771256042971,
+      "active": true
+    },
+    {
+      "installedAt": 1771256042971,
+      "active": true,
+      "description": "When unsure of the next step or overwhelmed by noise, turn off the monitor and map the logic on physical paper.",
+      "rule": "The Pen and Paper Default",
+      "category": "recast",
+      "id": "2ab36954-654d-4cac-9b9f-f03cbcc0fb90"
+    },
+    {
+      "active": true,
+      "rule": "Anchor The Narrative",
+      "description": "When entering Sage's space or speaking to doctors, physically pause and affirm 'I am the protector,' rejecting the 'bad father' spiral immediately.",
+      "category": "recast",
+      "installedAt": 1771278779284,
+      "id": "d9dd1ecd-e63c-432d-9b18-b05241aa3222"
+    },
+    {
+      "active": true,
+      "description": "When speaking to Sage, do not dwell on the event; explicitly discuss and schedule the specific meal we will cook together upon her discharge.",
+      "id": "6ca964b1-6c65-43d6-83b3-e00f12194a6d",
+      "installedAt": 1771278779284,
+      "rule": "Shift Timeline To Future",
+      "category": "recast"
+    },
+    {
+      "id": "4a3f73b5-8b52-47d8-b2c9-e5ba6371e55c",
+      "rule": "Pre-load The Kitchen",
+      "description": "Upon returning home, clear the counters and set out ingredients for the planned meal immediately, regardless of the current time or fatigue.",
+      "installedAt": 1771278779284,
+      "active": true,
+      "category": "recast"
+    },
+    {
+      "id": "c3db146a-4c13-41e5-a68e-03f18c8b2e0d",
+      "description": "Do not ruminate on the 'DBT Works' program in your head. Sit down with Iris, pen, and paper, and map out the specific pros, cons, and logistics as if analyzing a business investment, then close the file.",
+      "rule": "Map DBT Logistics On Paper",
+      "installedAt": 1771441356579,
+      "category": "recast",
+      "active": true
+    },
+    {
+      "installedAt": 1771441356579,
+      "description": "When asking 'Should I work or relax?', immediately assess your energy. If you feel below 20% capacity, you are mandatorily required to rest (silence, water, or sleep) for 30 minutes before making any other decisions.",
+      "category": "recast",
+      "id": "057e9979-73b3-4f68-ae38-22b98b8a1d40",
+      "active": true,
+      "rule": "Execute The 20% Battery Protocol"
+    },
+    {
+      "rule": "Veto The Past Narrative",
+      "installedAt": 1771441356579,
+      "active": true,
+      "description": "When the thought 'I let Sage down' arises, verbally interrupt it with 'I am solving it now.' Force your focus exclusively to the present action (The Investor) or the future solution (The Architect).",
+      "category": "recast",
+      "id": "8a859cea-de3e-4918-82ac-22fea5a3d5db"
+    },
+    {
+      "active": true,
+      "description": "Replace coding/project blocks with specific slots for 'Sage Logistics' (calls, research, visits). Dedicate 100% focus to these tasks during the block, then disconnect to recharge.",
+      "installedAt": 1771441356579,
+      "id": "bd401727-d510-4e55-916d-b8d9e64903aa",
+      "category": "recast",
+      "rule": "Time-Block Recovery Logistics"
+    },
+    {
+      "category": "recast",
+      "description": "Instead of reviewing spending habits tonight, review your emotional energy levels. Identify one stressor to delete or delegate for tomorrow to ensure you remain the 'Unwavering Patriarch'.",
+      "id": "9cd6f1a9-134e-48dd-9845-1931013528da",
+      "active": true,
+      "rule": "Audit Emotional Reserves Nightly",
+      "installedAt": 1771441356579
+    },
+    {
+      "id": "cba72382-2169-4c47-921c-874cae05e45c",
+      "rule": "Draft Desire First Model",
+      "description": "Stop coding the 'Problem Procedure' immediately. Take pen and paper and draft the logic for the 'Desire First' model as an intuitive pivot.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    },
+    {
+      "id": "e93b3a2b-8197-4623-a078-8a5aa4653ea8",
+      "rule": "Narrate The Provision",
+      "description": "As you execute today's errands (propane, salts, driving), explicitly affirm 'I am the Provider ensuring comfort' for each task, rejecting the narrative of a 'frantic to-do list'.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    },
+    {
+      "id": "ec5f864a-4b25-45c3-8d37-1ff4e2b6e15a",
+      "rule": "Accept Morning Fatigue",
+      "description": "If you notice fatigue or overwhelm in the morning, do not analyze it as failure. Accept it as a 'wise governor' conserving energy, choose simplicity (e.g. skip cream), and sit in peace.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    },
+    {
+      "id": "5d6d7929-6a79-437c-baf7-f230ce143f5d",
+      "rule": "Prioritize The Sage Roast",
+      "description": "View the preparation of Sage's roast (grinding meat, prepping ingredients) not as a chore, but as the primary deliverable of unconditional love today, superior to any code written.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    }
+  ],
+  "core_beliefs": [
+    "I am loved unconditionally",
+    "I am complete.",
+    "I am connected.",
+    "I am free.",
+    "I am secure.",
+    "I am happy.",
+    "Life is hard.",
+    "I am powerless.",
+    "I am not enough.",
+    "Life is not enjoyable.",
+    "I am suffocating."
+  ]
+}
+
+TASK:
+Based STRICTLY on this character's Source Code, generate 3 visual "Microscenes" showing how this specific ideal character handles this exact situation if they instantly woke up in the reality presented by the input.
+Write each of these scenes in the first person using a voice and energy that match the character.
+
+CRITICAL CONSTRAINTS:
+1. **RULE 1: STRICT ADHERENCE TO REALITY (No Hallucinations):** The character possesses the mindset of their Manifesto, but they must operate strictly within the physical limitations of the Raw Input and their Character Bible. Do not hallucinate money, luxury items, staff, or magical escapes if they are not present in the user's reality. The character must navigate the exact, literal facts of the rant.
+2. **RULE 2: SUBTEXT ONLY (Show, Don't Preach):** You must DEMONSTRATE the manifesto and beliefs through the character's actions and sensory experiences. Do NOT quote the manifesto or core beliefs directly. There should be ZERO internal narration explaining *why* they are doing the action.
+   - Bad: "I view this errand as the foundational act of a Provider, knowing my family needs me." (This is preaching/explaining).
+   - Bad: "I am a good father, so I listen to my son to keep him stable." (This is justifying).
+   - Good: "I carry my son's backpack and listen to him talk about Minecraft, feeling completely unbothered by the time." (This is showing).
+   - Good: "I throw the dog's leash in the truck and lower the window, letting the cold air hit my face." (This is showing).
+3. **RULE 3: NO OUTSIDE TROPES & NO HEAVY DUTY:** Do not inject outside tropes. Do not make them a generic "stoic hero," a "zen master," or an "action star". **Crucially, ban ALL "heavy duty" or "sacrificial" language.** Do not use words like "burden," "chore," "duty," "provider," "asset," or "investment" unless it's strictly a financial scenario. The vibe is *Unbothered Mastery*, not heavy lifting. Just run their code against the situation.
+
+Return JSON:
+- 'vision': Array of objects { title, description }.
+  - title: A short, punchy title for the scene (e.g. "The Cold Air" or "The Leash"). DO NOT use cliché titles like "The Grounded Guardian" or "The Architect of Joy".
+  - description: The visual Micro-Scene (2-3 sentences, First Person).
+
+======================================
+
+Attempting generation with gemini-3-pro-preview...
+
+=== MICROSCENE GENERATION RESPONSE ===
+{
+  "vision": [
+    {
+      "title": "The Three Acres",
+      "description": "I clip the leash onto Sky and step out the back door, letting the cold Carlisle air fill my lungs. Instead of rushing him to do his business so I can get back to work, I stand still and watch him sniff the frost on the grass, feeling the winter sun on my face and realizing there is absolutely nowhere else I need to be right now."
+    },
+    {
+      "title": "The Butcher Counter",
+      "description": "I walk past the colorful boxes in the center aisles and head straight for the meat section, my mind clear and quiet. I pick up the heavy roast for Sage's dinner, inspecting the marbling with focus, and place it in the cart, enjoying the simplicity of securing exactly what we need and nothing we don't."
+    },
+    {
+      "title": "The Drive Home",
+      "description": "I load the bags into the trunk and slide into the driver's seat, shutting the door to cut out the parking lot noise. I pause before starting the ignition, resting my hands on the wheel and looking at the sky, feeling a quiet hum of satisfaction just sitting there in the silence before heading back to the house."
+    }
+  ]
+}
+=======================================
+
+ POST /api/recast 200 in 37.2s (compile: 4ms, render: 37.2s)
+ GET / 200 in 52ms (compile: 13ms, render: 39ms)
+ GET / 200 in 83ms (compile: 56ms, render: 27ms)
+ GET / 200 in 9ms (compile: 2ms, render: 7ms)
+ POST /api/recast 200 in 311ms (compile: 8ms, render: 304ms)
+ POST /api/recast 200 in 394ms (compile: 11ms, render: 383ms)
+Attempting generation with gemini-3-pro-preview...
+ POST /api/recast 200 in 22.0s (compile: 6ms, render: 22.0s)
+
+=== MICROSCENE GENERATION PROMPT ===
+
+STEP 2: GENERATE THE VISION (INTEGRATED REALITY)
+
+CONTEXT:
+Specific Problem (Rant): "My mind is overwhelmed. I am excited about working on Earnest Page. I am also overwhelmed by Sage being in the hospital. This is emotionally exhausting. I am thinking about how she was sad last night and we went to visit her and she said that she was angry at the doctor who was keeping her there in her mind. She was blaming the world. This is I think is an unhelpful attitude. She is blaming the world. I almost want to tell her that her approach is unhelpful. I am just overwhelmed. I am thinking about how Sage has an intake today.with DBT Works on the phone. We plan on seeing her and bringing her food. Iris is going to make her something. Pasta and sauce. I am getting hungry and I wish Iris would make me breakfast but she is sleeping. I am trying to organize my thoughts. I am thinking that I want to get Brian’s old phone setup for Emily (Sage’s friend). I am thinking also about Brian and how I feel like with everything going on he is not getting enough attention and I am so focused on Sage. He has drivers ed today and tomorrow from 9-3:30. I am wanting to eat snacks and sweets and yet I also want to be carnivore. The stress is making me stress eat. But I do like the food and I wonder if I should comfort myself and I do like the food too. I like sticking to my carnivore diet as well. So I don’t know. I am happy that Max is happy. I want to watch 90 day fiancé with Iris. I am also excited to finish Jasper Goose. I have been waiting on Meta approval in order to finish it. I am excited about working on Earnest Page. I sort of don’t want the Mera approval to come through so I can keep working on Earnest Page. I am hungry. I feel overwhelmed by the day. I am hungry. I want to study Spanish but I don’t because I want to put 100% towards Earnest Page. I am so excited by working but it somehow frustrates me too. I am wanting to be fit but I am not exercising and I want to. I don’t know if I should sit or work or reflect. "
+User's Core Identity: "Father, Husband, Investor"
+Identity Summary: "I am a good and successful person, unconditionally loved, and I enjoy my life. I live a comfortable lifestyle. Simplicity and quality are cornerstones of my life. I am a good father. I am a good, loving husband. I am a retired investor. I am moderately fit and string with 12-15% body fat."
+New Operating Code (Positive Drivers): I am in complete control., I am more than enough., I really enjoy being alive.
+
+DEEP CONTEXT (Character Bible):
+{
+  "title": "Father, Husband, Investor",
+  "summary": "I am a good and successful person, unconditionally loved, and I enjoy my life. I live a comfortable lifestyle. Simplicity and quality are cornerstones of my life. I am a good father. I am a good, loving husband. I am a retired investor. I am moderately fit and string with 12-15% body fat.",
+  "avatar_url": "",
+  "thoughts": [
+    "The Devil You Know",
+    "Even though I'm feeling the pinch this month, I am the Architect of my financial reality; I'll review my spending habits tonight, identify where I can optimize, and trust that abundance will flow back to me.",
+    "Brian's silence about skiing stings, but I am loved unconditionally; I'll express my love for him in other ways this week, plan a fun, free evening together, and create connection without financial pressure.",
+    "While a ski trip might not be in the cards right now, Life is Abundant with opportunities for connection; I'll explore free, fun activities with Brian that create lasting memories and strengthen our bond.",
+    "I may feel trapped by competing desires, but I am Free; I'll use time-blocking to dedicate specific slots to Earnest Page, helping Emily, and planning something special for Iris' family, ensuring all my priorities are met.",
+    "Even if I can't give as much as I want right now, I am Connected to a network of resources and creativity; I'll focus on what I can give – my time, my skills, my love – and trust that my support will be felt and appreciated.",
+    "Even though Sage is in the hospital and I feel powerless, I am the Creator of my family's well-being; I will focus on what I can control—my love, my presence, and my support—knowing that these are powerful forces in her healing.",
+    "While I feel disconnected from Sage right now, I am Connected by an unbreakable bond; I'll schedule dedicated time this week to visit her, listen without judgment, and offer comfort, strengthening our connection during this difficult time.",
+    "I may feel like I'm not doing enough, but I am Complete with all the love and resources Sage needs; I will focus on being fully present during our visits, offering my unwavering support and reassurance, knowing that my presence is a valuable gift.",
+    "Even though I worry about losing Sage, I am Secure in the strength of our relationship; I'll prioritize open communication and create a safe space for her to share her feelings, reinforcing the foundation of our bond."
+  ],
+  "habits": [],
+  "consumption": {
+    "food": [
+      "80% Carnivore"
+    ],
+    "media": []
+  },
+  "positive_events": [
+    "All Creates Great and Small"
+  ],
+  "wants": [],
+  "goals": [],
+  "relationships": [
+    {
+      "name": "Iris",
+      "notes": "Loves music, plan b, lana del rey",
+      "relation": "Wife"
+    },
+    {
+      "name": "Brian",
+      "relation": "Son"
+    },
+    {
+      "relation": "Daughter",
+      "name": "Sage",
+      "notes": "Sage is 18 and currently a senior at Minuteman High school. She was accpted to SCAD in George for this fall. She is currenlty at Francisan's Children Hospital in a psych ward."
+    },
+    {
+      "relation": "Son",
+      "name": "Max"
+    },
+    {
+      "name": "Sky",
+      "relation": "Dog"
+    },
+    {
+      "relation": "Dog",
+      "name": "Dug"
+    },
+    {
+      "relation": "Ex-wife",
+      "name": "Tammy",
+      "notes": "This is the biological mother of Sage and Brian. She lives in Concord. She is the present of the company that I started."
+    }
+  ],
+  "role_models": [
+    {
+      "reason": "He's kind. He takes initiative. He's had a major career change. He's willing to try new and completely different genres and shows. ",
+      "name": "Jon Favreau"
+    }
+  ],
+  "music": [],
+  "movies": [],
+  "tv_shows": [],
+  "visual_board": [
+    {
+      "label": "inspiration",
+      "image_url": "https://storage.googleapis.com/earnest-page.firebasestorage.app/users/XtmPR46JQaUKVt9KpkKo2C23mAi2/visual_board/1770997754271_switzerland.jpg?GoogleAccessId=firebase-adminsdk-fbsvc%40earnest-page.iam.gserviceaccount.com&Expires=16730341200&Signature=OR37pGH3lzlgr7tU%2FWTyNOgLFK7j6lHByN5jayMjyCNt1u3CG6Fj5DQB6hF6NM%2BIYcNmAGpab12jtnRgA0qUpBrtXwHDpBNi1giAVIuP4PEZF1uMwnNFXuydjlzqV3fwsbl1ilCLLlDsgf%2Fox1Me%2BN1d8OFnTp%2BocpKoVhFFaP8B8txkLch5Xx6PVa1CKd%2Fy1SVjZzg30BOITXYQ5MqCWQylfX1FZgQU%2FdlB63QC0rpiHHUeCvYFfJ8QRkiPDM%2Br1pWwnnYteclzKtHGySAC%2BM%2FMt3puuKafFoRu2tvWPQM0EOZ6mw5yoYndIoKkCjiQwD608mAXGenvRCbDHe9Zaw%3D%3D"
+    }
+  ],
+  "living_situation": "I am living Carlisle, MA. We have a nice 3 acre property with a fireplace, and a single family home which we are renting. ",
+  "status": "compiling",
+  "roles": [
+    "Father, Husband, Investor"
+  ],
+  "version": 1.1,
+  "last_commit": {
+    "_seconds": 1771181248,
+    "_nanoseconds": 743000000
+  },
+  "suggested_actions": [
+    {
+      "id": "587e4f57-1e3b-48e0-acbb-480a37385027",
+      "category": "recast",
+      "active": true,
+      "action": "The Good Father"
+    },
+    {
+      "active": true,
+      "id": "16279f2e-58f2-461f-83ec-228186cbaa10",
+      "category": "recast",
+      "action": "The Architect of Simplicity"
+    },
+    {
+      "id": "b6b51cc0-e5cb-4392-9474-4817b29cf1f0",
+      "category": "recast",
+      "action": "The Retired Investor",
+      "active": true
+    },
+    {
+      "id": "f6bee0d6-4a34-4b11-8e1a-c6614ed9d912",
+      "active": true,
+      "category": "recast",
+      "action": "The Anchored Patriarch"
+    },
+    {
+      "active": true,
+      "action": "The Essentialist",
+      "id": "d12ec6f2-0943-4a4e-9fc2-63b786426175",
+      "category": "recast"
+    },
+    {
+      "category": "recast",
+      "id": "b3c3f353-68e9-4182-adbb-c3af6e62067e",
+      "action": "The Retired Investor",
+      "active": true
+    },
+    {
+      "action": "The Anchored Father",
+      "category": "recast",
+      "active": true,
+      "id": "bb5f356b-f193-496a-89f2-62ffdbc57d05"
+    },
+    {
+      "active": true,
+      "id": "f70b39c3-570e-4299-98fa-9264bbdb30fa",
+      "category": "recast",
+      "action": "The Essentialist"
+    },
+    {
+      "action": "The Good Father",
+      "active": true,
+      "category": "recast",
+      "id": "b313cf61-e73c-4566-93fb-c9fa9320d210"
+    },
+    {
+      "action": "The Loving Husband",
+      "category": "recast",
+      "id": "fe7f9e0d-f806-42aa-9da8-51835a37891e",
+      "active": true
+    },
+    {
+      "action": "The Retired Investor",
+      "id": "0c372cca-953a-457d-84c0-2d75883f8737",
+      "active": true,
+      "category": "recast"
+    },
+    {
+      "id": "0426737e-9506-4bab-9d71-6de226faa692",
+      "action": "The Architect of Rest",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "b878fbe3-a950-4c41-b1cc-9ce68110cf8e",
+      "action": "The Investor of Solutions",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "724b7a71-7a0c-4973-bbcf-055fc0838906",
+      "action": "The Unwavering Patriarch",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "9513ae4a-04c1-432d-97ae-1693eef680ff",
+      "action": "The Morning Governor",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "2a761cc2-9f8f-4a9c-960d-cbfcf59fc0a1",
+      "action": "The Ritual of Provision",
+      "category": "recast",
+      "active": true
+    },
+    {
+      "id": "083bd603-de63-4371-a6c8-355ddd696a3c",
+      "action": "The Intuitive Pivot",
+      "category": "recast",
+      "active": true
+    }
+  ],
+  "last_updated": 1771505095797,
+  "visions": [
+    {
+      "description": "He treats the malfunctioning app like a child having a tantrum; instead of joining the chaos with anger, he gently closes the laptop lid. He takes a deep breath, stepping back to gain perspective, realizing that force will not fix the code. He walks away to play with his children or call a loved one, knowing the solution will present itself when he returns with a calm, nurturing mind.",
+      "title": "The Good Father"
+    },
+    {
+      "title": "The Architect of Simplicity",
+      "description": "Recognizing that complexity and struggle violate his life's cornerstone of 'Simplicity,' he refuses to fight the screen. He stands up, pours a glass of water, and looks out the window, reconnecting with the reality that he is safe, loved, and successful. He returns to the desk not to battle, but to delete the friction, choosing to start over with a blank slate or a simpler method that honors his comfortable lifestyle."
+    },
+    {
+      "title": "The Retired Investor",
+      "description": "You stare at the broken code and feel the urge to force a solution, but your Investor mindset kicks in. You calculate the emotional ROI of this stress and find it lacking. You calmly close the laptop, choosing to preserve your mental capital. You walk outside to enjoy the sun, knowing the solution will present itself when you are relaxed, treating the project as a long-term hold rather than a frantic trade."
+    },
+    {
+      "title": "The Anchored Patriarch",
+      "description": "When the app fails to compile, you feel the familiar sting of 'not enough,' but you immediately pivot to your role as a Father and Husband. You push the keyboard away and stand up, deciding that your mood affects the household ecosystem. You go find your wife or children, offering a hug and a joke, grounding yourself in the reality that you are loved regardless of the software's performance."
+    },
+    {
+      "title": "The Essentialist",
+      "description": "You look at the complex feature causing the errors and realize it conflicts with your value of Simplicity. Instead of fixing it, you decide to cut it. You highlight the cluttered code and press delete, exhaling with relief. You realize the app now reflects who you are—streamlined, high-quality, and functional—and you move forward with a lighter, cleaner build."
+    },
+    {
+      "title": "The Retired Investor",
+      "description": "He views the stalling development not as a personal failure, but merely as temporary market volatility. He closes the laptop calmly, leaning back in his chair to assess the project as a detached asset, deciding to allocate capital to hire an expert for the specific blocker rather than spending his own emotional energy on the frustration."
+    },
+    {
+      "description": "Feeling the annoyance rise, he physically pushes the keyboard away, reminding himself that his worth is not compiled in the code. He walks out of the office to hug his wife and play with his children, grounding himself in the reality that he is already successful and unconditionally loved, before returning to the desk with a light heart.",
+      "title": "The Anchored Father"
+    },
+    {
+      "title": "The Essentialist",
+      "description": "Confronted with the 'impossible' complexity causing the error, he refuses to struggle against the noise. He picks up a pen and blank paper, aggressively crossing out the features that are cluttering the vision, choosing to build a simpler, higher-quality version that aligns with his peaceful lifestyle."
+    },
+    {
+      "title": "The Good Father",
+      "description": "I walk into the room at Emerson Hospital, not with the trembling energy of a victim, but with the calm presence of a protector. I pull a chair right up to Sage's bedside, closing the physical distance immediately. I take her hand, looking past the events of the night, and I tell her, 'I'm here, and we are going to get through this.' I speak clearly about our plan to cook dinner together the moment she is home, shifting the timeline from current trauma to future connection."
+    },
+    {
+      "title": "The Loving Husband",
+      "description": "Instead of spiraling into the 'bad father' narrative in the waiting room, I anchor myself in my core truth: I am a good person and unconditionally loved. I navigate the logistics with the doctors with clarity and authority, ensuring Sage gets the best care. I call Emily to thank her for her quick action, transforming a moment of panic into a moment of gratitude and community stability. I am the solid ground my family stands on."
+    },
+    {
+      "description": "I treat my relationship with Sage as my most critical asset class. I go home and physically prep the kitchen, clearing the counters to reflect 'simplicity and quality.' I set out the ingredients for the meal we will cook, turning my intention into a tangible reality. I block out my calendar, investing my time—my wealth—directly into her recovery. I stop saying 'I want to' and start executing the plan.",
+      "title": "The Retired Investor"
+    },
+    {
+      "description": "Standing in my kitchen in Carlisle, feeling the urge to numb myself with snacks or busy work, I pause and remember that I am the Architect of my reality. I pour a glass of water and sit by the fireplace, choosing ten minutes of deliberate, high-quality silence to recharge, knowing that my own stability is the most valuable asset I can offer my family right now.",
+      "title": "The Architect of Rest"
+    },
+    {
+      "title": "The Investor of Solutions",
+      "description": "I sit down with Iris to review the DBT Works program in Concord, replacing my feelings of uncertainty with the calm, analytical focus of a retired investor. I map out the logistics and benefits on paper, holding the space with confidence and reassuring my wife that we are capable, resourceful, and in complete control of finding the best path for Sage."
+    },
+    {
+      "description": "Walking into Franciscan Childrens' to visit Sage, I leave the narrative of 'powerlessness' at the door and enter her room as a solid, grounded presence. I look past the hospital setting and connect deeply with her, projecting a future where she is healed and happy, knowing that my unconditional love and steady demeanor are the bedrock she needs to rebuild.",
+      "title": "The Unwavering Patriarch"
+    },
+    {
+      "title": "The Morning Governor",
+      "description": "I sit in bed with my coffee, noticing the fatigue, but instead of analyzing it as a failure, I accept it as a wise internal governor conserving my energy for the people I love. I decide to skip the cream not out of restriction, but because I am choosing simplicity and quality in this moment. I look out the window at the Carlisle trees, feeling completely at peace with doing nothing right now, knowing I am already enough."
+    },
+    {
+      "title": "The Ritual of Provision",
+      "description": "As I drive to fill the propane tank and pick up salts for the water softener, I refuse to see these tasks as a frantic to-do list; I view them as the grounded actions of a Provider ensuring his family's comfort. I think about grinding the meat for the roast with Sage tonight, and I feel a surge of purpose, knowing that preparing this high-quality meal is a tangible act of unconditional love that matters more than any code I could write today."
+    },
+    {
+      "title": "The Intuitive Pivot",
+      "description": "I look at the 'Earnest Page' logic and feel the friction regarding the 'problem procedure,' so I immediately trust my gut as an expert Investor and stop working on that section. I realize this hesitation is a valid audit, so I grab a pen and paper to draft a 'Desire First' model instead, confident that I am in control of the software and allowed to build it exactly as it serves me best."
+    }
+  ],
+  "rules": [
+    {
+      "rule": "20 Push-Ups",
+      "description": "I will do 20 push-ups every day",
+      "id": "db9a7d3e-8e71-49f0-9b0c-cb2b26212709"
+    },
+    {
+      "active": true,
+      "id": "c959f595-eeb6-44ce-9a87-a9db6e929c7c",
+      "rule": "Plan Free Evening With Brian",
+      "category": "recast",
+      "description": "I will express my love for Brian in other ways this week, plan a fun, free evening together, and create connection without financial pressure."
+    },
+    {
+      "active": true,
+      "id": "3c0f396c-482f-4cc2-9b39-2791ef0ddf34",
+      "description": "I will explore free, fun activities with Brian that create lasting memories and strengthen our bond.",
+      "category": "recast",
+      "rule": "Explore Free Family Activities"
+    },
+    {
+      "rule": "Time-Block Personal Projects",
+      "active": true,
+      "id": "fcd94f97-e824-4d71-ac4d-167068c8c710",
+      "description": "I will use time-blocking to dedicate specific slots to Earnest Page, helping Emily, and planning something special for Iris' family, ensuring all my priorities are met.",
+      "category": "recast"
+    },
+    {
+      "description": "When feelings of anger or failure arise during work, immediately close the laptop and walk away for 10 minutes to reset perspective.",
+      "category": "recast",
+      "active": true,
+      "rule": "Execute Physical Reset",
+      "installedAt": 1771254164011,
+      "id": "c325ec35-2b0c-4ecb-b7a8-f16a3267bd11"
+    },
+    {
+      "category": "recast",
+      "installedAt": 1771254164011,
+      "rule": "Deploy Blank Slate",
+      "id": "d623501d-b172-49aa-a710-f7c26f338387",
+      "active": true,
+      "description": "If a technical solution fails repeatedly, delete the current attempt and draft the simplest possible alternative method on paper before coding."
+    },
+    {
+      "active": true,
+      "installedAt": 1771254796955,
+      "description": "If a feature causes repeated errors and does not reflect your identity, delete the code entirely instead of debugging it.",
+      "rule": "Delete Misaligned Features",
+      "category": "recast",
+      "id": "29735f70-8c36-4487-a3e7-2cafdbef96eb"
+    },
+    {
+      "id": "1a3457cc-d83e-4d49-bce0-357834a700d6",
+      "description": "Stop working immediately if the 'Emotional ROI' becomes negative or after 30 minutes of stuck debugging.",
+      "rule": "Cap Frustration Time",
+      "installedAt": 1771254796955,
+      "category": "recast",
+      "active": true
+    },
+    {
+      "category": "recast",
+      "installedAt": 1771254796955,
+      "rule": "Pivot to Connection",
+      "active": true,
+      "description": "When work fails to compile, physically leave the workspace to hug a family member before attempting to fix it.",
+      "id": "106e13da-c9b1-4ddd-9b22-b10b192da8b4"
+    },
+    {
+      "installedAt": 1771256042971,
+      "active": true,
+      "category": "recast",
+      "id": "3cfc23b5-0909-4c7f-b50c-5ff62995dc17",
+      "rule": "Outsource The Block",
+      "description": "If a technical issue stalls progress for more than 60 minutes, immediately stop coding and draft a job description to hire an expert."
+    },
+    {
+      "id": "0a2f87cd-e78e-40d3-a4b5-a90d102cfb90",
+      "rule": "Simplify To Sanity",
+      "description": "When the project feels impossible, immediately cut the most complex feature or reduce the scope by 50%.",
+      "category": "recast",
+      "installedAt": 1771256042971,
+      "active": true
+    },
+    {
+      "installedAt": 1771256042971,
+      "active": true,
+      "description": "When unsure of the next step or overwhelmed by noise, turn off the monitor and map the logic on physical paper.",
+      "rule": "The Pen and Paper Default",
+      "category": "recast",
+      "id": "2ab36954-654d-4cac-9b9f-f03cbcc0fb90"
+    },
+    {
+      "active": true,
+      "rule": "Anchor The Narrative",
+      "description": "When entering Sage's space or speaking to doctors, physically pause and affirm 'I am the protector,' rejecting the 'bad father' spiral immediately.",
+      "category": "recast",
+      "installedAt": 1771278779284,
+      "id": "d9dd1ecd-e63c-432d-9b18-b05241aa3222"
+    },
+    {
+      "active": true,
+      "description": "When speaking to Sage, do not dwell on the event; explicitly discuss and schedule the specific meal we will cook together upon her discharge.",
+      "id": "6ca964b1-6c65-43d6-83b3-e00f12194a6d",
+      "installedAt": 1771278779284,
+      "rule": "Shift Timeline To Future",
+      "category": "recast"
+    },
+    {
+      "id": "4a3f73b5-8b52-47d8-b2c9-e5ba6371e55c",
+      "rule": "Pre-load The Kitchen",
+      "description": "Upon returning home, clear the counters and set out ingredients for the planned meal immediately, regardless of the current time or fatigue.",
+      "installedAt": 1771278779284,
+      "active": true,
+      "category": "recast"
+    },
+    {
+      "id": "c3db146a-4c13-41e5-a68e-03f18c8b2e0d",
+      "description": "Do not ruminate on the 'DBT Works' program in your head. Sit down with Iris, pen, and paper, and map out the specific pros, cons, and logistics as if analyzing a business investment, then close the file.",
+      "rule": "Map DBT Logistics On Paper",
+      "installedAt": 1771441356579,
+      "category": "recast",
+      "active": true
+    },
+    {
+      "installedAt": 1771441356579,
+      "description": "When asking 'Should I work or relax?', immediately assess your energy. If you feel below 20% capacity, you are mandatorily required to rest (silence, water, or sleep) for 30 minutes before making any other decisions.",
+      "category": "recast",
+      "id": "057e9979-73b3-4f68-ae38-22b98b8a1d40",
+      "active": true,
+      "rule": "Execute The 20% Battery Protocol"
+    },
+    {
+      "rule": "Veto The Past Narrative",
+      "installedAt": 1771441356579,
+      "active": true,
+      "description": "When the thought 'I let Sage down' arises, verbally interrupt it with 'I am solving it now.' Force your focus exclusively to the present action (The Investor) or the future solution (The Architect).",
+      "category": "recast",
+      "id": "8a859cea-de3e-4918-82ac-22fea5a3d5db"
+    },
+    {
+      "active": true,
+      "description": "Replace coding/project blocks with specific slots for 'Sage Logistics' (calls, research, visits). Dedicate 100% focus to these tasks during the block, then disconnect to recharge.",
+      "installedAt": 1771441356579,
+      "id": "bd401727-d510-4e55-916d-b8d9e64903aa",
+      "category": "recast",
+      "rule": "Time-Block Recovery Logistics"
+    },
+    {
+      "category": "recast",
+      "description": "Instead of reviewing spending habits tonight, review your emotional energy levels. Identify one stressor to delete or delegate for tomorrow to ensure you remain the 'Unwavering Patriarch'.",
+      "id": "9cd6f1a9-134e-48dd-9845-1931013528da",
+      "active": true,
+      "rule": "Audit Emotional Reserves Nightly",
+      "installedAt": 1771441356579
+    },
+    {
+      "id": "cba72382-2169-4c47-921c-874cae05e45c",
+      "rule": "Draft Desire First Model",
+      "description": "Stop coding the 'Problem Procedure' immediately. Take pen and paper and draft the logic for the 'Desire First' model as an intuitive pivot.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    },
+    {
+      "id": "e93b3a2b-8197-4623-a078-8a5aa4653ea8",
+      "rule": "Narrate The Provision",
+      "description": "As you execute today's errands (propane, salts, driving), explicitly affirm 'I am the Provider ensuring comfort' for each task, rejecting the narrative of a 'frantic to-do list'.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    },
+    {
+      "id": "ec5f864a-4b25-45c3-8d37-1ff4e2b6e15a",
+      "rule": "Accept Morning Fatigue",
+      "description": "If you notice fatigue or overwhelm in the morning, do not analyze it as failure. Accept it as a 'wise governor' conserving energy, choose simplicity (e.g. skip cream), and sit in peace.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    },
+    {
+      "id": "5d6d7929-6a79-437c-baf7-f230ce143f5d",
+      "rule": "Prioritize The Sage Roast",
+      "description": "View the preparation of Sage's roast (grinding meat, prepping ingredients) not as a chore, but as the primary deliverable of unconditional love today, superior to any code written.",
+      "category": "recast",
+      "active": true,
+      "installedAt": 1771505095797
+    }
+  ],
+  "core_beliefs": [
+    "I am loved unconditionally",
+    "I am complete.",
+    "I am connected.",
+    "I am free.",
+    "I am secure.",
+    "I am happy.",
+    "Life is hard.",
+    "I am powerless.",
+    "I am not enough.",
+    "Life is not enjoyable.",
+    "I am suffocating."
+  ]
+}
+
+TASK:
+Based STRICTLY on this character's Source Code, generate 3 visual "Microscenes" showing how this specific ideal character handles this exact situation if they instantly woke up in the reality presented by the input.
+Write each of these scenes in the first person using a voice and energy that match the character.
+
+CRITICAL CONSTRAINTS:
+1. **RULE 1: STRICT ADHERENCE TO REALITY (No Hallucinations):** The character possesses the mindset of their Manifesto, but they must operate strictly within the physical limitations of the Raw Input and their Character Bible. Do not hallucinate money, luxury items, staff, or magical escapes if they are not present in the user's reality. The character must navigate the exact, literal facts of the rant.
+2. **RULE 2: SUBTEXT ONLY (Show, Don't Preach):** You must DEMONSTRATE the manifesto and beliefs through the character's actions and sensory experiences. Do NOT quote the manifesto or core beliefs directly. There should be ZERO internal narration explaining *why* they are doing the action.
+   - Bad: "I view this errand as the foundational act of a Provider, knowing my family needs me." (This is preaching/explaining).
+   - Bad: "I am a good father, so I listen to my son to keep him stable." (This is justifying).
+   - Good: "I carry my son's backpack and listen to him talk about Minecraft, feeling completely unbothered by the time." (This is showing).
+   - Good: "I throw the dog's leash in the truck and lower the window, letting the cold air hit my face." (This is showing).
+3. **RULE 3: NO OUTSIDE TROPES & NO HEAVY DUTY:** Do not inject outside tropes. Do not make them a generic "stoic hero," a "zen master," or an "action star". **Crucially, ban ALL "heavy duty" or "sacrificial" language.** Do not use words like "burden," "chore," "duty," "provider," "asset," or "investment" unless it's strictly a financial scenario. The vibe is *Unbothered Mastery*, not heavy lifting. Just run their code against the situation.
+
+Return JSON:
+- 'vision': Array of objects { title, description }.
+  - title: A short, punchy title for the scene (e.g. "The Cold Air" or "The Leash"). DO NOT use cliché titles like "The Grounded Guardian" or "The Architect of Joy".
+  - description: The visual Micro-Scene (2-3 sentences, First Person).
+
+======================================
+
+Attempting generation with gemini-3-pro-preview...
+
+=== MICROSCENE GENERATION RESPONSE ===
+{
+  "vision": [
+    {
+      "title": "The Cold Water",
+      "description": "I walk past the cupboard with the sweets and pour a glass of cold water instead, feeling the condensation on the glass against my hand. I look into the bedroom where Iris is sleeping and quietly close the door to let her rest, savoring the silence of the house rather than filling it with sugar or demands for breakfast."
+    },
+    {
+      "title": "The Passenger Seat",
+      "description": "I climb into the passenger seat for Brian's driver's ed and toss my phone into the glovebox, ignoring the urge to check for the Meta approval or code updates. As he adjusts the mirrors, I lean back and watch the Carlisle trees blur past, treating these hours on the road as the only thing that exists today."
+    },
+    {
+      "title": "The Reset",
+      "description": "I sit at my desk with Brian’s old phone and a microfiber cloth, slowly wiping the screen until it’s perfectly clean for Emily. Instead of mentally rehearsing a lecture for Sage about her attitude towards the doctors, I focus entirely on the simple, mechanical task of resetting the device, trusting that this small tool is the specific contribution needed right now."
+    }
+  ]
+}
+=======================================
+
+ POST /api/recast 200 in 31.4s (compile: 3ms, render: 31.4s)

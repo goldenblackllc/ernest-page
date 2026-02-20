@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { CharacterBible } from "@/types/character";
 import { updateCharacterBible } from "@/lib/firebase/character";
-import { X, Save, Plus, Trash2, Camera, Calendar, User, Heart, Brain, Zap, Hash } from "lucide-react";
+import { X, Save, Plus, Trash2, Camera, Calendar, User, Heart, Brain, Zap, Hash, Pencil, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -350,6 +350,8 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[], onChange: (
 
 function ObjectArrayInput({ items, onChange, fields, generateId, chipStyle }: { items: any[], onChange: (val: any[]) => void, fields: { key: string, placeholder: string, width: string }[], generateId?: boolean, chipStyle?: boolean }) {
     const [newItem, setNewItem] = useState<any>({});
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editItem, setEditItem] = useState<any>({});
 
     const handleAdd = () => {
         // Validation: Ensure at least the first field is filled
@@ -366,74 +368,131 @@ function ObjectArrayInput({ items, onChange, fields, generateId, chipStyle }: { 
         onChange(items.filter((_, i) => i !== index));
     };
 
+    const startEditing = (index: number) => {
+        setEditingIndex(index);
+        setEditItem({ ...items[index] });
+    };
+
+    const cancelEditing = () => {
+        setEditingIndex(null);
+        setEditItem({});
+    };
+
+    const saveEditing = () => {
+        if (!editItem[fields[0].key]) return; // Validation
+
+        const newItems = [...items];
+        newItems[editingIndex!] = editItem;
+        onChange(newItems);
+        setEditingIndex(null);
+        setEditItem({});
+    };
+
     return (
         <div className="space-y-3">
             {/* List Existing */}
             <div className={cn("space-y-4", chipStyle && "space-y-4 flex flex-col gap-0")}>
                 {items.map((item, i) => (
                     <div key={i} className={cn(
-                        "flex gap-2 items-start group relative pr-8",
+                        "flex gap-2 items-start group relative pr-16", // Added more padding right for buttons
                         chipStyle ? "bg-white/5 border border-white/10 rounded-2xl px-4 py-3 items-center" : "flex-1"
                     )}>
-                        <div className={cn(
-                            "flex flex-col gap-1 w-full",
-                            chipStyle ? "" : "flex-1 bg-white/5 border border-white/10 rounded-2xl p-4"
-                        )}>
-                            {fields.map((f, index) => (
-                                <div
-                                    key={f.key}
-                                    className="w-full"
-                                >
-                                    {/* Render First Field as Title, others as Description */}
-                                    <p className={cn(
-                                        "break-words whitespace-normal",
-                                        index === 0 ? "text-base font-bold text-white mb-0.5" : "text-sm text-zinc-400"
-                                    )}>
-                                        {item[f.key]}
-                                    </p>
+                        {editingIndex === i ? (
+                            <div className="flex-1 flex gap-2 items-center w-full">
+                                {fields.map((f) => (
+                                    <div key={f.key} style={{ width: f.width }}>
+                                        <input
+                                            value={editItem[f.key] || ""}
+                                            onChange={e => setEditItem({ ...editItem, [f.key]: e.target.value })}
+                                            placeholder={f.placeholder}
+                                            className="w-full bg-transparent border-b border-white pb-1 text-sm text-white focus:outline-none"
+                                            autoFocus={f.key === fields[0].key}
+                                        />
+                                    </div>
+                                ))}
+                                <div className="flex items-center gap-1">
+                                    <button onClick={saveEditing} className="p-1 text-green-400 hover:text-green-300">
+                                        <Check className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={cancelEditing} className="p-1 text-red-400 hover:text-red-300">
+                                        <X className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => handleRemove(i)}
-                            className={cn(
-                                "text-zinc-600 hover:text-white transition-opacity",
-                                chipStyle ? "ml-auto" : "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2"
-                            )}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className={cn(
+                                    "flex flex-col gap-1 w-full",
+                                    chipStyle ? "" : "flex-1 bg-white/5 border border-white/10 rounded-2xl p-4"
+                                )}>
+                                    {fields.map((f, index) => (
+                                        <div
+                                            key={f.key}
+                                            className="w-full"
+                                        >
+                                            {/* Render First Field as Title, others as Description */}
+                                            <p className={cn(
+                                                "break-words whitespace-normal",
+                                                index === 0 ? "text-base font-bold text-white mb-0.5" : "text-sm text-zinc-400"
+                                            )}>
+                                                {item[f.key]}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className={cn(
+                                    "flex items-center gap-1",
+                                    chipStyle ? "ml-auto" : "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 bg-black/50 rounded-lg p-1 backdrop-blur-sm"
+                                )}>
+                                    <button
+                                        onClick={() => startEditing(i)}
+                                        className="p-1.5 text-zinc-400 hover:text-white transition-colors"
+                                    >
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleRemove(i)}
+                                        className="p-1.5 text-zinc-400 hover:text-red-400 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 ))}
             </div>
 
             {/* Add New */}
-            <div className="flex gap-2 items-end mt-4">
-                {fields.map((f, index) => (
-                    <div key={f.key} style={{ width: f.width }}>
-                        <input
-                            value={newItem[f.key] || ""}
-                            onChange={e => setNewItem({ ...newItem, [f.key]: e.target.value })}
-                            placeholder={f.placeholder}
-                            className="w-full bg-transparent border-b border-zinc-700 pb-1 text-sm text-zinc-300 focus:border-white focus:outline-none"
-                            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                            onBlur={() => {
-                                // Attempt auto-add if this is the last field and user is clicking away
-                                if (index === fields.length - 1 && newItem[fields[0].key]) {
-                                    handleAdd();
-                                }
-                            }}
-                        />
-                    </div>
-                ))}
-                <button
-                    onClick={handleAdd}
-                    disabled={!newItem[fields[0].key]}
-                    className="p-1 text-white hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed bg-zinc-800 rounded-full"
-                >
-                    <Plus className="w-5 h-5" />
-                </button>
-            </div>
+            {/* Only show add new when not editing to reduce clutter/focus */}
+            {editingIndex === null && (
+                <div className="flex gap-2 items-end mt-4">
+                    {fields.map((f, index) => (
+                        <div key={f.key} style={{ width: f.width }}>
+                            <input
+                                value={newItem[f.key] || ""}
+                                onChange={e => setNewItem({ ...newItem, [f.key]: e.target.value })}
+                                placeholder={f.placeholder}
+                                className="w-full bg-transparent border-b border-zinc-700 pb-1 text-sm text-zinc-300 focus:border-white focus:outline-none"
+                                onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                                onBlur={() => {
+                                    // Attempt auto-add if this is the last field and user is clicking away
+                                    if (index === fields.length - 1 && newItem[fields[0].key]) {
+                                        handleAdd();
+                                    }
+                                }}
+                            />
+                        </div>
+                    ))}
+                    <button
+                        onClick={handleAdd}
+                        disabled={!newItem[fields[0].key]}
+                        className="p-1 text-white hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed bg-zinc-800 rounded-full"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
