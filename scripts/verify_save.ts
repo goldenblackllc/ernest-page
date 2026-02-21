@@ -19,14 +19,21 @@ async function testSave() {
     // Assuming for now we can read/write to this test user or rules allow it.
 
     const original = await getCharacterBible(TEST_UID);
-    console.log("Original Title:", original.title);
+    console.log("Original Title:", original.source_code?.archetype);
 
     const updates: Partial<CharacterBible> = {
-        title: "TEST TITLE " + Date.now(),
-        role_models: [{ name: "Test Model", reason: "Testing persistence" }],
-        rules: [{ id: "r1", rule: "Test Rule", description: "Test Desc" }],
-        visual_board: [{ label: "Test View", image_url: "http://example.com/img.jpg" }],
-        consumption: { food: ["Apple"], media: ["Book"] }
+        source_code: {
+            archetype: "TEST TITLE " + Date.now(),
+            manifesto: "",
+            core_beliefs: "",
+            important_people: "",
+            current_constraints: ""
+        },
+        compiled_bible: {
+            behavioral_responses: [{ id: "r1", rule: "Test Rule", description: "Test Desc" }],
+            visual_board: [{ label: "Test View", image_url: "http://example.com/img.jpg" }],
+            consumption: { food: ["Apple"], media: ["Book"] }
+        }
     };
 
     console.log("2. Updating...");
@@ -36,10 +43,9 @@ async function testSave() {
     const updated = await getCharacterBible(TEST_UID);
 
     // Check fields
-    if (updated.title !== updates.title) console.error("FAIL: Title mismatch");
-    if (updated.role_models[0]?.name !== "Test Model") console.error("FAIL: Role Model mismatch");
-    if (updated.rules[0]?.rule !== "Test Rule") console.error("FAIL: Rule mismatch");
-    if (updated.consumption.food[0] !== "Apple") console.error("FAIL: Consumption mismatch");
+    if (updated.source_code?.archetype !== updates.source_code?.archetype) console.error("FAIL: Title mismatch");
+    if (updated.compiled_bible?.behavioral_responses?.[0]?.rule !== "Test Rule") console.error("FAIL: Rule mismatch");
+    if (updated.compiled_bible?.consumption?.food?.[0] !== "Apple") console.error("FAIL: Consumption mismatch");
 
     console.log("DONE. Final State:", JSON.stringify(updated, null, 2));
 }

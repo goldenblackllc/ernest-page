@@ -316,28 +316,31 @@ Full Raw Context:
 // --- HELPERS ---
 
 async function getUserContext(uid: string) {
-    if (!uid) return { roles: [], beliefs: [], bible: {} };
+    if (!uid) return { roles: [], beliefs: [], relationships: "None", bible: {} };
 
     try {
         const userDoc = await db.collection('users').doc(uid).get();
-        if (!userDoc.exists) return { roles: [], beliefs: [], bible: {} };
+        if (!userDoc.exists) return { roles: [], beliefs: [], relationships: "None", bible: {} };
 
         const data = userDoc.data();
         const bible = data?.character_bible || {};
 
+        const sourceCode = bible.source_code || {};
+
         return {
-            roles: bible.roles || ["High-Value Individual"],
-            beliefs: bible.core_beliefs || [],
+            roles: sourceCode.archetype ? [sourceCode.archetype] : ["High-Value Individual"],
+            beliefs: sourceCode.core_beliefs ? [sourceCode.core_beliefs] : [],
+            relationships: sourceCode.important_people || "None",
             bible: bible // Return full bible object
         };
     } catch (error) {
         console.error("Error fetching user context:", error);
-        return { roles: ["High-Value Individual"], beliefs: [], bible: {} };
+        return { roles: ["High-Value Individual"], beliefs: [], relationships: "None", bible: {} };
     }
 }
 
 // --- HELPER: FALLBACK GENERATION ---
-const PRIMARY_MODEL = 'gemini-3-pro-preview';
+const PRIMARY_MODEL = 'gemini-3.1-pro-preview';
 const FALLBACK_MODEL = 'gemini-2.5-pro';
 
 async function generateWithFallback(options: any) {
@@ -370,9 +373,9 @@ export async function POST(req: Request) {
 
         // Context
         const context = await getUserContext(uid);
-        const relationshipsStr = (context.bible.relationships || []).join(", ") || "None";
         const rolesStr = context.roles.join(", "); // Keep for other prompts
         const existingBeliefsStr = context.beliefs.join(", "); // Keep for other prompts
+        const relationshipsStr = context.relationships;
 
         // Common replacements
         const keptItemsStr = payload.kept_items ? JSON.stringify(payload.kept_items) : "None";
@@ -391,11 +394,11 @@ export async function POST(req: Request) {
             await db.collection('users').doc(uid).set({
                 character_bible: {
                     ...context.bible,
-                    roles: [title], // Assuming title maps to roles for now, or add a specific title field?
-                    // The prompt uses "Roles". Let's assume Title = Main Role.
-                    // Actually, let's just save title and summary as is in the bible.
-                    title: title,
-                    summary: summary
+                    source_code: {
+                        ...(context.bible.source_code || {}),
+                        archetype: title,
+                        manifesto: summary
+                    }
                 }
             }, { merge: true });
             return Response.json({ success: true });
@@ -406,8 +409,11 @@ export async function POST(req: Request) {
 
             const effectiveBible = {
                 ...context.bible,
-                title: calibration.title || context.bible.title || "High Value Individual",
-                summary: calibration.summary || context.bible.summary || "A person striving for excellence."
+                source_code: {
+                    ...(context.bible.source_code || {}),
+                    archetype: calibration.title || context.bible.source_code?.archetype || "High Value Individual",
+                    manifesto: calibration.summary || context.bible.source_code?.manifesto || "A person striving for excellence."
+                }
             };
             const fullBibleStr = JSON.stringify(effectiveBible, null, 2);
 
@@ -416,8 +422,8 @@ export async function POST(req: Request) {
                 system: DIRECTOR_PERSONA,
                 prompt: PROBLEM_THOUGHTS_PROMPT
                     .replace("{RANT}", rant)
-                    .replace("{CALIBRATION_TITLE}", effectiveBible.title)
-                    .replace("{CALIBRATION_SUMMARY}", effectiveBible.summary)
+                    .replace("{CALIBRATION_TITLE}", effectiveBible.source_code.archetype)
+                    .replace("{CALIBRATION_SUMMARY}", effectiveBible.source_code.manifesto)
                     .replace("{FULL_BIBLE_CONTEXT}", fullBibleStr),
                 schema: z.object({
                     thoughts: z.array(z.object({
@@ -471,8 +477,11 @@ export async function POST(req: Request) {
             // Global Context (Full Bible) + Local Overrides (Calibration)
             const effectiveBible = {
                 ...context.bible,
-                title: calibration.title || context.bible.title || "High Value Individual",
-                summary: calibration.summary || context.bible.summary || "A person striving for excellence."
+                source_code: {
+                    ...(context.bible.source_code || {}),
+                    archetype: calibration.title || context.bible.source_code?.archetype || "High Value Individual",
+                    manifesto: calibration.summary || context.bible.source_code?.manifesto || "A person striving for excellence."
+                }
             };
             const fullBibleStr = JSON.stringify(effectiveBible, null, 2);
 
@@ -491,8 +500,8 @@ export async function POST(req: Request) {
             const promptTemplate = isProblem ? PROBLEM_VISION_PROMPT : DESIRE_VISION_PROMPT;
 
             const finalVisionPrompt = promptTemplate
-                .replace("{CALIBRATION_TITLE}", effectiveBible.title)
-                .replace("{CALIBRATION_SUMMARY}", effectiveBible.summary)
+                .replace("{CALIBRATION_TITLE}", effectiveBible.source_code.archetype)
+                .replace("{CALIBRATION_SUMMARY}", effectiveBible.source_code.manifesto)
                 .replace("{SELECTED_DRIVERS}", driversStr)
                 .replace("{SELECTED_THOUGHTS}", thoughtsStr)
                 .replace("{FULL_BIBLE_CONTEXT}", fullBibleStr)
@@ -527,12 +536,16 @@ export async function POST(req: Request) {
             // 1. Context Preparation (Same as Vision)
             const effectiveBible = {
                 ...context.bible,
-                title: calibration?.title || context.bible.title || "High Value Individual",
-                summary: calibration?.summary || context.bible.summary || "A person striving for excellence."
+                source_code: {
+                    ...(context.bible.source_code || {}),
+                    archetype: calibration?.title || context.bible.source_code?.archetype || "High Value Individual",
+                    manifesto: calibration?.summary || context.bible.source_code?.manifesto || "A person striving for excellence."
+                }
             };
             const fullBibleStr = JSON.stringify(effectiveBible, null, 2);
 
-            const currentRules = context.bible.rules || [];
+            const compiledBible = context.bible.compiled_bible || {};
+            const currentRules = compiledBible.behavioral_responses || [];
             const currentRulesSimple = currentRules.map((r: any) => ({ id: r.id, title: r.rule, description: r.description }));
             const currentRulesStr = JSON.stringify(currentRulesSimple);
             const visionStr = JSON.stringify(selected_vision);

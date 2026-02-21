@@ -5,14 +5,17 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterBible } from "@/lib/firebase/character";
 import { CharacterBible } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { User, Scroll, Target, Crown, Sparkles } from "lucide-react";
+import { User, Scroll, Target, Crown, Sparkles, MessageCircle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { CharacterSheetModal } from "./CharacterSheetModal";
+import { MirrorChat } from "./MirrorChat";
 
 export function CharacterShowcase() {
     const { user } = useAuth();
     const [bible, setBible] = useState<CharacterBible | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [isMirrorOpen, setIsMirrorOpen] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -32,17 +35,21 @@ export function CharacterShowcase() {
 
     // Helper to get background image style if available for a label
     const getVisual = (label: string) => {
-        const visual = bible.visual_board.find(v => v.label.toLowerCase().includes(label.toLowerCase()));
+        const visual = bible.compiled_bible?.visual_board?.find((v: any) => v.label.toLowerCase().includes(label.toLowerCase()));
         return visual ? { backgroundImage: `url(${visual.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {};
     };
+
+    const displaySections = bible.compiled_output?.ideal;
 
     return (
         <>
             <div className="w-full mb-8 space-y-4">
-                <h2 className="px-1 text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-emerald-500" />
-                    Character Engine
-                </h2>
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Crown className="w-5 h-5 text-emerald-500" />
+                        Desired Character
+                    </h2>
+                </div>
 
                 {/* Carousel Container */}
                 <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar text-white">
@@ -57,8 +64,8 @@ export function CharacterShowcase() {
 
                         <div className="relative z-10">
                             <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-zinc-700 mb-4 overflow-hidden">
-                                {bible.avatar_url ? (
-                                    <img src={bible.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                {bible.compiled_bible?.avatar_url ? (
+                                    <img src={bible.compiled_bible.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-zinc-500">
                                         <User className="w-6 h-6" />
@@ -66,10 +73,10 @@ export function CharacterShowcase() {
                                 )}
                             </div>
                             <h3 className="text-2xl font-black uppercase tracking-tighter text-white leading-none mb-2">
-                                {bible.title}
+                                {bible.source_code?.archetype || "Unknown"}
                             </h3>
                             <p className="text-sm text-zinc-300 leading-relaxed opacity-90">
-                                {bible.summary}
+                                {bible.source_code?.manifesto || "No manifesto."}
                             </p>
                         </div>
 
@@ -79,86 +86,56 @@ export function CharacterShowcase() {
                         </div>
                     </button>
 
-                    {/* CARD 2: BELIEFS (The "Code") */}
-                    <button
-                        onClick={() => setIsSheetOpen(true)}
-                        className="snap-center shrink-0 w-[85vw] sm:w-80 h-96 rounded-2xl bg-zinc-950 border border-zinc-800 p-6 flex flex-col relative overflow-hidden group text-left hover:border-zinc-500 transition-colors"
-                    >
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Scroll className="w-24 h-24 text-white" />
-                        </div>
+                    {/* DYNAMIC CARDS FROM COMPILED OUTPUT */}
+                    {displaySections?.map((section, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setIsSheetOpen(true)}
+                            className="snap-center shrink-0 w-[85vw] sm:w-80 h-96 rounded-2xl bg-zinc-950 border border-zinc-800 p-6 flex flex-col relative overflow-hidden group text-left hover:border-zinc-500 transition-colors"
+                        >
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Sparkles className="w-24 h-24 text-white" />
+                            </div>
 
-                        <div className="mb-6 relative z-10">
-                            <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-1">Core Beliefs</h3>
-                            <div className="h-1 w-12 bg-emerald-500 rounded-full" />
-                        </div>
+                            <div className="mb-6 relative z-10">
+                                <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-1">{section.heading}</h3>
+                                <div className="h-1 w-12 bg-zinc-700 group-hover:bg-zinc-500 transition-colors rounded-full" />
+                            </div>
 
-                        <div className="flex-1 overflow-y-auto space-y-3 relative z-10 pr-2 custom-scrollbar">
-                            {bible.core_beliefs.length > 0 ? bible.core_beliefs.map((belief, i) => (
-                                <div key={i} className="text-sm text-zinc-300 border-l-2 border-zinc-800 pl-3 py-1">
-                                    {belief}
+                            <div className="flex-1 overflow-y-auto space-y-3 relative z-10 pr-2 custom-scrollbar">
+                                <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap prose prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:text-white prose-a:text-emerald-400 prose-strong:text-emerald-300">
+                                    <ReactMarkdown>
+                                        {section.content}
+                                    </ReactMarkdown>
                                 </div>
-                            )) : (
-                                <div className="text-sm text-zinc-600 italic">No core beliefs installed yet.</div>
-                            )}
-                        </div>
-                    </button>
-
-                    {/* CARD 3: RULES (The "Operating System") */}
-                    <button
-                        onClick={() => setIsSheetOpen(true)}
-                        className="snap-center shrink-0 w-[85vw] sm:w-80 h-96 rounded-2xl bg-zinc-950 border border-zinc-800 p-6 flex flex-col relative overflow-hidden group text-left hover:border-zinc-500 transition-colors"
-                    >
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Sparkles className="w-24 h-24 text-white" />
-                        </div>
-
-                        <div className="mb-6 relative z-10">
-                            <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-1">Active Rules</h3>
-                            <div className="h-1 w-12 bg-blue-500 rounded-full" />
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto space-y-3 relative z-10 pr-2 custom-scrollbar">
-                            {bible.rules.length > 0 ? bible.rules.map((rule, i) => (
-                                <div key={i} className="group/rule">
-                                    <div className="text-xs font-bold text-blue-400 mb-1 uppercase tracking-wider">{rule.rule}</div>
-                                    {rule.description && (
-                                        <div className="text-xs text-zinc-500 leading-tight">{rule.description}</div>
-                                    )}
-                                </div>
-                            )) : (
-                                <div className="text-sm text-zinc-600 italic">No rules defined.</div>
-                            )}
-                        </div>
-                    </button>
-
-                    {/* CARD 4: GOALS (The "Target") */}
-                    <button
-                        onClick={() => setIsSheetOpen(true)}
-                        className="snap-center shrink-0 w-[85vw] sm:w-80 h-96 rounded-2xl bg-zinc-900 border border-zinc-800 p-6 flex flex-col relative overflow-hidden group text-left hover:border-zinc-500 transition-colors"
-                        style={getVisual('goals')}
-                    >
-                        <div className="absolute inset-0 bg-black/80" />
-
-                        <div className="mb-6 relative z-10">
-                            <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-1">Target State</h3>
-                            <div className="h-1 w-12 bg-red-500 rounded-full" />
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto space-y-4 relative z-10">
-                            {bible.goals.length > 0 ? bible.goals.map((goal, i) => (
-                                <div key={i} className="flex items-start gap-3">
-                                    <Target className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                                    <span className="text-sm font-medium text-zinc-200">{goal}</span>
-                                </div>
-                            )) : (
-                                <div className="text-sm text-zinc-600 italic">No targets set.</div>
-                            )}
-                        </div>
-                    </button>
+                            </div>
+                        </button>
+                    ))}
 
                 </div>
-            </div>
+
+                {/* Mirror Chat Entry Button */}
+                <div className="mt-6 px-1">
+                    <button
+                        onClick={() => setIsMirrorOpen(true)}
+                        className="w-full relative group overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 p-4 transition-all hover:border-emerald-500/50"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="relative flex items-center justify-between z-10">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-300">
+                                    <MessageCircle className="w-6 h-6" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="text-white font-bold leading-none mb-1 group-hover:text-emerald-400 transition-colors">Consult Your Ideal Self</h3>
+                                    <p className="text-sm text-zinc-400 font-medium">Real-time guidance from the Mirror.</p>
+                                </div>
+                            </div>
+                            <Sparkles className="w-5 h-5 text-emerald-500/50 group-hover:text-emerald-400 group-hover:rotate-12 transition-all duration-300 mr-2" />
+                        </div>
+                    </button>
+                </div>
+            </div >
 
             <CharacterSheetModal
                 isOpen={isSheetOpen}
@@ -166,6 +143,13 @@ export function CharacterShowcase() {
                     setIsSheetOpen(false);
                 }}
                 initialData={bible}
+            />
+
+            <MirrorChat
+                isOpen={isMirrorOpen}
+                onClose={() => setIsMirrorOpen(false)}
+                bible={bible}
+                uid={user?.uid || ""}
             />
         </>
     );

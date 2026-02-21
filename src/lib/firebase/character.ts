@@ -3,24 +3,17 @@ import { db } from "./config";
 import { CharacterBible, CharacterProfile } from "@/types/character";
 
 export const DEFAULT_BIBLE: CharacterBible = {
-    title: "Good Successful Happy Human",
-    summary: "I am a good person who is successful, unconditionally loved, and I enjoy my life.",
-    avatar_url: "",
-    core_beliefs: [],
-    rules: [],
-    thoughts: [],
-    habits: [],
-    consumption: { food: [], media: [] },
-    positive_events: [],
-    wants: [],
-    goals: [],
-    relationships: [],
-    role_models: [],
-    music: [],
-    movies: [],
-    tv_shows: [],
-    visual_board: [],
-    suggested_actions: [],
+    source_code: {
+        archetype: "Good Successful Happy Human",
+        manifesto: "I am a good person who is successful, unconditionally loved, and I enjoy my life.",
+        core_beliefs: "",
+        important_people: "",
+        current_constraints: ""
+    },
+    compiled_bible: {},
+    compiled_output: {
+        ideal: []
+    },
     last_updated: Date.now()
 };
 
@@ -35,7 +28,18 @@ export async function getCharacterBible(uid: string): Promise<CharacterBible> {
     if (docSnap.exists()) {
         const data = docSnap.data() as CharacterProfile;
         if (data.character_bible) {
-            return { ...DEFAULT_BIBLE, ...data.character_bible }; // Safe merge
+            // Safety: Make sure source_code and compiled_bible exist if migrating
+            const migratedBible: CharacterBible = {
+                ...DEFAULT_BIBLE,
+                ...data.character_bible,
+                source_code: {
+                    ...DEFAULT_BIBLE.source_code,
+                    ...(data.character_bible.source_code || {})
+                },
+                compiled_bible: data.character_bible.compiled_bible || {},
+                compiled_output: data.character_bible.compiled_output || { ideal: [] }
+            };
+            return migratedBible;
         }
     }
 
@@ -46,38 +50,36 @@ export async function getCharacterBible(uid: string): Promise<CharacterBible> {
 
 /**
  * Merges new data into the Character Bible.
- * Handles deduplication for arrays.
  */
 export async function updateCharacterBible(uid: string, updates: Partial<CharacterBible>) {
     const currentBible = await getCharacterBible(uid);
 
-    // Deep merge logic specific to arrays (union)
     const merged: CharacterBible = { ...currentBible };
 
-    // 1. Arrays - simple overwrite if provided (Trust the client state, e.g. from Sheet Editor)
-    if (updates.core_beliefs) merged.core_beliefs = updates.core_beliefs;
-    if (updates.rules) merged.rules = updates.rules;
-    if (updates.thoughts) merged.thoughts = updates.thoughts;
-    if (updates.habits) merged.habits = updates.habits;
-    if (updates.positive_events) merged.positive_events = updates.positive_events;
-    if (updates.wants) merged.wants = updates.wants;
-    if (updates.goals) merged.goals = updates.goals;
-    if (updates.relationships) merged.relationships = updates.relationships;
-    if (updates.role_models) merged.role_models = updates.role_models;
-    if (updates.music) merged.music = updates.music;
-    if (updates.movies) merged.movies = updates.movies;
-    if (updates.tv_shows) merged.tv_shows = updates.tv_shows;
-    if (updates.visual_board) merged.visual_board = updates.visual_board;
-    if (updates.consumption) merged.consumption = updates.consumption;
-    if (updates.suggested_actions) merged.suggested_actions = updates.suggested_actions;
+    // Deep merge source code
+    if (updates.source_code) {
+        merged.source_code = {
+            ...merged.source_code,
+            ...updates.source_code
+        };
+    }
 
-    // 2. Overwrite scalars
-    if (updates.title) merged.title = updates.title;
-    if (updates.summary) merged.summary = updates.summary;
-    if (updates.avatar_url) merged.avatar_url = updates.avatar_url;
-    if (updates.living_situation) merged.living_situation = updates.living_situation;
-    if (updates.birthday) merged.birthday = updates.birthday;
-    if (updates.gender) merged.gender = updates.gender;
+    // Deep merge compiled bible
+    if (updates.compiled_bible) {
+        merged.compiled_bible = {
+            ...merged.compiled_bible,
+            ...updates.compiled_bible
+        };
+    }
+
+    // Replace compiled output
+    if (updates.compiled_output) {
+        merged.compiled_output = updates.compiled_output;
+    }
+
+    if (updates.status) merged.status = updates.status;
+    if (updates.version) merged.version = updates.version;
+    if (updates.last_commit) merged.last_commit = updates.last_commit;
 
     merged.last_updated = Date.now();
 
@@ -88,16 +90,6 @@ export async function updateCharacterBible(uid: string, updates: Partial<Charact
     });
 
     return merged;
-}
-
-// ... (existing code)
-
-/**
- * Returns valid Suggested Actions (not expired).
- */
-export function getValidActions(bible: CharacterBible) {
-    const now = Date.now();
-    return (bible.suggested_actions || []).filter(action => action.expires_at > now && !action.is_completed);
 }
 
 import { onSnapshot } from "firebase/firestore";
@@ -111,7 +103,17 @@ export function subscribeToCharacterBible(uid: string, onUpdate: (bible: Charact
         if (docSnap.exists()) {
             const data = docSnap.data() as CharacterProfile;
             if (data.character_bible) {
-                onUpdate({ ...DEFAULT_BIBLE, ...data.character_bible });
+                const migratedBible: CharacterBible = {
+                    ...DEFAULT_BIBLE,
+                    ...data.character_bible,
+                    source_code: {
+                        ...DEFAULT_BIBLE.source_code,
+                        ...(data.character_bible.source_code || {})
+                    },
+                    compiled_bible: data.character_bible.compiled_bible || {},
+                    compiled_output: data.character_bible.compiled_output || { ideal: [] }
+                };
+                onUpdate(migratedBible);
             } else {
                 onUpdate(DEFAULT_BIBLE);
             }

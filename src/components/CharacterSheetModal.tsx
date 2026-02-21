@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { CharacterBible } from "@/types/character";
 import { updateCharacterBible } from "@/lib/firebase/character";
-import { X, Save, Plus, Trash2, Camera, Calendar, User, Heart, Brain, Zap, Hash, Pencil, Check } from "lucide-react";
+import { X, Save, Plus, Trash2, Camera, Calendar, User, Heart, Brain, Zap, Hash, Pencil, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -20,38 +20,54 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<Tab>('IDENTITY');
     const [formData, setFormData] = useState<CharacterBible>(initialData);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isVisualizing, setIsVisualizing] = useState(false);
 
     // Reset form when modal opens with new data
     useEffect(() => {
         setFormData(initialData);
     }, [initialData, isOpen]);
 
-    const handleSave = async () => {
+    const handleVisualize = async () => {
         if (!user) return;
-        setIsSaving(true);
+        setIsVisualizing(true);
         try {
             await updateCharacterBible(user.uid, formData);
+
+            // Call compile API
+            const response = await fetch('/api/character/compile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: user.uid, source_code: formData.source_code })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to compile character bible");
+            }
             onClose();
         } catch (error) {
-            console.error("Failed to save:", error);
-            alert("Failed to save character sheet.");
+            console.error("Failed to visualize:", error);
+            alert("Failed to visualize character sheet.");
         } finally {
-            setIsSaving(false);
+            setIsVisualizing(false);
         }
     };
 
-    const updateField = (field: keyof CharacterBible, value: any) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    const updateNestedField = (parent: keyof CharacterBible, key: string, value: any) => {
+    const updateSourceCode = (field: string, value: any) => {
         setFormData(prev => ({
             ...prev,
-            [parent]: {
-                // @ts-ignore
-                ...prev[parent],
-                [key]: value
+            source_code: {
+                ...prev.source_code,
+                [field]: value
+            }
+        }));
+    };
+
+    const updateCompiledBible = (field: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            compiled_bible: {
+                ...prev.compiled_bible,
+                [field]: value
             }
         }));
     };
@@ -71,12 +87,12 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                     <h2 className="text-sm font-bold text-zinc-200">Character Sheet</h2>
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="bg-white text-black hover:bg-zinc-200 text-sm font-bold px-5 py-2 rounded-full flex items-center gap-2 transition-colors disabled:opacity-50"
+                            onClick={handleVisualize}
+                            disabled={isVisualizing}
+                            className="bg-zinc-100 text-black hover:bg-white text-sm font-bold px-5 py-2 rounded-full flex items-center gap-2 transition-colors disabled:opacity-50"
                         >
-                            <Save className="w-4 h-4" />
-                            {isSaving ? "Saving..." : "Save"}
+                            {isVisualizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            {isVisualizing ? "Visualizing..." : "Visualize"}
                         </button>
                         <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors bg-zinc-900/50 rounded-full p-2">
                             <X className="w-5 h-5" />
@@ -102,8 +118,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                                 <InputGroup label="Archetype Title">
                                     <input
                                         type="text"
-                                        value={formData.title}
-                                        onChange={e => updateField('title', e.target.value)}
+                                        value={formData.source_code?.archetype || ""}
+                                        onChange={e => updateSourceCode('archetype', e.target.value)}
                                         className="w-full bg-transparent border-b border-zinc-800 pb-2 text-3xl font-bold text-white focus:border-white focus:outline-none placeholder-zinc-800"
                                         placeholder="The Protagonist"
                                     />
@@ -111,8 +127,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
 
                                 <InputGroup label="Manifesto">
                                     <textarea
-                                        value={formData.summary}
-                                        onChange={e => updateField('summary', e.target.value)}
+                                        value={formData.source_code?.manifesto || ""}
+                                        onChange={e => updateSourceCode('manifesto', e.target.value)}
                                         className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-lg leading-relaxed focus:border-white/20 focus:outline-none min-h-[150px] resize-none"
                                         placeholder="I am..."
                                     />
@@ -120,15 +136,23 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                             </div>
 
                             <div className="pt-6 border-t border-white/5">
-                                <InputGroup label="Role Models">
-                                    <ObjectArrayInput
-                                        items={formData.role_models}
-                                        onChange={val => updateField('role_models', val)}
-                                        fields={[
-                                            { key: 'name', placeholder: 'Name', width: '40%' },
-                                            { key: 'reason', placeholder: 'Reason', width: '60%' }
-                                        ]}
-                                        chipStyle
+                                <InputGroup label="Important People">
+                                    <textarea
+                                        value={formData.source_code?.important_people || ""}
+                                        onChange={e => updateSourceCode('important_people', e.target.value)}
+                                        className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-white/20 focus:outline-none min-h-[100px] resize-none"
+                                        placeholder="Family, mentors, key relationships..."
+                                    />
+                                </InputGroup>
+                            </div>
+
+                            <div className="pt-6 border-t border-white/5 space-y-4">
+                                <InputGroup label="Current Constraints">
+                                    <textarea
+                                        value={formData.source_code?.current_constraints || ""}
+                                        onChange={e => updateSourceCode('current_constraints', e.target.value)}
+                                        className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-white/20 focus:outline-none min-h-[100px] resize-none"
+                                        placeholder="Inventory, reality anchors..."
                                     />
                                 </InputGroup>
                             </div>
@@ -137,12 +161,12 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                             <div className="pt-6 border-t border-white/5 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-bold text-zinc-500">Visual Board</label>
-                                    <span className="text-xs text-zinc-600">{formData.visual_board.length} Images</span>
+                                    <span className="text-xs text-zinc-600">{formData.compiled_bible?.visual_board?.length || 0} Images</span>
                                 </div>
 
                                 <VisualBoardInput
-                                    items={formData.visual_board}
-                                    onChange={val => updateField('visual_board', val)}
+                                    items={formData.compiled_bible?.visual_board || []}
+                                    onChange={val => updateCompiledBible('visual_board', val)}
                                     userId={user?.uid}
                                 />
                             </div>
@@ -152,18 +176,11 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                     {/* --- TAB 2: VALUES (Psychographics) --- */}
                     {activeTab === 'VALUES' && (
                         <div className="space-y-10 max-w-xl mx-auto">
-                            <InputGroup label="Core Beliefs">
-                                <TagInput
-                                    tags={formData.core_beliefs}
-                                    onChange={val => updateField('core_beliefs', val)}
-                                    placeholder="Add a belief..."
-                                />
-                            </InputGroup>
-
+                            {/* Core Beliefs hidden by system override */}
                             <InputGroup label="Operating Rules">
                                 <ObjectArrayInput
-                                    items={formData.rules}
-                                    onChange={val => updateField('rules', val)}
+                                    items={formData.compiled_bible?.behavioral_responses || []}
+                                    onChange={val => updateCompiledBible('behavioral_responses', val)}
                                     fields={[
                                         { key: 'rule', placeholder: 'Rule', width: '40%' },
                                         { key: 'description', placeholder: 'Description...', width: '60%' }
@@ -174,8 +191,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
 
                             <InputGroup label="Mantras">
                                 <TagInput
-                                    tags={formData.thoughts}
-                                    onChange={val => updateField('thoughts', val)}
+                                    tags={formData.compiled_bible?.thoughts || []}
+                                    onChange={val => updateCompiledBible('thoughts', val)}
                                     placeholder="Add a mantra..."
                                 />
                             </InputGroup>
@@ -187,8 +204,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                         <div className="space-y-10 max-w-xl mx-auto">
                             <InputGroup label="Daily Habits">
                                 <TagInput
-                                    tags={formData.habits}
-                                    onChange={val => updateField('habits', val)}
+                                    tags={formData.compiled_bible?.habits || []}
+                                    onChange={val => updateCompiledBible('habits', val)}
                                     placeholder="Add a habit..."
                                 />
                             </InputGroup>
@@ -196,15 +213,15 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <InputGroup label="Diet / Food">
                                     <TagInput
-                                        tags={formData.consumption.food}
-                                        onChange={val => updateNestedField('consumption', 'food', val)}
+                                        tags={formData.compiled_bible?.consumption?.food || []}
+                                        onChange={val => updateCompiledBible('consumption', { ...formData.compiled_bible?.consumption, food: val })}
                                         placeholder="Add dietary rule..."
                                     />
                                 </InputGroup>
                                 <InputGroup label="Media Diet">
                                     <TagInput
-                                        tags={formData.consumption.media}
-                                        onChange={val => updateNestedField('consumption', 'media', val)}
+                                        tags={formData.compiled_bible?.consumption?.media || []}
+                                        onChange={val => updateCompiledBible('consumption', { ...formData.compiled_bible?.consumption, media: val })}
                                         placeholder="Add media rule..."
                                     />
                                 </InputGroup>
@@ -212,8 +229,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
 
                             <InputGroup label="Positive Events (Joy)">
                                 <TagInput
-                                    tags={formData.positive_events}
-                                    onChange={val => updateField('positive_events', val)}
+                                    tags={formData.compiled_bible?.positive_events || []}
+                                    onChange={val => updateCompiledBible('positive_events', val)}
                                     placeholder="What makes you happy?"
                                 />
                             </InputGroup>
@@ -221,15 +238,15 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <InputGroup label="Wants">
                                     <TagInput
-                                        tags={formData.wants}
-                                        onChange={val => updateField('wants', val)}
+                                        tags={formData.compiled_bible?.wants || []}
+                                        onChange={val => updateCompiledBible('wants', val)}
                                         placeholder="Add a want..."
                                     />
                                 </InputGroup>
                                 <InputGroup label="Goals">
                                     <TagInput
-                                        tags={formData.goals}
-                                        onChange={val => updateField('goals', val)}
+                                        tags={formData.compiled_bible?.goals || []}
+                                        onChange={val => updateCompiledBible('goals', val)}
                                         placeholder="Add a goal..."
                                     />
                                 </InputGroup>
@@ -242,8 +259,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                         <div className="space-y-8 max-w-xl mx-auto">
                             <InputGroup label="Relationships">
                                 <ObjectArrayInput
-                                    items={formData.relationships}
-                                    onChange={val => updateField('relationships', val)}
+                                    items={formData.compiled_bible?.relationships || []}
+                                    onChange={val => updateCompiledBible('relationships', val)}
                                     fields={[
                                         { key: 'name', placeholder: 'Name', width: '30%' },
                                         { key: 'relation', placeholder: 'Relation', width: '30%' },
@@ -255,8 +272,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                             <InputGroup label="Living Situation">
                                 <input
                                     type="text"
-                                    value={formData.living_situation || ""}
-                                    onChange={e => updateField('living_situation', e.target.value)}
+                                    value={formData.compiled_bible?.living_situation || ""}
+                                    onChange={e => updateCompiledBible('living_situation', e.target.value)}
                                     className="w-full bg-transparent border-b border-zinc-800 pb-2 text-zinc-300 focus:border-white focus:outline-none"
                                     placeholder="Apartment in NYC..."
                                 />
@@ -264,8 +281,8 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
 
                             <InputGroup label="Favorite Music">
                                 <TagInput
-                                    tags={formData.music}
-                                    onChange={val => updateField('music', val)}
+                                    tags={formData.compiled_bible?.music || []}
+                                    onChange={val => updateCompiledBible('music', val)}
                                     placeholder="Add artist/genre..."
                                 />
                             </InputGroup>

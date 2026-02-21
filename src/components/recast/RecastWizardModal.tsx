@@ -180,7 +180,8 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
             const bible = userSnap.data()?.character_bible || {};
             const bibleRef = doc(db, 'users', user.uid);
 
-            let dbRules = (bible.rules || []) as { id: string, rule: string, description?: string, category?: string, active?: boolean }[];
+            const compiledBible = bible.compiled_bible || {};
+            let dbRules = (compiledBible.behavioral_responses || []) as { id: string, rule: string, description?: string, category?: string, active?: boolean }[];
 
             // 2. Identify Removed Rules (Filtered by Acceptance)
             const deprecatedIds = state.patch?.deprecated_ids || [];
@@ -233,9 +234,14 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
             finalRules = [...finalRules, ...newRuleObjects, ...updatedRuleObjects];
 
             // 4. Update Bible
-            const updatedTitle = state.calibration.title || bible.title;
-            const updatedSummary = state.calibration.summary || bible.summary;
-            const newDriverStrings = state.selectedDrivers.map(d => d.id);
+            const currentSourceCode = bible.source_code || {};
+            const updatedTitle = state.calibration.title || currentSourceCode.archetype;
+            const updatedSummary = state.calibration.summary || currentSourceCode.manifesto;
+            // Assuming for now that new drivers become the new core beliefs.
+            // If we want to append them, we'd need string manipulation or to change core_beliefs back to an array.
+            // Let's just create a comma separated string for now.
+            const newDriverStrings = state.selectedDrivers.map(d => d.id).join(", ");
+            const updatedCoreBeliefs = currentSourceCode.core_beliefs ? `${currentSourceCode.core_beliefs}, ${newDriverStrings}` : newDriverStrings;
 
             const newActions = state.selectedVision.map(v => ({
                 id: crypto.randomUUID(),
@@ -244,12 +250,18 @@ export default function RecastWizardModal({ isOpen, onClose, mode = 'PROBLEM' }:
                 active: true
             }));
 
+            // Merge existing visions with the new visions
+            const existingVisions = compiledBible.vision || [];
+            const updatedVisions = [...existingVisions, ...state.selectedVision.map(v => ({ title: v.title, description: v.description }))];
+
             await updateDoc(bibleRef, {
-                "character_bible.title": updatedTitle,
-                "character_bible.summary": updatedSummary,
-                "character_bible.core_beliefs": arrayUnion(...newDriverStrings),
-                "character_bible.rules": finalRules,
-                "character_bible.visions": arrayUnion(...state.selectedVision.map(v => ({ title: v.title, description: v.description }))),
+                "character_bible.source_code.archetype": updatedTitle,
+                "character_bible.source_code.manifesto": updatedSummary,
+                "character_bible.source_code.core_beliefs": updatedCoreBeliefs,
+                "character_bible.compiled_bible.behavioral_responses": finalRules,
+                "character_bible.compiled_bible.vision": updatedVisions,
+                // Using root for suggested_actions for now since schema didn't explicitly move it, but
+                // it should probably be in compiled_bible. We'll leave it at root for safety or move it to compiled_bible.
                 "character_bible.suggested_actions": arrayUnion(...newActions),
                 "character_bible.last_updated": Date.now(),
                 "character_recast_history": arrayUnion({
