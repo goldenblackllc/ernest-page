@@ -12,8 +12,11 @@ interface CheckInPostProps {
         id: string;
         uid: string; // Original creator uid
         type: 'checkin';
-        tension: string; // the Question/Struggle
-        counsel: string; // the Authoritative Answer
+        pseudonym?: string; // New Dear Earnest Schema
+        letter?: string;    // New Dear Earnest Schema
+        response?: string;  // New Dear Earnest Schema
+        tension?: string;   // Legacy Support
+        counsel?: string;   // Legacy Support
         created_at: Timestamp;
         is_public?: boolean;
     };
@@ -22,10 +25,15 @@ interface CheckInPostProps {
 export function CheckInPostCard({ post }: CheckInPostProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-    const [isCounselExpanded, setIsCounselExpanded] = useState(false);
+    const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const { user } = useAuth();
 
-    if (!post.tension || !post.counsel) {
+    // Fallbacks for backwards compatibility
+    const letter = post.letter || post.tension;
+    const response = post.response || post.counsel;
+    const pseudonym = post.pseudonym || "Anonymous";
+
+    if (!letter || !response) {
         return null;
     }
 
@@ -57,10 +65,10 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
 
     if (isDeleting) return null; // Optimistic hide
 
-    const isLongCounsel = post.counsel.length > 400;
-    const displayedCounsel = isLongCounsel && !isCounselExpanded
-        ? post.counsel.slice(0, 400) + "..."
-        : post.counsel;
+    const isLongResponse = response.length > 400;
+    const displayedResponse = isLongResponse && !isResponseExpanded
+        ? response.slice(0, 400) + "..."
+        : response;
 
     return (
         <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group">
@@ -83,7 +91,7 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-bold text-gray-200">
-                            Anonymous
+                            Writes: {pseudonym}
                         </span>
                         <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1 text-[10px] text-zinc-500">
@@ -114,34 +122,34 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
                     </div>
                 </div>
                 <div className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 mr-8 md:mr-4">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Check-In</span>
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Dear Earnest</span>
                 </div>
             </div>
 
             {/* Body */}
             <div className="p-0">
-                {/* Tension (The Question) */}
-                <div className="px-6 py-5 bg-zinc-900/40 border-b border-white/5">
-                    <p className="text-zinc-300 italic text-base leading-relaxed font-serif">
-                        "{post.tension}"
+                {/* The Letter (The Submission) */}
+                <div className="px-6 py-6 bg-zinc-900/40">
+                    <p className="text-zinc-400 italic text-base leading-relaxed font-serif whitespace-pre-wrap">
+                        {letter}
                     </p>
                 </div>
 
-                {/* Counsel (The Response) */}
-                <div className="px-6 py-5">
-                    <h4 className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-widest mb-3">
-                        The Counsel
-                    </h4>
-                    <div className="text-zinc-200 whitespace-pre-wrap text-[15px] leading-relaxed opacity-100 transition-all">
-                        {displayedCounsel}
+                {/* Visual Divider */}
+                <div className="h-px bg-white/5 w-full" />
+
+                {/* The Response (The Advice) */}
+                <div className="px-6 py-6">
+                    <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all font-serif">
+                        {displayedResponse}
                     </div>
 
-                    {isLongCounsel && (
+                    {isLongResponse && (
                         <button
-                            onClick={() => setIsCounselExpanded(!isCounselExpanded)}
-                            className="mt-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                            onClick={() => setIsResponseExpanded(!isResponseExpanded)}
+                            className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
                         >
-                            {isCounselExpanded ? (
+                            {isResponseExpanded ? (
                                 <>Read Less <ChevronUp className="w-3 h-3" /></>
                             ) : (
                                 <>Read More <ChevronDown className="w-3 h-3" /></>
