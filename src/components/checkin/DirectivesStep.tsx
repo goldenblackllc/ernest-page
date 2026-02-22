@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Target, ArrowRight, CheckSquare } from 'lucide-react';
 import { CheckInState } from './CheckInWizardModal';
+import { auth } from '@/lib/firebase/config';
 
 interface DirectivesStepProps {
     state: CheckInState;
@@ -14,7 +15,7 @@ export default function DirectivesStep({ state, setState, onNext }: DirectivesSt
     const hasFetched = useRef(false);
 
     useEffect(() => {
-        if (!hasFetched.current && state.counsel && state.directives.length === 0) {
+        if (!hasFetched.current && state.counsel && state.directives.length === 0 && auth.currentUser) {
             hasFetched.current = true;
             setIsLoading(true);
 
@@ -22,6 +23,7 @@ export default function DirectivesStep({ state, setState, onNext }: DirectivesSt
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    uid: auth.currentUser.uid, // Pass UID to fetch character bible
                     counsel: state.counsel,
                     briefing: state.briefing // Pass the daily reality to ground the generated tasks
                 })

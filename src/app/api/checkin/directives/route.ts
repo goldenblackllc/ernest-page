@@ -1,6 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { db } from '@/lib/firebase/admin';
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
@@ -13,12 +14,24 @@ export async function POST(req: Request) {
         const body = await req.json();
         const counsel = body.counsel;
         const briefing = body.briefing; // Injecting the user's daily reality
+        const uid = body.uid; // Needed to fetch the character bible
 
-        if (!counsel) {
-            return Response.json({ error: "Counsel text is required to generate directives." }, { status: 400 });
+        if (!counsel || !uid) {
+            return Response.json({ error: "Counsel text and uid are required." }, { status: 400 });
         }
 
-        const prompt = `Based on Character B's current situation:
+        // Fetch Character Bible from Firebase to ground the tasks in character reality
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (!userDoc.exists) {
+            return Response.json({ error: "User not found" }, { status: 404 });
+        }
+        const userData = userDoc.data();
+        const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
+
+        const prompt = `Character A is defined by the following Character Bible:
+${JSON.stringify(compiledBible, null, 2)}
+
+Based on Character B's current situation:
 "${briefing || 'Unknown'}"
 
 And based on this exact advice Character A just gave them:
