@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { collection, query, where, orderBy, onSnapshot, limit } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { RecastPostCard } from "@/components/RecastPostCard";
+import { CheckInPostCard } from "@/components/CheckInPostCard";
 
 export function Ledger() {
     const { user } = useAuth();
@@ -15,27 +16,25 @@ export function Ledger() {
             return;
         }
 
-        // Only Query Recast Posts (The New Feed)
-        const qRecast = query(
+        // Query All Feed Posts
+        const qPosts = query(
             collection(db, "posts"),
-            where("type", "==", "recast"),
             orderBy("created_at", "desc"),
             limit(20)
         );
 
-        const unsubRecast = onSnapshot(qRecast, (snap) => {
-            const recasts = snap.docs.map(doc => ({
+        const unsubPosts = onSnapshot(qPosts, (snap) => {
+            const posts = snap.docs.map(doc => ({
                 id: doc.id,
-                ...doc.data(),
-                isRecast: true
+                ...doc.data()
             }));
 
-            setEntries(recasts);
+            setEntries(posts);
             setLoading(false);
         });
 
         return () => {
-            unsubRecast();
+            unsubPosts();
         };
     }, [user]);
 
@@ -54,7 +53,9 @@ export function Ledger() {
     return (
         <section className="flex flex-col gap-8">
             {entries.map((entry) => (
-                <RecastPostCard key={entry.id} post={entry} />
+                entry.type === 'checkin'
+                    ? <CheckInPostCard key={entry.id} post={entry as any} />
+                    : <RecastPostCard key={entry.id} post={entry as any} />
             ))}
         </section>
     );

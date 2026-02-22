@@ -4,7 +4,6 @@ import AuditStep from './AuditStep';
 import BriefingStep from './BriefingStep';
 import CounselStep from './CounselStep';
 import DirectivesStep from './DirectivesStep';
-import PostStep from './PostStep';
 
 interface CheckInWizardModalProps {
     isOpen: boolean;
@@ -12,14 +11,13 @@ interface CheckInWizardModalProps {
 }
 
 export type CheckInState = {
-    step: 1 | 2 | 3 | 4 | 5;
+    step: 1 | 2 | 3 | 4;
     alignmentScore: number;
     gap: string;
     briefing: string;
     // New fields to hold the sequential API outputs
     counsel: string;
     directives: string[];
-    post: { tension: string; counsel: string } | null;
 };
 
 export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardModalProps) {
@@ -29,14 +27,13 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
         gap: '',
         briefing: '',
         counsel: '',
-        directives: [],
-        post: null
+        directives: []
     });
 
     if (!isOpen) return null;
 
-    const nextStep = () => setState(prev => ({ ...prev, step: Math.min(prev.step + 1, 5) as 1 | 2 | 3 | 4 | 5 }));
-    const prevStep = () => setState(prev => ({ ...prev, step: Math.max(prev.step - 1, 1) as 1 | 2 | 3 | 4 | 5 }));
+    const nextStep = () => setState(prev => ({ ...prev, step: Math.min(prev.step + 1, 4) as 1 | 2 | 3 | 4 }));
+    const prevStep = () => setState(prev => ({ ...prev, step: Math.max(prev.step - 1, 1) as 1 | 2 | 3 | 4 }));
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200">
@@ -47,7 +44,7 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
                         Daily Check-In
                     </h2>
                     <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
+                        {[1, 2, 3, 4].map((s) => (
                             <div key={s} className={`h-1 rounded-full transition-all duration-300 ${s <= state.step ? 'bg-emerald-500 w-4' : 'bg-zinc-800 w-2'}`} />
                         ))}
                     </div>
@@ -86,13 +83,6 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
                     {state.step === 4 && (
                         <DirectivesStep
                             state={state}
-                            onNext={nextStep}
-                        />
-                    )}
-                    {state.step === 5 && (
-                        <PostStep
-                            state={state}
-                            setState={setState}
                             onClose={onClose}
                         />
                     )}

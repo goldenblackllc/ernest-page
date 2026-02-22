@@ -1,13 +1,34 @@
 import React from 'react';
-import { Target, ArrowRight, CheckSquare } from 'lucide-react';
+import { Target, ArrowRight, CheckSquare, Sparkles } from 'lucide-react';
 import { CheckInState } from './CheckInWizardModal';
+import { auth } from '@/lib/firebase/config';
 
 interface DirectivesStepProps {
     state: CheckInState;
-    onNext: () => void;
+    onClose: () => void;
 }
 
-export default function DirectivesStep({ state, onNext }: DirectivesStepProps) {
+export default function DirectivesStep({ state, onClose }: DirectivesStepProps) {
+
+    const handleAccept = () => {
+        // Instantly dismiss the wizard for a snappy UX
+        onClose();
+
+        // Fire-and-forget background publication and DB save
+        if (auth.currentUser) {
+            fetch('/api/checkin/post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid: auth.currentUser.uid,
+                    briefing: state.briefing,
+                    counsel: state.counsel,
+                    directives: state.directives
+                })
+            }).catch(e => console.error("Background publish failed:", e));
+        }
+    };
+
     return (
         <div className="flex flex-col h-full animate-in slide-in-from-right-8 duration-300">
             <div className="mb-6 space-y-1">
@@ -41,15 +62,15 @@ export default function DirectivesStep({ state, onNext }: DirectivesStepProps) {
 
             <div className="flex justify-between items-center pt-6 border-t border-zinc-800 shrink-0">
                 <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">
-                    Step 2 of 3
+                    Step 2 of 2
                 </p>
                 <button
-                    onClick={onNext}
+                    onClick={handleAccept}
                     disabled={state.directives.length === 0}
                     className="px-6 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:shadow-none"
                 >
-                    <span>Draft Public Post</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>Accept & Publish</span>
+                    <Sparkles className="w-4 h-4 ml-1" />
                 </button>
             </div>
         </div>
