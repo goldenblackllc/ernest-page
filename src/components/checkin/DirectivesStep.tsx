@@ -21,7 +21,10 @@ export default function DirectivesStep({ state, setState, onNext }: DirectivesSt
             fetch('/api/checkin/directives', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ counsel: state.counsel })
+                body: JSON.stringify({
+                    counsel: state.counsel,
+                    briefing: state.briefing // Pass the daily reality to ground the generated tasks
+                })
             })
                 .then(res => res.json())
                 .then(data => {

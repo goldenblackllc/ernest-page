@@ -12,13 +12,17 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const counsel = body.counsel;
+        const briefing = body.briefing; // Injecting the user's daily reality
 
         if (!counsel) {
             return Response.json({ error: "Counsel text is required to generate directives." }, { status: 400 });
         }
 
-        const prompt = `Based on this exact advice:
-${counsel}
+        const prompt = `Based on Character B's current situation:
+"${briefing || 'Unknown'}"
+
+And based on this exact advice Character A just gave them:
+"${counsel}"
 
 If you were going to generate a TODO list for Character B starting from this moment, and for the next 24 hours, what would you put on that list? Output a JSON array of strings.`;
 
