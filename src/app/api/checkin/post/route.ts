@@ -23,22 +23,24 @@ export async function POST(req: Request) {
             return Response.json({ error: "UID and Counsel text are required to generate and save a public post." }, { status: 400 });
         }
 
-        const prompt = `You are a Ghostwriter for an anonymous editorial advice column called "Dear Earnest".
-Your job is to synthesize Character B's rant and Character A's advice into a highly compelling, anonymized public submission and response.
+        const prompt = `Based on the private counsel just given, extract the core wisdom and write a SHORT, ANONYMIZED social media post for a mainstream feed (like X or Threads).
+CRITICAL STRICT RULES:
+ZERO PII (NO NAMES OR LOCATIONS): You MUST scrub all specific details. No names (e.g., Iris, Sage), no locations (e.g., Carlisle, hospitals), no dollar amounts, no company names. Use generic terms ONLY (e.g., 'my wife', 'my daughter', 'my business').
+NO LISTS: Absolutely no bullet points or numbered lists.
+SHORT & PUNCHY: The entire response must be under 3 paragraphs. It must read like a poetic, profound social media observation, not a therapy letter.
 
-Character B's Context (The Struggle):
+Output a JSON object with three keys:
+pseudonym: A clever 2-3 word sign-off for the user (e.g., 'Burdened Builder').
+letter: A 2-sentence generic summary of the user's struggle starting with 'Dear Earnest,'. (e.g., 'Dear Earnest, I have everything I need, but I am paralyzed by financial anxiety and family crisis...')
+response: The short, punchy, anonymized wisdom from Character A. End with '- Earnest'.
+
+Here is the context to draw from:
+The Struggle:
 ${my_story}
 ${briefing}
 
-Character A's Advice (The Answer):
-${counsel}
-
-CRITICAL RULES:
-1. pseudonym: Create a clever, thematic sign-off based on Character B's struggle (e.g., "Overwhelmed Provider", "Lost in the Code", "Waiting in the Suburbs").
-2. letter: Write a 1-2 paragraph letter synthesizing Character B's background constraints and current rant. It MUST start with "Dear Earnest," and end with the pseudonym. Anonymize all specific names, locations, and PII. Make it read like a vulnerable, compelling plea for advice from a real person.
-3. response: Take Character A's exact advice (the counsel) and format it as the reply. It MUST end with "- Earnest".
-
-Output a JSON object with exactly three keys: pseudonym, letter, and response.`;
+The Counsel:
+${counsel}`;
 
         const result = await generateObject({
             model: google('gemini-3.1-pro-preview'),
@@ -66,8 +68,15 @@ Output a JSON object with exactly three keys: pseudonym, letter, and response.`;
 
         // 2. Update the user's active directives/todos
         if (directives.length > 0) {
+            const parsedTodos = directives.map((task: string) => ({
+                id: Math.random().toString(36).substring(2, 10),
+                task: task,
+                completed: false,
+                created_at: FieldValue.serverTimestamp()
+            }));
+
             await db.collection('users').doc(uid).set({
-                active_todos: directives
+                active_todos: parsedTodos
             }, { merge: true }); // Using set with merge to avoid failing on new/empty user docs
         }
 

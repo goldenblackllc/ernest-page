@@ -55,6 +55,25 @@ export function CharacterShowcase() {
         }
     };
 
+    const handleToggleTodo = async (todoId: string, currentCompleted: boolean) => {
+        if (!user || !profile?.active_todos) return;
+
+        const updatedTodos = profile.active_todos.map(todo => {
+            if (typeof todo === 'string') {
+                return todo === todoId ? { id: todo, task: todo, completed: !currentCompleted, created_at: new Date() } : todo;
+            }
+            return todo.id === todoId ? { ...todo, completed: !currentCompleted } : todo;
+        });
+
+        try {
+            await updateCharacterProfile(user.uid, {
+                active_todos: updatedTodos
+            });
+        } catch (error) {
+            console.error("Failed to toggle directive:", error);
+        }
+    };
+
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!bible) return null;
 
@@ -174,19 +193,30 @@ export function CharacterShowcase() {
                                 <p className="text-zinc-500 text-sm">No active directives. Complete a Check-In to get your next steps.</p>
                             </div>
                         ) : (
-                            profile.active_todos.map((todo) => (
-                                <div key={todo.id} className="flex items-start gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 transition-colors hover:border-zinc-700">
-                                    <button className="mt-0.5 shrink-0 text-zinc-500 hover:text-emerald-400 transition-colors">
-                                        {todo.completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
-                                    </button>
-                                    <p className={cn(
-                                        "text-sm leading-relaxed",
-                                        todo.completed ? "text-zinc-500 line-through" : "text-zinc-300"
-                                    )}>
-                                        {todo.task}
-                                    </p>
-                                </div>
-                            ))
+                            profile.active_todos.map((todo) => {
+                                const isString = typeof todo === 'string';
+                                const id = isString ? todo : todo.id;
+                                const task = isString ? todo : todo.task;
+                                const completed = isString ? false : todo.completed;
+
+                                return (
+                                    <div
+                                        key={id}
+                                        onClick={() => handleToggleTodo(id, completed)}
+                                        className="flex items-start gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 cursor-pointer transition-colors hover:border-zinc-700"
+                                    >
+                                        <button className="mt-0.5 shrink-0 text-zinc-500 hover:text-emerald-400 transition-colors">
+                                            {completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
+                                        </button>
+                                        <p className={cn(
+                                            "text-sm leading-relaxed",
+                                            completed ? "text-zinc-500 line-through" : "text-zinc-300"
+                                        )}>
+                                            {task}
+                                        </p>
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
                 </div>

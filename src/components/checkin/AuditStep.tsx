@@ -28,9 +28,12 @@ export default function AuditStep({ state, setState, onNext, onCancel }: AuditSt
     const handleToggleTodo = async (todoId: string, currentCompleted: boolean) => {
         if (!user || !profile?.active_todos) return;
 
-        const updatedTodos = profile.active_todos.map(todo =>
-            todo.id === todoId ? { ...todo, completed: !currentCompleted } : todo
-        );
+        const updatedTodos = profile.active_todos.map(todo => {
+            if (typeof todo === 'string') {
+                return todo === todoId ? { id: todo, task: todo, completed: !currentCompleted, created_at: new Date() } : todo;
+            }
+            return todo.id === todoId ? { ...todo, completed: !currentCompleted } : todo;
+        });
 
         await updateCharacterProfile(user.uid, {
             active_todos: updatedTodos
@@ -85,23 +88,30 @@ export default function AuditStep({ state, setState, onNext, onCancel }: AuditSt
                     <div className="space-y-4">
                         <label className="text-sm font-bold text-zinc-300 block border-b border-zinc-800 pb-2">Directive Review</label>
                         <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                            {profile.active_todos.map(todo => (
-                                <div
-                                    key={todo.id}
-                                    onClick={() => handleToggleTodo(todo.id, todo.completed)}
-                                    className="flex items-start gap-3 bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 cursor-pointer transition-colors hover:border-zinc-600 group"
-                                >
-                                    <button className="mt-0.5 shrink-0 text-zinc-500 group-hover:text-emerald-400 transition-colors">
-                                        {todo.completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
-                                    </button>
-                                    <p className={cn(
-                                        "text-sm leading-relaxed select-none transition-all",
-                                        todo.completed ? "text-zinc-600 line-through" : "text-zinc-300"
-                                    )}>
-                                        {todo.task}
-                                    </p>
-                                </div>
-                            ))}
+                            {profile.active_todos.map(todo => {
+                                const isString = typeof todo === 'string';
+                                const id = isString ? todo : todo.id;
+                                const task = isString ? todo : todo.task;
+                                const completed = isString ? false : todo.completed;
+
+                                return (
+                                    <div
+                                        key={id}
+                                        onClick={() => handleToggleTodo(id, completed)}
+                                        className="flex items-start gap-3 bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 cursor-pointer transition-colors hover:border-zinc-600 group"
+                                    >
+                                        <button className="mt-0.5 shrink-0 text-zinc-500 group-hover:text-emerald-400 transition-colors">
+                                            {completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
+                                        </button>
+                                        <p className={cn(
+                                            "text-sm leading-relaxed select-none transition-all",
+                                            completed ? "text-zinc-600 line-through" : "text-zinc-300"
+                                        )}>
+                                            {task}
+                                        </p>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

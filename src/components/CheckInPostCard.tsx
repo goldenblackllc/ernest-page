@@ -6,6 +6,9 @@ import { Timestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 import { useAuth } from "@/lib/auth/AuthContext";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 
 interface CheckInPostProps {
     post: {
@@ -141,8 +144,8 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
 
                 {/* The Response (The Advice) */}
                 <div className="px-6 pb-6">
-                    <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all">
-                        {displayedResponse}
+                    <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedResponse}</ReactMarkdown>
                     </div>
 
                     {isLongResponse && (
