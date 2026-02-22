@@ -71,7 +71,7 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
         : response;
 
     return (
-        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group">
+        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
             {/* Delete Button (Top Right) */}
             {user?.uid === post.uid && (
                 <button
@@ -84,14 +84,14 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
-                        <User className="w-5 h-5 text-zinc-400" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                        <User className="w-5 h-5 text-emerald-500" />
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-bold text-gray-200">
-                            Writes: {pseudonym}
+                            Earnest
                         </span>
                         <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1 text-[10px] text-zinc-500">
@@ -127,20 +127,21 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
             </div>
 
             {/* Body */}
-            <div className="p-0">
-                {/* The Letter (The Submission) */}
-                <div className="px-6 py-6 bg-zinc-900/40">
-                    <p className="text-zinc-400 italic text-base leading-relaxed font-serif whitespace-pre-wrap">
+            <div className="p-0 flex flex-col pt-4">
+
+                {/* The Letter (The Submission - Quoted Style) */}
+                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 mb-4 mx-6">
+                    <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
                         {letter}
+                    </p>
+                    <p className="mt-3 text-xs font-bold text-zinc-500 tracking-wide uppercase">
+                        - {pseudonym}
                     </p>
                 </div>
 
-                {/* Visual Divider */}
-                <div className="h-px bg-white/5 w-full" />
-
                 {/* The Response (The Advice) */}
-                <div className="px-6 py-6">
-                    <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all font-serif">
+                <div className="px-6 pb-6">
+                    <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all">
                         {displayedResponse}
                     </div>
 
