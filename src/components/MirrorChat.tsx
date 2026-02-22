@@ -16,7 +16,7 @@ interface MirrorChatProps {
 }
 
 export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
-    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    const { messages, setMessages, input, handleInputChange, handleSubmit, isLoading } = useChat({
         api: '/api/mirror',
         body: { uid },
         initialMessages: [],
@@ -35,17 +35,18 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
         }
     }, [messages, isOpen]);
 
-    // Prevent background scrolling when modal is open
+    // Prevent background scrolling when modal is open and clear chat when closed
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = "hidden";
         } else {
             document.body.style.overflow = "auto";
+            setMessages([]); // Clear chat history on close
         }
         return () => {
             document.body.style.overflow = "auto";
         };
-    }, [isOpen]);
+    }, [isOpen, setMessages]);
 
     const idealName = bible?.source_code?.archetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_bible?.avatar_url;

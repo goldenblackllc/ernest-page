@@ -28,6 +28,9 @@ export interface CharacterBible {
 export interface CharacterProfile {
     uid: string;
     character_bible: CharacterBible; // Now mandatory structure
+    my_story?: string;
+    active_todos?: Array<{ id: string, task: string, completed: boolean, created_at: any }>;
+    last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
 }
 

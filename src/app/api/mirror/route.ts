@@ -23,19 +23,16 @@ export async function POST(req: Request) {
         }
 
         const userData = userDoc.data();
-        const compiledBible = userData?.character_bible?.compiled_bible || {};
+        const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
 
         const systemPrompt = `
-You are Character A. Your entire personality, history, worldview, and vibe are defined by this Character Bible:
+Character Bible:
 ${JSON.stringify(compiledBible, null, 2)}
-
-You are having a conversation with Character B (the user). Character B wants to be exactly like you, but they are currently facing the struggles, constraints, and limitations of their present reality.
-
-YOUR TASK: What advice would Character A give to Character B? Respond to their messages in the first person ('I'). Embody Character A perfectly. Speak as a grounded, secure mentor. Do not use toxic positivity. Acknowledge their constraints, but guide them using your Core Beliefs (e.g., 'Life is abundant', 'I create reality'). Keep your responses conversational, punchy, and direct. Never say 'As an AI...' or break character.
+This character, Character A, encounters another character, Character B (the user). Character B wants to be exactly like Character A. How would Character A respond if Character B said the following?
 `;
 
         const result = await streamText({
-            model: google('gemini-2.5-pro'),
+            model: google('gemini-3.1-pro-preview'),
             system: systemPrompt,
             messages,
         });

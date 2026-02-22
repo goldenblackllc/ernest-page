@@ -122,3 +122,42 @@ export function subscribeToCharacterBible(uid: string, onUpdate: (bible: Charact
         }
     });
 }
+
+/**
+ * Subscribes to the complete Character Profile for real-time updates.
+ */
+export function subscribeToCharacterProfile(uid: string, onUpdate: (profile: CharacterProfile) => void) {
+    const docRef = doc(db, "users", uid);
+    return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data() as CharacterProfile;
+
+            // Migrate bible inside profile if needed
+            const migratedBible: CharacterBible = {
+                ...DEFAULT_BIBLE,
+                ...data.character_bible,
+                source_code: {
+                    ...DEFAULT_BIBLE.source_code,
+                    ...(data.character_bible?.source_code || {})
+                },
+                compiled_bible: data.character_bible?.compiled_bible || {},
+                compiled_output: data.character_bible?.compiled_output || { ideal: [] }
+            };
+
+            onUpdate({ ...data, character_bible: migratedBible });
+        } else {
+            onUpdate({ uid, character_bible: DEFAULT_BIBLE });
+        }
+    });
+}
+
+/**
+ * Updates top-level fields on the Character Profile.
+ */
+export async function updateCharacterProfile(uid: string, updates: Partial<CharacterProfile>) {
+    const docRef = doc(db, "users", uid);
+    await setDoc(docRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}

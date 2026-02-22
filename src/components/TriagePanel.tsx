@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
-import RecastWizardModal from "@/components/recast/RecastWizardModal";
+import CheckInWizardModal from "@/components/checkin/CheckInWizardModal";
 import { Plus, X, ArrowUp, Zap, AlertCircle, Target, Radio, Check, ArrowRight } from "lucide-react";
 
 type AnalysisResult = {
@@ -38,8 +38,8 @@ export function TriagePanel() {
     // Momentum/Next Logic
     const [momentumLines, setMomentumLines] = useState<string[]>([""]);
 
-    // Recast State (Wizard)
-    const [recastState, setRecastState] = useState<{ isOpen: boolean; mode: 'PROBLEM' | 'DESIRE' }>({ isOpen: false, mode: 'PROBLEM' });
+    // Check-In Wizard State
+    const [isCheckInOpen, setIsCheckInOpen] = useState(false);
 
     const resetPanel = () => {
         setActiveMode('idle');
@@ -50,7 +50,7 @@ export function TriagePanel() {
         setIsSubmitting(false);
         setIsAnalyzing(false);
         setBroadcast(true);
-        setRecastState({ isOpen: false, mode: 'PROBLEM' });
+        setIsCheckInOpen(false);
     };
 
     // Auto-focus logic
@@ -66,16 +66,6 @@ export function TriagePanel() {
     // --- HANDLERS ---
 
     const handleModeSelect = (mode: Mode) => {
-        if (mode === 'problem') {
-            setRecastState({ isOpen: true, mode: 'PROBLEM' });
-            setIsMenuOpen(false);
-            return;
-        }
-        if (mode === 'want') {
-            setRecastState({ isOpen: true, mode: 'DESIRE' });
-            setIsMenuOpen(false);
-            return;
-        }
         setActiveMode(mode);
         setIsMenuOpen(false); // Close the fan menu, open the modal logic
     };
@@ -218,11 +208,11 @@ export function TriagePanel() {
                 <button
                     onClick={() => {
                         if (activeMode !== 'idle') resetPanel();
-                        else setIsMenuOpen(!isMenuOpen);
+                        else setIsCheckInOpen(!isCheckInOpen);
                     }}
                     className={cn(
                         "w-16 h-16 rounded-full bg-white text-black shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black",
-                        isMenuOpen ? "rotate-45 scale-110" : "hover:scale-110 active:scale-95"
+                        isCheckInOpen ? "rotate-45 scale-110" : "hover:scale-110 active:scale-95"
                     )}
                 >
                     {activeMode !== 'idle' ? <X className="w-8 h-8" /> : <Plus className="w-8 h-8" />}
@@ -239,47 +229,10 @@ export function TriagePanel() {
                 />
             )}
 
-            {/* 3. FAN OUT MENU */}
+            {/* 3. FAN OUT MENU DEPRECATED IN THIS PHASE */}
             {isMenuOpen && activeMode === 'idle' && (
                 <div className="fixed bottom-28 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 animate-in slide-in-from-bottom-5 zoom-in-95 duration-200 w-64">
-                    <button
-                        onClick={() => handleModeSelect('want')}
-                        className="bg-zinc-900 border border-white/10 shadow-xl rounded-full py-4 px-6 flex items-center gap-4 text-left hover:bg-zinc-800 transition-colors group"
-                    >
-                        <div className="bg-blue-500/10 p-2 rounded-full text-blue-400 group-hover:bg-blue-500/20">
-                            <Target className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-sm font-bold text-white">Set Goal</div>
-                            <div className="text-xs text-zinc-500">Define a new target</div>
-                        </div>
-                    </button>
-
-                    <button
-                        onClick={() => handleModeSelect('problem')}
-                        className="bg-zinc-900 border border-white/10 shadow-xl rounded-full py-4 px-6 flex items-center gap-4 text-left hover:bg-zinc-800 transition-colors group"
-                    >
-                        <div className="bg-red-500/10 p-2 rounded-full text-red-500 group-hover:bg-red-500/20">
-                            <AlertCircle className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-sm font-bold text-white">Recast Tension</div>
-                            <div className="text-xs text-zinc-500">Transform negative energy</div>
-                        </div>
-                    </button>
-
-                    <button
-                        onClick={() => handleModeSelect('next')}
-                        className="bg-zinc-900 border border-white/10 shadow-xl rounded-full py-4 px-6 flex items-center gap-4 text-left hover:bg-zinc-800 transition-colors group"
-                    >
-                        <div className="bg-emerald-500/10 p-2 rounded-full text-emerald-500 group-hover:bg-emerald-500/20">
-                            <Zap className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-sm font-bold text-white">Quick Log</div>
-                            <div className="text-xs text-zinc-500">Task entry</div>
-                        </div>
-                    </button>
+                    {/* Elements Removed */}
                 </div>
             )}
 
@@ -407,11 +360,10 @@ export function TriagePanel() {
                 </div>
             )}
 
-            {recastState.isOpen && (
-                <RecastWizardModal
+            {isCheckInOpen && (
+                <CheckInWizardModal
                     isOpen={true}
-                    onClose={() => setRecastState({ ...recastState, isOpen: false })}
-                    mode={recastState.mode}
+                    onClose={() => setIsCheckInOpen(false)}
                 />
             )}
         </>

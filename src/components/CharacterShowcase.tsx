@@ -2,33 +2,58 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { subscribeToCharacterBible } from "@/lib/firebase/character";
-import { CharacterBible } from "@/types/character";
+import { subscribeToCharacterProfile, updateCharacterProfile } from "@/lib/firebase/character";
+import { CharacterBible, CharacterProfile } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { User, Scroll, Target, Crown, Sparkles, MessageCircle } from "lucide-react";
+import { User, Scroll, Target, Crown, Sparkles, MessageCircle, Save, Loader2, CheckCircle2, Circle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { CharacterSheetModal } from "./CharacterSheetModal";
 import { MirrorChat } from "./MirrorChat";
 
 export function CharacterShowcase() {
     const { user } = useAuth();
+    const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [bible, setBible] = useState<CharacterBible | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
+    const [myStory, setMyStory] = useState("");
+    const [isSavingStory, setIsSavingStory] = useState(false);
+    const [storyLoaded, setStoryLoaded] = useState(false);
 
     useEffect(() => {
         if (!user) return;
         setLoading(true);
 
         // Real-time subscription
-        const unsubscribe = subscribeToCharacterBible(user.uid, (data) => {
-            setBible(data);
+        const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
+            setProfile(data);
+            setBible(data.character_bible);
             setLoading(false);
         });
 
         return () => unsubscribe();
     }, [user]);
+
+    useEffect(() => {
+        if (profile && !storyLoaded) {
+            setMyStory(profile.my_story || "");
+            setStoryLoaded(true);
+        }
+    }, [profile, storyLoaded]);
+
+    const handleSaveStory = async () => {
+        if (!user) return;
+        setIsSavingStory(true);
+        try {
+            await updateCharacterProfile(user.uid, { my_story: myStory });
+        } catch (error) {
+            console.error("Failed to save story:", error);
+            alert("Failed to save story.");
+        } finally {
+            setIsSavingStory(false);
+        }
+    };
 
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!bible) return null;
@@ -112,6 +137,58 @@ export function CharacterShowcase() {
                         </button>
                     ))}
 
+                </div>
+
+                {/* MY STORY SECTION */}
+                <div className="mt-8 px-1">
+                    <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">My Story (Current Reality)</h2>
+                        <button
+                            onClick={handleSaveStory}
+                            disabled={isSavingStory || myStory === profile?.my_story}
+                            className={cn(
+                                "flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-all",
+                                myStory !== profile?.my_story
+                                    ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                                    : "bg-zinc-800 text-zinc-500 cursor-default"
+                            )}
+                        >
+                            {isSavingStory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                            Save Story
+                        </button>
+                    </div>
+                    <textarea
+                        value={myStory}
+                        onChange={(e) => setMyStory(e.target.value)}
+                        placeholder="Describe your current life as you see it. Your past, your future desires, your physical/financial constraints, and ongoing situations. (e.g., 'I live in Carlisle, my daughter is in the hospital, I am an entrepreneur...')."
+                        className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-zinc-500 focus:outline-none min-h-[120px] resize-none"
+                    />
+                </div>
+
+                {/* ACTIVE DIRECTIVES SECTION */}
+                <div className="mt-8 px-1 mb-6">
+                    <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Active Directives</h2>
+                    <div className="space-y-3">
+                        {!profile?.active_todos || profile.active_todos.length === 0 ? (
+                            <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 text-center">
+                                <p className="text-zinc-500 text-sm">No active directives. Complete a Check-In to get your next steps.</p>
+                            </div>
+                        ) : (
+                            profile.active_todos.map((todo) => (
+                                <div key={todo.id} className="flex items-start gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 transition-colors hover:border-zinc-700">
+                                    <button className="mt-0.5 shrink-0 text-zinc-500 hover:text-emerald-400 transition-colors">
+                                        {todo.completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
+                                    </button>
+                                    <p className={cn(
+                                        "text-sm leading-relaxed",
+                                        todo.completed ? "text-zinc-500 line-through" : "text-zinc-300"
+                                    )}>
+                                        {todo.task}
+                                    </p>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
 
                 {/* Mirror Chat Entry Button */}
