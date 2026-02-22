@@ -20,7 +20,7 @@ export async function POST(req: Request) {
         const prompt = `Based on this exact advice:
 ${counsel}
 
-What specific 2-5 item to-do list does Character A give to Character B? Output a JSON array of strings.`;
+If you were going to generate a TODO list for Character B starting from this moment, and for the next 24 hours, what would you put on that list? Output a JSON array of strings.`;
 
         const result = await generateObject({
             model: google('gemini-3.1-pro-preview'),
