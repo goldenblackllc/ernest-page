@@ -86,7 +86,6 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
                     {state.step === 4 && (
                         <DirectivesStep
                             state={state}
-                            setState={setState}
                             onNext={nextStep}
                         />
                     )}

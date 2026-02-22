@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText } from 'ai';
+import { generateText, generateObject } from 'ai';
+import { z } from 'zod';
 import { db } from '@/lib/firebase/admin';
 
 const google = createGoogleGenerativeAI({
@@ -51,15 +52,39 @@ Here are the previous tasks I completed: ${completedTasks || "None"}.'
 Character B wants to be exactly like Character A.
 What advice would Character A give to Character B?`;
 
-        const result = await streamText({
+        const messages: any[] = [
+            { role: 'user', content: systemPrompt }
+        ];
+
+        // Call 1: Generate the nuanced counsel
+        const counselResult = await generateText({
             model: google('gemini-3.1-pro-preview'),
-            prompt: systemPrompt,
+            messages: messages,
         });
 
-        return result.toDataStreamResponse();
+        const counsel = counselResult.text;
+
+        // Append the AI's counsel to the active session history
+        messages.push({ role: 'assistant', content: counsel });
+
+        // Call 2: Ask for the actionable directives based purely on the active context
+        messages.push({
+            role: 'user',
+            content: "If Character B asked 'What would you suggest as a plan for the next 24 hours?' how would Character A respond? Output a JSON array of strings."
+        });
+
+        const directivesResult = await generateObject({
+            model: google('gemini-3.1-pro-preview'),
+            messages: messages,
+            schema: z.array(z.string()),
+        });
+
+        const directives = directivesResult.object;
+
+        return Response.json({ counsel, directives });
 
     } catch (error: any) {
-        console.error("Check-In Counsel API Error:", error);
+        console.error("Check-In Monolithic API Error:", error);
         return Response.json({ error: error.message || "An unexpected error occurred." }, { status: 500 });
     }
 }
