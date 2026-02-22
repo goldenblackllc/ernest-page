@@ -16,6 +16,9 @@ export default function DirectivesStep({ state, onClose }: DirectivesStepProps) 
 
         // Fire-and-forget background publication and DB save
         if (auth.currentUser) {
+            // Dispatch event to show a loading state in the Ledger feed
+            window.dispatchEvent(new CustomEvent('checkin-publishing-start'));
+
             fetch('/api/checkin/post', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -25,7 +28,12 @@ export default function DirectivesStep({ state, onClose }: DirectivesStepProps) 
                     counsel: state.counsel,
                     directives: state.directives
                 })
-            }).catch(e => console.error("Background publish failed:", e));
+            })
+                .catch(e => console.error("Background publish failed:", e))
+                .finally(() => {
+                    // Clear the loading state whether it succeeds or fails
+                    window.dispatchEvent(new CustomEvent('checkin-publishing-end'));
+                });
         }
     };
 
