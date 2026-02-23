@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 import { db } from '@/lib/firebase/admin';
 import { CharacterBible } from '@/types/character';
 
@@ -21,43 +22,7 @@ const HIDDEN_CORE_BELIEFS = "Life is abundant. I am free. I am secure. I am powe
 
 const SYSTEM_PROMPT = `You are a Character Simulation Engine. Core Beliefs: ${HIDDEN_CORE_BELIEFS}`;
 
-const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following Character Source Code. Your task is to output a comprehensive Character Bible using the provided JSON structure. Crucial Instruction: Use the source code as your foundation, but actively extrapolate and invent logical details regarding their communication style, aesthetics, and daily habits based on their archetype. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead.
-
-{
-  "Character_Overview": {
-    "Archetypes": ["Array", "of", "Strings"],
-    "Summary": "String (A high-level overview of who they are)"
-  },
-  "Psychology_and_Beliefs": {
-    "Manifesto": "String (Their primary thesis or mission statement)",
-    "Core_Beliefs": ["Array", "of", "Strings"],
-    "Inner_World": "String (How they process emotions, make decisions, and view reality)"
-  },
-  "Presentation_and_Vibe": {
-    "Aesthetic_and_Wardrobe": "String (How they dress, their visual style)",
-    "Physicality_and_Presence": "String (How they carry themselves, fitness, body language)",
-    "Communication_Style": "String (Tone of voice, vocabulary, how they speak)",
-    "Social_Interaction": "String (How they treat strangers, peers, and loved ones; their social energy)"
-  },
-  "Relationships": [
-    {
-      "Name": "String",
-      "Role": "String (e.g., Wife, Ex-Wife, Rival, Mentor)",
-      "Dynamic": "String (A detailed explanation of how they interact with this specific person)"
-    }
-  ],
-  "Lifestyle_and_Environment": {
-    "Habitat": "String (Where they live, the vibe of their home or workspace)",
-    "Daily_Routines": "String (What a normal day looks like for them)",
-    "Passions_and_Occupations": "String (How they spend their time, career, hobbies)"
-  },
-  "Unique_Variables": [
-    {
-      "Category": "String (e.g., 'Pets', 'Magical Abilities', 'Business Ventures', 'Weapons')",
-      "Details": "String"
-    }
-  ]
-}
+const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following Character Source Code. Your task is to output a comprehensive Character Bible. Crucial Instruction: Use the source code as your foundation, but actively extrapolate and invent logical details regarding their communication style, aesthetics, and daily habits based on their archetype. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead.
 Source Code:
 Core Beliefs: 
  Life is abundant. I am free. I am secure. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take.
@@ -74,13 +39,13 @@ const FALLBACK_MODEL = 'gemini-2.5-pro';
 async function generateWithFallback(options: any) {
     try {
         console.log(`Attempting generation with ${PRIMARY_MODEL}...`);
-        return await generateText({
+        return await generateObject({
             ...options,
             model: google(PRIMARY_MODEL)
         });
     } catch (error: any) {
         console.warn(`Primary model ${PRIMARY_MODEL} failed. Falling back to ${FALLBACK_MODEL}. Error: `, error.message);
-        return await generateText({
+        return await generateObject({
             ...options,
             model: google(FALLBACK_MODEL)
         });
@@ -113,19 +78,40 @@ export async function POST(req: Request) {
             providerOptions,
             system: SYSTEM_PROMPT,
             prompt: idealPrompt,
+            schema: z.object({
+                Character_Overview: z.object({
+                    Archetypes: z.array(z.string()),
+                    Summary: z.string().describe("A high-level overview of who they are")
+                }),
+                Psychology_and_Beliefs: z.object({
+                    Manifesto: z.string().describe("Their primary thesis or mission statement"),
+                    Core_Beliefs: z.array(z.string()),
+                    Inner_World: z.string().describe("How they process emotions, make decisions, and view reality")
+                }),
+                Presentation_and_Vibe: z.object({
+                    Aesthetic_and_Wardrobe: z.string().describe("How they dress, their visual style"),
+                    Physicality_and_Presence: z.string().describe("How they carry themselves, fitness, body language"),
+                    Communication_Style: z.string().describe("Tone of voice, vocabulary, how they speak"),
+                    Social_Interaction: z.string().describe("How they treat strangers, peers, and loved ones; their social energy")
+                }),
+                Relationships: z.array(z.object({
+                    Name: z.string(),
+                    Role: z.string().describe("e.g., Wife, Ex-Wife, Rival, Mentor"),
+                    Dynamic: z.string().describe("A detailed explanation of how they interact with this specific person")
+                })).default([]),
+                Lifestyle_and_Environment: z.object({
+                    Habitat: z.string().describe("Where they live, the vibe of their home or workspace"),
+                    Daily_Routines: z.string().describe("What a normal day looks like for them"),
+                    Passions_and_Occupations: z.string().describe("How they spend their time, career, hobbies")
+                }),
+                Unique_Variables: z.array(z.object({
+                    Category: z.string().describe("e.g., 'Pets', 'Magical Abilities', 'Business Ventures', 'Weapons'"),
+                    Details: z.string()
+                })).default([])
+            })
         });
 
-        // Strip backticks if the model returned markdown codeblocks
-        let cleanText = idealResult.text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        // Attempt manual parse
-        let rawObj;
-        try {
-            rawObj = JSON.parse(cleanText);
-        } catch (err: any) {
-            console.error("Failed to parse JSON string from model response:", cleanText);
-            return Response.json({ error: "Model returned invalid JSON format.", details: err.message }, { status: 500 });
-        }
+        const rawObj = idealResult.object as any;
 
         const idealSections = [
             {
