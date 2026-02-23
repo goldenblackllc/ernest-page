@@ -14,33 +14,28 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const uid = body.uid;
-        const my_story = body.my_story || "";
-        const briefing = body.briefing || "";
-        const counsel = body.counsel;
+        const rant = body.rant || "";
+        const counsel = body.counsel; // Passed from frontend to save to DB
         const directives = body.directives || [];
 
-        if (!uid || !counsel) {
-            return Response.json({ error: "UID and Counsel text are required to generate and save a public post." }, { status: 400 });
+        if (!uid || !rant) {
+            return Response.json({ error: "UID and Rant text are required to generate and save a public post." }, { status: 400 });
         }
 
-        const prompt = `Based on the private counsel just given, extract the core wisdom and write a SHORT, ANONYMIZED social media post for a mainstream feed (like X or Threads).
-CRITICAL STRICT RULES:
-ZERO PII (NO NAMES OR LOCATIONS): You MUST scrub all specific details. No names (e.g., Iris, Sage), no locations (e.g., Carlisle, hospitals), no dollar amounts, no company names. Use generic terms ONLY (e.g., 'my wife', 'my daughter', 'my business').
-NO LISTS: Absolutely no bullet points or numbered lists.
-SHORT & PUNCHY: The entire response must be under 3 paragraphs. It must read like a poetic, profound social media observation, not a therapy letter.
+        // Fetch User and Character Bible from Firebase
+        const userDoc = await db.collection('users').doc(uid).get();
+        const userData = userDoc.data();
+        const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
 
+        const prompt = `Character A is defined by the following Character Bible:
+${JSON.stringify(compiledBible, null, 2)}
+Character A has an advice column, and they just received the following letter (rant). Their job is to write a social media post, based on the letter, and provide their response. They must also protect the privacy and anonymity of the letter they received. 
+The letter (rant):
+"${rant}"
 Output a JSON object with three keys:
 pseudonym: A clever 2-3 word sign-off for the user (e.g., 'Burdened Builder').
-letter: A 2-sentence generic summary of the user's struggle starting with 'Dear Earnest,'. (e.g., 'Dear Earnest, I have everything I need, but I am paralyzed by financial anxiety and family crisis...')
-response: The short, punchy, anonymized wisdom from Character A. End with '- Earnest'.
-
-Here is the context to draw from:
-The Struggle:
-${my_story}
-${briefing}
-
-The Counsel:
-${counsel}`;
+letter: A generic summary of the user's struggle, starting with 'Dear Earnest,'. (e.g., 'Dear Earnest, I have everything I need, but I am paralyzed by financial anxiety and family crisis...')
+response: Character A's response. Remind Character A that this is a social media post. End with '- Earnest'.`;
 
         const result = await generateObject({
             model: google('gemini-3.1-pro-preview'),
@@ -59,6 +54,14 @@ ${counsel}`;
             uid: uid,
             userId: uid, // Including both for backwards compatibility across older Ledger versions
             type: "checkin",
+            rant: rant,
+            counsel: counsel,
+            public_post: {
+                pseudonym: postData.pseudonym,
+                letter: postData.letter,
+                response: postData.response,
+            },
+            // Legacy fallbacks for uninterrupted rendering
             pseudonym: postData.pseudonym,
             letter: postData.letter,
             response: postData.response,
@@ -72,7 +75,7 @@ ${counsel}`;
                 id: Math.random().toString(36).substring(2, 10),
                 task: task,
                 completed: false,
-                created_at: FieldValue.serverTimestamp()
+                created_at: new Date().toISOString()
             }));
 
             await db.collection('users').doc(uid).set({

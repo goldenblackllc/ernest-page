@@ -6,9 +6,10 @@ import { auth } from '@/lib/firebase/config';
 interface DirectivesStepProps {
     state: CheckInState;
     onClose: () => void;
+    onBack: () => void;
 }
 
-export default function DirectivesStep({ state, onClose }: DirectivesStepProps) {
+export default function DirectivesStep({ state, onClose, onBack }: DirectivesStepProps) {
 
     const handleAccept = () => {
         // Instantly dismiss the wizard for a snappy UX
@@ -24,7 +25,7 @@ export default function DirectivesStep({ state, onClose }: DirectivesStepProps) 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     uid: auth.currentUser.uid,
-                    briefing: state.briefing,
+                    rant: state.rant,
                     counsel: state.counsel,
                     directives: state.directives
                 })
@@ -68,18 +69,26 @@ export default function DirectivesStep({ state, onClose }: DirectivesStepProps) 
                 )}
             </div>
 
-            <div className="flex justify-between items-center pt-6 border-t border-zinc-800 shrink-0">
-                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">
-                    Step 2 of 2
-                </p>
+            <div className="flex justify-between items-center pt-6 border-t border-zinc-800 shrink-0 gap-3">
                 <button
-                    onClick={handleAccept}
-                    disabled={state.directives.length === 0}
-                    className="px-6 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:shadow-none"
+                    onClick={onBack}
+                    className="px-6 py-2.5 rounded-full text-sm font-bold transition-all text-zinc-400 hover:text-white hover:bg-zinc-800"
                 >
-                    <span>Accept & Publish</span>
-                    <Sparkles className="w-4 h-4 ml-1" />
+                    Back
                 </button>
+                <div className="flex items-center gap-4">
+                    <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider hidden sm:block">
+                        Step 3 of 3
+                    </p>
+                    <button
+                        onClick={handleAccept}
+                        disabled={state.directives.length === 0}
+                        className="px-6 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:shadow-none"
+                    >
+                        <span>Accept & Publish</span>
+                        <Sparkles className="w-4 h-4 ml-1" />
+                    </button>
+                </div>
             </div>
         </div>
     );

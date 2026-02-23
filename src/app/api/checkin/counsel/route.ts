@@ -15,12 +15,7 @@ export async function POST(req: Request) {
 
         // Handle both standard JSON POST and useChat/useCompletion 'messages' or 'prompt' format
         const uid = body.uid;
-        const my_story = body.my_story;
-        const timeAgo = body.timeAgo;
-        const alignmentScore = body.alignmentScore;
-        const gapText = body.gapText;
-        const briefingText = body.briefingText;
-        const completedTasks = body.completedTasks;
+        const rant = body.rant;
 
         if (!uid) {
             return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,23 +29,14 @@ export async function POST(req: Request) {
 
         const userData = userDoc.data();
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
-        const finalMyStory = my_story || userData?.my_story || "";
-
         const systemPrompt = `Character A is defined by the following:
 ${JSON.stringify(compiledBible, null, 2)}
 
 This character, Character A, encounters another character, Character B.
-Character B says the following to Character A:
-
-'Here is my story: ${finalMyStory}. 
-
-Since we last spoke ${timeAgo || "some time"} ago, my alignment score with my ideal self was ${alignmentScore || "unknown"}. 
-Here is what recently pulled me out of character: ${gapText || "Nothing"}. 
-Here is what is going on right now: ${briefingText || "Nothing"}. 
-Here are the previous tasks I completed: ${completedTasks || "None"}.'
-
 Character B wants to be exactly like Character A.
-What advice would Character A give to Character B?`;
+
+How would Character A respond if Character B posted the following?
+"${rant || "Nothing to report."}"`;
 
         const messages: any[] = [
             { role: 'user', content: systemPrompt }

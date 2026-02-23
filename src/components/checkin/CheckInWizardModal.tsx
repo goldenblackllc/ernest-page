@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import AuditStep from './AuditStep';
-import BriefingStep from './BriefingStep';
+import InputStep from './InputStep';
 import CounselStep from './CounselStep';
 import DirectivesStep from './DirectivesStep';
 
@@ -11,10 +10,8 @@ interface CheckInWizardModalProps {
 }
 
 export type CheckInState = {
-    step: 1 | 2 | 3 | 4;
-    alignmentScore: number;
-    gap: string;
-    briefing: string;
+    step: 1 | 2 | 3;
+    rant: string;
     // New fields to hold the sequential API outputs
     counsel: string;
     directives: string[];
@@ -23,17 +20,15 @@ export type CheckInState = {
 export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardModalProps) {
     const [state, setState] = useState<CheckInState>({
         step: 1,
-        alignmentScore: 50,
-        gap: '',
-        briefing: '',
+        rant: '',
         counsel: '',
         directives: []
     });
 
     if (!isOpen) return null;
 
-    const nextStep = () => setState(prev => ({ ...prev, step: Math.min(prev.step + 1, 4) as 1 | 2 | 3 | 4 }));
-    const prevStep = () => setState(prev => ({ ...prev, step: Math.max(prev.step - 1, 1) as 1 | 2 | 3 | 4 }));
+    const nextStep = () => setState(prev => ({ ...prev, step: Math.min(prev.step + 1, 3) as 1 | 2 | 3 }));
+    const prevStep = () => setState(prev => ({ ...prev, step: Math.max(prev.step - 1, 1) as 1 | 2 | 3 }));
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200">
@@ -44,7 +39,7 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
                         Daily Check-In
                     </h2>
                     <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4].map((s) => (
+                        {[1, 2, 3].map((s) => (
                             <div key={s} className={`h-1 rounded-full transition-all duration-300 ${s <= state.step ? 'bg-emerald-500 w-4' : 'bg-zinc-800 w-2'}`} />
                         ))}
                     </div>
@@ -58,7 +53,7 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
                     {state.step === 1 && (
-                        <AuditStep
+                        <InputStep
                             state={state}
                             setState={setState}
                             onNext={nextStep}
@@ -66,7 +61,7 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
                         />
                     )}
                     {state.step === 2 && (
-                        <BriefingStep
+                        <CounselStep
                             state={state}
                             setState={setState}
                             onNext={nextStep}
@@ -74,16 +69,10 @@ export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardMod
                         />
                     )}
                     {state.step === 3 && (
-                        <CounselStep
-                            state={state}
-                            setState={setState}
-                            onNext={nextStep}
-                        />
-                    )}
-                    {state.step === 4 && (
                         <DirectivesStep
                             state={state}
                             onClose={onClose}
+                            onBack={prevStep}
                         />
                     )}
                 </div>

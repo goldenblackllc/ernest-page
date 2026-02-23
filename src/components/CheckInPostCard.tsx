@@ -20,6 +20,12 @@ interface CheckInPostProps {
         response?: string;  // New Dear Earnest Schema
         tension?: string;   // Legacy Support
         counsel?: string;   // Legacy Support
+        rant?: string;      // Raw User Input
+        public_post?: {     // Strict Top-Level Schema
+            pseudonym?: string;
+            letter?: string;
+            response?: string;
+        };
         created_at: Timestamp;
         is_public?: boolean;
     };
@@ -29,14 +35,18 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
+    const [showPrivate, setShowPrivate] = useState(false);
     const { user } = useAuth();
 
-    // Fallbacks for backwards compatibility
-    const letter = post.letter || post.tension;
-    const response = post.response || post.counsel;
-    const pseudonym = post.pseudonym || "Anonymous";
+    const isAuthor = user?.uid === post.uid;
+    const hasPrivateData = Boolean(post.rant && post.counsel);
 
-    if (!letter || !response) {
+    // Context-Aware Content Resolution
+    const currentLetter = (showPrivate && isAuthor) ? post.rant : (post.public_post?.letter || post.letter || post.tension);
+    const currentResponse = (showPrivate && isAuthor) ? post.counsel : (post.public_post?.response || post.response || post.counsel);
+    const currentPseudonym = (showPrivate && isAuthor) ? "My Tension" : (post.public_post?.pseudonym || post.pseudonym || "Anonymous");
+
+    if (!currentLetter || !currentResponse) {
         return null;
     }
 
@@ -68,10 +78,10 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
 
     if (isDeleting) return null; // Optimistic hide
 
-    const isLongResponse = response.length > 400;
+    const isLongResponse = currentResponse.length > 400;
     const displayedResponse = isLongResponse && !isResponseExpanded
-        ? response.slice(0, 400) + "..."
-        : response;
+        ? currentResponse.slice(0, 400) + "..."
+        : currentResponse;
 
     return (
         <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
@@ -132,13 +142,39 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
             {/* Body */}
             <div className="p-0 flex flex-col pt-4">
 
+                {/* Public/Private Toggle (Author Only) */}
+                {isAuthor && hasPrivateData && (
+                    <div className="flex justify-center mb-4 mx-6">
+                        <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+                            <button
+                                onClick={() => setShowPrivate(false)}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-md text-xs font-bold transition-all",
+                                    !showPrivate ? "bg-zinc-700 text-zinc-100 shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                            >
+                                Public
+                            </button>
+                            <button
+                                onClick={() => setShowPrivate(true)}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-md text-xs font-bold transition-all",
+                                    showPrivate ? "bg-zinc-700 text-zinc-100 shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                            >
+                                Private
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* The Letter (The Submission - Quoted Style) */}
                 <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 mb-4 mx-6">
                     <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                        {letter}
+                        {currentLetter}
                     </p>
                     <p className="mt-3 text-xs font-bold text-zinc-500 tracking-wide uppercase">
-                        - {pseudonym}
+                        {showPrivate ? currentPseudonym : `- ${currentPseudonym}`}
                     </p>
                 </div>
 

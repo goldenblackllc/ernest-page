@@ -8,9 +8,10 @@ interface CounselStepProps {
     state: CheckInState;
     setState: React.Dispatch<React.SetStateAction<CheckInState>>;
     onNext: () => void;
+    onBack: () => void;
 }
 
-export default function CounselStep({ state, setState, onNext }: CounselStepProps) {
+export default function CounselStep({ state, setState, onNext, onBack }: CounselStepProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const hasFetched = useRef(false);
@@ -25,11 +26,7 @@ export default function CounselStep({ state, setState, onNext }: CounselStepProp
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     uid: auth.currentUser.uid,
-                    timeAgo: "24 hours",
-                    alignmentScore: state.alignmentScore,
-                    gapText: state.gap,
-                    briefingText: state.briefing,
-                    completedTasks: "unknown"
+                    rant: state.rant
                 })
             })
                 .then(res => res.json())
@@ -47,7 +44,7 @@ export default function CounselStep({ state, setState, onNext }: CounselStepProp
                 .catch(err => setError(err.message))
                 .finally(() => setIsLoading(false));
         }
-    }, [state.counsel, state.alignmentScore, state.gap, state.briefing, setState]);
+    }, [state.counsel, state.rant, setState]);
 
     // If still actively loading the monolithic block, show the immersive spinner
     if (isLoading && !state.counsel) {
@@ -94,18 +91,26 @@ export default function CounselStep({ state, setState, onNext }: CounselStepProp
                 )}
             </div>
 
-            <div className="flex justify-between items-center pt-6 border-t border-zinc-800 shrink-0">
-                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">
-                    Step 1 of 3
-                </p>
+            <div className="flex justify-between items-center pt-6 border-t border-zinc-800 shrink-0 gap-3">
                 <button
-                    onClick={onNext}
-                    disabled={!state.counsel}
-                    className="px-6 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:shadow-none"
+                    onClick={onBack}
+                    className="px-6 py-2.5 rounded-full text-sm font-bold transition-all text-zinc-400 hover:text-white hover:bg-zinc-800"
                 >
-                    <span>View Action Plan</span>
-                    <ArrowRight className="w-4 h-4" />
+                    Back
                 </button>
+                <div className="flex items-center gap-4">
+                    <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider hidden sm:block">
+                        Step 2 of 3
+                    </p>
+                    <button
+                        onClick={onNext}
+                        disabled={!state.counsel}
+                        className="px-6 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:shadow-none"
+                    >
+                        <span>View Action Plan</span>
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
         </div>
     );

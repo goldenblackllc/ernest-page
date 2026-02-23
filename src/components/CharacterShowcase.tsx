@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile, updateCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { User, Scroll, Target, Crown, Sparkles, MessageCircle, Save, Loader2, CheckCircle2, Circle } from "lucide-react";
+import { User, Scroll, Target, Crown, Sparkles, MessageCircle, Save, Loader2, CheckCircle2, Circle, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { CharacterSheetModal } from "./CharacterSheetModal";
 import { MirrorChat } from "./MirrorChat";
@@ -71,6 +71,23 @@ export function CharacterShowcase() {
             });
         } catch (error) {
             console.error("Failed to toggle directive:", error);
+        }
+    };
+
+    const handleDeleteTodo = async (todoId: string) => {
+        if (!user || !profile?.active_todos) return;
+
+        const updatedTodos = profile.active_todos.filter(todo => {
+            const id = typeof todo === 'string' ? todo : todo.id;
+            return id !== todoId;
+        });
+
+        try {
+            await updateCharacterProfile(user.uid, {
+                active_todos: updatedTodos
+            });
+        } catch (error) {
+            console.error("Failed to delete directive:", error);
         }
     };
 
@@ -158,31 +175,33 @@ export function CharacterShowcase() {
 
                 </div>
 
-                {/* MY STORY SECTION */}
-                <div className="mt-8 px-1">
-                    <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">My Story (Current Reality)</h2>
-                        <button
-                            onClick={handleSaveStory}
-                            disabled={isSavingStory || myStory === profile?.my_story}
-                            className={cn(
-                                "flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-all",
-                                myStory !== profile?.my_story
-                                    ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                                    : "bg-zinc-800 text-zinc-500 cursor-default"
-                            )}
-                        >
-                            {isSavingStory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                            Save Story
-                        </button>
+                {/* MY STORY SECTION - Temporarily hidden */}
+                {false && (
+                    <div className="mt-8 px-1">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">My Story (Current Reality)</h2>
+                            <button
+                                onClick={handleSaveStory}
+                                disabled={isSavingStory || myStory === profile?.my_story}
+                                className={cn(
+                                    "flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-all",
+                                    myStory !== profile?.my_story
+                                        ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                                        : "bg-zinc-800 text-zinc-500 cursor-default"
+                                )}
+                            >
+                                {isSavingStory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                Save Story
+                            </button>
+                        </div>
+                        <textarea
+                            value={myStory}
+                            onChange={(e) => setMyStory(e.target.value)}
+                            placeholder="Describe your current life as you see it. Your past, your future desires, your physical/financial constraints, and ongoing situations. (e.g., 'I live in Carlisle, my daughter is in the hospital, I am an entrepreneur...')."
+                            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-zinc-500 focus:outline-none min-h-[120px] resize-none"
+                        />
                     </div>
-                    <textarea
-                        value={myStory}
-                        onChange={(e) => setMyStory(e.target.value)}
-                        placeholder="Describe your current life as you see it. Your past, your future desires, your physical/financial constraints, and ongoing situations. (e.g., 'I live in Carlisle, my daughter is in the hospital, I am an entrepreneur...')."
-                        className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-zinc-500 focus:outline-none min-h-[120px] resize-none"
-                    />
-                </div>
+                )}
 
                 {/* ACTIVE DIRECTIVES SECTION */}
                 <div className="mt-8 px-1 mb-6">
@@ -202,18 +221,29 @@ export function CharacterShowcase() {
                                 return (
                                     <div
                                         key={id}
-                                        onClick={() => handleToggleTodo(id, completed)}
-                                        className="flex items-start gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 cursor-pointer transition-colors hover:border-zinc-700"
+                                        className="flex items-start justify-between gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 transition-colors hover:border-zinc-700 group"
                                     >
-                                        <button className="mt-0.5 shrink-0 text-zinc-500 hover:text-emerald-400 transition-colors">
-                                            {completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
+                                        <div
+                                            className="flex items-start gap-3 flex-1 cursor-pointer"
+                                            onClick={() => handleToggleTodo(id, completed)}
+                                        >
+                                            <button className="mt-0.5 shrink-0 text-zinc-500 hover:text-emerald-400 transition-colors">
+                                                {completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
+                                            </button>
+                                            <p className={cn(
+                                                "text-sm leading-relaxed",
+                                                completed ? "text-zinc-500 line-through" : "text-zinc-300"
+                                            )}>
+                                                {task}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteTodo(id)}
+                                            className="mt-0.5 shrink-0 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                            title="Delete directive"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
                                         </button>
-                                        <p className={cn(
-                                            "text-sm leading-relaxed",
-                                            completed ? "text-zinc-500 line-through" : "text-zinc-300"
-                                        )}>
-                                            {task}
-                                        </p>
                                     </div>
                                 );
                             })
