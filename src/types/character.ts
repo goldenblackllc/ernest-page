@@ -30,6 +30,8 @@ export interface CharacterProfile {
     character_bible: CharacterBible; // Now mandatory structure
     my_story?: string;
     active_todos?: Array<{ id: string, task: string, completed: boolean, created_at: any }>;
+    following?: Record<string, string>; // authorId -> custom Alias
+    region?: string; // e.g., 'US-MA'
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
 }

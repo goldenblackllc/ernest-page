@@ -12,6 +12,8 @@ export const maxDuration = 300;
 
 export async function POST(req: Request) {
     try {
+        const region = req.headers.get('x-vercel-ip-country-region') || "LOCAL";
+
         const body = await req.json();
         const uid = body.uid;
         const rant = body.rant || "";
@@ -20,6 +22,21 @@ export async function POST(req: Request) {
 
         if (!uid || !rant) {
             return Response.json({ error: "UID and Rant text are required to generate and save a public post." }, { status: 400 });
+        }
+
+        // 1. Update the user's active directives/todos IMMEDIATELY 
+        // We do this before the LLM generation so the frontend updates instantly without waiting for the post
+        if (directives.length > 0) {
+            const parsedTodos = directives.map((task: string) => ({
+                id: Math.random().toString(36).substring(2, 10),
+                task: task,
+                completed: false,
+                created_at: new Date().toISOString()
+            }));
+
+            await db.collection('users').doc(uid).set({
+                active_todos: parsedTodos
+            }, { merge: true }); // Using set with merge to avoid failing on new/empty user docs
         }
 
         // Fetch User and Character Bible from Firebase
@@ -53,6 +70,8 @@ response: Character A's response. Remind Character A that this is a social media
         await db.collection('posts').add({
             uid: uid,
             userId: uid, // Including both for backwards compatibility across older Ledger versions
+            authorId: uid,
+            region: region,
             type: "checkin",
             rant: rant,
             counsel: counsel,
@@ -69,19 +88,6 @@ response: Character A's response. Remind Character A that this is a social media
             is_public: true
         });
 
-        // 2. Update the user's active directives/todos
-        if (directives.length > 0) {
-            const parsedTodos = directives.map((task: string) => ({
-                id: Math.random().toString(36).substring(2, 10),
-                task: task,
-                completed: false,
-                created_at: new Date().toISOString()
-            }));
-
-            await db.collection('users').doc(uid).set({
-                active_todos: parsedTodos
-            }, { merge: true }); // Using set with merge to avoid failing on new/empty user docs
-        }
 
         // We return success, but the UI is likely not awaiting this response anyway
         return Response.json({ success: true, post: postData });

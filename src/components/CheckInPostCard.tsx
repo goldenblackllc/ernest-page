@@ -14,6 +14,7 @@ interface CheckInPostProps {
     post: {
         id: string;
         uid: string; // Original creator uid
+        authorId?: string; // New Tracking id
         type: 'checkin';
         pseudonym?: string; // New Dear Earnest Schema
         letter?: string;    // New Dear Earnest Schema
@@ -29,17 +30,24 @@ interface CheckInPostProps {
         created_at: Timestamp;
         is_public?: boolean;
     };
+    followingMap?: Record<string, string>;
+    onFollowClick?: (authorId: string) => void;
 }
 
-export function CheckInPostCard({ post }: CheckInPostProps) {
+export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPostProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [showPrivate, setShowPrivate] = useState(false);
     const { user } = useAuth();
 
-    const isAuthor = user?.uid === post.uid;
+    const postAuthorId = post.authorId || post.uid;
+    const isAuthor = user?.uid === postAuthorId;
     const hasPrivateData = Boolean(post.rant && post.counsel);
+
+    // Following resolution
+    const isFollowing = postAuthorId && followingMap && followingMap[postAuthorId];
+    const customAlias = isFollowing ? followingMap[postAuthorId] : null;
 
     // Context-Aware Content Resolution
     const currentLetter = (showPrivate && isAuthor) ? post.rant : (post.public_post?.letter || post.letter || post.tension);
@@ -103,8 +111,16 @@ export function CheckInPostCard({ post }: CheckInPostProps) {
                         <User className="w-5 h-5 text-emerald-500" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm font-bold text-gray-200">
-                            Earnest
+                        <span className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                            {isAuthor ? "Me" : customAlias ? `Counsel from ${customAlias}` : "Dear Earnest"}
+                            {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
+                                <button
+                                    onClick={() => onFollowClick(postAuthorId)}
+                                    className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide"
+                                >
+                                    + Follow Author
+                                </button>
+                            )}
                         </span>
                         <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1 text-[10px] text-zinc-500">
