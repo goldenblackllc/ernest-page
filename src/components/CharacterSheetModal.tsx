@@ -18,7 +18,6 @@ interface CharacterSheetModalProps {
 
 export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterSheetModalProps) {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<Tab>('IDENTITY');
     const [formData, setFormData] = useState<CharacterBible>(initialData);
     const [isVisualizing, setIsVisualizing] = useState(false);
 
@@ -100,194 +99,69 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="shrink-0 border-b border-white/5 flex overflow-x-auto no-scrollbar px-2">
-                    <TabButton active={activeTab === 'IDENTITY'} onClick={() => setActiveTab('IDENTITY')} icon={User} label="Identity" />
-                    <TabButton active={activeTab === 'VALUES'} onClick={() => setActiveTab('VALUES')} icon={Brain} label="Values" />
-                    <TabButton active={activeTab === 'LIFESTYLE'} onClick={() => setActiveTab('LIFESTYLE')} icon={Zap} label="Lifestyle" />
-                    <TabButton active={activeTab === 'CONTEXT'} onClick={() => setActiveTab('CONTEXT')} icon={Hash} label="Context" />
-                </div>
-
-                {/* Scrollable Content */}
+                {/* Scrollable Content (Flattened Form) */}
                 <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar">
-
-                    {/* --- TAB 1: IDENTITY --- */}
-                    {activeTab === 'IDENTITY' && (
-                        <div className="space-y-8 max-w-xl mx-auto">
-                            <div className="space-y-6">
-                                <InputGroup label="Archetype Title">
-                                    <input
-                                        type="text"
-                                        value={formData.source_code?.archetype || ""}
-                                        onChange={e => updateSourceCode('archetype', e.target.value)}
-                                        className="w-full bg-transparent border-b border-zinc-800 pb-2 text-3xl font-bold text-white focus:border-white focus:outline-none placeholder-zinc-800"
-                                        placeholder="The Protagonist"
-                                    />
-                                </InputGroup>
-
-                                <InputGroup label="Manifesto">
-                                    <textarea
-                                        value={formData.source_code?.manifesto || ""}
-                                        onChange={e => updateSourceCode('manifesto', e.target.value)}
-                                        className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-lg leading-relaxed focus:border-white/20 focus:outline-none min-h-[150px] resize-none"
-                                        placeholder="I am..."
-                                    />
-                                </InputGroup>
-                            </div>
-
-                            <div className="pt-6 border-t border-white/5">
-                                <InputGroup label="Important People">
-                                    <textarea
-                                        value={formData.source_code?.important_people || ""}
-                                        onChange={e => updateSourceCode('important_people', e.target.value)}
-                                        className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-white/20 focus:outline-none min-h-[100px] resize-none"
-                                        placeholder="Family, mentors, key relationships..."
-                                    />
-                                </InputGroup>
-                            </div>
-
-                            <div className="pt-6 border-t border-white/5 space-y-4">
-                                <InputGroup label="Current Constraints">
-                                    <textarea
-                                        value={formData.source_code?.current_constraints || ""}
-                                        onChange={e => updateSourceCode('current_constraints', e.target.value)}
-                                        className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-white/20 focus:outline-none min-h-[100px] resize-none"
-                                        placeholder="Inventory, reality anchors..."
-                                    />
-                                </InputGroup>
-                            </div>
-
-                            {/* Visual Board */}
-                            <div className="pt-6 border-t border-white/5 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-bold text-zinc-500">Visual Board</label>
-                                    <span className="text-xs text-zinc-600">{formData.compiled_bible?.visual_board?.length || 0} Images</span>
-                                </div>
-
-                                <VisualBoardInput
-                                    items={formData.compiled_bible?.visual_board || []}
-                                    onChange={val => updateCompiledBible('visual_board', val)}
-                                    userId={user?.uid}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* --- TAB 2: VALUES (Psychographics) --- */}
-                    {activeTab === 'VALUES' && (
-                        <div className="space-y-10 max-w-xl mx-auto">
-                            {/* Core Beliefs hidden by system override */}
-                            <InputGroup label="Operating Rules">
-                                <ObjectArrayInput
-                                    items={formData.compiled_bible?.behavioral_responses || []}
-                                    onChange={val => updateCompiledBible('behavioral_responses', val)}
-                                    fields={[
-                                        { key: 'rule', placeholder: 'Rule', width: '40%' },
-                                        { key: 'description', placeholder: 'Description...', width: '60%' }
-                                    ]}
-                                    generateId
-                                />
-                            </InputGroup>
-
-                            <InputGroup label="Mantras">
-                                <TagInput
-                                    tags={formData.compiled_bible?.thoughts || []}
-                                    onChange={val => updateCompiledBible('thoughts', val)}
-                                    placeholder="Add a mantra..."
-                                />
-                            </InputGroup>
-                        </div>
-                    )}
-
-                    {/* --- TAB 3: LIFESTYLE --- */}
-                    {activeTab === 'LIFESTYLE' && (
-                        <div className="space-y-10 max-w-xl mx-auto">
-                            <InputGroup label="Daily Habits">
-                                <TagInput
-                                    tags={formData.compiled_bible?.habits || []}
-                                    onChange={val => updateCompiledBible('habits', val)}
-                                    placeholder="Add a habit..."
-                                />
-                            </InputGroup>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <InputGroup label="Diet / Food">
-                                    <TagInput
-                                        tags={formData.compiled_bible?.consumption?.food || []}
-                                        onChange={val => updateCompiledBible('consumption', { ...formData.compiled_bible?.consumption, food: val })}
-                                        placeholder="Add dietary rule..."
-                                    />
-                                </InputGroup>
-                                <InputGroup label="Media Diet">
-                                    <TagInput
-                                        tags={formData.compiled_bible?.consumption?.media || []}
-                                        onChange={val => updateCompiledBible('consumption', { ...formData.compiled_bible?.consumption, media: val })}
-                                        placeholder="Add media rule..."
-                                    />
-                                </InputGroup>
-                            </div>
-
-                            <InputGroup label="Positive Events (Joy)">
-                                <TagInput
-                                    tags={formData.compiled_bible?.positive_events || []}
-                                    onChange={val => updateCompiledBible('positive_events', val)}
-                                    placeholder="What makes you happy?"
-                                />
-                            </InputGroup>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <InputGroup label="Wants">
-                                    <TagInput
-                                        tags={formData.compiled_bible?.wants || []}
-                                        onChange={val => updateCompiledBible('wants', val)}
-                                        placeholder="Add a want..."
-                                    />
-                                </InputGroup>
-                                <InputGroup label="Goals">
-                                    <TagInput
-                                        tags={formData.compiled_bible?.goals || []}
-                                        onChange={val => updateCompiledBible('goals', val)}
-                                        placeholder="Add a goal..."
-                                    />
-                                </InputGroup>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* --- TAB 4: CONTEXT --- */}
-                    {activeTab === 'CONTEXT' && (
-                        <div className="space-y-8 max-w-xl mx-auto">
-                            <InputGroup label="Relationships">
-                                <ObjectArrayInput
-                                    items={formData.compiled_bible?.relationships || []}
-                                    onChange={val => updateCompiledBible('relationships', val)}
-                                    fields={[
-                                        { key: 'name', placeholder: 'Name', width: '30%' },
-                                        { key: 'relation', placeholder: 'Relation', width: '30%' },
-                                        { key: 'notes', placeholder: 'Notes', width: '40%' }
-                                    ]}
-                                />
-                            </InputGroup>
-
-                            <InputGroup label="Living Situation">
+                    <div className="space-y-8 max-w-xl mx-auto pb-10">
+                        <div className="space-y-6">
+                            <InputGroup label="Archetype Title">
                                 <input
                                     type="text"
-                                    value={formData.compiled_bible?.living_situation || ""}
-                                    onChange={e => updateCompiledBible('living_situation', e.target.value)}
-                                    className="w-full bg-transparent border-b border-zinc-800 pb-2 text-zinc-300 focus:border-white focus:outline-none"
-                                    placeholder="Apartment in NYC..."
+                                    value={formData.source_code?.archetype || ""}
+                                    onChange={e => updateSourceCode('archetype', e.target.value)}
+                                    className="w-full bg-transparent border-b border-zinc-800 pb-2 text-3xl font-bold text-white focus:border-white focus:outline-none placeholder-zinc-800"
+                                    placeholder="The Protagonist"
                                 />
                             </InputGroup>
 
-                            <InputGroup label="Favorite Music">
-                                <TagInput
-                                    tags={formData.compiled_bible?.music || []}
-                                    onChange={val => updateCompiledBible('music', val)}
-                                    placeholder="Add artist/genre..."
+                            <InputGroup label="Manifesto">
+                                <textarea
+                                    value={formData.source_code?.manifesto || ""}
+                                    onChange={e => updateSourceCode('manifesto', e.target.value)}
+                                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-base leading-relaxed focus:border-white/20 focus:outline-none min-h-[160px] resize-none"
+                                    placeholder="I am..."
+                                    rows={6}
                                 />
                             </InputGroup>
                         </div>
-                    )}
+
+                        <div className="pt-6 border-t border-white/5">
+                            <InputGroup label="Important People">
+                                <textarea
+                                    value={formData.source_code?.important_people || ""}
+                                    onChange={e => updateSourceCode('important_people', e.target.value)}
+                                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-base leading-relaxed focus:border-white/20 focus:outline-none min-h-[160px] resize-none"
+                                    placeholder="Family, mentors, key relationships..."
+                                    rows={6}
+                                />
+                            </InputGroup>
+                        </div>
+
+                        <div className="pt-6 border-t border-white/5">
+                            <InputGroup label="Things I Enjoy (Preferences & Aesthetics)">
+                                <textarea
+                                    value={formData.source_code?.things_i_enjoy || ""}
+                                    onChange={e => updateSourceCode('things_i_enjoy', e.target.value)}
+                                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-zinc-300 text-base leading-relaxed focus:border-white/20 focus:outline-none min-h-[160px] resize-none"
+                                    placeholder="Black coffee, high-quality steaks, quiet mornings, 90 Day Fiancé, reading..."
+                                    rows={6}
+                                />
+                            </InputGroup>
+                        </div>
+
+                        {/* Visual Board */}
+                        <div className="pt-6 border-t border-white/5 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-bold text-zinc-500">Visual Board</label>
+                                <span className="text-xs text-zinc-600">{formData.compiled_bible?.visual_board?.length || 0} Images</span>
+                            </div>
+
+                            <VisualBoardInput
+                                items={formData.compiled_bible?.visual_board || []}
+                                onChange={val => updateCompiledBible('visual_board', val)}
+                                userId={user?.uid}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -295,21 +169,6 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
 }
 
 // --- SUB COMPONENTS ---
-
-function TabButton({ active, onClick, icon: Icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
-    return (
-        <button
-            onClick={onClick}
-            className={cn(
-                "h-14 px-6 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors shrink-0",
-                active ? "border-white text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"
-            )}
-        >
-            <Icon className="w-4 h-4" />
-            {label}
-        </button>
-    );
-}
 
 function InputGroup({ label, children }: { label: string, children: React.ReactNode }) {
     return (

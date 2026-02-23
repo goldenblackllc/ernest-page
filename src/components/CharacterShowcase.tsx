@@ -164,7 +164,7 @@ export function CharacterShowcase() {
                             </div>
 
                             <div className="flex-1 overflow-y-auto space-y-3 relative z-10 pr-2 custom-scrollbar">
-                                <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap prose prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:text-white prose-a:text-emerald-400 prose-strong:text-emerald-300">
+                                <div className="text-sm text-zinc-300 leading-relaxed prose prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:text-white prose-a:text-emerald-400 prose-strong:text-emerald-300">
                                     <ReactMarkdown>
                                         {section.content}
                                     </ReactMarkdown>

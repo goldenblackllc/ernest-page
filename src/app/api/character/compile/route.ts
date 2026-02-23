@@ -63,7 +63,8 @@ Core Beliefs:
  Life is abundant. I am free. I am secure. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take.
 Archetype:{ARCHETYPE}
 Manifesto: {MANIFESTO}
-Important People: {IMPORTANT_PEOPLE}`;
+Important People: {IMPORTANT_PEOPLE}
+Things they enjoy: {THINGS_I_ENJOY}`;
 
 // Removed PROMPT_REALITY_BIBLE
 
@@ -103,7 +104,8 @@ export async function POST(req: Request) {
             .replace('{ARCHETYPE}', source_code.archetype || 'None')
             .replace('{MANIFESTO}', source_code.manifesto || 'None')
             .replace('{CORE_BELIEFS}', HIDDEN_CORE_BELIEFS)
-            .replace('{IMPORTANT_PEOPLE}', source_code.important_people || 'None');
+            .replace('{IMPORTANT_PEOPLE}', source_code.important_people || 'None')
+            .replace('{THINGS_I_ENJOY}', source_code.things_i_enjoy || 'Not specified.');
 
         // Generate Ideal Bible
         console.log("Generating Ideal Bible...");

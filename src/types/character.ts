@@ -5,6 +5,7 @@ export interface CharacterBible {
         core_beliefs: string;
         important_people: string;
         current_constraints: string; // The new "Inventory/Reality Anchor" field
+        things_i_enjoy?: string; // Preferences & Aesthetics
     };
     compiled_bible: {
         core_identity?: any;

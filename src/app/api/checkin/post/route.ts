@@ -24,20 +24,20 @@ export async function POST(req: Request) {
             return Response.json({ error: "UID and Rant text are required to generate and save a public post." }, { status: 400 });
         }
 
-        // 1. Update the user's active directives/todos IMMEDIATELY 
+        // 1. Update the user's active directives/todos and region IMMEDIATELY 
         // We do this before the LLM generation so the frontend updates instantly without waiting for the post
+        const userUpdateData: any = { region: region };
+
         if (directives.length > 0) {
-            const parsedTodos = directives.map((task: string) => ({
+            userUpdateData.active_todos = directives.map((task: string) => ({
                 id: Math.random().toString(36).substring(2, 10),
                 task: task,
                 completed: false,
                 created_at: new Date().toISOString()
             }));
-
-            await db.collection('users').doc(uid).set({
-                active_todos: parsedTodos
-            }, { merge: true }); // Using set with merge to avoid failing on new/empty user docs
         }
+
+        await db.collection('users').doc(uid).set(userUpdateData, { merge: true });
 
         // Fetch User and Character Bible from Firebase
         const userDoc = await db.collection('users').doc(uid).get();
