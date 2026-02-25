@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { CharacterBible } from "@/types/character";
 import { X, Send, User, Sparkles } from "lucide-react";
@@ -16,11 +16,37 @@ interface MirrorChatProps {
 }
 
 export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
+    // Load initial messages from localStorage
+    const [initialMessages] = useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem(`mirror-chat-${uid}`);
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    return [];
+                }
+            }
+        }
+        return [];
+    });
+
     const { messages, setMessages, input, handleInputChange, handleSubmit, isLoading } = useChat({
         api: '/api/mirror',
         body: { uid },
-        initialMessages: [],
+        initialMessages,
     });
+
+    // Save messages to localStorage whenever they change
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            if (messages.length > 0) {
+                localStorage.setItem(`mirror-chat-${uid}`, JSON.stringify(messages));
+            } else {
+                localStorage.removeItem(`mirror-chat-${uid}`);
+            }
+        }
+    }, [messages, uid]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -35,18 +61,21 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
         }
     }, [messages, isOpen]);
 
-    // Prevent background scrolling when modal is open and clear chat when closed
+    // Prevent background scrolling when modal is open
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = "hidden";
         } else {
             document.body.style.overflow = "auto";
-            setMessages([]); // Clear chat history on close
+            setMessages([]); // Clear chat history on explicit close
+            if (typeof window !== "undefined") {
+                localStorage.removeItem(`mirror-chat-${uid}`);
+            }
         }
         return () => {
             document.body.style.overflow = "auto";
         };
-    }, [isOpen, setMessages]);
+    }, [isOpen, setMessages, uid]);
 
     const idealName = bible?.source_code?.archetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_bible?.avatar_url;
@@ -144,7 +173,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                                                 )}
                                             >
                                                 {m.role === "assistant" ? (
-                                                    <div className="prose prose-invert prose-sm prose-p:leading-relaxed prose-a:text-emerald-400 prose-strong:text-emerald-300 max-w-none">
+                                                    <div className="prose prose-invert prose-sm prose-p:leading-relaxed prose-a:text-emerald-400 prose-strong:text-emerald-300 max-w-none whitespace-pre-wrap">
                                                         <ReactMarkdown>{m.content}</ReactMarkdown>
                                                     </div>
                                                 ) : (

@@ -85,7 +85,7 @@ export default function CounselStep({ state, setState, onNext, onBack }: Counsel
                 )}
 
                 {state.counsel && (
-                    <div className="prose prose-invert prose-emerald max-w-none text-zinc-300">
+                    <div className="prose prose-invert prose-emerald max-w-none text-zinc-300 whitespace-pre-wrap">
                         <ReactMarkdown>{state.counsel}</ReactMarkdown>
                     </div>
                 )}
@@ -93,7 +93,10 @@ export default function CounselStep({ state, setState, onNext, onBack }: Counsel
 
             <div className="flex justify-between items-center pt-6 border-t border-zinc-800 shrink-0 gap-3">
                 <button
-                    onClick={onBack}
+                    onClick={() => {
+                        setState(prev => ({ ...prev, counsel: '', directives: [] })); // Clear the old counsel
+                        onBack();
+                    }}
                     className="px-6 py-2.5 rounded-full text-sm font-bold transition-all text-zinc-400 hover:text-white hover:bg-zinc-800"
                 >
                     Back
