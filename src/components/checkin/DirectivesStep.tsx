@@ -17,24 +17,25 @@ export default function DirectivesStep({ state, onClose, onBack }: DirectivesSte
 
         // Fire-and-forget background publication and DB save
         if (auth.currentUser) {
-            // Dispatch event to show a loading state in the Ledger feed
-            window.dispatchEvent(new CustomEvent('checkin-publishing-start'));
+            // Generate ID so the frontend can track the background job via Firestore
+            const postId = crypto.randomUUID();
 
+            // Dispatch event to show a loading state in the Ledger feed
+            window.dispatchEvent(new CustomEvent('checkin-publishing-start', { detail: { postId } }));
+
+            // We do not await or handle finally here because the request will return instantly, 
+            // and Ledger.tsx handles the actual loading state clearance via Firestore listener.
             fetch('/api/checkin/post', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    postId,
                     uid: auth.currentUser.uid,
                     rant: state.rant,
                     counsel: state.counsel,
                     directives: state.directives
                 })
-            })
-                .catch(e => console.error("Background publish failed:", e))
-                .finally(() => {
-                    // Clear the loading state whether it succeeds or fails
-                    window.dispatchEvent(new CustomEvent('checkin-publishing-end'));
-                });
+            }).catch(e => console.error("Background publish trigger failed:", e));
         }
     };
 

@@ -39,13 +39,15 @@ export function CharacterSheetModal({ isOpen, onClose, initialData }: CharacterS
                 body: JSON.stringify({ uid: user.uid, source_code: formData.source_code })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error("Failed to compile character bible");
+                throw new Error(data.message || data.error || "Failed to compile character bible");
             }
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to visualize:", error);
-            alert("Failed to visualize character sheet.");
+            alert(error.message || "Failed to visualize character sheet.");
         } finally {
             setIsVisualizing(false);
         }

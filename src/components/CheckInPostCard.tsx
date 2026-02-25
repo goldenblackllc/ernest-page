@@ -16,6 +16,7 @@ interface CheckInPostProps {
         uid: string; // Original creator uid
         authorId?: string; // New Tracking id
         type: 'checkin';
+        title?: string;
         pseudonym?: string; // New Dear Earnest Schema
         letter?: string;    // New Dear Earnest Schema
         response?: string;  // New Dear Earnest Schema
@@ -23,6 +24,7 @@ interface CheckInPostProps {
         counsel?: string;   // Legacy Support
         rant?: string;      // Raw User Input
         public_post?: {     // Strict Top-Level Schema
+            title?: string;
             pseudonym?: string;
             letter?: string;
             response?: string;
@@ -53,6 +55,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
     const currentLetter = (showPrivate && isAuthor) ? post.rant : (post.public_post?.letter || post.letter || post.tension);
     const currentResponse = (showPrivate && isAuthor) ? post.counsel : (post.public_post?.response || post.response || post.counsel);
     const currentPseudonym = (showPrivate && isAuthor) ? "My Tension" : (post.public_post?.pseudonym || post.pseudonym || "Anonymous");
+    const currentTitle = (showPrivate && isAuthor) ? "My True Feelings" : (post.public_post?.title || post.title);
 
     if (!currentLetter || !currentResponse) {
         return null;
@@ -181,6 +184,15 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
                                 Private
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* The Title */}
+                {!showPrivate && currentTitle && (
+                    <div className="px-6">
+                        <h2 className="text-xl font-bold text-white mb-2 leading-tight">
+                            {currentTitle}
+                        </h2>
                     </div>
                 )}
 

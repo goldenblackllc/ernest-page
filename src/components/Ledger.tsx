@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { collection, query, orderBy, limit, where, getDocs } from "firebase/firestore";
+import React, { useEffect, useState, useCallback } from "react";
+import { collection, query, orderBy, limit, where, getDocs, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { RecastPostCard } from "@/components/RecastPostCard";
@@ -8,13 +8,15 @@ import { Sparkles, RefreshCw } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
+import { FeedAdCard } from "@/components/FeedAdCard";
+import { ecosystemAds } from "@/config/ecosystem";
 
 export function Ledger() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [entries, setEntries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isPublishingCheckIn, setIsPublishingCheckIn] = useState(false);
+    const [pendingPostId, setPendingPostId] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<string | null>(null);
 
@@ -35,7 +37,23 @@ export function Ledger() {
         try {
             const followingMap = profile.following || {};
             const followedIds = Object.keys(followingMap);
-            const myRegion = profile.region || "";
+            let myRegion = profile.region || "";
+
+            if (!myRegion) {
+                try {
+                    const res = await fetch('/api/user/region', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid: user.uid })
+                    });
+                    const data = await res.json();
+                    if (data.region) {
+                        myRegion = data.region;
+                    }
+                } catch (e) {
+                    console.error("Failed to sync initial region:", e);
+                }
+            }
 
             const postsRef = collection(db, "posts");
             let blendedPosts: any[] = [];
@@ -119,24 +137,45 @@ export function Ledger() {
         }
     }, [profile, loading, fetchBlendedFeed]);
 
+    // Listen for checkout-publishing-start
     useEffect(() => {
-        const handleStart = () => setIsPublishingCheckIn(true);
-        const handleEnd = () => setIsPublishingCheckIn(false);
+        const handleStart = (e: any) => {
+            const id = e.detail?.postId;
+            if (id) {
+                setPendingPostId(id);
+                // Also optimistically scroll to top or just let the feed render the spinner
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
 
         window.addEventListener('checkin-publishing-start', handleStart);
-        window.addEventListener('checkin-publishing-end', handleEnd);
-
         return () => {
             window.removeEventListener('checkin-publishing-start', handleStart);
-            window.removeEventListener('checkin-publishing-end', handleEnd);
         };
     }, []);
+
+    // Monitor the background check-in post
+    useEffect(() => {
+        if (!pendingPostId) return;
+
+        const unsub = onSnapshot(doc(db, "posts", pendingPostId), (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                if (data.status === 'completed' || data.status === 'failed') {
+                    setPendingPostId(null);
+                    fetchBlendedFeed(); // Fetch the new post to show in feed
+                }
+            }
+        });
+
+        return () => unsub();
+    }, [pendingPostId, fetchBlendedFeed]);
 
     if (loading) {
         return <div className="p-12 text-center text-xs uppercase tracking-widest animate-pulse">Syncing Reality...</div>;
     }
 
-    if (entries.length === 0 && !isPublishingCheckIn) {
+    if (entries.length === 0 && !pendingPostId) {
         return (
             <div className="p-12 text-center border border-zinc-800 border-dashed rounded-xl bg-transparent">
                 <p className="text-[10px] uppercase tracking-widest text-zinc-600 font-mono">Log is empty.</p>
@@ -157,7 +196,7 @@ export function Ledger() {
                 </button>
             </div>
 
-            {isPublishingCheckIn && (
+            {pendingPostId && (
                 <div className="bg-[#1a1a1a] border border-emerald-500/20 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">
                     <div className="flex flex-col items-center gap-3">
                         <Sparkles className="w-6 h-6 text-emerald-500/80 animate-spin-slow" />
@@ -168,16 +207,26 @@ export function Ledger() {
                 </div>
             )}
 
-            {entries.map((entry) => (
-                entry.type === 'checkin'
-                    ? <CheckInPostCard
-                        key={entry.id}
-                        post={entry as any}
-                        followingMap={profile?.following}
-                        onFollowClick={(id) => setSelectedAuthorToFollow(id)}
-                    />
-                    : <RecastPostCard key={entry.id} post={entry as any} />
-            ))}
+            {entries.map((entry, index) => {
+                const isAdSlot = (index + 1) % 5 === 0;
+                const adIndex = Math.floor(index / 5);
+                const ad = ecosystemAds[adIndex % ecosystemAds.length];
+
+                return (
+                    <React.Fragment key={`entry-group-${entry.id}`}>
+                        {entry.type === 'checkin'
+                            ? <CheckInPostCard
+                                key={entry.id}
+                                post={entry as any}
+                                followingMap={profile?.following}
+                                onFollowClick={(id) => setSelectedAuthorToFollow(id)}
+                            />
+                            : <RecastPostCard key={entry.id} post={entry as any} />}
+
+                        {isAdSlot && <FeedAdCard ad={ad} />}
+                    </React.Fragment>
+                );
+            })}
 
             <FollowAuthorModal
                 isOpen={!!selectedAuthorToFollow}

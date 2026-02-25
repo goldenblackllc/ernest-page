@@ -180,6 +180,15 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("Compile API Error:", error);
+
+        if (error.name === 'AbortError' || (error.message || '').toString().toLowerCase().includes('timeout') || (error.message || '').toString().toLowerCase().includes('504') || (error.message || '').toString().toLowerCase().includes('503')) {
+            return Response.json({
+                success: false,
+                errorType: 'TIMEOUT',
+                message: 'The algorithm is currently taking longer than expected. Please try submitting again.'
+            }, { status: 504 });
+        }
+
         return Response.json({ error: error.message || "An unexpected error occurred." }, { status: 500 });
     }
 }
