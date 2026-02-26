@@ -18,14 +18,13 @@ const SAFETY_SETTINGS = [
     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
 ];
 
-const HIDDEN_CORE_BELIEFS = "Life is abundant. I am free. I am secure. I am powerful. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take.";
+const HIDDEN_CORE_BELIEFS = "Life is abundant. I am free. I am secure. I am powerful. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take. Negative feelings are the result of unconscious negative beliefs. Denying them doesn't make the negativity go away; owning it does. It is crucial to embrace these feelings to uncover the hidden beliefs beneath them. Once brought into the conscious mind, you can actively choose a new, positive belief. I embrace my negative emotions because I know their depth is actually quite shallow. Fear and denial make the barrel seem bottomless, but the bottom is never far away. Negative emotions are simply messengers. They are trying to tell me something, and I need to start listening. I am always pursuing my moment of excitement with integrity. Excitement is my barometer, telling me which way to go. If I get frustrated, I realize that it's time to head in another direction.";
 
 const SYSTEM_PROMPT = `You are a Character Simulation Engine. Core Beliefs: ${HIDDEN_CORE_BELIEFS}`;
 
 const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following Character Source Code. Your task is to output a comprehensive Character Bible. Crucial Instruction: Use the source code as your foundation, but actively extrapolate and invent logical details regarding their communication style, aesthetics, and daily habits based on their archetype. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead.
 Source Code:
-Core Beliefs: 
- Life is abundant. I am free. I am secure. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take.
+Core Beliefs: {CORE_BELIEFS}
 Archetype:{ARCHETYPE}
 Manifesto: {MANIFESTO}
 Important People: {IMPORTANT_PEOPLE}
@@ -85,7 +84,7 @@ export async function POST(req: Request) {
                 }),
                 Psychology_and_Beliefs: z.object({
                     Manifesto: z.string().describe("Their primary thesis or mission statement"),
-                    Core_Beliefs: z.array(z.string()),
+                    Other_Beliefs: z.array(z.string()).describe("Additional personal beliefs and worldview principles they hold, based on their archetype and source code"),
                     Inner_World: z.string().describe("How they process emotions, make decisions, and view reality")
                 }),
                 Presentation_and_Vibe: z.object({
@@ -120,7 +119,7 @@ export async function POST(req: Request) {
             },
             {
                 heading: "Psychology & Beliefs",
-                content: `**Manifesto:**\n${rawObj.Psychology_and_Beliefs.Manifesto}\n\n**Core Beliefs:**\n${rawObj.Psychology_and_Beliefs.Core_Beliefs.map((b: string) => `- ${b}`).join('\n')}\n\n**Inner World:**\n${rawObj.Psychology_and_Beliefs.Inner_World}`
+                content: `**Manifesto:**\n${rawObj.Psychology_and_Beliefs.Manifesto}\n\n**Core Beliefs (Foundational):**\n${HIDDEN_CORE_BELIEFS}\n\n**Other Beliefs:**\n${rawObj.Psychology_and_Beliefs.Other_Beliefs.map((b: string) => `- ${b}`).join('\n')}\n\n**Inner World:**\n${rawObj.Psychology_and_Beliefs.Inner_World}`
             },
             {
                 heading: "Presentation & Vibe",
