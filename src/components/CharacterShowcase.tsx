@@ -250,43 +250,12 @@ export function CharacterShowcase() {
                         )}
                     </div>
                 </div>
-
-                {/* Mirror Chat Entry Button */}
-                <div className="mt-6 px-1">
-                    <button
-                        onClick={() => setIsMirrorOpen(true)}
-                        className="w-full relative group overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 p-4 transition-all hover:border-emerald-500/50"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative flex items-center justify-between z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-300">
-                                    <MessageCircle className="w-6 h-6" />
-                                </div>
-                                <div className="text-left">
-                                    <h3 className="text-white font-bold leading-none mb-1 group-hover:text-emerald-400 transition-colors">Consult Your Ideal Self</h3>
-                                    <p className="text-sm text-zinc-400 font-medium">Real-time guidance from the Mirror.</p>
-                                </div>
-                            </div>
-                            <Sparkles className="w-5 h-5 text-emerald-500/50 group-hover:text-emerald-400 group-hover:rotate-12 transition-all duration-300 mr-2" />
-                        </div>
-                    </button>
-                </div>
             </div >
 
             <CharacterSheetModal
                 isOpen={isSheetOpen}
-                onClose={() => {
-                    setIsSheetOpen(false);
-                }}
+                onClose={() => setIsSheetOpen(false)}
                 initialData={bible}
-            />
-
-            <MirrorChat
-                isOpen={isMirrorOpen}
-                onClose={() => setIsMirrorOpen(false)}
-                bible={bible}
-                uid={user?.uid || ""}
             />
         </>
     );
