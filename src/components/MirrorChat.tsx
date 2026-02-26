@@ -25,8 +25,16 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     useEffect(() => {
         if (!uid || !isOpen) return; // Only subscribe when open
 
+        const timeoutMs = 15 * 60 * 1000; // 15 mins
+
         const unsubscribe = subscribeToActiveChat(uid, (chat) => {
             if (chat) {
+                // Client-side drop if the chat is expired (cron hasn't picked it up yet)
+                if (chat.updatedAt && (Date.now() - chat.updatedAt > timeoutMs)) {
+                    setMessages([]);
+                    setIsLoading(false);
+                    return;
+                }
                 setMessages(chat.messages || []);
                 setIsLoading(chat.status === "generating");
             } else {
