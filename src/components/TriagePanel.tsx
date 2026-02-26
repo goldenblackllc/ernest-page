@@ -84,7 +84,7 @@ export function TriagePanel() {
                             <MessageCircle className="w-5 h-5" />
                         </div>
                         <div>
-                            <div className="text-white font-bold text-sm mb-0.5">The Mirror</div>
+                            <div className="text-white font-bold text-sm mb-0.5">Talk to Ideal Self</div>
                             <div className="text-zinc-500 text-xs line-clamp-1">Free-flowing chat with your Ideal Self.</div>
                         </div>
                     </button>
