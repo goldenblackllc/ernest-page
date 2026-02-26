@@ -37,8 +37,8 @@ export async function GET(req: Request) {
                 if (chatData?.updatedAt && (now - chatData.updatedAt > timeoutMs)) {
                     const messages = chatData.messages || [];
 
-                    // Only generate a post if there is actual conversation content (User -> AI)
-                    if (messages.length >= 2) {
+                    // Only generate a post if there is actual conversation content (e.g. User -> AI -> User)
+                    if (messages.length > 2) {
                         const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
                         // Generate 'Dear Earnest' Post
