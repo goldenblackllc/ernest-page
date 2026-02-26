@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useChat } from "@ai-sdk/react";
 import { CharacterBible } from "@/types/character";
 import { X, Send, User, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
+import { subscribeToActiveChat } from "@/lib/firebase/chat";
+import { Message } from "@ai-sdk/react";
 
 interface MirrorChatProps {
     isOpen: boolean;
@@ -16,37 +17,26 @@ interface MirrorChatProps {
 }
 
 export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
-    // Load initial messages from localStorage
-    const [initialMessages] = useState(() => {
-        if (typeof window !== "undefined") {
-            const saved = localStorage.getItem(`mirror-chat-${uid}`);
-            if (saved) {
-                try {
-                    return JSON.parse(saved);
-                } catch (e) {
-                    return [];
-                }
-            }
-        }
-        return [];
-    });
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-    const { messages, setMessages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-        api: '/api/mirror',
-        body: { uid },
-        initialMessages,
-    });
-
-    // Save messages to localStorage whenever they change
+    // Subscribe to active chat in Firestore
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            if (messages.length > 0) {
-                localStorage.setItem(`mirror-chat-${uid}`, JSON.stringify(messages));
+        if (!uid || !isOpen) return; // Only subscribe when open
+
+        const unsubscribe = subscribeToActiveChat(uid, (chat) => {
+            if (chat) {
+                setMessages(chat.messages || []);
+                setIsLoading(chat.status === "generating");
             } else {
-                localStorage.removeItem(`mirror-chat-${uid}`);
+                setMessages([]);
+                setIsLoading(false);
             }
-        }
-    }, [messages, uid]);
+        });
+
+        return () => unsubscribe();
+    }, [uid, isOpen]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +49,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
         if (isOpen) {
             scrollToBottom();
         }
-    }, [messages, isOpen]);
+    }, [messages, isOpen, isLoading]);
 
     // Prevent background scrolling when modal is open
     useEffect(() => {
@@ -67,15 +57,49 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
             document.body.style.overflow = "hidden";
         } else {
             document.body.style.overflow = "auto";
-            setMessages([]); // Clear chat history on explicit close
-            if (typeof window !== "undefined") {
-                localStorage.removeItem(`mirror-chat-${uid}`);
-            }
         }
         return () => {
             document.body.style.overflow = "auto";
         };
-    }, [isOpen, setMessages, uid]);
+    }, [isOpen]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setInput(e.target.value);
+    };
+
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+
+        if (!input.trim() || isLoading) return;
+
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            role: "user",
+            content: input.trim()
+        };
+
+        const newMessages = [...messages, userMessage];
+
+        // Optimistic update
+        setMessages(newMessages);
+        setInput("");
+        setIsLoading(true);
+
+        try {
+            await fetch('/api/mirror', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid,
+                    messages: newMessages
+                })
+            });
+            // The background process will update Firestore, which UI listens to
+        } catch (err) {
+            console.error("Failed to send message to mirror:", err);
+            setIsLoading(false);
+        }
+    };
 
     const idealName = bible?.source_code?.archetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_bible?.avatar_url;
@@ -185,7 +209,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                                 ))
                             )}
 
-                            {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+                            {isLoading && (
                                 <div className="flex justify-start">
                                     <div className="flex gap-3 max-w-[85%]">
                                         <div className="shrink-0 mt-1">
@@ -220,7 +244,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                                         if (e.key === "Enter" && !e.shiftKey) {
                                             e.preventDefault();
                                             if (input.trim() && !isLoading) {
-                                                handleSubmit(e as any);
+                                                handleSubmit();
                                             }
                                         }
                                     }}

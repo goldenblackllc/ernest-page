@@ -1,6 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText } from 'ai';
+import { generateText } from 'ai';
 import { db } from '@/lib/firebase/admin';
+import { waitUntil } from '@vercel/functions';
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
@@ -40,13 +41,43 @@ STEP C - THE DELIVERY FILTER: Apply the "Communication_Style". This node is abso
 [OUTPUT RULES]
 Write the raw, exact response in the first person. Speak directly to Character B. Do not use quotation marks around your dialogue. Do not write narrative action blocks or internal monologues (e.g., do not write '*I sigh and look away*'). Just deliver the raw words as if sending a message or speaking aloud.`;
 
-        const result = await streamText({
-            model: google('gemini-3.1-pro-preview'),
-            system: systemPrompt,
+        // Save user's input to Firestore immediately
+        const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc('mirror');
+        await activeChatRef.set({
+            id: 'mirror',
+            uid,
             messages,
-        });
+            status: 'generating',
+            updatedAt: Date.now()
+        }, { merge: true });
 
-        return result.toDataStreamResponse();
+        // Kick off the background generation
+        waitUntil((async () => {
+            try {
+                const result = await generateText({
+                    model: google('gemini-3.1-pro-preview'),
+                    system: systemPrompt,
+                    messages,
+                });
+
+                // Update Firestore with the assistant's response
+                const finalMessages = [...messages, { role: 'assistant', content: result.text, id: crypto.randomUUID() }];
+                await activeChatRef.set({
+                    messages: finalMessages,
+                    status: 'idle',
+                    updatedAt: Date.now()
+                }, { merge: true });
+
+            } catch (error) {
+                console.error("Background AI Error:", error);
+                await activeChatRef.set({
+                    status: 'idle', // Reset to idle so user can retry
+                    updatedAt: Date.now()
+                }, { merge: true });
+            }
+        })());
+
+        return Response.json({ success: true, message: "Processing started in background" }, { status: 200 });
 
     } catch (error: any) {
         console.error("Mirror Chat API Error:", error);
