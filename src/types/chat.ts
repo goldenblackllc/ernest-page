@@ -7,4 +7,5 @@ export interface ActiveChat {
     status: 'idle' | 'generating' | 'completed';
     updatedAt: number;   // Unix timestamp in ms
     createdAt: number;
+    isClosed?: boolean;  // Flag for when user manually closes chat
 }

@@ -11,10 +11,10 @@ export const maxDuration = 300;
 
 export async function POST(req: Request) {
     try {
-        const { messages, uid } = await req.json();
+        const { messages, uid, sessionId } = await req.json();
 
-        if (!uid) {
-            return Response.json({ error: "Unauthorized" }, { status: 401 });
+        if (!uid || !sessionId) {
+            return Response.json({ error: "Unauthorized or missing session ID" }, { status: 401 });
         }
 
         // Fetch User and Character Bible from Firebase
@@ -42,53 +42,64 @@ STEP C - THE DELIVERY FILTER: Apply the "Communication_Style". This node is abso
 Write the raw, exact response in the first person. Speak directly to Character B. Do not use quotation marks around your dialogue. Do not write narrative action blocks or internal monologues (e.g., do not write '*I sigh and look away*'). Just deliver the raw words as if sending a message or speaking aloud.`;
 
         // Save user's input to Firestore immediately
-        const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc('mirror');
+        const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc(sessionId);
 
-        // If the client only sends 1 message, it means they are starting a fresh chat.
-        // We must overwrite the document entirely (hard reset) to prevent appending to a stale session.
+        // With unique session IDs, we don't need a destructive "hard reset".
+        // New sessions will naturally be new documents.
+        const chatDataUpdate: any = {
+            id: sessionId,
+            uid,
+            messages,
+            status: 'generating',
+            updatedAt: Date.now(),
+        };
+
         if (messages.length === 1) {
-            await activeChatRef.set({
-                id: 'mirror',
-                uid,
-                messages,
-                status: 'generating',
-                updatedAt: Date.now(),
-                createdAt: Date.now()
-            }, { merge: false }); // merge: false overwrites everything
-        } else {
-            await activeChatRef.set({
-                id: 'mirror',
-                uid,
-                messages,
-                status: 'generating',
-                updatedAt: Date.now()
-            }, { merge: true });
+            chatDataUpdate.createdAt = Date.now();
         }
+
+        await activeChatRef.set(chatDataUpdate, { merge: true });
 
         // Kick off the background generation
         waitUntil((async () => {
+            let result;
             try {
-                const result = await generateText({
+                // Attempt Primary Model (gemini-3.1-pro-preview)
+                result = await generateText({
                     model: google('gemini-3.1-pro-preview'),
                     system: systemPrompt,
                     messages,
+                    abortSignal: AbortSignal.timeout(30000)
                 });
+            } catch (primaryError: any) {
+                console.warn("Primary Model Failed (Timeout or Error). Falling back to gemini-2.5-pro...", primaryError.message);
 
-                // Update Firestore with the assistant's response
-                const finalMessages = [...messages, { role: 'assistant', content: result.text, id: crypto.randomUUID() }];
-                await activeChatRef.set({
-                    messages: finalMessages,
-                    status: 'idle',
-                    updatedAt: Date.now()
-                }, { merge: true });
-
-            } catch (error) {
-                console.error("Background AI Error:", error);
-                await activeChatRef.set({
-                    status: 'idle', // Reset to idle so user can retry
-                    updatedAt: Date.now()
-                }, { merge: true });
+                try {
+                    // Attempt Fallback Model (gemini-2.5-pro)
+                    result = await generateText({
+                        model: google('gemini-2.5-pro'),
+                        system: systemPrompt,
+                        messages,
+                        abortSignal: AbortSignal.timeout(30000)
+                    });
+                } catch (fallbackError: any) {
+                    console.error("Fallback Model also failed. Aborting generation.", fallbackError.message);
+                    await activeChatRef.set({
+                        status: 'idle', // Reset to idle so user can retry
+                        updatedAt: Date.now()
+                    }, { merge: true });
+                    return; // Exit early
+                }
             }
+
+            // Update Firestore with the successful assistant response
+            const finalMessages = [...messages, { role: 'assistant', content: result.text, id: crypto.randomUUID() }];
+            await activeChatRef.set({
+                messages: finalMessages,
+                status: 'idle',
+                updatedAt: Date.now()
+            }, { merge: true });
+
         })());
 
         return Response.json({ success: true, message: "Processing started in background" }, { status: 200 });

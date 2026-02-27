@@ -96,45 +96,31 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
 
     return (
         <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
-            {/* Delete Button (Top Right) */}
-            {user?.uid === post.uid && (
-                <button
-                    onClick={handleDelete}
-                    className="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-colors z-10 opacity-0 group-hover:opacity-100"
-                    title="Delete Post"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            )}
-
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 shrink-0">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-white/5 bg-black/20 w-full mb-4">
+                {/* Left Section (Avatar + Info) */}
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shrink-0">
                         <User className="w-5 h-5 text-emerald-500" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm font-bold text-gray-200 flex items-center gap-2">
-                            {isAuthor ? "Me" : customAlias ? `Counsel from ${customAlias}` : "Dear Earnest"}
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-200 truncate">
+                                {isAuthor ? "Me" : customAlias ? `Counsel from ${customAlias}` : "Dear Earnest"}
+                            </span>
                             {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
                                 <button
                                     onClick={() => onFollowClick(postAuthorId)}
-                                    className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide"
+                                    className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide shrink-0"
                                 >
                                     + Follow Author
                                 </button>
                             )}
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 text-[10px] text-zinc-500">
-                                <Clock className="w-3 h-3" />
-                                <span>{timeAgo}</span>
-                            </div>
                             {/* Audience Badge */}
                             {user?.uid === post.uid && (
                                 <button
                                     onClick={togglePrivacy}
-                                    className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 pl-2 pr-1.5 py-1 rounded-md transition-all group/privacy ml-1"
+                                    className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 px-1.5 py-1 rounded-md transition-all group/privacy shrink-0"
                                 >
                                     {post.is_public ? (
                                         <>
@@ -151,10 +137,28 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
                                 </button>
                             )}
                         </div>
+                        <div className="text-xs text-zinc-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{timeAgo}</span>
+                        </div>
                     </div>
                 </div>
-                <div className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 mr-8 md:mr-4">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Dear Earnest</span>
+
+                {/* Right Section (Badge + Delete) */}
+                <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-md border border-emerald-900/50 text-emerald-500 bg-emerald-900/10">
+                        Dear Earnest
+                    </div>
+                    {/* Delete Button */}
+                    {user?.uid === post.uid && (
+                        <button
+                            onClick={handleDelete}
+                            className="text-zinc-500 hover:text-red-500 transition-colors z-10 max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1"
+                            title="Delete Post"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             </div>
 

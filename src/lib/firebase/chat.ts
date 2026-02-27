@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, onSnapshot, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, deleteDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "./config";
 import { ActiveChat } from "@/types/chat";
 
@@ -10,6 +10,28 @@ export async function getActiveChat(uid: string, sessionId: string = "mirror"): 
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         return docSnap.data() as ActiveChat;
+    }
+    return null;
+}
+
+/**
+ * Gets the most recent active chat session for a user that hasn't expired or been closed.
+ */
+export async function getMostRecentActiveChat(uid: string): Promise<ActiveChat | null> {
+    const chatsRef = collection(db, "users", uid, "active_chats");
+    const q = query(chatsRef, orderBy("updatedAt", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        const chatDoc = querySnapshot.docs[0];
+        const chatData = chatDoc.data() as ActiveChat;
+
+        const timeoutMs = 15 * 60 * 1000; // 15 mins
+        const isExpired = chatData.updatedAt && (Date.now() - chatData.updatedAt > timeoutMs);
+
+        if (!chatData.isClosed && !isExpired) {
+            return chatData;
+        }
     }
     return null;
 }

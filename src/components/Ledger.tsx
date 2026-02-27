@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import { collection, query, orderBy, limit, where, getDocs, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { RecastPostCard } from "@/components/RecastPostCard";
 import { CheckInPostCard } from "@/components/CheckInPostCard";
 import { Sparkles, RefreshCw } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
@@ -207,22 +206,19 @@ export function Ledger() {
                 </div>
             )}
 
-            {entries.map((entry, index) => {
+            {entries.filter(e => e.type !== 'recast').map((entry, index) => {
                 const isAdSlot = (index + 1) % 5 === 0;
                 const adIndex = Math.floor(index / 5);
                 const ad = ecosystemAds[adIndex % ecosystemAds.length];
 
                 return (
                     <React.Fragment key={`entry-group-${entry.id}`}>
-                        {entry.type === 'checkin'
-                            ? <CheckInPostCard
-                                key={entry.id}
-                                post={entry as any}
-                                followingMap={profile?.following}
-                                onFollowClick={(id) => setSelectedAuthorToFollow(id)}
-                            />
-                            : <RecastPostCard key={entry.id} post={entry as any} />}
-
+                        <CheckInPostCard
+                            key={entry.id}
+                            post={entry as any}
+                            followingMap={profile?.following}
+                            onFollowClick={(id) => setSelectedAuthorToFollow(id)}
+                        />
                         {isAdSlot && <FeedAdCard ad={ad} />}
                     </React.Fragment>
                 );

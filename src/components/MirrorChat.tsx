@@ -2,11 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CharacterBible } from "@/types/character";
-import { X, Send, User, Sparkles } from "lucide-react";
+import { X, Send, User, Sparkles, Square, RefreshCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
-import { subscribeToActiveChat } from "@/lib/firebase/chat";
+import { subscribeToActiveChat, getMostRecentActiveChat, saveActiveChat } from "@/lib/firebase/chat";
 import { Message } from "@ai-sdk/react";
 
 interface MirrorChatProps {
@@ -20,31 +20,55 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [sessionId, setSessionId] = useState<string | null>(null);
+
+    // Initialize or Resume Session
+    useEffect(() => {
+        if (!uid || !isOpen) return;
+
+        const initSession = async () => {
+            const recentChat = await getMostRecentActiveChat(uid);
+            if (recentChat) {
+                setSessionId(recentChat.id);
+            } else {
+                setSessionId(crypto.randomUUID());
+            }
+        };
+
+        if (!sessionId) {
+            initSession();
+        }
+    }, [uid, isOpen, sessionId]);
 
     // Subscribe to active chat in Firestore
     useEffect(() => {
-        if (!uid || !isOpen) return; // Only subscribe when open
-
-        const timeoutMs = 15 * 60 * 1000; // 15 mins
+        if (!uid || !isOpen || !sessionId) return; // Only subscribe when open and session is ready
 
         const unsubscribe = subscribeToActiveChat(uid, (chat) => {
             if (chat) {
-                // Client-side drop if the chat is expired (cron hasn't picked it up yet)
-                if (chat.updatedAt && (Date.now() - chat.updatedAt > timeoutMs)) {
-                    setMessages([]);
-                    setIsLoading(false);
-                    return;
-                }
                 setMessages(chat.messages || []);
                 setIsLoading(chat.status === "generating");
             } else {
                 setMessages([]);
                 setIsLoading(false);
             }
-        });
+        }, sessionId);
 
         return () => unsubscribe();
-    }, [uid, isOpen]);
+    }, [uid, isOpen, sessionId]);
+
+    // Watchdog Timer: Protect against indefinite hangs
+    useEffect(() => {
+        if (!isLoading) return;
+
+        // If the loading state persists for 40 seconds, automatically stop it
+        const watchdog = setTimeout(() => {
+            console.warn("Watchdog Timer triggered: Chat generation hung. Force stopping.");
+            stop();
+        }, 40000);
+
+        return () => clearTimeout(watchdog);
+    }, [isLoading, sessionId]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +123,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     uid,
+                    sessionId,
                     messages: newMessages
                 })
             });
@@ -109,16 +134,51 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
         }
     };
 
+    const stop = async () => {
+        if (!sessionId) return;
+        setIsLoading(false);
+        // Transition the chat back to idle in Firestore to unlock the UI globally
+        try {
+            await saveActiveChat(uid, { status: 'idle' }, sessionId);
+        } catch (err) {
+            console.error("Failed to stop generation:", err);
+        }
+    };
+
+    const reload = async () => {
+        if (!sessionId || isLoading || messages.length === 0) return;
+
+        setIsLoading(true);
+        try {
+            await fetch('/api/mirror', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid,
+                    sessionId,
+                    messages: messages // The last message in the array is already the user's message
+                })
+            });
+        } catch (err) {
+            console.error("Failed to reload mirror:", err);
+            setIsLoading(false);
+        }
+    };
+
     const idealName = bible?.source_code?.archetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_bible?.avatar_url;
 
     const handleClose = () => {
-        // Send a background "abandon" request to mark the chat for immediate clear/cron processing
-        fetch('/api/mirror/close', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uid })
-        }).catch(err => console.error("Failed to close mirror:", err));
+        if (sessionId) {
+            // "Soft close" the chat by marking it closed in Firestore
+            saveActiveChat(uid, { isClosed: true }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
+        }
+
+        // Wipe local state so next open triggers a fresh/resumed session check
+        setSessionId(null);
+        setMessages([]);
+        setInput("");
+        setIsLoading(false);
 
         // Immediately close UI
         onClose();
@@ -250,7 +310,20 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-zinc-950 border-t border-zinc-800/50 shrink-0">
+                        <div className="p-4 bg-zinc-950 border-t border-zinc-800/50 shrink-0 relative">
+                            {/* Regenerate Button */}
+                            {!isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+                                <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+                                    <button
+                                        onClick={reload}
+                                        className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-full flex items-center gap-2 hover:text-white hover:bg-zinc-700 transition-colors shadow-lg border border-zinc-700/50"
+                                    >
+                                        <RefreshCcw className="w-3 h-3" />
+                                        Regenerate Response
+                                    </button>
+                                </div>
+                            )}
+
                             <form
                                 onSubmit={handleSubmit}
                                 className="relative flex items-end gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-2 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 transition-all"
@@ -271,11 +344,17 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                                     rows={1}
                                 />
                                 <button
-                                    type="submit"
-                                    disabled={!input.trim() || isLoading}
-                                    className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white flex items-center justify-center transition-colors mb-0.5"
+                                    type={isLoading ? "button" : "submit"}
+                                    onClick={isLoading ? stop : undefined}
+                                    disabled={!input.trim() && !isLoading}
+                                    className={cn(
+                                        "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors mb-0.5",
+                                        isLoading
+                                            ? "bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-zinc-900 border border-zinc-700"
+                                            : "bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 border border-transparent text-white"
+                                    )}
                                 >
-                                    <Send className="w-4 h-4 ml-0.5" />
+                                    {isLoading ? <Square className="w-4 h-4 fill-current" /> : <Send className="w-4 h-4 ml-0.5" />}
                                 </button>
                             </form>
                             <div className="text-center mt-3">
