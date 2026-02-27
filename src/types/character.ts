@@ -35,6 +35,7 @@ export interface CharacterProfile {
     region?: string; // e.g., 'US-MA'
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
+    saved_posts?: string[]; // Bookmarked posts
 }
 
 export interface Directive {

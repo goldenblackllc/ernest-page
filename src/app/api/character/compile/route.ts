@@ -22,7 +22,17 @@ const HIDDEN_CORE_BELIEFS = "Life is abundant. I am free. I am secure. I am powe
 
 const SYSTEM_PROMPT = `You are a Character Simulation Engine. Core Beliefs: ${HIDDEN_CORE_BELIEFS}`;
 
-const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following Character Source Code. Your task is to output a comprehensive Character Bible. Crucial Instruction: Use the source code as your foundation, but actively extrapolate and invent logical details regarding their communication style, aesthetics, and daily habits based on their archetype. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead.
+const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following Character Source Code. Your task is to output a comprehensive Character Bible perfectly broken out into these 5 exact sections:
+1. "Style & Presence" (Aesthetics, Wardrobe, Physicality)
+2. "Daily Life & Habits" (Routines, Occupations, Passions)
+3. "People & Connections" (Relationships, Communication, Social Interaction)
+4. "The Inner Mind" (How they process emotions, crisis, and reality)
+5. "Quirks & Details" (Pets, diet, languages, unique variables)
+
+Crucial Instruction: Use the source code as your foundation, but actively extrapolate and invent logical details. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead. 
+
+CRITICAL: Do NOT output "Core Beliefs" or "Manifesto" in the generated text, as the user already knows these.
+
 Source Code:
 Core Beliefs: {CORE_BELIEFS}
 Archetype:{ARCHETYPE}
@@ -78,35 +88,11 @@ export async function POST(req: Request) {
             system: SYSTEM_PROMPT,
             prompt: idealPrompt,
             schema: z.object({
-                Character_Overview: z.object({
-                    Archetypes: z.array(z.string()),
-                    Summary: z.string().describe("A high-level overview of who they are")
-                }),
-                Psychology_and_Beliefs: z.object({
-                    Manifesto: z.string().describe("Their primary thesis or mission statement"),
-                    Other_Beliefs: z.array(z.string()).describe("Additional personal beliefs and worldview principles they hold, based on their archetype and source code"),
-                    Inner_World: z.string().describe("How they process emotions, make decisions, and view reality")
-                }),
-                Presentation_and_Vibe: z.object({
-                    Aesthetic_and_Wardrobe: z.string().describe("How they dress, their visual style"),
-                    Physicality_and_Presence: z.string().describe("How they carry themselves, fitness, body language"),
-                    Communication_Style: z.string().describe("Tone of voice, vocabulary, how they speak"),
-                    Social_Interaction: z.string().describe("How they treat strangers, peers, and loved ones; their social energy")
-                }),
-                Relationships: z.array(z.object({
-                    Name: z.string(),
-                    Role: z.string().describe("e.g., Wife, Ex-Wife, Rival, Mentor"),
-                    Dynamic: z.string().describe("A detailed explanation of how they interact with this specific person")
-                })).default([]),
-                Lifestyle_and_Environment: z.object({
-                    Habitat: z.string().describe("Where they live, the vibe of their home or workspace"),
-                    Daily_Routines: z.string().describe("What a normal day looks like for them"),
-                    Passions_and_Occupations: z.string().describe("How they spend their time, career, hobbies")
-                }),
-                Unique_Variables: z.array(z.object({
-                    Category: z.string().describe("e.g., 'Pets', 'Magical Abilities', 'Business Ventures', 'Weapons'"),
-                    Details: z.string()
-                })).default([])
+                Style_and_Presence: z.string().describe("Aesthetics, Wardrobe, Physicality"),
+                Daily_Life_and_Habits: z.string().describe("Routines, Occupations, Passions"),
+                People_and_Connections: z.string().describe("Relationships, Communication, Social Interaction"),
+                The_Inner_Mind: z.string().describe("How they process emotions, crisis, and reality"),
+                Quirks_and_Details: z.string().describe("Pets, diet, languages, unique variables")
             })
         });
 
@@ -114,32 +100,24 @@ export async function POST(req: Request) {
 
         const idealSections = [
             {
-                heading: "Character Overview",
-                content: `**Archetypes:** ${rawObj.Character_Overview.Archetypes.join(', ')}\n\n**Summary:**\n${rawObj.Character_Overview.Summary}`
+                heading: "Style & Presence",
+                content: rawObj.Style_and_Presence
             },
             {
-                heading: "Psychology & Beliefs",
-                content: `**Manifesto:**\n${rawObj.Psychology_and_Beliefs.Manifesto}\n\n**Core Beliefs (Foundational):**\n${HIDDEN_CORE_BELIEFS}\n\n**Other Beliefs:**\n${rawObj.Psychology_and_Beliefs.Other_Beliefs.map((b: string) => `- ${b}`).join('\n')}\n\n**Inner World:**\n${rawObj.Psychology_and_Beliefs.Inner_World}`
+                heading: "Daily Life & Habits",
+                content: rawObj.Daily_Life_and_Habits
             },
             {
-                heading: "Presentation & Vibe",
-                content: `**Aesthetic & Wardrobe:**\n${rawObj.Presentation_and_Vibe.Aesthetic_and_Wardrobe}\n\n**Physicality & Presence:**\n${rawObj.Presentation_and_Vibe.Physicality_and_Presence}\n\n**Communication Style:**\n${rawObj.Presentation_and_Vibe.Communication_Style}\n\n**Social Interaction:**\n${rawObj.Presentation_and_Vibe.Social_Interaction}`
+                heading: "People & Connections",
+                content: rawObj.People_and_Connections
             },
             {
-                heading: "Relationships",
-                content: rawObj.Relationships.length > 0
-                    ? rawObj.Relationships.map((r: any) => `**${r.Name} (${r.Role}):**\n${r.Dynamic}`).join('\n\n')
-                    : "No specific relationships defined."
+                heading: "The Inner Mind",
+                content: rawObj.The_Inner_Mind
             },
             {
-                heading: "Lifestyle & Environment",
-                content: `**Habitat:**\n${rawObj.Lifestyle_and_Environment.Habitat}\n\n**Daily Routines:**\n${rawObj.Lifestyle_and_Environment.Daily_Routines}\n\n**Passions & Occupations:**\n${rawObj.Lifestyle_and_Environment.Passions_and_Occupations}`
-            },
-            {
-                heading: "Unique Variables",
-                content: rawObj.Unique_Variables.length > 0
-                    ? rawObj.Unique_Variables.map((v: any) => `**${v.Category}:**\n${v.Details}`).join('\n\n')
-                    : "No unique variables defined."
+                heading: "Quirks & Details",
+                content: rawObj.Quirks_and_Details
             }
         ];
 

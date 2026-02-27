@@ -218,6 +218,7 @@ export function Ledger() {
                             post={entry as any}
                             followingMap={profile?.following}
                             onFollowClick={(id) => setSelectedAuthorToFollow(id)}
+                            savedPosts={profile?.saved_posts || []}
                         />
                         {isAdSlot && <FeedAdCard ad={ad} />}
                     </React.Fragment>

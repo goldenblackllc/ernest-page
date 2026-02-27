@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp } from "lucide-react";
+import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Timestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
@@ -34,9 +34,10 @@ interface CheckInPostProps {
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
+    savedPosts?: string[];
 }
 
-export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPostProps) {
+export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts = [] }: CheckInPostProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
@@ -87,6 +88,22 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
         }
     };
 
+    const isSaved = savedPosts.includes(post.id);
+    const handleToggleBookmark = async () => {
+        if (!user) return;
+        const newSavedPosts = isSaved
+            ? savedPosts.filter(id => id !== post.id)
+            : [...savedPosts, post.id];
+
+        try {
+            await updateDoc(doc(db, "users", user.uid), {
+                saved_posts: newSavedPosts
+            });
+        } catch (error) {
+            console.error("Error toggling bookmark:", error);
+        }
+    };
+
     if (isDeleting) return null; // Optimistic hide
 
     const isLongResponse = currentResponse.length > 400;
@@ -96,22 +113,32 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
 
     return (
         <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-white/5 bg-black/20 w-full mb-4">
-                {/* Left Section (Avatar + Info) */}
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shrink-0">
+            {/* 1. Main Header Wrapper */}
+            <div className="flex flex-row items-center gap-3 px-6 py-4 border-b border-white/5 bg-black/20 mb-4 w-full">
+
+                {/* Avatar */}
+                <div className="shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                         <User className="w-5 h-5 text-emerald-500" />
                     </div>
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-200 truncate">
-                                {isAuthor ? "Me" : customAlias ? `Counsel from ${customAlias}` : "Dear Earnest"}
-                            </span>
+                </div>
+
+                {/* Text Stack */}
+                <div className="flex flex-col flex-1 min-w-0">
+
+                    {/* Top Row: Name + Dropdown */}
+                    <div className="flex flex-row items-center gap-2 w-full">
+                        {/* THE NAME - Crucial: truncate ensures it shrinks gracefully with '...' */}
+                        <span className="text-sm font-semibold text-white truncate">
+                            {isAuthor ? "Me" : customAlias ? `Counsel from ${customAlias}` : "Dear Earnest"}
+                        </span>
+
+                        {/* THE DROPDOWN - Crucial: shrink-0 ensures it never gets crushed */}
+                        <div className="shrink-0 flex items-center gap-2">
                             {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
                                 <button
                                     onClick={() => onFollowClick(postAuthorId)}
-                                    className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide shrink-0"
+                                    className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide"
                                 >
                                     + Follow Author
                                 </button>
@@ -120,7 +147,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
                             {user?.uid === post.uid && (
                                 <button
                                     onClick={togglePrivacy}
-                                    className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 px-1.5 py-1 rounded-md transition-all group/privacy shrink-0"
+                                    className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 py-1 px-1.5 rounded-md transition-all group/privacy"
                                 >
                                     {post.is_public ? (
                                         <>
@@ -137,29 +164,16 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
                                 </button>
                             )}
                         </div>
-                        <div className="text-xs text-zinc-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{timeAgo}</span>
-                        </div>
                     </div>
+
+                    {/* Bottom Row: Timestamp */}
+                    <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{timeAgo}</span>
+                    </div>
+
                 </div>
 
-                {/* Right Section (Badge + Delete) */}
-                <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-md border border-emerald-900/50 text-emerald-500 bg-emerald-900/10">
-                        Dear Earnest
-                    </div>
-                    {/* Delete Button */}
-                    {user?.uid === post.uid && (
-                        <button
-                            onClick={handleDelete}
-                            className="text-zinc-500 hover:text-red-500 transition-colors z-10 max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1"
-                            title="Delete Post"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
             </div>
 
             {/* Body */}
@@ -226,6 +240,32 @@ export function CheckInPostCard({ post, followingMap, onFollowClick }: CheckInPo
                             ) : (
                                 <>Read More <ChevronDown className="w-3 h-3" /></>
                             )}
+                        </button>
+                    )}
+                </div>
+
+                {/* Bottom Action Bar */}
+                <div className="px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={handleToggleBookmark}
+                            className={cn("flex items-center gap-1.5 transition-colors group",
+                                isSaved ? "text-emerald-500" : "text-zinc-500 hover:text-emerald-500/80"
+                            )}
+                            title={isSaved ? "Remove Bookmark" : "Save to Bookmarks"}
+                        >
+                            <Bookmark className={cn("w-5 h-5 transition-all group-active:scale-90", isSaved && "fill-emerald-500")} />
+                        </button>
+                    </div>
+
+                    {/* Delete Button (Relocated from header) */}
+                    {user?.uid === post.uid && (
+                        <button
+                            onClick={handleDelete}
+                            className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                            title="Delete Post"
+                        >
+                            <Trash2 className="w-4 h-4" />
                         </button>
                     )}
                 </div>

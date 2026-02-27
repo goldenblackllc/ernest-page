@@ -24,19 +24,16 @@ The app provides a suite of tools to manage this "Character Build":
 The core profile. It holds the user's "Source Code":
 *   **Core Beliefs:** The fundamental truths the user operates on.
 *   **Rules/Protocols:** The behavioral scripts they follow.
-*   **Visual Board:** The aesthetic of their ideal self.
+*   **Visual Board:** The aesthetic of their ideal self, captured via preferences like "Things I Enjoy".
 
 ### B. The Tools (Inputs)
-1.  **"Recast" (The Debugger):**
-    *   *Purpose:* To fix "Bugs" (Problems/Negative Feelings).
-    *   *Logic:* A problem is just a signal that a current belief is outdated. We "Recast" the problem into a new belief and a new strategy.
+1.  **The Daily Check-In Engine (The Debugger & Planner):**
+    *   *Purpose:* To audit the day, fix "Bugs" (negative feelings), and consult the "Algorithm".
+    *   *Logic:* A multi-step flow (Audit, Briefing, Counsel). Problems are signals that current beliefs need updating. Users interact with a character-driven conversational flow to refine their approach.
     *   *Role of Feelings:* Feelings are not the destination; they are **diagnostic tools** used to identify where the "Code" needs updating.
-2.  **"Desire" (The Installer):**
-    *   *Purpose:* To install "Missing Features" (Wants/Goals).
-    *   *Logic:* Identifying what the ideal character *has* or *does* that the current one doesn't, and creating a path to acquire it.
-3.  **"Action" (The Execution):**
-    *   *Purpose:* To live as the character.
-    *   *Logic:* Tracking the daily execution of the new Rules and Protocols. Proof of work.
+2.  **Action Directives & Todos (The Execution):**
+    *   *Purpose:* To live as the character and execute real-world change.
+    *   *Logic:* Derived from the Check-In and Counsel sessions, the system generates specific, actionable steps automatically. Tracking the daily execution of these directives serves as proof of work.
 
 ## 5. Privacy, Anonymity, and Globalization
 The platform is designed for **radical honesty** through **complete anonymity**.
@@ -61,12 +58,15 @@ The app is global-first.
 **Stack:**
 *   **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS (v4).
 *   **UX Pattern:** Infinite feeds, rapid-fire posting, visual-heavy interfaces (resembling TikTok/Twitter mechanics).
-*   **Backend:** Firebase (Firestore, Auth, Admin SDK).
-*   **AI:** Vercel AI SDK + Google Gemini (handling the Ghost-Writing and Translation layers).
+*   **Backend:** Firebase (Firestore, Phone OTP Auth, Admin SDK).
+*   **AI:** Vercel AI SDK + Google Gemini (primary: `gemini-3.1-pro-preview`, fallback: `gemini-2.5-pro`).
+    *   *Usage:* Powers Ghost-Writing, Translation, and conversational features (Mirror Chat, Counsel).
+    *   *Prompting:* Governed by a strict "Anti-AI Directive" to ensure responses are strictly character-driven simulations. We present it to the user as an "Algorithm", not an AI.
 
 **Data Model (The "RPG" Schema):**
 *   **`users/{userId}/character_bible`:** The dynamic user profile.
 *   **`posts`:** The "Changelogs".
+    *   `title`: (String) A high-gloss, 4-8 word editorial headline.
     *   `content_raw`: (String) The private input.
     *   `content_public`: (String) The sanitized AI output.
     *   `language_source`: (String) e.g., "en", "es", "jp".
@@ -75,5 +75,8 @@ The app is global-first.
 *   **`rules`:** The logic blocks governing behavior.
 
 ## 7. Current Implementation Status
-*   **Active:** The **Recast Engine** (The Debugging Tool) is the current primary interface.
-*   **In Development:** The Social Feed, Character Bible customization, and "Desire/Action" modules are being built out to complete the "Character Editor" suite. 
+*   **Active Core Loop:** Check-In Engine -> Counsel -> Action Directives + Social Post.
+*   **Active Modules:** 
+    *   **The Social Feed:** Feeds are mature, featuring polished Post Cards with editorial titles.
+    *   **Character Bible:** Fully active with detailed View/Edit modes and extensive customization.
+*   **In Development:** Further refinement of the "Character Editor" suite and expansion of deep-conversational algorithms.

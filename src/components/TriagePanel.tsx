@@ -4,13 +4,16 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
 import CheckInWizardModal from "@/components/checkin/CheckInWizardModal";
-import { Plus, Target, MessageCircle } from "lucide-react";
+import { Plus, Target, MessageCircle, Home, User as UserIcon } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
 
 export function TriagePanel() {
     const { user } = useAuth();
+    const pathname = usePathname();
 
     // Global Action States
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
@@ -47,8 +50,23 @@ export function TriagePanel() {
     // --- RENDER ---
     return (
         <>
+            {/* BOTTOM NAV BAR */}
+            <div className="fixed bottom-0 left-0 w-full z-40 bg-black/90 backdrop-blur-md border-t border-zinc-800 pb-safe">
+                <div className="max-w-md mx-auto px-8 h-16 flex items-center justify-between relative">
+                    {/* Left: Home */}
+                    <Link href="/" className={cn("p-2 transition-colors", pathname === "/" ? "text-emerald-500" : "text-zinc-500 hover:text-white")}>
+                        <Home className="w-6 h-6" />
+                    </Link>
+
+                    {/* Right: Profile */}
+                    <Link href="/profile" className={cn("p-2 transition-colors", pathname === "/profile" ? "text-emerald-500" : "text-zinc-500 hover:text-white")}>
+                        <UserIcon className="w-6 h-6" />
+                    </Link>
+                </div>
+            </div>
+
             {/* FAB CONTAINER (Fixed Bottom Center) */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 fab-container flex flex-col items-center">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 fab-container flex flex-col items-center">
 
                 {/* ACTION MENU POP-UP */}
                 <div

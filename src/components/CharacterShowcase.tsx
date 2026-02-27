@@ -5,10 +5,11 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile, updateCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { User, Scroll, Target, Crown, Sparkles, MessageCircle, Save, Loader2, CheckCircle2, Circle, Trash2 } from "lucide-react";
+import { User, Scroll, Target, Crown, Sparkles, MessageCircle, Save, Loader2, CheckCircle2, Circle, Trash2, ChevronDown, Pencil } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { CharacterSheetModal } from "./CharacterSheetModal";
 import { MirrorChat } from "./MirrorChat";
+import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 
 export function CharacterShowcase() {
     const { user } = useAuth();
@@ -17,6 +18,8 @@ export function CharacterShowcase() {
     const [loading, setLoading] = useState(true);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
+    const [expandedSection, setExpandedSection] = useState<number | null>(null);
+    const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
     const [myStory, setMyStory] = useState("");
     const [isSavingStory, setIsSavingStory] = useState(false);
     const [storyLoaded, setStoryLoaded] = useState(false);
@@ -104,151 +107,102 @@ export function CharacterShowcase() {
 
     return (
         <>
-            <div className="w-full mb-8 space-y-4">
-                <div className="flex items-center justify-between px-1">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Crown className="w-5 h-5 text-emerald-500" />
-                        Desired Character
-                    </h2>
-                </div>
-
-                {/* Carousel Container */}
-                <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar text-white">
-
-                    {/* CARD 1: IDENTITY (The "Profile" Card) */}
-                    <button
-                        onClick={() => setIsSheetOpen(true)}
-                        className="snap-center shrink-0 w-[85vw] sm:w-80 h-96 rounded-2xl bg-zinc-900 border border-zinc-800 p-6 flex flex-col justify-between relative overflow-hidden group transition-all hover:border-zinc-500 text-left"
-                        style={getVisual('identity')}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-
-                        <div className="relative z-10">
-                            <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-zinc-700 mb-4 overflow-hidden">
-                                {bible.compiled_bible?.avatar_url ? (
-                                    <img src={bible.compiled_bible.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-zinc-500">
-                                        <User className="w-6 h-6" />
-                                    </div>
-                                )}
-                            </div>
-                            <h3 className="text-2xl font-black uppercase tracking-tighter text-white leading-none mb-2">
-                                {bible.source_code?.archetype || "Unknown"}
-                            </h3>
-                            <p className="text-sm text-zinc-300 leading-relaxed opacity-90">
-                                {bible.source_code?.manifesto || "No manifesto."}
+            <div className="w-full mb-8 space-y-6">
+                {/* HEAD PROFILE & EDIT BUTTON */}
+                <div className="flex items-center justify-between pb-6 border-b border-white/5">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden shrink-0">
+                            {bible.compiled_bible?.avatar_url ? (
+                                <img src={bible.compiled_bible.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-500">
+                                    <User className="w-6 h-6" />
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-0.5 capitalize">
+                                {bible.source_code?.archetype || "Unknown Character"}
+                            </h2>
+                            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">
+                                Profile
                             </p>
                         </div>
-
-                        <div className="relative z-10 pt-4 border-t border-white/10">
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Archetype</div>
-                            <div className="text-xs font-bold text-emerald-400">ACTIVE PROTAGONIST</div>
-                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsSheetOpen(true)}
+                        className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-2 transition-all shadow-sm"
+                    >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Edit Profile
                     </button>
-
-                    {/* DYNAMIC CARDS FROM COMPILED OUTPUT */}
-                    {displaySections?.map((section, i) => (
-                        <button
-                            key={i}
-                            onClick={() => setIsSheetOpen(true)}
-                            className="snap-center shrink-0 w-[85vw] sm:w-80 h-96 rounded-2xl bg-zinc-950 border border-zinc-800 p-6 flex flex-col relative overflow-hidden group text-left hover:border-zinc-500 transition-colors"
-                        >
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Sparkles className="w-24 h-24 text-white" />
-                            </div>
-
-                            <div className="mb-6 relative z-10">
-                                <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-1">{section.heading}</h3>
-                                <div className="h-1 w-12 bg-zinc-700 group-hover:bg-zinc-500 transition-colors rounded-full" />
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto space-y-3 relative z-10 pr-2 custom-scrollbar">
-                                <div className="text-sm text-zinc-300 leading-relaxed prose prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:text-white prose-a:text-emerald-400 prose-strong:text-emerald-300">
-                                    <ReactMarkdown>
-                                        {section.content}
-                                    </ReactMarkdown>
-                                </div>
-                            </div>
-                        </button>
-                    ))}
-
                 </div>
 
-                {/* MY STORY SECTION - Temporarily hidden */}
-                {false && (
-                    <div className="mt-8 px-1">
-                        <div className="flex items-center justify-between mb-2">
-                            <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">My Story (Current Reality)</h2>
-                            <button
-                                onClick={handleSaveStory}
-                                disabled={isSavingStory || myStory === profile?.my_story}
-                                className={cn(
-                                    "flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-all",
-                                    myStory !== profile?.my_story
-                                        ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                                        : "bg-zinc-800 text-zinc-500 cursor-default"
-                                )}
+                {/* ACCORDION VAULT */}
+                <div className="space-y-3">
+                    {displaySections?.map((section: any, i: number) => {
+                        const isOpen = expandedSection === i;
+
+                        return (
+                            <div
+                                key={i}
+                                className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden transition-all duration-200"
                             >
-                                {isSavingStory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                                Save Story
-                            </button>
-                        </div>
-                        <textarea
-                            value={myStory}
-                            onChange={(e) => setMyStory(e.target.value)}
-                            placeholder="Describe your current life as you see it. Your past, your future desires, your physical/financial constraints, and ongoing situations. (e.g., 'I live in Carlisle, my daughter is in the hospital, I am an entrepreneur...')."
-                            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 text-zinc-300 text-sm leading-relaxed focus:border-zinc-500 focus:outline-none min-h-[120px] resize-none"
-                        />
-                    </div>
-                )}
+                                <button
+                                    onClick={() => {
+                                        setExpandedSection(isOpen ? null : i);
+                                        setExpandedNestedSection(null);
+                                    }}
+                                    className="w-full flex items-center justify-between p-4 text-left focus:outline-none hover:bg-zinc-900/80 transition-colors"
+                                >
+                                    <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest">
+                                        {section.heading}
+                                    </h3>
+                                    <ChevronDown
+                                        className={cn(
+                                            "w-5 h-5 text-zinc-500 transition-transform duration-200",
+                                            isOpen && "rotate-180 text-emerald-500"
+                                        )}
+                                    />
+                                </button>
 
-                {/* ACTIVE DIRECTIVES SECTION */}
-                <div className="mt-8 px-1 mb-6">
-                    <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Active Directives</h2>
-                    <div className="space-y-3">
-                        {!profile?.active_todos || profile.active_todos.length === 0 ? (
-                            <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 text-center">
-                                <p className="text-zinc-500 text-sm">No active directives. Complete a Check-In to get your next steps.</p>
-                            </div>
-                        ) : (
-                            profile.active_todos.map((todo) => {
-                                const isString = typeof todo === 'string';
-                                const id = isString ? todo : todo.id;
-                                const task = isString ? todo : todo.task;
-                                const completed = isString ? false : todo.completed;
-
-                                return (
-                                    <div
-                                        key={id}
-                                        className="flex items-start justify-between gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 transition-colors hover:border-zinc-700 group"
-                                    >
-                                        <div
-                                            className="flex items-start gap-3 flex-1 cursor-pointer"
-                                            onClick={() => handleToggleTodo(id, completed)}
-                                        >
-                                            <button className="mt-0.5 shrink-0 text-zinc-500 hover:text-emerald-400 transition-colors">
-                                                {completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
-                                            </button>
-                                            <p className={cn(
-                                                "text-sm leading-relaxed",
-                                                completed ? "text-zinc-500 line-through" : "text-zinc-300"
-                                            )}>
-                                                {task}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleDeleteTodo(id)}
-                                            className="mt-0.5 shrink-0 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                                            title="Delete directive"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                {isOpen && (
+                                    <div className="p-4 border-t border-zinc-800/50 bg-zinc-950/50 space-y-2">
+                                        {parseMarkdownToSections(section.content).map((subSection, j) => {
+                                            const isNestedOpen = expandedNestedSection === j;
+                                            return (
+                                                <div key={j} className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg overflow-hidden transition-all duration-200">
+                                                    <button
+                                                        onClick={() => setExpandedNestedSection(isNestedOpen ? null : j)}
+                                                        className="w-full flex items-center justify-between p-3 text-left focus:outline-none hover:bg-zinc-800/50 transition-colors"
+                                                    >
+                                                        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                                                            {subSection.subHeading}
+                                                        </h4>
+                                                        <ChevronDown
+                                                            className={cn(
+                                                                "w-4 h-4 text-zinc-500 transition-transform duration-200",
+                                                                isNestedOpen && "rotate-180 text-emerald-500"
+                                                            )}
+                                                        />
+                                                    </button>
+                                                    {isNestedOpen && (
+                                                        <div className="p-4 border-t border-zinc-700/50 bg-black/20">
+                                                            <div className="text-sm text-zinc-300 leading-relaxed prose prose-invert prose-sm max-w-none prose-a:text-emerald-400 prose-strong:text-emerald-300">
+                                                                <ReactMarkdown>
+                                                                    {subSection.body}
+                                                                </ReactMarkdown>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                );
-                            })
-                        )}
-                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div >
 
