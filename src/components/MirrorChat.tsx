@@ -112,6 +112,18 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     const idealName = bible?.source_code?.archetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_bible?.avatar_url;
 
+    const handleClose = () => {
+        // Send a background "abandon" request to mark the chat for immediate clear/cron processing
+        fetch('/api/mirror/close', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid })
+        }).catch(err => console.error("Failed to close mirror:", err));
+
+        // Immediately close UI
+        onClose();
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -120,7 +132,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                     />
 
@@ -149,7 +161,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                                 </div>
                             </div>
                             <button
-                                onClick={onClose}
+                                onClick={handleClose}
                                 className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
                             >
                                 <X className="w-5 h-5" />
