@@ -144,7 +144,7 @@ export function subscribeToCharacterProfile(uid: string, onUpdate: (profile: Cha
                 compiled_output: data.character_bible?.compiled_output || { ideal: [] }
             };
 
-            onUpdate({ ...data, character_bible: migratedBible });
+            onUpdate({ ...data, uid, character_bible: migratedBible });
         } else {
             onUpdate({ uid, character_bible: DEFAULT_BIBLE });
         }
