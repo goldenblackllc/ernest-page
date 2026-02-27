@@ -15,6 +15,7 @@ export type CheckInState = {
     // New fields to hold the sequential API outputs
     counsel: string;
     directives: string[];
+    imageUrl?: string;
 };
 
 export default function CheckInWizardModal({ isOpen, onClose }: CheckInWizardModalProps) {

@@ -1,14 +1,15 @@
-import { useState } from "react";
-import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { Timestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { Timestamp, deleteDoc, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 import { useAuth } from "@/lib/auth/AuthContext";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import Image from 'next/image';
 
 interface CheckInPostProps {
     post: {
@@ -29,8 +30,10 @@ interface CheckInPostProps {
             letter?: string;
             response?: string;
         };
+        imageUrl?: string;
         created_at: Timestamp;
         is_public?: boolean;
+        likedBy?: string[];
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
@@ -47,6 +50,15 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
     const postAuthorId = post.authorId || post.uid;
     const isAuthor = user?.uid === postAuthorId;
     const hasPrivateData = Boolean(post.rant && post.counsel);
+
+    const [localLiked, setLocalLiked] = useState<boolean>(post.likedBy?.includes(user?.uid || "") || false);
+
+    // Sync with props when they change
+    useEffect(() => {
+        if (user) {
+            setLocalLiked(post.likedBy?.includes(user.uid) || false);
+        }
+    }, [post.likedBy, user]);
 
     // Following resolution
     const isFollowing = postAuthorId && followingMap && followingMap[postAuthorId];
@@ -85,6 +97,24 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
             });
         } catch (error) {
             console.error("Error toggling privacy:", error);
+        }
+    };
+
+    const toggleLike = async () => {
+        if (!user) return;
+        const isLiked = localLiked;
+
+        // Optimistic update
+        setLocalLiked(!isLiked);
+
+        try {
+            await updateDoc(doc(db, "posts", post.id), {
+                likedBy: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            });
+        } catch (error) {
+            console.error("Error toggling like:", error);
+            // Revert on error
+            setLocalLiked(isLiked);
         }
     };
 
@@ -214,6 +244,28 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                     </div>
                 )}
 
+                {/* The Image (With Privacy Blur) */}
+                {post.imageUrl && (
+                    <div className="px-6 mb-4">
+                        <div className="relative w-full h-48 sm:h-64 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                            <Image
+                                src={post.imageUrl}
+                                alt={currentTitle || "Post Image"}
+                                fill
+                                className={cn(
+                                    "object-cover transition-all duration-500",
+                                    !isAuthor ? "blur-3xl scale-110 opacity-80" : ""
+                                )}
+                            />
+                            {!isAuthor && (
+                                <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/10 z-10" title="Image obscured for privacy">
+                                    <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* The Letter (The Submission - Quoted Style) */}
                 <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 mb-4 mx-6">
                     <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
@@ -247,6 +299,16 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                 {/* Bottom Action Bar */}
                 <div className="px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
+                        <button
+                            onClick={toggleLike}
+                            className={cn("transition-transform active:scale-75 hover:scale-110",
+                                localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
+                            )}
+                            title={localLiked ? "Unlike" : "Like"}
+                        >
+                            <Heart className={cn("w-5 h-5", localLiked && "fill-red-500")} />
+                        </button>
+
                         <button
                             onClick={handleToggleBookmark}
                             className={cn("flex items-center gap-1.5 transition-colors group",

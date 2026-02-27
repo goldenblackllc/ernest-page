@@ -21,6 +21,7 @@ export async function POST(req: Request) {
         const rant = body.rant || "";
         const counsel = body.counsel; // Passed from frontend to save to DB
         const directives = body.directives || [];
+        const imageUrl = body.imageUrl;
 
         if (!uid || !rant) {
             return Response.json({ error: "UID and Rant text are required to generate and save a public post." }, { status: 400 });
@@ -53,7 +54,8 @@ export async function POST(req: Request) {
             counsel: counsel,
             status: "processing", // Marker for frontend Ledger to show spinner
             created_at: FieldValue.serverTimestamp(),
-            is_public: true
+            is_public: true,
+            ...(imageUrl && { imageUrl })
         });
 
         // 3. Run the heavy LLM generation in the background using Next.js after()

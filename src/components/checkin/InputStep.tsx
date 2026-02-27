@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, ImagePlus, X } from 'lucide-react';
 import { CheckInState } from './CheckInWizardModal';
+import { storage, auth } from '@/lib/firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import Image from 'next/image';
 
 interface InputStepProps {
     state: CheckInState;
@@ -12,6 +15,43 @@ interface InputStepProps {
 export default function InputStep({ state, setState, onNext, onCancel }: InputStepProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState('');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setError('Please select a valid image file.');
+            return;
+        }
+
+        // Limit to 5MB
+        if (file.size > 5 * 1024 * 1024) {
+            setError('Image must be less than 5MB.');
+            return;
+        }
+
+        setSelectedFile(file);
+
+        // Create an object URL for immediate preview
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewUrl(objectUrl);
+        setError('');
+    };
+
+    const removeImage = () => {
+        setSelectedFile(null);
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
+        }
+        // Also clear any previously uploaded URL if they remove it
+        if (state.imageUrl) {
+            setState(prev => ({ ...prev, imageUrl: undefined }));
+        }
+    };
 
     const handleSubmit = async () => {
         if (!state.rant.trim()) {
@@ -23,6 +63,23 @@ export default function InputStep({ state, setState, onNext, onCancel }: InputSt
         setError('');
 
         try {
+            // Upload image if selected
+            let uploadedImageUrl = state.imageUrl; // Keep existing if already uploaded and not removed
+
+            if (selectedFile) {
+                if (!auth.currentUser) throw new Error("Must be logged in to upload an image.");
+
+                const timestamp = Date.now();
+                // Create a unique filename: checkin_images/uid/timestamp_filename
+                const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+                const storageRef = ref(storage, `checkin_images/${auth.currentUser.uid}/${timestamp}_${safeName}`);
+
+                const snapshot = await uploadBytes(storageRef, selectedFile);
+                uploadedImageUrl = await getDownloadURL(snapshot.ref);
+
+                // Update state with the uploaded URL
+                setState(prev => ({ ...prev, imageUrl: uploadedImageUrl }));
+            }
             // Get the current user token via the backend directly instead of passing it from frontend props to keep it clean.
             // But we actually DO pass uid from context if we need it. For now, since CheckInWizardModal doesn't pass UID, 
             // the CounselStep actually fetches the user profile using the auth context *inside* the API route or passed.
@@ -50,15 +107,60 @@ export default function InputStep({ state, setState, onNext, onCancel }: InputSt
                     </div>
 
                     <div className="space-y-3">
-                        <textarea
-                            value={state.rant}
-                            onChange={(e) => {
-                                setState(prev => ({ ...prev, rant: e.target.value }));
-                                if (error) setError('');
-                            }}
-                            placeholder="I'm feeling..."
-                            className="w-full h-64 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-y transition-shadow custom-scrollbar"
-                        />
+                        <div className="relative">
+                            <textarea
+                                value={state.rant}
+                                onChange={(e) => {
+                                    setState(prev => ({ ...prev, rant: e.target.value }));
+                                    if (error) setError('');
+                                }}
+                                placeholder="I'm feeling..."
+                                className="w-full h-64 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 pb-16 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-y transition-shadow custom-scrollbar"
+                            />
+
+                            {/* Image Upload/Preview Area */}
+                            <div className="absolute bottom-3 left-4 flex items-center gap-3">
+
+                                {/* Hidden Input */}
+                                <input
+                                    type="file"
+                                    id="image-upload"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleImageSelect}
+                                />
+
+                                {/* Upload Button - Only show if no image exists */}
+                                {!previewUrl && !state.imageUrl && (
+                                    <label
+                                        htmlFor="image-upload"
+                                        className="flex items-center justify-center p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white cursor-pointer transition-colors border border-zinc-700/50"
+                                        title="Attach an image"
+                                    >
+                                        <ImagePlus className="w-5 h-5" />
+                                    </label>
+                                )}
+
+                                {/* Image Preview Thumbnail */}
+                                {(previewUrl || state.imageUrl) && (
+                                    <div className="relative group rounded-lg overflow-hidden border border-zinc-700/50 w-12 h-12 bg-zinc-950">
+                                        <Image
+                                            src={previewUrl || state.imageUrl || ""}
+                                            alt="Preview"
+                                            fill
+                                            className="object-cover"
+                                        />
+                                        <button
+                                            onClick={removeImage}
+                                            className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-black/80 text-white rounded-full p-0.5 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Remove image"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                         {error && (
                             <p className="text-sm text-red-500 font-medium animate-in fade-in duration-200">
                                 {error}

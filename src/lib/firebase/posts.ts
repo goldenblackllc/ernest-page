@@ -15,6 +15,7 @@ export interface CreatePostParams {
     rant?: string;
     core_beliefs?: string[] | Driver[]; // Relaxed to support both
     vision?: Vision[];
+    likedBy?: string[];
 }
 
 export async function createPost(params: CreatePostParams) {
@@ -40,6 +41,7 @@ export async function createPost(params: CreatePostParams) {
 
         created_at: serverTimestamp(),
         likes: 0,
+        likedBy: [],
         comments: 0
     };
 

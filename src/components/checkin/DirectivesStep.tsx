@@ -33,7 +33,8 @@ export default function DirectivesStep({ state, onClose, onBack }: DirectivesSte
                     uid: auth.currentUser.uid,
                     rant: state.rant,
                     counsel: state.counsel,
-                    directives: state.directives
+                    directives: state.directives,
+                    imageUrl: state.imageUrl
                 })
             }).catch(e => console.error("Background publish trigger failed:", e));
         }
