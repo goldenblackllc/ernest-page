@@ -65,7 +65,9 @@ Context: Character B just sent you a rant about their life:
 You just replied to them with this diagnosis and advice:
 "${counsel}"
 Task: Based on your advice, Character B now needs a 24-hour plan/strategy to begin fixing their reality. Write Character A's exact, raw, first-person response delivering this 24-hour plan to Character B.
-If Character A believes rigid schedules are useless, have them say that and offer a mindset shift instead. If Character A is highly tactical, give tactical steps. The length and format must be 100% dictated by Character A. Output a JSON array of strings, where each string is a distinct part of the plan/strategy.`
+If Character A believes rigid schedules are useless, have them say that and offer a mindset shift instead. If Character A is highly tactical, give tactical steps. The length and format must be 100% dictated by Character A. 
+
+CRITICAL OVERRIDE: Do not output a bloated 8-item robotic list. Distill the strategy into a maximum of 1 to 3 potent, high-impact directives. Output a JSON array of strings, where each string is a distinct part of the plan/strategy.`
         });
 
         const directivesResult = await generateObject({
