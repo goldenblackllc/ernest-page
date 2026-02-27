@@ -43,13 +43,27 @@ Write the raw, exact response in the first person. Speak directly to Character B
 
         // Save user's input to Firestore immediately
         const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc('mirror');
-        await activeChatRef.set({
-            id: 'mirror',
-            uid,
-            messages,
-            status: 'generating',
-            updatedAt: Date.now()
-        }, { merge: true });
+
+        // If the client only sends 1 message, it means they are starting a fresh chat.
+        // We must overwrite the document entirely (hard reset) to prevent appending to a stale session.
+        if (messages.length === 1) {
+            await activeChatRef.set({
+                id: 'mirror',
+                uid,
+                messages,
+                status: 'generating',
+                updatedAt: Date.now(),
+                createdAt: Date.now()
+            }, { merge: false }); // merge: false overwrites everything
+        } else {
+            await activeChatRef.set({
+                id: 'mirror',
+                uid,
+                messages,
+                status: 'generating',
+                updatedAt: Date.now()
+            }, { merge: true });
+        }
 
         // Kick off the background generation
         waitUntil((async () => {
