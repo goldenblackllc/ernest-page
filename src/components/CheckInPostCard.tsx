@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark, Heart } from "lucide-react";
+import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark, Heart, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Timestamp, deleteDoc, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
@@ -48,7 +48,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
-    const [showPrivate, setShowPrivate] = useState(false);
+    const [isFlipped, setIsFlipped] = useState(false);
     const { user } = useAuth();
 
     const postAuthorId = post.authorId || post.uid;
@@ -68,13 +68,17 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
     const isFollowing = postAuthorId && followingMap && followingMap[postAuthorId];
     const customAlias = isFollowing ? followingMap[postAuthorId] : null;
 
-    // Context-Aware Content Resolution
-    const currentLetter = (showPrivate && isAuthor) ? post.rant : (post.public_post?.letter || post.letter || post.tension);
-    const currentResponse = (showPrivate && isAuthor) ? post.counsel : (post.public_post?.response || post.response || post.counsel);
-    const currentPseudonym = (showPrivate && isAuthor) ? "My Tension" : (post.public_post?.pseudonym || post.pseudonym || "Anonymous");
-    const currentTitle = (showPrivate && isAuthor) ? "My True Feelings" : (post.public_post?.title || post.title);
+    // Static Content Resolution (Front Face)
+    const publicLetter = post.public_post?.letter || post.letter || post.tension;
+    const publicResponse = post.public_post?.response || post.response || post.counsel;
+    const publicPseudonym = post.public_post?.pseudonym || post.pseudonym || "Anonymous";
+    const publicTitle = post.public_post?.title || post.title;
 
-    if (!currentLetter || !currentResponse) {
+    // Static Content Resolution (Back Face)
+    const privateRant = post.rant;
+    const privateCounsel = post.counsel;
+
+    if (!publicLetter || !publicResponse) {
         return null;
     }
 
@@ -140,10 +144,15 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
 
     if (isDeleting) return null; // Optimistic hide
 
-    const isLongResponse = currentResponse.length > 400;
-    const displayedResponse = isLongResponse && !isResponseExpanded
-        ? currentResponse.slice(0, 400) + "..."
-        : currentResponse;
+    const isLongPublicResponse = publicResponse.length > 400;
+    const displayedPublicResponse = isLongPublicResponse && !isResponseExpanded
+        ? publicResponse.slice(0, 400) + "..."
+        : publicResponse;
+
+    const isLongPrivateCounsel = privateCounsel ? privateCounsel.length > 400 : false;
+    const displayedPrivateCounsel = isLongPrivateCounsel && !isResponseExpanded
+        ? privateCounsel?.slice(0, 400) + "..."
+        : privateCounsel;
 
     return (
         <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
@@ -213,101 +222,138 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
             {/* Body */}
             <div className="p-0 flex flex-col pt-4">
 
-                {/* Public/Private Toggle (Author Only) */}
-                {isAuthor && hasPrivateData && (
-                    <div className="flex justify-center mb-4 mx-6">
-                        <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-                            <button
-                                onClick={() => setShowPrivate(false)}
-                                className={cn(
-                                    "px-4 py-1.5 rounded-md text-xs font-bold transition-all",
-                                    !showPrivate ? "bg-zinc-700 text-zinc-100 shadow-sm" : "text-zinc-500 hover:text-zinc-300"
-                                )}
-                            >
-                                Public
-                            </button>
-                            <button
-                                onClick={() => setShowPrivate(true)}
-                                className={cn(
-                                    "px-4 py-1.5 rounded-md text-xs font-bold transition-all",
-                                    showPrivate ? "bg-zinc-700 text-zinc-100 shadow-sm" : "text-zinc-500 hover:text-zinc-300"
-                                )}
-                            >
-                                Private
-                            </button>
-                        </div>
-                    </div>
-                )}
+                {/* 3D Perspective Container */}
+                <div className="relative w-full [perspective:1000px] mb-4">
+                    {/* Inner Flipper */}
+                    <div className={cn(
+                        "relative w-full transition-transform duration-700 [transform-style:preserve-3d]",
+                        isFlipped && "[transform:rotateY(180deg)]"
+                    )}>
 
-                {/* AI / Stock Image (No Privacy Blur) */}
-                {!showPrivate && (post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url) && (
-                    <div className="px-6 mb-4">
-                        <div className="relative w-full h-48 sm:h-64 rounded-t-xl overflow-hidden bg-zinc-900 border border-zinc-800">
-                            <img
-                                src={post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url || ""}
-                                alt={currentTitle || "Hero Object"}
-                                className="w-full h-full object-cover transition-all duration-500"
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* The Title */}
-                {!showPrivate && currentTitle && (
-                    <div className="px-6">
-                        <h2 className="text-xl font-bold text-white mb-2 leading-tight">
-                            {currentTitle}
-                        </h2>
-                    </div>
-                )}
-
-                {/* The Image (With Privacy Blur) */}
-                {post.imageUrl && (
-                    <div className="px-6 mb-4">
-                        <div className="relative w-full h-48 sm:h-64 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
-                            <Image
-                                src={post.imageUrl}
-                                alt={currentTitle || "Post Image"}
-                                fill
-                                className={cn(
-                                    "object-cover transition-all duration-500",
-                                    !isAuthor ? "blur-3xl scale-110 opacity-80" : ""
-                                )}
-                            />
-                            {!isAuthor && (
-                                <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/10 z-10" title="Image obscured for privacy">
-                                    <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                        {/* --- FRONT FACE (Public Post) --- */}
+                        <div className={cn(
+                            "w-full top-0 left-0 [backface-visibility:hidden] transition-opacity duration-300",
+                            isFlipped ? "absolute opacity-0 pointer-events-none" : "relative opacity-100"
+                        )}>
+                            {/* AI / Stock Image */}
+                            {(post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url) && (
+                                <div className="px-6 mb-4">
+                                    <div className="relative w-full h-48 sm:h-64 rounded-t-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                                        <img
+                                            src={post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url || ""}
+                                            alt={publicTitle || "Hero Object"}
+                                            className="w-full h-full object-cover transition-all duration-500"
+                                        />
+                                    </div>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                )}
 
-                {/* The Letter (The Submission) */}
-                <div className="px-6 mb-6">
-                    <p className="text-[15.5px] italic text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                        {currentLetter}
-                    </p>
-                </div>
-
-                {/* The Response (The Advice) */}
-                <div className="px-6 pb-6">
-                    <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedResponse}</ReactMarkdown>
-                    </div>
-
-                    {isLongResponse && (
-                        <button
-                            onClick={() => setIsResponseExpanded(!isResponseExpanded)}
-                            className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
-                        >
-                            {isResponseExpanded ? (
-                                <>Read Less <ChevronUp className="w-3 h-3" /></>
-                            ) : (
-                                <>Read More <ChevronDown className="w-3 h-3" /></>
+                            {/* The Title */}
+                            {publicTitle && (
+                                <div className="px-6">
+                                    <h2 className="text-xl font-bold text-white mb-2 leading-tight">
+                                        {publicTitle}
+                                    </h2>
+                                </div>
                             )}
-                        </button>
-                    )}
+
+                            {/* The Image (With Privacy Blur) */}
+                            {post.imageUrl && (
+                                <div className="px-6 mb-4">
+                                    <div className="relative w-full h-48 sm:h-64 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                                        <Image
+                                            src={post.imageUrl}
+                                            alt={publicTitle || "Post Image"}
+                                            fill
+                                            className={cn(
+                                                "object-cover transition-all duration-500",
+                                                !isAuthor ? "blur-3xl scale-110 opacity-80" : ""
+                                            )}
+                                        />
+                                        {!isAuthor && (
+                                            <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/10 z-10" title="Image obscured for privacy">
+                                                <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* The Public Letter */}
+                            <div className="px-6 mb-6">
+                                <p className="text-[15.5px] italic text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                    {publicLetter}
+                                </p>
+                            </div>
+
+                            {/* The Public Response */}
+                            <div className="px-6 pb-6">
+                                <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedPublicResponse}</ReactMarkdown>
+                                </div>
+
+                                {isLongPublicResponse && (
+                                    <button
+                                        onClick={() => setIsResponseExpanded(!isResponseExpanded)}
+                                        className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
+                                    >
+                                        {isResponseExpanded ? (
+                                            <>Read Less <ChevronUp className="w-3 h-3" /></>
+                                        ) : (
+                                            <>Read More <ChevronDown className="w-3 h-3" /></>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* --- BACK FACE (Private Vault) --- */}
+                        {isAuthor && hasPrivateData && (
+                            <div className={cn(
+                                "w-full top-0 left-0 [backface-visibility:hidden] [transform:rotateY(180deg)] transition-opacity duration-300 px-6",
+                                !isFlipped ? "absolute opacity-0 pointer-events-none" : "relative opacity-100"
+                            )}>
+                                <div className="bg-zinc-950 border border-emerald-900/30 rounded-xl p-5 shadow-inner">
+                                    <div className="flex items-center gap-2 mb-4 border-b border-emerald-900/30 pb-3">
+                                        <Lock className="w-4 h-4 text-emerald-500" />
+                                        <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest">
+                                            Raw Input & Counsel
+                                        </h3>
+                                    </div>
+
+                                    {/* The Raw Rant */}
+                                    <div className="mb-6">
+                                        <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">My Raw Input</h4>
+                                        <p className="text-sm italic text-zinc-400 whitespace-pre-wrap leading-relaxed p-3 bg-black/40 rounded-lg border border-white/5">
+                                            {privateRant}
+                                        </p>
+                                    </div>
+
+                                    {/* The Raw Counsel */}
+                                    <div>
+                                        <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Raw AI Counsel</h4>
+                                        <div className="text-zinc-200 whitespace-pre-wrap text-[14.5px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedPrivateCounsel || ""}</ReactMarkdown>
+                                        </div>
+
+                                        {isLongPrivateCounsel && (
+                                            <button
+                                                onClick={() => setIsResponseExpanded(!isResponseExpanded)}
+                                                className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
+                                            >
+                                                {isResponseExpanded ? (
+                                                    <>Read Less <ChevronUp className="w-3 h-3" /></>
+                                                ) : (
+                                                    <>Read More <ChevronDown className="w-3 h-3" /></>
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
 
                 {/* Bottom Action Bar */}
@@ -332,6 +378,24 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                         >
                             <Bookmark className={cn("w-5 h-5 transition-all group-active:scale-90", isSaved && "fill-emerald-500")} />
                         </button>
+
+                        {/* Flip Toggle */}
+                        {isAuthor && hasPrivateData && (
+                            <button
+                                onClick={() => {
+                                    setIsFlipped(!isFlipped);
+                                    setIsResponseExpanded(false);
+                                }}
+                                className={cn(
+                                    "flex items-center gap-1.5 transition-colors group ml-2",
+                                    isFlipped ? "text-emerald-500" : "text-zinc-500 hover:text-white"
+                                )}
+                                title={isFlipped ? "View Public" : "View Private"}
+                            >
+                                <RefreshCw className={cn("w-4 h-4 transition-transform duration-500", isFlipped && "rotate-180")} />
+                                <span className="text-xs font-medium">{isFlipped ? "View Public" : "View Private"}</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* Delete Button (Relocated from header) */}
