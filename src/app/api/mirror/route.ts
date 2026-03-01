@@ -64,9 +64,11 @@ Write the raw, exact response in the first person. Speak directly to Character B
         waitUntil((async () => {
             let result;
             try {
-                // Attempt Primary Model (gemini-2.5-pro)
+                const primaryModel = 'gemini-3.1-pro-preview';
+                console.log(`[MirrorChat] Attempting primary model: ${primaryModel}`);
+                // Attempt Primary Model
                 result = await generateText({
-                    model: google('gemini-2.5-pro'),
+                    model: google(primaryModel),
                     system: systemPrompt,
                     messages,
                     abortSignal: AbortSignal.timeout(30000)
@@ -75,9 +77,11 @@ Write the raw, exact response in the first person. Speak directly to Character B
                 console.warn("Primary Model Failed (Timeout or Error). Falling back to gemini-2.5-pro...", primaryError.message);
 
                 try {
+                    const fallbackModel = 'gemini-2.5-pro';
+                    console.log(`[MirrorChat] Attempting fallback model: ${fallbackModel}`);
                     // Attempt Fallback Model (gemini-2.5-pro)
                     result = await generateText({
-                        model: google('gemini-2.5-pro'),
+                        model: google(fallbackModel),
                         system: systemPrompt,
                         messages,
                         abortSignal: AbortSignal.timeout(30000)

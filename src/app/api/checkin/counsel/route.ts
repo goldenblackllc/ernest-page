@@ -53,17 +53,21 @@ Speak exactly as Character A.`;
 
         let counsel: string;
         try {
+            const primaryModel = 'gemini-3.1-pro-preview';
+            console.log(`[CheckIn Counsel] Phase 1 - Attempting primary model: ${primaryModel}`);
             // Call 1: Generate the nuanced counsel (Primary Model, 30s timeout)
             const counselResult = await withTimeout(generateText({
-                model: google('gemini-3.1-pro-preview'),
+                model: google(primaryModel),
                 messages: messages,
             }), 30000);
             counsel = counselResult.text;
         } catch (primaryError: any) {
             console.warn("[DEV LOG] Primary generateText failed. Falling back to 2.5-pro...", primaryError.message);
+            const fallbackModel = 'gemini-2.5-pro';
+            console.log(`[CheckIn Counsel] Phase 1 - Attempting fallback model: ${fallbackModel}`);
             // Attempt Fallback Model (gemini-2.5-pro)
             const fallbackResult = await withTimeout(generateText({
-                model: google('gemini-2.5-pro'),
+                model: google(fallbackModel),
                 messages: messages,
             }), 30000);
             counsel = fallbackResult.text;
@@ -90,15 +94,19 @@ CRITICAL OVERRIDE: Do not output a bloated robotic list or standard JSON. Distil
 
         let directivesText: string;
         try {
+            const primaryModel = 'gemini-3.1-pro-preview';
+            console.log(`[CheckIn Counsel] Phase 2 - Attempting primary model: ${primaryModel}`);
             const directivesResult = await withTimeout(generateText({
-                model: google('gemini-3.1-pro-preview'),
+                model: google(primaryModel),
                 messages: messages,
             }), 30000);
             directivesText = directivesResult.text;
         } catch (primaryError: any) {
             console.warn("[DEV LOG] Primary generateText failed. Falling back to 2.5-pro...", primaryError.message);
+            const fallbackModel = 'gemini-2.5-pro';
+            console.log(`[CheckIn Counsel] Phase 2 - Attempting fallback model: ${fallbackModel}`);
             const fallbackResult = await withTimeout(generateText({
-                model: google('gemini-2.5-pro'),
+                model: google(fallbackModel),
                 messages: messages,
             }), 30000);
             directivesText = fallbackResult.text;
