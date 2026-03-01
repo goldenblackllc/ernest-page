@@ -49,6 +49,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const { user } = useAuth();
 
     const postAuthorId = post.authorId || post.uid;
@@ -144,20 +145,15 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
 
     if (isDeleting) return null; // Optimistic hide
 
-    const isLongPublicResponse = publicResponse.length > 400;
-    const displayedPublicResponse = isLongPublicResponse && !isResponseExpanded
-        ? publicResponse.slice(0, 400) + "..."
-        : publicResponse;
-
     const isLongPrivateCounsel = privateCounsel ? privateCounsel.length > 400 : false;
     const displayedPrivateCounsel = isLongPrivateCounsel && !isResponseExpanded
         ? privateCounsel?.slice(0, 400) + "..."
         : privateCounsel;
 
     return (
-        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
+        <div className="bg-[#1a1a1a] border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
             {/* 1. Main Header Wrapper */}
-            <div className="flex flex-row items-center gap-3 px-6 py-4 border-b border-white/5 bg-black/20 mb-4 w-full">
+            <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 mb-2 w-full">
 
                 {/* Avatar */}
                 <div className="shrink-0">
@@ -237,8 +233,8 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                         )}>
                             {/* AI / Stock Image */}
                             {(post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url) && (
-                                <div className="px-6 mb-4">
-                                    <div className="relative w-full h-48 sm:h-64 rounded-t-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                                <div className="px-3 sm:px-4 mb-2">
+                                    <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                         <img
                                             src={post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url || ""}
                                             alt={publicTitle || "Hero Object"}
@@ -250,8 +246,8 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
 
                             {/* The Title */}
                             {publicTitle && (
-                                <div className="px-6">
-                                    <h2 className="text-xl font-bold text-white mb-2 leading-tight">
+                                <div className="px-3 sm:px-4">
+                                    <h2 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2 leading-tight">
                                         {publicTitle}
                                     </h2>
                                 </div>
@@ -259,8 +255,8 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
 
                             {/* The Image (With Privacy Blur) */}
                             {post.imageUrl && (
-                                <div className="px-6 mb-4">
-                                    <div className="relative w-full h-48 sm:h-64 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                                <div className="px-3 sm:px-4 mb-2">
+                                    <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                         <Image
                                             src={post.imageUrl}
                                             alt={publicTitle || "Post Image"}
@@ -279,30 +275,35 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                 </div>
                             )}
 
-                            {/* The Public Letter */}
-                            <div className="px-6 mb-6">
-                                <p className="text-[15.5px] italic text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                            {/* The Public Letter & Response (Teaser Logic) */}
+                            <div className={cn("px-3 sm:px-4 pb-3 sm:pb-4 mt-1", !isExpanded && "mb-2")}>
+                                <p className={cn(
+                                    "text-sm sm:text-[15px] italic text-zinc-300 whitespace-pre-wrap leading-snug",
+                                    !isExpanded && "line-clamp-6"
+                                )}>
                                     {publicLetter}
                                 </p>
-                            </div>
 
-                            {/* The Public Response */}
-                            <div className="px-6 pb-6">
-                                <div className="text-zinc-100 whitespace-pre-wrap text-[15.5px] leading-relaxed opacity-100 transition-all [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedPublicResponse}</ReactMarkdown>
-                                </div>
-
-                                {isLongPublicResponse && (
+                                {!isExpanded ? (
                                     <button
-                                        onClick={() => setIsResponseExpanded(!isResponseExpanded)}
-                                        className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
+                                        onClick={() => setIsExpanded(true)}
+                                        className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors"
                                     >
-                                        {isResponseExpanded ? (
-                                            <>Read Less <ChevronUp className="w-3 h-3" /></>
-                                        ) : (
-                                            <>Read More <ChevronDown className="w-3 h-3" /></>
-                                        )}
+                                        Read the Counsel ⌄
                                     </button>
+                                ) : (
+                                    <>
+                                        {/* The Public Response */}
+                                        <div className="mt-2 text-zinc-100 whitespace-pre-wrap text-sm sm:text-[15px] leading-snug opacity-100 transition-all [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-3 [&>p:last-child]:mb-0">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{publicResponse}</ReactMarkdown>
+                                        </div>
+                                        <button
+                                            onClick={() => setIsExpanded(false)}
+                                            className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors"
+                                        >
+                                            Show Less ⌃
+                                        </button>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -310,10 +311,10 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                         {/* --- BACK FACE (Private Vault) --- */}
                         {isAuthor && hasPrivateData && (
                             <div className={cn(
-                                "w-full top-0 left-0 [backface-visibility:hidden] [transform:rotateY(180deg)] transition-opacity duration-300 px-6",
+                                "w-full top-0 left-0 [backface-visibility:hidden] [transform:rotateY(180deg)] transition-opacity duration-300 px-3 sm:px-4",
                                 !isFlipped ? "absolute opacity-0 pointer-events-none" : "relative opacity-100"
                             )}>
-                                <div className="bg-zinc-950 border border-emerald-900/30 rounded-xl p-5 shadow-inner">
+                                <div className="bg-zinc-950 border border-emerald-900/30 rounded-xl p-3 sm:p-5 shadow-inner">
                                     <div className="flex items-center gap-2 mb-4 border-b border-emerald-900/30 pb-3">
                                         <Lock className="w-4 h-4 text-emerald-500" />
                                         <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest">
@@ -324,7 +325,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                     {/* The Raw Rant */}
                                     <div className="mb-6">
                                         <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">My Raw Input</h4>
-                                        <p className="text-sm italic text-zinc-400 whitespace-pre-wrap leading-relaxed p-3 bg-black/40 rounded-lg border border-white/5">
+                                        <p className="text-sm italic text-zinc-400 whitespace-pre-wrap leading-snug p-3 bg-black/40 rounded-lg border border-white/5">
                                             {privateRant}
                                         </p>
                                     </div>
@@ -332,7 +333,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                     {/* The Raw Counsel */}
                                     <div>
                                         <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Raw AI Counsel</h4>
-                                        <div className="text-zinc-200 whitespace-pre-wrap text-[14.5px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
+                                        <div className="text-zinc-200 whitespace-pre-wrap text-sm sm:text-[15px] leading-snug [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-3 [&>p:last-child]:mb-0">
                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedPrivateCounsel || ""}</ReactMarkdown>
                                         </div>
 
@@ -357,7 +358,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                 </div>
 
                 {/* Bottom Action Bar */}
-                <div className="px-6 py-4 flex items-center justify-between">
+                <div className="px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={toggleLike}

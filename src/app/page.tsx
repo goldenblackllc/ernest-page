@@ -17,7 +17,7 @@ export default function Home() {
 
 
 
-                <div className="container mx-auto px-4 pt-24 pb-32 max-w-3xl">
+                <div className="container mx-auto px-0 sm:px-4 pt-[calc(64px+env(safe-area-inset-top))] pb-32 max-w-3xl">
                     {/* Section 1: Triage Panel (The Intake Valve) - NOW FIXED BOTTOM */}
                     <TriagePanel />
 

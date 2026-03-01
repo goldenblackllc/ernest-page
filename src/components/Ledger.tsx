@@ -184,17 +184,6 @@ export function Ledger() {
 
     return (
         <section className="flex flex-col gap-8">
-            <div className="flex justify-between items-center px-1 mb-2">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">The Feed</h3>
-                <button
-                    onClick={fetchBlendedFeed}
-                    disabled={isRefreshing}
-                    className="text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-50"
-                >
-                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                </button>
-            </div>
-
             {pendingPostId && (
                 <div className="bg-[#1a1a1a] border border-emerald-500/20 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">
                     <div className="flex flex-col items-center gap-3">
