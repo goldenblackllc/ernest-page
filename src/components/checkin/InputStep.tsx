@@ -18,6 +18,14 @@ export default function InputStep({ state, setState, onNext, onCancel }: InputSt
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+    // Initialize state from local storage securely
+    React.useEffect(() => {
+        const savedRant = localStorage.getItem('earnest_pending_rant');
+        if (savedRant && !state.rant) {
+            setState(prev => ({ ...prev, rant: savedRant }));
+        }
+    }, []);
+
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -112,6 +120,7 @@ export default function InputStep({ state, setState, onNext, onCancel }: InputSt
                                 value={state.rant}
                                 onChange={(e) => {
                                     setState(prev => ({ ...prev, rant: e.target.value }));
+                                    localStorage.setItem('earnest_pending_rant', e.target.value);
                                     if (error) setError('');
                                 }}
                                 placeholder="I'm feeling..."

@@ -42,7 +42,7 @@ Things they enjoy: {THINGS_I_ENJOY}`;
 
 // Removed PROMPT_REALITY_BIBLE
 
-const PRIMARY_MODEL = 'gemini-3.1-pro-preview';
+const PRIMARY_MODEL = 'gemini-2.5-pro';
 const FALLBACK_MODEL = 'gemini-2.5-pro';
 
 async function generateWithFallback(options: any) {

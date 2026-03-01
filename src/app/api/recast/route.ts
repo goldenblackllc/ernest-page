@@ -340,7 +340,7 @@ async function getUserContext(uid: string) {
 }
 
 // --- HELPER: FALLBACK GENERATION ---
-const PRIMARY_MODEL = 'gemini-3.1-pro-preview';
+const PRIMARY_MODEL = 'gemini-2.5-pro';
 const FALLBACK_MODEL = 'gemini-2.5-pro';
 
 async function generateWithFallback(options: any) {

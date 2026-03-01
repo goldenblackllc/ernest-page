@@ -43,13 +43,31 @@ Speak exactly as Character A.`;
             { role: 'user', content: systemPrompt }
         ];
 
-        // Call 1: Generate the nuanced counsel
-        const counselResult = await generateText({
-            model: google('gemini-3.1-pro-preview'),
-            messages: messages,
-        });
+        // Utility to enforce a timeout on the AI SDK calls
+        const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+            const timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('AI Generation Timeout')), ms)
+            );
+            return Promise.race([promise, timeout]);
+        };
 
-        const counsel = counselResult.text;
+        let counsel: string;
+        try {
+            // Call 1: Generate the nuanced counsel (Primary Model, 30s timeout)
+            const counselResult = await withTimeout(generateText({
+                model: google('gemini-3.1-pro-preview'),
+                messages: messages,
+            }), 30000);
+            counsel = counselResult.text;
+        } catch (primaryError: any) {
+            console.warn("[DEV LOG] Primary generateText failed. Falling back to 2.5-pro...", primaryError.message);
+            // Attempt Fallback Model (gemini-2.5-pro)
+            const fallbackResult = await withTimeout(generateText({
+                model: google('gemini-2.5-pro'),
+                messages: messages,
+            }), 30000);
+            counsel = fallbackResult.text;
+        }
 
         // Append the AI's counsel to the active session history
         messages.push({ role: 'assistant', content: counsel });
@@ -67,16 +85,27 @@ You just replied to them with this diagnosis and advice:
 Task: Based on your advice, Character B now needs a 24-hour plan/strategy to begin fixing their reality. Write Character A's exact, raw, first-person response delivering this 24-hour plan to Character B.
 If Character A believes rigid schedules are useless, have them say that and offer a mindset shift instead. If Character A is highly tactical, give tactical steps. The length and format must be 100% dictated by Character A. 
 
-CRITICAL OVERRIDE: Do not output a bloated 8-item robotic list. Distill the strategy into a maximum of 1 to 3 potent, high-impact directives. Output a JSON array of strings, where each string is a distinct part of the plan/strategy.`
+CRITICAL OVERRIDE: Do not output a bloated robotic list or standard JSON. Distill the strategy into a maximum of 1 to 3 potent, high-impact directives. You MUST separate each distinct directive using a double-pipe delimiter '||'. Do not add bullet points, numbers, or any other formatting. Example output: 'Wake up at 5AM.||Throw away the television.||Call your mother.'`
         });
 
-        const directivesResult = await generateObject({
-            model: google('gemini-3.1-pro-preview'),
-            messages: messages,
-            schema: z.array(z.string()),
-        });
+        let directivesText: string;
+        try {
+            const directivesResult = await withTimeout(generateText({
+                model: google('gemini-3.1-pro-preview'),
+                messages: messages,
+            }), 30000);
+            directivesText = directivesResult.text;
+        } catch (primaryError: any) {
+            console.warn("[DEV LOG] Primary generateText failed. Falling back to 2.5-pro...", primaryError.message);
+            const fallbackResult = await withTimeout(generateText({
+                model: google('gemini-2.5-pro'),
+                messages: messages,
+            }), 30000);
+            directivesText = fallbackResult.text;
+        }
 
-        const directives = directivesResult.object;
+        // Parse the raw text string into a clean array using the double-pipe delimiter and stripping newlines.
+        const directives = directivesText.split('||').map(d => d.replace(/[\n\r]/g, "").trim()).filter(d => d.length > 0);
 
         return Response.json({ counsel, directives });
 

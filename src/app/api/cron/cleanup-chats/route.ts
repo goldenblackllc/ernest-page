@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase/admin';
+import { db, storage } from '@/lib/firebase/admin';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
                         const messages = chatData.messages || [];
 
                         // Only generate a post if there is actual conversation content (e.g. User -> AI -> User)
-                        if (messages.length > 2) {
+                        if (messages.length > 0) {
                             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
                             const prompt = `Character A is defined by the following Character Bible:
@@ -67,49 +67,119 @@ If the transcript is valuable, synthesize it into a single anonymous post. Outpu
 "post": {
 "title": "A punchy, scroll-stopping social media hook (4-8 words). No academic phrasing. Create a curiosity gap.",
 "pseudonym": "A clever 2-3 word sign-off (e.g., 'Curious Creator').",
-"letter": "Synthesize Character B's side into a punchy letter starting with 'Dear Earnest,'. Scrub all names/locations.",
-"response": "Synthesize Character A's advice. Do not act like an AI summarizing. Write strictly in Character A's exact voice, length, and style. End with '- Earnest Page, ${archetype}'."
+"letter": "Ghostwrite Character B's side into a punchy social media submission. FORMATTING RULES: You MUST start exactly with: 'Dear ${archetype},' followed by a double line break (\\n\\n). Write the body of the letter. End with a double line break (\\n\\n) followed by the pseudonym (e.g., '- OVERWHELMED FATHER'). SCRUB ALL PII (names, locations).",
+"response": "Synthesize Character A's advice. Write strictly in Character A's exact voice. FORMATTING RULES: You MUST end the response with a double line break (\\n\\n) followed exactly by: '- ${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them.",
+"imagen_prompt": "Write a prompt for Google Imagen 3 to create a high-end, editorial macro-photograph of the 'Hero Object' discussed. Must be fully photorealistic. Use terms like 'macro shot', 'cinematic lighting'. NO HUMANS, FACES, OR TEXT.",
+"unsplash_query": "Provide a 1-to-2 word search term to find a real stock photograph of this object (e.g., 'artisan soap', 'dark marble')."
 }
 }`;
 
                             // Generate 'Dear Earnest' Post
                             const { object } = await generateObject({
-                                model: google('gemini-3.1-pro-preview'),
+                                model: google('gemini-2.5-pro'),
                                 schema: z.object({
                                     is_publishable: z.boolean(),
                                     post: z.object({
                                         title: z.string(),
                                         pseudonym: z.string(),
                                         letter: z.string(),
-                                        response: z.string()
+                                        response: z.string(),
+                                        imagen_prompt: z.string(),
+                                        unsplash_query: z.string()
                                     }).nullable().optional()
                                 }),
                                 prompt: prompt
                             });
 
                             if (object.is_publishable && object.post) {
-                                // Create Post in DB
-                                await db.collection('posts').add({
-                                    uid,
-                                    author: userData?.displayName || "Anonymous",
-                                    type: 'text',
-                                    public_post: {
+                                // 1. Generate URLs
+                                let imagen_url = null;
+                                let unsplash_url = null;
+
+                                // Fetch images in parallel
+                                try {
+                                    const postDocRef = db.collection('posts').doc();
+                                    const [imagenRes, unsplashRes] = await Promise.allSettled([
+                                        // Imagen 3 Call
+                                        fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                instances: [{ prompt: object.post.imagen_prompt }],
+                                                parameters: { sampleCount: 1, aspectRatio: "16:9" }
+                                            })
+                                        }),
+                                        // Unsplash Call
+                                        fetch(`https://api.unsplash.com/search/photos?page=1&query=${encodeURIComponent(object.post.unsplash_query)}&orientation=landscape`, {
+                                            headers: {
+                                                'Authorization': `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`
+                                            }
+                                        })
+                                    ]);
+
+                                    if (imagenRes.status === 'fulfilled' && imagenRes.value.ok) {
+                                        const data = await imagenRes.value.json();
+                                        if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
+                                            const base64Data = data.predictions[0].bytesBase64Encoded;
+                                            const buffer = Buffer.from(base64Data, 'base64');
+                                            const bucket = storage.bucket();
+                                            const fileName = `post-images/${postDocRef.id}_imagen.jpg`;
+                                            const file = bucket.file(fileName);
+
+                                            await file.save(buffer, {
+                                                metadata: { contentType: 'image/jpeg' },
+                                                public: true
+                                            });
+
+                                            imagen_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                                        }
+                                    } else if (imagenRes.status === 'fulfilled') {
+                                        console.error("Imagen API Error:", await imagenRes.value.text());
+                                    }
+
+                                    if (unsplashRes.status === 'fulfilled' && unsplashRes.value.ok) {
+                                        const data = await unsplashRes.value.json();
+                                        if (data.results && data.results.length > 0) {
+                                            unsplash_url = data.results[0].urls.regular;
+                                        }
+                                    } else if (unsplashRes.status === 'fulfilled') {
+                                        console.error("Unsplash API Error:", await unsplashRes.value.text());
+                                    }
+
+                                    // Create Post in DB
+                                    await postDocRef.set({
+                                        id: postDocRef.id,
+                                        uid,
+                                        authorId: uid,
+                                        region: userData?.region || null,
+                                        author: userData?.displayName || "Anonymous",
+                                        type: 'checkin', // align with checkin schema to properly display in UI
+                                        public_post: {
+                                            title: object.post.title,
+                                            pseudonym: object.post.pseudonym,
+                                            letter: object.post.letter,
+                                            response: object.post.response,
+                                        },
+                                        imagen_prompt: object.post.imagen_prompt,
+                                        unsplash_query: object.post.unsplash_query,
+                                        imagen_url: imagen_url,
+                                        unsplash_url: unsplash_url,
+                                        // Legacy fallbacks for uninterrupted rendering
                                         title: object.post.title,
                                         pseudonym: object.post.pseudonym,
                                         letter: object.post.letter,
                                         response: object.post.response,
-                                    },
-                                    // Legacy fallbacks for uninterrupted rendering
-                                    title: object.post.title,
-                                    pseudonym: object.post.pseudonym,
-                                    letter: object.post.letter,
-                                    response: object.post.response,
-                                    content_raw: transcript,
-                                    created_at: new Date(),
-                                    likes: 0,
-                                    comments: 0
-                                });
-                                processedCount++;
+                                        content_raw: transcript,
+                                        status: "completed", // Ensure alignment with UI status
+                                        created_at: new Date(),
+                                        is_public: true, // Auto publish explicitly 
+                                        likes: 0,
+                                        comments: 0
+                                    });
+                                    processedCount++;
+                                } catch (e) {
+                                    console.error("Failed to insert generated post: ", e);
+                                }
                             }
                         }
 

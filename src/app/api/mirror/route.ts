@@ -64,9 +64,9 @@ Write the raw, exact response in the first person. Speak directly to Character B
         waitUntil((async () => {
             let result;
             try {
-                // Attempt Primary Model (gemini-3.1-pro-preview)
+                // Attempt Primary Model (gemini-2.5-pro)
                 result = await generateText({
-                    model: google('gemini-3.1-pro-preview'),
+                    model: google('gemini-2.5-pro'),
                     system: systemPrompt,
                     messages,
                     abortSignal: AbortSignal.timeout(30000)

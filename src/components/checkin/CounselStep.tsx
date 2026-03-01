@@ -39,6 +39,8 @@ export default function CounselStep({ state, setState, onNext, onBack }: Counsel
                             counsel: data.counsel,
                             directives: data.directives // Capture the sequentially generated directives!
                         }));
+                        // Clear the local storage cache upon successful processing
+                        localStorage.removeItem('earnest_pending_rant');
                     }
                 })
                 .catch(err => setError(err.message))

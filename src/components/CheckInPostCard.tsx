@@ -29,8 +29,12 @@ interface CheckInPostProps {
             pseudonym?: string;
             letter?: string;
             response?: string;
+            imagen_url?: string;
+            unsplash_url?: string;
         };
         imageUrl?: string;
+        imagen_url?: string;
+        unsplash_url?: string;
         created_at: Timestamp;
         is_public?: boolean;
         likedBy?: string[];
@@ -235,6 +239,19 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                     </div>
                 )}
 
+                {/* AI / Stock Image (No Privacy Blur) */}
+                {!showPrivate && (post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url) && (
+                    <div className="px-6 mb-4">
+                        <div className="relative w-full h-48 sm:h-64 rounded-t-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                            <img
+                                src={post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url || ""}
+                                alt={currentTitle || "Hero Object"}
+                                className="w-full h-full object-cover transition-all duration-500"
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {/* The Title */}
                 {!showPrivate && currentTitle && (
                     <div className="px-6">
@@ -266,13 +283,10 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                     </div>
                 )}
 
-                {/* The Letter (The Submission - Quoted Style) */}
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 mb-4 mx-6">
-                    <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                {/* The Letter (The Submission) */}
+                <div className="px-6 mb-6">
+                    <p className="text-[15.5px] italic text-zinc-300 whitespace-pre-wrap leading-relaxed">
                         {currentLetter}
-                    </p>
-                    <p className="mt-3 text-xs font-bold text-zinc-500 tracking-wide uppercase">
-                        {showPrivate ? currentPseudonym : `- ${currentPseudonym}`}
                     </p>
                 </div>
 
