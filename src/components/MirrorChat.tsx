@@ -2,12 +2,14 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CharacterBible } from "@/types/character";
-import { X, Send, User, Sparkles, Square, RefreshCcw } from "lucide-react";
+import { X, Send, User, Sparkles, Square, RefreshCcw, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { subscribeToActiveChat, getMostRecentActiveChat, saveActiveChat } from "@/lib/firebase/chat";
 import { Message } from "@ai-sdk/react";
+import { SessionTone } from "@/types/chat";
+import { ENGAGEMENT_TONES, DEFAULT_TONE } from "@/lib/ai/engagementTones";
 
 interface MirrorChatProps {
     isOpen: boolean;
@@ -21,6 +23,9 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
+    const [sessionTone, setSessionTone] = useState<SessionTone>(DEFAULT_TONE);
+    const [isToneOpen, setIsToneOpen] = useState(false);
+    const toneRef = useRef<HTMLDivElement>(null);
 
     // Initialize or Resume Session
     useEffect(() => {
@@ -40,6 +45,19 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
         }
     }, [uid, isOpen, sessionId]);
 
+    // Close tone dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (toneRef.current && !toneRef.current.contains(e.target as Node)) {
+                setIsToneOpen(false);
+            }
+        };
+        if (isToneOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [isToneOpen]);
+
     // Subscribe to active chat in Firestore
     useEffect(() => {
         if (!uid || !isOpen || !sessionId) return; // Only subscribe when open and session is ready
@@ -48,6 +66,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
             if (chat) {
                 setMessages(chat.messages || []);
                 setIsLoading(chat.status === "generating");
+                if (chat.sessionTone) setSessionTone(chat.sessionTone);
             } else {
                 setMessages([]);
                 setIsLoading(false);
@@ -124,6 +143,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                 body: JSON.stringify({
                     uid,
                     sessionId,
+                    sessionTone,
                     messages: newMessages
                 })
             });
@@ -156,7 +176,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                 body: JSON.stringify({
                     uid,
                     sessionId,
-                    messages: messages // The last message in the array is already the user's message
+                    sessionTone,
+                    messages: messages
                 })
             });
         } catch (err) {
@@ -171,7 +192,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     const handleClose = () => {
         if (sessionId) {
             // "Soft close" the chat by marking it closed in Firestore
-            saveActiveChat(uid, { isClosed: true }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
+            saveActiveChat(uid, { isClosed: true, sessionTone }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
         }
 
         // Wipe local state so next open triggers a fresh/resumed session check
@@ -179,6 +200,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
         setMessages([]);
         setInput("");
         setIsLoading(false);
+        setSessionTone(DEFAULT_TONE);
+        setIsToneOpen(false);
 
         // Immediately close UI
         onClose();
@@ -226,6 +249,60 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                             >
                                 <X className="w-5 h-5" />
                             </button>
+                        </div>
+
+                        {/* Tone Selector */}
+                        <div className="px-4 py-2 border-b border-zinc-800/30 bg-zinc-950/60 shrink-0">
+                            <div className="relative" ref={toneRef}>
+                                <button
+                                    onClick={() => setIsToneOpen(!isToneOpen)}
+                                    className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors group"
+                                >
+                                    <span className="uppercase tracking-widest font-bold text-[10px] text-zinc-600">Mode</span>
+                                    <span className="text-emerald-400/80 font-medium">{ENGAGEMENT_TONES[sessionTone].label}</span>
+                                    <ChevronDown className={cn("w-3 h-3 transition-transform", isToneOpen && "rotate-180")} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isToneOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -4 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute top-full left-0 mt-1.5 z-20 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden min-w-[220px]"
+                                        >
+                                            {(Object.entries(ENGAGEMENT_TONES) as [SessionTone, typeof ENGAGEMENT_TONES[SessionTone]][]).map(([key, tone]) => (
+                                                <button
+                                                    key={key}
+                                                    onClick={() => {
+                                                        setSessionTone(key);
+                                                        setIsToneOpen(false);
+                                                        // Persist tone change immediately
+                                                        if (sessionId) {
+                                                            saveActiveChat(uid, { sessionTone: key }, sessionId).catch(err => console.error("Failed to save tone:", err));
+                                                        }
+                                                    }}
+                                                    className={cn(
+                                                        "w-full text-left px-4 py-2.5 flex flex-col gap-0.5 transition-colors",
+                                                        key === sessionTone
+                                                            ? "bg-emerald-950/30 border-l-2 border-emerald-500"
+                                                            : "hover:bg-zinc-800/50 border-l-2 border-transparent"
+                                                    )}
+                                                >
+                                                    <span className={cn(
+                                                        "text-sm font-medium",
+                                                        key === sessionTone ? "text-emerald-400" : "text-zinc-300"
+                                                    )}>
+                                                        {tone.label}
+                                                    </span>
+                                                    <span className="text-[11px] text-zinc-500">{tone.description}</span>
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
 
                         {/* Messages Area */}
