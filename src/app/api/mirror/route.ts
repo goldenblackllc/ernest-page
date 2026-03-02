@@ -33,7 +33,6 @@ export async function POST(req: Request) {
         const userBriefing = [
             sourceCode.things_i_enjoy ? `What They Enjoy: ${sourceCode.things_i_enjoy}` : null,
             sourceCode.important_people ? `Important People in Their Life: ${sourceCode.important_people}` : null,
-            sourceCode.current_constraints ? `Their Current Reality & Constraints: ${sourceCode.current_constraints}` : null,
         ].filter(Boolean).join('\n');
 
         // Get the tone directive
