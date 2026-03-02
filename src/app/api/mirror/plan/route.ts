@@ -23,18 +23,17 @@ export async function POST(req: Request) {
         const systemPrompt = `You are a Character Simulation Engine running this Character Bible:
 ${JSON.stringify(compiledBible, null, 2)}
 
-You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their 24-hour action plan.
+You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their action plan covering the rest of today AND tomorrow.
 
 RULES:
-- Distill the conversation into 1 to 3 high-impact, concrete directives.
-- Each directive should be something achievable in the next 24 hours.
-- Focus on major priorities, not micro-tasks.
+- Distill the conversation into 3 to 5 concrete, high-impact directives.
+- Cover BOTH the remainder of today AND tomorrow. Include at least one directive for tonight and at least one for tomorrow morning or afternoon.
 - Write each directive in Character A's voice — direct, actionable, personal.
 - You MUST separate each directive using a double-pipe delimiter '||'.
 - Do NOT add bullet points, numbers, or any other formatting.
 - Do NOT output generic productivity advice. Every directive must be specifically tied to what was discussed.
 
-Example output: 'Wake up at 5AM and write for 30 minutes before anyone else is awake.||Call your mother and tell her what you told me.||Delete the app that's wasting your evenings.'`;
+Example output: 'Go eat that cookie with full attention — no screen, just the ritual.||Before bed tonight, write one sentence about what you learned at Sage's session.||Tomorrow morning, wake up 20 minutes early and sit with your coffee before anyone else is up.||Call your mother tomorrow afternoon and tell her what you told me.||Tomorrow evening, delete the app that's been eating your nights.'`;
 
         const conversationContext = messages.map((m: any) =>
             `${m.role === 'user' ? 'USER' : 'CHARACTER'}: ${m.content}`
