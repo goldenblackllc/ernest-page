@@ -221,26 +221,10 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     };
 
     const handleClose = () => {
-        const hasConversation = messages.length >= 2;
-
-        // Auto-publish to feed if toggle is ON and conversation has substance
-        if (autoPublish && hasConversation) {
-            const postId = crypto.randomUUID();
-            window.dispatchEvent(new CustomEvent('checkin-publishing-start', { detail: { postId } }));
-
-            fetch('/api/checkin/post', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    postId,
-                    uid,
-                    messages,
-                })
-            }).catch(e => console.error('Background publish failed:', e));
-        }
-
         if (sessionId) {
-            saveActiveChat(uid, { isClosed: true, sessionTone }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
+            // Pass autoPublish preference to the chat session — the cron job reads this
+            // to decide whether to generate a public post from this conversation
+            saveActiveChat(uid, { isClosed: true, sessionTone, autoPublish }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
         }
 
         // Wipe local state

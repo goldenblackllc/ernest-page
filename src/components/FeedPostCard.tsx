@@ -32,6 +32,7 @@ interface FeedPostProps {
         counsel?: string;
         rant?: string;
         conversation_messages?: ConversationMessage[];
+        content_raw?: string;
         public_post?: {
             title?: string;
             pseudonym?: string;
@@ -64,6 +65,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
     const isAuthor = user?.uid === postAuthorId;
     const hasPrivateData = Boolean(
         (post.conversation_messages && post.conversation_messages.length > 0) ||
+        post.content_raw ||
         (post.rant && post.counsel)
     );
 
@@ -300,7 +302,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                                         </h3>
                                     </div>
 
-                                    {/* Conversation Transcript (new) */}
+                                    {/* Conversation Transcript (new - array format) */}
                                     {post.conversation_messages && post.conversation_messages.length > 0 ? (
                                         <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
                                             {post.conversation_messages.map((msg, idx) => (
@@ -321,6 +323,32 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                                                     </ReactMarkdown>
                                                 </div>
                                             ))}
+                                        </div>
+                                    ) : post.content_raw ? (
+                                        /* Conversation transcript (string format from cron) */
+                                        <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                                            {post.content_raw.split('\n').filter(line => line.trim()).map((line, idx) => {
+                                                const isUser = line.startsWith('user:');
+                                                const content = line.replace(/^(user|assistant):\s*/i, '');
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className={cn(
+                                                            "text-sm whitespace-pre-wrap leading-snug p-3 rounded-lg",
+                                                            isUser
+                                                                ? "bg-black/40 border border-white/5 text-zinc-400 italic"
+                                                                : "bg-emerald-950/30 border border-emerald-900/20 text-zinc-200"
+                                                        )}
+                                                    >
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 block mb-1">
+                                                            {isUser ? 'You' : 'Character'}
+                                                        </span>
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                                                            {content}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <>

@@ -11,4 +11,5 @@ export interface ActiveChat {
     createdAt: number;
     isClosed?: boolean;  // Flag for when user manually closes chat
     sessionTone?: SessionTone; // Engagement tone for this session
+    autoPublish?: boolean; // Whether to generate a public post from this conversation
 }

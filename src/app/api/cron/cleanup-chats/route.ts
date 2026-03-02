@@ -44,9 +44,10 @@ export async function GET(req: Request) {
                     // Process if abandoned via timeout or explicitly closed by user
                     if (isExpired || isClosedByUser) {
                         const messages = chatData.messages || [];
+                        const shouldPublish = chatData.autoPublish !== false; // Default to true (publish) unless explicitly opted out
 
-                        // Only generate a post if there is actual conversation content (e.g. User -> AI -> User)
-                        if (messages.length > 0) {
+                        // Only generate a post if there is actual conversation content AND user hasn't opted out
+                        if (messages.length > 0 && shouldPublish) {
                             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
                             const prompt = `Character A is defined by the following Character Bible:
