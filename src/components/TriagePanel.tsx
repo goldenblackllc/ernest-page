@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
-import CheckInWizardModal from "@/components/checkin/CheckInWizardModal";
-import { Plus, Target, MessageCircle, Home, User as UserIcon } from "lucide-react";
+import { MessageCircle, Home, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
@@ -15,9 +14,6 @@ export function TriagePanel() {
     const { user } = useAuth();
     const pathname = usePathname();
 
-    // Global Action States
-    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
-    const [isCheckInOpen, setIsCheckInOpen] = useState(false);
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
 
     // Data for Mirror Chat
@@ -31,111 +27,31 @@ export function TriagePanel() {
         return () => unsubscribe();
     }, [user]);
 
-    // Close menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (isFabMenuOpen && !target.closest('.fab-container')) {
-                setIsFabMenuOpen(false);
-            }
-        };
-
-        if (isFabMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isFabMenuOpen]);
-
-
-    // --- RENDER ---
     return (
         <>
             {/* BOTTOM NAV BAR */}
             <div className="fixed bottom-0 left-0 w-full z-40 bg-black/90 backdrop-blur-md border-t border-zinc-800 pb-safe">
                 <div className="max-w-md mx-auto px-8 h-16 flex items-center justify-between relative">
-                    {/* Left: Home */}
                     <Link href="/" className={cn("p-2 transition-colors", pathname === "/" ? "text-emerald-500" : "text-zinc-500 hover:text-white")}>
                         <Home className="w-6 h-6" />
                     </Link>
-
-                    {/* Right: Profile */}
                     <Link href="/profile" className={cn("p-2 transition-colors", pathname === "/profile" ? "text-emerald-500" : "text-zinc-500 hover:text-white")}>
                         <UserIcon className="w-6 h-6" />
                     </Link>
                 </div>
             </div>
 
-            {/* FAB CONTAINER (Fixed Bottom Center) */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 fab-container flex flex-col items-center">
-
-                {/* ACTION MENU POP-UP */}
-                <div
-                    className={cn(
-                        "absolute bottom-20 flex flex-col gap-3 w-64 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 rounded-3xl p-3 shadow-2xl transition-all duration-300 origin-bottom",
-                        isFabMenuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4 pointer-events-none"
-                    )}
-                >
-                    <button
-                        onClick={() => {
-                            setIsFabMenuOpen(false);
-                            setIsCheckInOpen(true);
-                        }}
-                        className="flex items-center gap-4 w-full p-4 rounded-2xl hover:bg-zinc-800 transition-colors group text-left"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-blue-950/50 border border-blue-900/50 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-                            <Target className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-white font-bold text-sm mb-0.5">Daily Check-In</div>
-                            <div className="text-zinc-500 text-xs line-clamp-1">Get your daily counsel and action plan.</div>
-                        </div>
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            setIsFabMenuOpen(false);
-                            setIsMirrorOpen(true);
-                        }}
-                        className="flex items-center gap-4 w-full p-4 rounded-2xl hover:bg-zinc-800 transition-colors group text-left"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-emerald-950/50 border border-emerald-900/50 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-                            <MessageCircle className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-white font-bold text-sm mb-0.5">Talk to Ideal Self</div>
-                            <div className="text-zinc-500 text-xs line-clamp-1">Free-flowing chat with your Ideal Self.</div>
-                        </div>
-                    </button>
-                </div>
-
-                {/* MAIN FAB BUTTON */}
+            {/* FAB — Opens Mirror Chat directly */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
                 <button
-                    onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
-                    className={cn(
-                        "w-16 h-16 rounded-full bg-white text-black shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black",
-                        isFabMenuOpen ? "rotate-45 scale-110" : "hover:scale-110 active:scale-95"
-                    )}
+                    onClick={() => setIsMirrorOpen(true)}
+                    className="w-16 h-16 rounded-full bg-white text-black shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black hover:scale-110 active:scale-95"
                 >
-                    <Plus className="w-8 h-8" />
+                    <MessageCircle className="w-7 h-7" />
                 </button>
             </div>
 
-            {/* BACKDROP BLUR FOR MENU */}
-            {isFabMenuOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
-                    onClick={() => setIsFabMenuOpen(false)}
-                />
-            )}
-
-            {/* MODALS */}
-            {isCheckInOpen && (
-                <CheckInWizardModal
-                    isOpen={true}
-                    onClose={() => setIsCheckInOpen(false)}
-                />
-            )}
-
+            {/* Mirror Chat Modal */}
             <MirrorChat
                 isOpen={isMirrorOpen}
                 onClose={() => setIsMirrorOpen(false)}

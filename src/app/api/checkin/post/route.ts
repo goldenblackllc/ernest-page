@@ -16,15 +16,22 @@ export async function POST(req: Request) {
     const uid = body.uid;
     const postId = body.postId;
     const rant = body.rant || "";
-    const counsel = body.counsel; // Passed from frontend to save to DB
+    const conversationMessages = body.messages || []; // Mirror Chat conversation
+    const counsel = body.counsel;
     const directives = body.directives || [];
     const imageUrl = body.imageUrl;
 
-    if (!uid || !rant) {
+    // Build combined rant from conversation messages if no direct rant provided
+    const combinedRant = rant || conversationMessages
+      .filter((m: any) => m.role === 'user')
+      .map((m: any) => m.content)
+      .join('\n\n');
+
+    if (!uid || !combinedRant) {
       return Response.json(
         {
           error:
-            "UID and Rant text are required to generate and save a public post.",
+            "UID and content are required to generate and save a public post.",
         },
         { status: 400 },
       );
@@ -51,13 +58,14 @@ export async function POST(req: Request) {
       : db.collection("posts").doc();
     await postRef.set({
       uid: uid,
-      userId: uid, // Including both for backwards compatibility across older Ledger versions
+      userId: uid,
       authorId: uid,
       region: region,
       type: "checkin",
-      rant: rant,
+      rant: combinedRant,
       counsel: counsel,
-      status: "processing", // Marker for frontend Ledger to show spinner
+      ...(conversationMessages.length > 0 && { conversation_messages: conversationMessages }),
+      status: "processing",
       created_at: FieldValue.serverTimestamp(),
       is_public: true,
       ...(imageUrl && { imageUrl }),
@@ -82,7 +90,7 @@ Character A runs an elite advice feed on a fast-paced mainstream social media ap
 Their job is to edit this rant into a compelling, anonymous public post, and provide their authoritative response. 
 
 The raw rant:
-"${rant}"
+"${combinedRant}"
 
 Output a JSON object with six keys:
 title: A punchy, scroll-stopping social media hook (4-8 words). DO NOT write an academic summary or use textbook phrasing like "Navigating X and Y." Create a curiosity gap or highlight the gritty, raw contrast of the user's situation. It should sound like a viral confession or a gripping advice column headline. (e.g., 'Paralyzed by the Trash', 'Success feels like drowning', 'When the work isn't enough', 'Software, Survival, and Guilt'). No clickbait or emojis.

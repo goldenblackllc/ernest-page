@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark, Heart, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,20 +13,26 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import Image from 'next/image';
 
-interface CheckInPostProps {
+interface ConversationMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+interface FeedPostProps {
     post: {
         id: string;
-        uid: string; // Original creator uid
-        authorId?: string; // New Tracking id
+        uid: string;
+        authorId?: string;
         type: 'checkin';
         title?: string;
-        pseudonym?: string; // New Dear Earnest Schema
-        letter?: string;    // New Dear Earnest Schema
-        response?: string;  // New Dear Earnest Schema
-        tension?: string;   // Legacy Support
-        counsel?: string;   // Legacy Support
-        rant?: string;      // Raw User Input
-        public_post?: {     // Strict Top-Level Schema
+        pseudonym?: string;
+        letter?: string;
+        response?: string;
+        tension?: string;
+        counsel?: string;
+        rant?: string;
+        conversation_messages?: ConversationMessage[];
+        public_post?: {
             title?: string;
             pseudonym?: string;
             letter?: string;
@@ -44,7 +52,7 @@ interface CheckInPostProps {
     savedPosts?: string[];
 }
 
-export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts = [] }: CheckInPostProps) {
+export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [] }: FeedPostProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
@@ -54,11 +62,13 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
 
     const postAuthorId = post.authorId || post.uid;
     const isAuthor = user?.uid === postAuthorId;
-    const hasPrivateData = Boolean(post.rant && post.counsel);
+    const hasPrivateData = Boolean(
+        (post.conversation_messages && post.conversation_messages.length > 0) ||
+        (post.rant && post.counsel)
+    );
 
     const [localLiked, setLocalLiked] = useState<boolean>(post.likedBy?.includes(user?.uid || "") || false);
 
-    // Sync with props when they change
     useEffect(() => {
         if (user) {
             setLocalLiked(post.likedBy?.includes(user.uid) || false);
@@ -69,15 +79,11 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
     const isFollowing = postAuthorId && followingMap && followingMap[postAuthorId];
     const customAlias = isFollowing ? followingMap[postAuthorId] : null;
 
-    // Static Content Resolution (Front Face)
+    // Public face content
     const publicLetter = post.public_post?.letter || post.letter || post.tension;
     const publicResponse = post.public_post?.response || post.response || post.counsel;
     const publicPseudonym = post.public_post?.pseudonym || post.pseudonym || "Anonymous";
     const publicTitle = post.public_post?.title || post.title;
-
-    // Static Content Resolution (Back Face)
-    const privateRant = post.rant;
-    const privateCounsel = post.counsel;
 
     if (!publicLetter || !publicResponse) {
         return null;
@@ -101,9 +107,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
         if (!user || user.uid !== post.uid) return;
         const newStatus = !post.is_public;
         try {
-            await updateDoc(doc(db, "posts", post.id), {
-                is_public: newStatus
-            });
+            await updateDoc(doc(db, "posts", post.id), { is_public: newStatus });
         } catch (error) {
             console.error("Error toggling privacy:", error);
         }
@@ -112,17 +116,13 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
     const toggleLike = async () => {
         if (!user) return;
         const isLiked = localLiked;
-
-        // Optimistic update
         setLocalLiked(!isLiked);
-
         try {
             await updateDoc(doc(db, "posts", post.id), {
                 likedBy: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
             });
         } catch (error) {
             console.error("Error toggling like:", error);
-            // Revert on error
             setLocalLiked(isLiked);
         }
     };
@@ -133,46 +133,34 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
         const newSavedPosts = isSaved
             ? savedPosts.filter(id => id !== post.id)
             : [...savedPosts, post.id];
-
         try {
-            await updateDoc(doc(db, "users", user.uid), {
-                saved_posts: newSavedPosts
-            });
+            await updateDoc(doc(db, "users", user.uid), { saved_posts: newSavedPosts });
         } catch (error) {
             console.error("Error toggling bookmark:", error);
         }
     };
 
-    if (isDeleting) return null; // Optimistic hide
+    if (isDeleting) return null;
 
-    const isLongPrivateCounsel = privateCounsel ? privateCounsel.length > 400 : false;
+    const isLongPrivateCounsel = (post.counsel || '').length > 400;
     const displayedPrivateCounsel = isLongPrivateCounsel && !isResponseExpanded
-        ? privateCounsel?.slice(0, 400) + "..."
-        : privateCounsel;
+        ? post.counsel?.slice(0, 400) + "..."
+        : post.counsel;
 
     return (
         <div className="bg-[#1a1a1a] border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
-            {/* 1. Main Header Wrapper */}
+            {/* Header */}
             <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 mb-2 w-full">
-
-                {/* Avatar */}
                 <div className="shrink-0">
                     <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                         <User className="w-5 h-5 text-emerald-500" />
                     </div>
                 </div>
-
-                {/* Text Stack */}
                 <div className="flex flex-col flex-1 min-w-0">
-
-                    {/* Top Row: Name + Dropdown */}
                     <div className="flex flex-row items-center gap-2 w-full">
-                        {/* THE NAME - Crucial: truncate ensures it shrinks gracefully with '...' */}
                         <span className="text-sm font-semibold text-white truncate">
                             {isAuthor ? "Me" : customAlias ? `Counsel from ${customAlias}` : "Dear Earnest"}
                         </span>
-
-                        {/* THE DROPDOWN - Crucial: shrink-0 ensures it never gets crushed */}
                         <div className="shrink-0 flex items-center gap-2">
                             {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
                                 <button
@@ -182,7 +170,6 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                     + Follow Author
                                 </button>
                             )}
-                            {/* Audience Badge */}
                             {user?.uid === post.uid && (
                                 <button
                                     onClick={togglePrivacy}
@@ -204,23 +191,17 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                             )}
                         </div>
                     </div>
-
-                    {/* Bottom Row: Timestamp */}
                     <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         <span>{timeAgo}</span>
                     </div>
-
                 </div>
-
             </div>
 
             {/* Body */}
             <div className="p-0 flex flex-col pt-4">
-
                 {/* 3D Perspective Container */}
                 <div className="relative w-full [perspective:1000px] mb-4">
-                    {/* Inner Flipper */}
                     <div className={cn(
                         "relative w-full transition-transform duration-700 [transform-style:preserve-3d]",
                         isFlipped && "[transform:rotateY(180deg)]"
@@ -244,7 +225,6 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                 </div>
                             )}
 
-                            {/* The Title */}
                             {publicTitle && (
                                 <div className="px-3 sm:px-4">
                                     <h2 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2 leading-tight">
@@ -253,7 +233,6 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                 </div>
                             )}
 
-                            {/* The Image (With Privacy Blur) */}
                             {post.imageUrl && (
                                 <div className="px-3 sm:px-4 mb-2">
                                     <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
@@ -275,7 +254,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                 </div>
                             )}
 
-                            {/* The Public Letter & Response (Teaser Logic) */}
+                            {/* Public Letter & Response */}
                             <div className={cn("px-3 sm:px-4 pb-3 sm:pb-4 mt-1", !isExpanded && "mb-2")}>
                                 <p className={cn(
                                     "text-sm sm:text-[15px] italic text-zinc-300 whitespace-pre-wrap leading-snug",
@@ -293,7 +272,6 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                     </button>
                                 ) : (
                                     <>
-                                        {/* The Public Response */}
                                         <div className="mt-2 text-zinc-100 whitespace-pre-wrap text-sm sm:text-[15px] leading-snug opacity-100 transition-all [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-3 [&>p:last-child]:mb-0">
                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{publicResponse}</ReactMarkdown>
                                         </div>
@@ -308,7 +286,7 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                             </div>
                         </div>
 
-                        {/* --- BACK FACE (Private Vault) --- */}
+                        {/* --- BACK FACE (Private Vault — Conversation Transcript) --- */}
                         {isAuthor && hasPrivateData && (
                             <div className={cn(
                                 "w-full top-0 left-0 [backface-visibility:hidden] [transform:rotateY(180deg)] transition-opacity duration-300 px-3 sm:px-4",
@@ -318,38 +296,65 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                                     <div className="flex items-center gap-2 mb-4 border-b border-emerald-900/30 pb-3">
                                         <Lock className="w-4 h-4 text-emerald-500" />
                                         <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest">
-                                            Raw Input & Counsel
+                                            {post.conversation_messages ? 'Raw Conversation' : 'Raw Input & Counsel'}
                                         </h3>
                                     </div>
 
-                                    {/* The Raw Rant */}
-                                    <div className="mb-6">
-                                        <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">My Raw Input</h4>
-                                        <p className="text-sm italic text-zinc-400 whitespace-pre-wrap leading-snug p-3 bg-black/40 rounded-lg border border-white/5">
-                                            {privateRant}
-                                        </p>
-                                    </div>
-
-                                    {/* The Raw Counsel */}
-                                    <div>
-                                        <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Raw AI Counsel</h4>
-                                        <div className="text-zinc-200 whitespace-pre-wrap text-sm sm:text-[15px] leading-snug [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-3 [&>p:last-child]:mb-0">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedPrivateCounsel || ""}</ReactMarkdown>
+                                    {/* Conversation Transcript (new) */}
+                                    {post.conversation_messages && post.conversation_messages.length > 0 ? (
+                                        <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                                            {post.conversation_messages.map((msg, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className={cn(
+                                                        "text-sm whitespace-pre-wrap leading-snug p-3 rounded-lg",
+                                                        msg.role === 'user'
+                                                            ? "bg-black/40 border border-white/5 text-zinc-400 italic"
+                                                            : "bg-emerald-950/30 border border-emerald-900/20 text-zinc-200"
+                                                    )}
+                                                >
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 block mb-1">
+                                                        {msg.role === 'user' ? 'You' : 'Character'}
+                                                    </span>
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                                                        {msg.content}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            ))}
                                         </div>
-
-                                        {isLongPrivateCounsel && (
-                                            <button
-                                                onClick={() => setIsResponseExpanded(!isResponseExpanded)}
-                                                className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
-                                            >
-                                                {isResponseExpanded ? (
-                                                    <>Read Less <ChevronUp className="w-3 h-3" /></>
-                                                ) : (
-                                                    <>Read More <ChevronDown className="w-3 h-3" /></>
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
+                                    ) : (
+                                        <>
+                                            {/* Legacy: Raw Rant + Counsel */}
+                                            {post.rant && (
+                                                <div className="mb-6">
+                                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">My Raw Input</h4>
+                                                    <p className="text-sm italic text-zinc-400 whitespace-pre-wrap leading-snug p-3 bg-black/40 rounded-lg border border-white/5">
+                                                        {post.rant}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {post.counsel && (
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Raw AI Counsel</h4>
+                                                    <div className="text-zinc-200 whitespace-pre-wrap text-sm sm:text-[15px] leading-snug [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-3 [&>p:last-child]:mb-0">
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedPrivateCounsel || ""}</ReactMarkdown>
+                                                    </div>
+                                                    {isLongPrivateCounsel && (
+                                                        <button
+                                                            onClick={() => setIsResponseExpanded(!isResponseExpanded)}
+                                                            className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
+                                                        >
+                                                            {isResponseExpanded ? (
+                                                                <>Read Less <ChevronUp className="w-3 h-3" /></>
+                                                            ) : (
+                                                                <>Read More <ChevronDown className="w-3 h-3" /></>
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -399,7 +404,6 @@ export function CheckInPostCard({ post, followingMap, onFollowClick, savedPosts 
                         )}
                     </div>
 
-                    {/* Delete Button (Relocated from header) */}
                     {user?.uid === post.uid && (
                         <button
                             onClick={handleDelete}

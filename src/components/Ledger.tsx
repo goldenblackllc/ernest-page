@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { collection, query, orderBy, limit, where, getDocs, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { CheckInPostCard } from "@/components/CheckInPostCard";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { FeedPostCard } from "@/components/FeedPostCard";
+import { Sparkles } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
@@ -195,14 +195,14 @@ export function Ledger() {
                 </div>
             )}
 
-            {entries.filter(e => e.type !== 'recast').map((entry, index) => {
+            {entries.map((entry, index) => {
                 const isAdSlot = (index + 1) % 5 === 0;
                 const adIndex = Math.floor(index / 5);
                 const ad = ecosystemAds[adIndex % ecosystemAds.length];
 
                 return (
                     <React.Fragment key={`entry-group-${entry.id}`}>
-                        <CheckInPostCard
+                        <FeedPostCard
                             key={entry.id}
                             post={entry as any}
                             followingMap={profile?.following}

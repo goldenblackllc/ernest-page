@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CharacterBible } from "@/types/character";
-import { X, Send, User, Sparkles, Square, RefreshCcw, ChevronDown } from "lucide-react";
+import { X, Send, User, Sparkles, Square, RefreshCcw, ChevronDown, Target, Globe, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +26,9 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     const [sessionTone, setSessionTone] = useState<SessionTone>(DEFAULT_TONE);
     const [isToneOpen, setIsToneOpen] = useState(false);
     const toneRef = useRef<HTMLDivElement>(null);
+    const [autoPublish, setAutoPublish] = useState(true);
+    const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+    const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
 
     // Initialize or Resume Session
     useEffect(() => {
@@ -189,21 +192,67 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     const idealName = bible?.source_code?.archetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_bible?.avatar_url;
 
+    const handleGeneratePlan = async () => {
+        if (isGeneratingPlan || messages.length < 2) return;
+        setIsGeneratingPlan(true);
+        setPlanConfirmation(null);
+
+        try {
+            const res = await fetch('/api/mirror/plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, messages })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPlanConfirmation(`Plan updated — ${data.directives.length} directive${data.directives.length !== 1 ? 's' : ''} set`);
+                setTimeout(() => setPlanConfirmation(null), 4000);
+            } else {
+                setPlanConfirmation('Failed to generate plan. Try again.');
+                setTimeout(() => setPlanConfirmation(null), 4000);
+            }
+        } catch (err) {
+            console.error('Failed to generate plan:', err);
+            setPlanConfirmation('Failed to generate plan.');
+            setTimeout(() => setPlanConfirmation(null), 4000);
+        } finally {
+            setIsGeneratingPlan(false);
+        }
+    };
+
     const handleClose = () => {
+        const hasConversation = messages.length >= 2;
+
+        // Auto-publish to feed if toggle is ON and conversation has substance
+        if (autoPublish && hasConversation) {
+            const postId = crypto.randomUUID();
+            window.dispatchEvent(new CustomEvent('checkin-publishing-start', { detail: { postId } }));
+
+            fetch('/api/checkin/post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    postId,
+                    uid,
+                    messages,
+                })
+            }).catch(e => console.error('Background publish failed:', e));
+        }
+
         if (sessionId) {
-            // "Soft close" the chat by marking it closed in Firestore
             saveActiveChat(uid, { isClosed: true, sessionTone }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
         }
 
-        // Wipe local state so next open triggers a fresh/resumed session check
+        // Wipe local state
         setSessionId(null);
         setMessages([]);
         setInput("");
         setIsLoading(false);
         setSessionTone(DEFAULT_TONE);
         setIsToneOpen(false);
+        setAutoPublish(true);
+        setPlanConfirmation(null);
 
-        // Immediately close UI
         onClose();
     };
 
@@ -397,6 +446,56 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                                     >
                                         <RefreshCcw className="w-3 h-3" />
                                         Regenerate Response
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Plan Confirmation Toast */}
+                            <AnimatePresence>
+                                {planConfirmation && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 8 }}
+                                        className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs bg-emerald-950/80 text-emerald-400 px-4 py-1.5 rounded-full border border-emerald-900/50 shadow-lg whitespace-nowrap"
+                                    >
+                                        {planConfirmation}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Action Bar: Generate Plan + Auto-Publish Toggle */}
+                            {messages.length >= 2 && (
+                                <div className="flex items-center justify-between mb-3">
+                                    <button
+                                        onClick={handleGeneratePlan}
+                                        disabled={isGeneratingPlan || isLoading}
+                                        className={cn(
+                                            "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all border",
+                                            isGeneratingPlan
+                                                ? "bg-emerald-950/50 text-emerald-500 border-emerald-900/50 animate-pulse"
+                                                : "bg-zinc-800 text-zinc-400 border-zinc-700/50 hover:text-white hover:bg-zinc-700"
+                                        )}
+                                    >
+                                        <Target className="w-3.5 h-3.5" />
+                                        {isGeneratingPlan ? 'Generating...' : 'Generate Plan'}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setAutoPublish(!autoPublish)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
+                                    >
+                                        {autoPublish ? (
+                                            <>
+                                                <Globe className="w-3 h-3 text-blue-400" />
+                                                <span className="text-blue-400">Publish on Close</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Lock className="w-3 h-3 text-zinc-500" />
+                                                <span>Private Session</span>
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             )}
