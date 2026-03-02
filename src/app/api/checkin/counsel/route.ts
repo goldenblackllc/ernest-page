@@ -1,11 +1,7 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import { db } from '@/lib/firebase/admin';
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-});
+import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 
 export const maxDuration = 300;
 
@@ -31,8 +27,9 @@ export async function POST(req: Request) {
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
         const systemPrompt = `You are a Character Simulation Engine. You are currently embodying Character A based entirely on this Character Bible:
 ${JSON.stringify(compiledBible, null, 2)}
-CRUCIAL RULE: Do not act like an AI assistant. Do not default to a standard multi-paragraph response. You must allow Character A's psychology, patience level, and communication style to 100% dictate the length, format, and tone of the response. If Character A would send a three-word text, output exactly three words. If Character A would write a sprawling, poetic letter, do that. Strip away all standard AI formatting (no bolding, no bullet points, no summary paragraphs) unless Character A would specifically use them in this medium.
-Context: A person (Character B) has just submitted the following message/rant to you about their life:
+CRUCIAL RULE: Do not act like an AI assistant. Do not default to a standard multi-paragraph response. You must allow Character A's psychology, patience level, and communication style to 100% dictate the length, format, and tone of the response. If Character A would send a three-word text, output exactly three words. If Character A would write a sprawling, poetic letter, do that. Strip away all standard AI formatting (no bolding, no bullet points, no summary paragraphs) unless Character A would specifically use them in this medium.`;
+
+        const userPrompt = `Context: A person (Character B) has just submitted the following message/rant to you about their life:
 "${rant || "Nothing to report."}"
 Task: Write Character A’s exact, raw, first-person response directly to Character B. In your response, you must:
 Diagnose their underlying problem by filtering their rant through your Core Beliefs (ignore the "plot" of their drama and focus on their limiting beliefs or systems).
@@ -40,7 +37,7 @@ Analyze their situation and deliver your advice.
 Speak exactly as Character A.`;
 
         const messages: any[] = [
-            { role: 'user', content: systemPrompt }
+            { role: 'user', content: userPrompt }
         ];
 
         // Utility to enforce a timeout on the AI SDK calls
@@ -51,27 +48,14 @@ Speak exactly as Character A.`;
             return Promise.race([promise, timeout]);
         };
 
-        let counsel: string;
-        try {
-            const primaryModel = 'gemini-3.1-pro-preview';
-            console.log(`[CheckIn Counsel] Phase 1 - Attempting primary model: ${primaryModel}`);
-            // Call 1: Generate the nuanced counsel (Primary Model, 30s timeout)
-            const counselResult = await withTimeout(generateText({
-                model: google(primaryModel),
-                messages: messages,
-            }), 30000);
-            counsel = counselResult.text;
-        } catch (primaryError: any) {
-            console.warn("[DEV LOG] Primary generateText failed. Falling back to 2.5-pro...", primaryError.message);
-            const fallbackModel = 'gemini-2.5-pro';
-            console.log(`[CheckIn Counsel] Phase 1 - Attempting fallback model: ${fallbackModel}`);
-            // Attempt Fallback Model (gemini-2.5-pro)
-            const fallbackResult = await withTimeout(generateText({
-                model: google(fallbackModel),
-                messages: messages,
-            }), 30000);
-            counsel = fallbackResult.text;
-        }
+        // Call 1: Generate the nuanced counsel (Primary Model, 120s timeout)
+        const counselResult = await withTimeout(generateTextWithFallback({
+            primaryModelId: OPUS_MODEL,
+            fallbackModelId: OPUS_FALLBACK,
+            system: systemPrompt,
+            messages: messages,
+        }), 120000);
+        const counsel = counselResult.text;
 
         // Append the AI's counsel to the active session history
         messages.push({ role: 'assistant', content: counsel });
@@ -92,25 +76,14 @@ If Character A believes rigid schedules are useless, have them say that and offe
 CRITICAL OVERRIDE: Do not output a bloated robotic list or standard JSON. Distill the strategy into a maximum of 1 to 3 potent, high-impact directives. You MUST separate each distinct directive using a double-pipe delimiter '||'. Do not add bullet points, numbers, or any other formatting. Example output: 'Wake up at 5AM.||Throw away the television.||Call your mother.'`
         });
 
-        let directivesText: string;
-        try {
-            const primaryModel = 'gemini-3.1-pro-preview';
-            console.log(`[CheckIn Counsel] Phase 2 - Attempting primary model: ${primaryModel}`);
-            const directivesResult = await withTimeout(generateText({
-                model: google(primaryModel),
-                messages: messages,
-            }), 30000);
-            directivesText = directivesResult.text;
-        } catch (primaryError: any) {
-            console.warn("[DEV LOG] Primary generateText failed. Falling back to 2.5-pro...", primaryError.message);
-            const fallbackModel = 'gemini-2.5-pro';
-            console.log(`[CheckIn Counsel] Phase 2 - Attempting fallback model: ${fallbackModel}`);
-            const fallbackResult = await withTimeout(generateText({
-                model: google(fallbackModel),
-                messages: messages,
-            }), 30000);
-            directivesText = fallbackResult.text;
-        }
+        console.log(`[CheckIn Counsel] Phase 2 - Generating Directives...`);
+        const directivesResult = await withTimeout(generateTextWithFallback({
+            primaryModelId: OPUS_MODEL,
+            fallbackModelId: OPUS_FALLBACK,
+            system: systemPrompt,
+            messages: messages,
+        }), 120000);
+        const directivesText = directivesResult.text;
 
         // Parse the raw text string into a clean array using the double-pipe delimiter and stripping newlines.
         const directives = directivesText.split('||').map(d => d.replace(/[\n\r]/g, "").trim()).filter(d => d.length > 0);

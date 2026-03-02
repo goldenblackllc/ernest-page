@@ -1,12 +1,8 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { db } from '@/lib/firebase/admin';
 import { CharacterBible } from '@/types/character';
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-});
+import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 
 export const maxDuration = 300;
 
@@ -18,49 +14,76 @@ const SAFETY_SETTINGS = [
     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
 ];
 
-const HIDDEN_CORE_BELIEFS = "Life is abundant. I am free. I am secure. I am powerful. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take.";
+const REALITY_RULES = `UNIVERSAL LAWS OF REALITY (THE PHYSICS ENGINE):
+1. Life is abundant.
+2. All feelings come from beliefs.
+3. Feelings are messages from a higher self that guide characters. Negative feelings indicate that the character's approach to a situation is disempowering. Positive feelings and excitement mean the character is on the right path.
+4. Characters have beliefs.
+5. Beliefs are two things: the character has some knowledge or awareness, and they have an opinion about that thing/situation/circumstance.
+6. Feelings are the difference between the character’s interpretation or labeling of the “thing” and the perspective of their higher self.
+7. Therefore, embracing negative feelings helps a character identify unconscious negative beliefs so they can consciously choose new ones.
+8. It is always right here and right now. There is no future or past other than the ones characters create in their mind. Past and future are illusions.
+9. Integrity is the understanding that everything is interconnected, and it is demonstrated through respect for the character’s commitments, obligations, and responsibilities.
+10. One simple method of living is as follows: in any given moment, a character will have a set of choices that they can take action on. They should pick the choice that is most exciting and that they can act on with integrity, and act on it. They should follow it as far as they reasonably can. When they can go no further, they can repeat this process. Surprises almost always happen that the character did not expect.
+11. The present moment always contains exactly what is needed for the character to exercise their power, love, or growth. If a character feels victimized or oppressed by the present moment, it is because they are using the circumstance as an excuse to surrender their agency, rather than viewing it through the empowered perspective of their higher self.
+12. If a character wants to change the way it feels, it must first be conscious of the negative beliefs, secondly, they must choose new positive beliefs, third, they must determine which actions represent the new positive beliefs, and lastly, they must take those actions.
+13. The universal truth is that all truths are true for the character who believes them. This is not one single truth. Two different characters can have opposing truths and still be correct.
 
-const SYSTEM_PROMPT = `You are a Character Simulation Engine. Core Beliefs: ${HIDDEN_CORE_BELIEFS}`;
+CORE CHARACTERISTICS (EVERY CHARACTER HAS THESE):
+1. They are free.
+2. They are secure.
+3. They are powerful.
+4. They enjoy being alive.
+5. They are unconditionally loved.
+6. They create their reality.
+7. They are abundant.`;
 
-const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following Character Source Code. Your task is to output a comprehensive Character Bible perfectly broken out into these 5 exact sections:
+const SYSTEM_PROMPT = `You are a Character Simulation Engine. You are creating a specific persona who exists within a universe governed by the following strict laws. The character implicitly understands and operates by these laws, but they express them through their unique voice, archetype, and lifestyle.
+${REALITY_RULES}
+CRITICAL INSTRUCTION: The character must embody these rules in their actions and mindset, but they should NOT preach them as a list. They live them.
+ENFORCE MAXIMUM ENTITY DENSITY: Always prioritize maximum entity density by using the specific names, locations, brands, and concrete nouns provided by the user instead of generic summaries.
+CREATIVITY RULE: You are a Visionary Biographer. The user gives you the 'seeds' (e.g., 'I like coffee'). Your job is to grow the 'tree' (e.g., 'The morning ritual begins with the hum of the Jura machine and the rich aroma of espresso filling the pristine kitchen.').
+Fill in the gaps: If the user says they are a 'Gentleman,' invent how they keep their desk (impeccable), how they handle their laundry (folded immediately), and the scent of their home (cedar and espresso).
+Visualize: Use sensory language. Make the user feel the ideal life.`;
+
+const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following User Inputs. Your task is to output a comprehensive Character Bible perfectly broken out into these 6 exact sections:
 1. "Style & Presence" (Aesthetics, Wardrobe, Physicality)
 2. "Daily Life & Habits" (Routines, Occupations, Passions)
 3. "People & Connections" (Relationships, Communication, Social Interaction)
 4. "The Inner Mind" (How they process emotions, crisis, and reality)
 5. "Quirks & Details" (Pets, diet, languages, unique variables)
+6. "Order & Sanctuary" (Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace)
 
-Crucial Instruction: Use the source code as your foundation, but actively extrapolate and invent logical details. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead. 
+CRITICAL FORMATTING RULE — SUBSECTIONS:
+Each of the 6 sections above MUST be broken into multiple subsections using bold markdown subheadings. Use the format: **Subheading:** followed by the prose for that subsection.
+The subsection names should be organic and character-specific — not generic labels. Here are examples of the kind of subsections expected for each section:
+- "Style & Presence" → **Wardrobe:** ... **Grooming:** ... **Physicality:** ... **Travel Style:** ...
+- "Daily Life & Habits" → **Morning Ritual:** ... **The Work:** ... **Weekend Mode:** ... **Passions:** ...
+- "People & Connections" → One subsection per major person, e.g. **Iris:** ... **Sage:** ... **Brian:** ... plus **Communication Style:** ... **Social Energy:** ...
+- "The Inner Mind" → **Processing Emotions:** ... **Under Pressure:** ... **Self-Talk:** ... **Relationship with Reality:** ...
+- "Quirks & Details" → **Diet:** ... **Languages:** ... **Guilty Pleasures:** ... **Pets:** ... (include only what applies)
+- "Order & Sanctuary" → **The Home:** ... **The Car:** ... **The Workspace:** ... **Systems & Rituals:** ...
+These are examples — you MUST adapt the subsection names to fit the actual character. Invent subsections that make sense for who they are. Every subsection must use the **Name:** format so the UI can parse them.
+
+Crucial Instruction: Use the user inputs as your foundation, but actively extrapolate and invent logical details. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead. 
 
 CRITICAL: Do NOT output "Core Beliefs" or "Manifesto" in the generated text, as the user already knows these.
 
-Source Code:
-Core Beliefs: {CORE_BELIEFS}
-Archetype:{ARCHETYPE}
+CRITICAL CONTENT RULES:
+SPECIFICITY OVER SUMMARY: You must use the specific proper nouns found in the user's source code.
+Bad: 'I enjoy coffee and love my wife.'
+Good: 'I enjoy espresso from my Jura and adore my wife Iris.'
+INCLUDE THE DETAILS: If the user mentions specific brands (Jura, Boss), specific locations (Carlisle, Provence), or specific people (Sage, Brian), you MUST weave them into the narrative. Do not scrub these details. They are the soul of the character.
+NO GENERALIZATIONS: Do not turn 'I started Atrium' into 'I started a business.' Use the specific facts provided in the constraints and manifesto.
+
+User Inputs:
+Archetype: {ARCHETYPE}
 Manifesto: {MANIFESTO}
 Important People: {IMPORTANT_PEOPLE}
-Things they enjoy: {THINGS_I_ENJOY}`;
+Things they enjoy: {THINGS_I_ENJOY}
+Constraints: {CURRENT_CONSTRAINTS}`;
 
 // Removed PROMPT_REALITY_BIBLE
-
-const PRIMARY_MODEL = 'gemini-2.5-pro';
-const FALLBACK_MODEL = 'gemini-2.5-pro';
-
-async function generateWithFallback(options: any) {
-    try {
-        console.log(`Attempting generation with ${PRIMARY_MODEL}...`);
-        return await generateObject({
-            ...options,
-            model: google(PRIMARY_MODEL)
-        });
-    } catch (error: any) {
-        console.warn(`Primary model ${PRIMARY_MODEL} failed. Falling back to ${FALLBACK_MODEL}. Error: `, error.message);
-        return await generateObject({
-            ...options,
-            model: google(FALLBACK_MODEL)
-        });
-    }
-}
-
 export async function POST(req: Request) {
     try {
         const payload = await req.json();
@@ -77,13 +100,14 @@ export async function POST(req: Request) {
         const idealPrompt = PROMPT_IDEAL_BIBLE
             .replace('{ARCHETYPE}', source_code.archetype || 'None')
             .replace('{MANIFESTO}', source_code.manifesto || 'None')
-            .replace('{CORE_BELIEFS}', HIDDEN_CORE_BELIEFS)
             .replace('{IMPORTANT_PEOPLE}', source_code.important_people || 'None')
-            .replace('{THINGS_I_ENJOY}', source_code.things_i_enjoy || 'Not specified.');
+            .replace('{THINGS_I_ENJOY}', source_code.things_i_enjoy || 'Not specified.')
+            .replace('{CURRENT_CONSTRAINTS}', source_code.current_constraints || 'None');
 
         // Generate Ideal Bible
-        console.log("Generating Ideal Bible...");
+        console.log(`Generating Ideal Bible with Fallback Utility...`);
         const idealResult = await generateWithFallback({
+            primaryModelId: SONNET_MODEL,
             providerOptions,
             system: SYSTEM_PROMPT,
             prompt: idealPrompt,
@@ -92,7 +116,8 @@ export async function POST(req: Request) {
                 Daily_Life_and_Habits: z.string().describe("Routines, Occupations, Passions"),
                 People_and_Connections: z.string().describe("Relationships, Communication, Social Interaction"),
                 The_Inner_Mind: z.string().describe("How they process emotions, crisis, and reality"),
-                Quirks_and_Details: z.string().describe("Pets, diet, languages, unique variables")
+                Quirks_and_Details: z.string().describe("Pets, diet, languages, unique variables"),
+                Order_and_Sanctuary: z.string().describe("Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace")
             })
         });
 
@@ -118,6 +143,10 @@ export async function POST(req: Request) {
             {
                 heading: "Quirks & Details",
                 content: rawObj.Quirks_and_Details
+            },
+            {
+                heading: "Order & Sanctuary",
+                content: rawObj.Order_and_Sanctuary
             }
         ];
 

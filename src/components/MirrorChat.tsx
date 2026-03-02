@@ -61,11 +61,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     useEffect(() => {
         if (!isLoading) return;
 
-        // If the loading state persists for 40 seconds, automatically stop it
+        // If the loading state persists for 130 seconds, automatically stop it
         const watchdog = setTimeout(() => {
             console.warn("Watchdog Timer triggered: Chat generation hung. Force stopping.");
             stop();
-        }, 40000);
+        }, 130000);
 
         return () => clearTimeout(watchdog);
     }, [isLoading, sessionId]);

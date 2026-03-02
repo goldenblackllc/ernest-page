@@ -1,11 +1,6 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
 import { db } from '@/lib/firebase/admin';
 import { waitUntil } from '@vercel/functions';
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-});
+import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 
 export const maxDuration = 300;
 
@@ -64,36 +59,22 @@ Write the raw, exact response in the first person. Speak directly to Character B
         waitUntil((async () => {
             let result;
             try {
-                const primaryModel = 'gemini-3.1-pro-preview';
-                console.log(`[MirrorChat] Attempting primary model: ${primaryModel}`);
-                // Attempt Primary Model
-                result = await generateText({
-                    model: google(primaryModel),
+                console.log(`[MirrorChat] Attempting generation with fallback utility`);
+                // Attempt Generation
+                result = await generateTextWithFallback({
+                    primaryModelId: OPUS_MODEL,
+                    fallbackModelId: OPUS_FALLBACK,
                     system: systemPrompt,
                     messages,
-                    abortSignal: AbortSignal.timeout(30000)
+                    abortSignal: AbortSignal.timeout(120000)
                 });
             } catch (primaryError: any) {
-                console.warn("Primary Model Failed (Timeout or Error). Falling back to gemini-2.5-pro...", primaryError.message);
-
-                try {
-                    const fallbackModel = 'gemini-2.5-pro';
-                    console.log(`[MirrorChat] Attempting fallback model: ${fallbackModel}`);
-                    // Attempt Fallback Model (gemini-2.5-pro)
-                    result = await generateText({
-                        model: google(fallbackModel),
-                        system: systemPrompt,
-                        messages,
-                        abortSignal: AbortSignal.timeout(30000)
-                    });
-                } catch (fallbackError: any) {
-                    console.error("Fallback Model also failed. Aborting generation.", fallbackError.message);
-                    await activeChatRef.set({
-                        status: 'idle', // Reset to idle so user can retry
-                        updatedAt: Date.now()
-                    }, { merge: true });
-                    return; // Exit early
-                }
+                console.error("Primary Model also failed. Aborting generation.", primaryError.message);
+                await activeChatRef.set({
+                    status: 'idle', // Reset to idle so user can retry
+                    updatedAt: Date.now()
+                }, { merge: true });
+                return; // Exit early
             }
 
             // Update Firestore with the successful assistant response

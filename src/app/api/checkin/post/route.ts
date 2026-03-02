@@ -1,16 +1,10 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateObject } from "ai";
 import { z } from "zod";
 import { db, storage } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { after } from "next/server";
+import { generateWithFallback, SONNET_MODEL } from "@/lib/ai/models";
 
-const google = createGoogleGenerativeAI({
-  apiKey:
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY,
-});
+
 
 export const maxDuration = 300;
 
@@ -101,8 +95,8 @@ Identify the 'Hero Object' from this conversation (e.g., a bar of soap, a beard 
 imagen_prompt: Write a prompt for Google Imagen 3 to create a high-end, editorial macro-photograph of this object. Crucial Rules: Must be highly photorealistic. Use terms like 'macro shot', 'cinematic lighting', 'editorial photography'. NEVER include humans, faces, or text. Focus entirely on texture, lighting, and objects.
 unsplash_query: Provide a 1-to-2 word search term to find a real stock photograph of this object (e.g., 'artisan soap', 'dark marble').`;
 
-        const result = await generateObject({
-          model: google("gemini-2.5-pro"),
+        const result = await generateWithFallback({
+          primaryModelId: SONNET_MODEL,
           prompt: prompt,
           schema: z.object({
             title: z.string(),
@@ -114,7 +108,14 @@ unsplash_query: Provide a 1-to-2 word search term to find a real stock photograp
           }),
         });
 
-        const postData = result.object;
+        const postData = result.object as {
+          title: string;
+          pseudonym: string;
+          letter: string;
+          response: string;
+          imagen_prompt: string;
+          unsplash_query: string;
+        };
 
         let imagen_url = null;
         let unsplash_url = null;
