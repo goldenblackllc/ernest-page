@@ -465,7 +465,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                             </AnimatePresence>
 
                             {/* Action Bar: Generate Plan + Auto-Publish Toggle */}
-                            {messages.length >= 2 && (
+                            {messages.length >= 1 && (
                                 <div className="flex items-center justify-between mb-3">
                                     <button
                                         onClick={handleGeneratePlan}
