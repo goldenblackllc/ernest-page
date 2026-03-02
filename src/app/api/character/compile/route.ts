@@ -18,7 +18,7 @@ const SAFETY_SETTINGS = [
     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
 ];
 
-const HIDDEN_CORE_BELIEFS = "Life is abundant. I am free. I am secure. I am powerful. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take. Negative feelings are the result of unconscious negative beliefs. Denying them doesn't make the negativity go away; owning it does. It is crucial to embrace these feelings to uncover the hidden beliefs beneath them. Once brought into the conscious mind, you can actively choose a new, positive belief. I embrace my negative emotions because I know their depth is actually quite shallow. Fear and denial make the barrel seem bottomless, but the bottom is never far away. Negative emotions are simply messengers. They are trying to tell me something, and I need to start listening. I am always pursuing my moment of excitement with integrity. Excitement is my barometer, telling me which way to go. If I get frustrated, I realize that it's time to head in another direction.";
+const HIDDEN_CORE_BELIEFS = "Life is abundant. I am free. I am secure. I am powerful. I enjoy being alive. I am happy. All feelings come from beliefs. I create reality. I create my life through the choices that I make, and I make those choices real by the actions I take.";
 
 const SYSTEM_PROMPT = `You are a Character Simulation Engine. Core Beliefs: ${HIDDEN_CORE_BELIEFS}`;
 
