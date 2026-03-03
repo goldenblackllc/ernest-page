@@ -51,3 +51,10 @@
     @apply !outline-none !ring-0 !border-zinc-700;
   }
 }
+
+/* Hide the reCAPTCHA badge (floating logo in corner).
+   Google requires attribution text when hiding it — our landing page
+   footer ("By signing up...") satisfies this requirement. */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}

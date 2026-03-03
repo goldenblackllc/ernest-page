@@ -46,7 +46,7 @@ interface FeedPostProps {
         unsplash_url?: string;
         created_at: Timestamp;
         is_public?: boolean;
-        likedBy?: string[];
+        isLikedByMe?: boolean;
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
@@ -69,13 +69,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
         (post.rant && post.counsel)
     );
 
-    const [localLiked, setLocalLiked] = useState<boolean>(post.likedBy?.includes(user?.uid || "") || false);
+    const [localLiked, setLocalLiked] = useState<boolean>(post.isLikedByMe || false);
 
     useEffect(() => {
-        if (user) {
-            setLocalLiked(post.likedBy?.includes(user.uid) || false);
-        }
-    }, [post.likedBy, user]);
+        setLocalLiked(post.isLikedByMe || false);
+    }, [post.isLikedByMe]);
 
     // Following resolution
     const isFollowing = postAuthorId && followingMap && followingMap[postAuthorId];

@@ -4,7 +4,8 @@
 **North Star:** "Premium Native Mobile Social."
 The app must look indistinguishable from Instagram, X (Twitter), or TikTok.
 *   **Style Guide:** Minimalist, clean, content-first. Standard bottom navigation bars, standard profile headers, standard feed layouts.
-*   **Negative Constraints (DO NOT DO):** Do not make it look like a video game, a sci-fi interface, or a dashboard. Do not use "techy" fonts or "HUD" aesthetics. If it wouldn't look out of place on an influencer's phone, it's wrong.
+*   **Core Principle:** The app must ALWAYS look and feel like mainstream social media (Twitter/X, Instagram, TikTok). Never cinematic, never dashboard-like, never sci-fi. If a design decision doesn't match what you'd see on a top-tier social app, it's wrong.
+*   **Negative Constraints (DO NOT DO):** Do not make it look like a video game, a sci-fi interface, or a dashboard. Do not use "techy" fonts or "HUD" aesthetics. Do not use cinematic hero sections, parallax, or "landing page" aesthetics. If it wouldn't look out of place on an influencer's phone, it's wrong.
 
 ## 2. Conceptual Function (The Logic Only)
 **Metaphor:** "Character Editor."
@@ -12,8 +13,8 @@ The app must look indistinguishable from Instagram, X (Twitter), or TikTok.
 *   **The Magic:** The "gameplay" is in the text/content, not the buttons.
 
 ## 3. Core Vision: "Mainstream Social Media for Self-Actualization"
-**Earnest Page is a designed to feel like Instagram or TikTok, but built to function like a Character Editor for Reality.**
-*   **The Aesthetic:** High-gloss, cinematic, "Mainstream Social" UI/UX. It uses the familiar visual language of top-tier apps (Insta/TikTok/Twitter) to ensure immediate adoption and intuitive use.
+**Earnest Page is designed to feel like Instagram or TikTok, but built to function like a Character Editor for Reality.**
+*   **The Aesthetic:** "Mainstream Social" UI/UX. It uses the familiar visual language of top-tier apps (Insta/TikTok/Twitter) to ensure immediate adoption and intuitive use.
 *   **The Hook:** It leverages the same powerful dopamine loops and frictionless interactions of addictive social media, but redirects them toward **Self-Correction** and **Growth** rather than distraction.
 *   **The Ethical North Star:** Our metric for success is NOT "Time on App," but "User Empowerment." We win when the user feels happier, stronger, and more capable *offline*.
 
@@ -54,12 +55,16 @@ The app is global-first.
 *   **On-Demand Translation:** When a user views a post in a different language, we generate a translation *of the Public Version* and store it within the post document.
 *   **Cache Strategy:** We never re-translate. Once a language variant exists, it is served to all future requests for that language.
 
+### C. Likes & Social Metrics
+*   **No vanity metrics.** We never display like counts, follower counts, or engagement numbers.
+*   **Like state is private.** A user can only see whether *they* have liked a post. The `likedBy` array is never sent to the client.
+
 ## 6. Technical Architecture
 **Stack:**
 *   **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS (v4).
 *   **UX Pattern:** Infinite feeds, rapid-fire posting, visual-heavy interfaces (resembling TikTok/Twitter mechanics).
-*   **Backend:** Firebase (Firestore, Phone OTP Auth, Admin SDK).
-*   **AI:** Vercel AI SDK + Google Gemini (primary: `gemini-3.1-pro-preview`, fallback: `gemini-2.5-pro`).
+*   **Backend:** Firebase (Firestore, Phone OTP Auth via App Check, Admin SDK).
+*   **AI:** Vercel AI SDK + Anthropic Claude Sonnet (primary).
     *   *Usage:* Powers Ghost-Writing, Translation, and conversational features (Mirror Chat, Counsel).
     *   *Prompting:* Governed by a strict "Anti-AI Directive" to ensure responses are strictly character-driven simulations. We present it to the user as an "Algorithm", not an AI.
 
@@ -67,11 +72,12 @@ The app is global-first.
 *   **`users/{userId}/character_bible`:** The dynamic user profile.
 *   **`posts`:** The "Changelogs".
     *   `title`: (String) A high-gloss, 4-8 word editorial headline.
-    *   `content_raw`: (String) The private input.
+    *   `content_raw`: (String) The private input. **Never sent to non-author clients.**
     *   `content_public`: (String) The sanitized AI output.
     *   `language_source`: (String) e.g., "en", "es", "jp".
     *   `translations`: (Map) `{ "es": "...", "fr": "..." }`.
     *   `is_public`: (Boolean).
+    *   `likedBy`: (Array) UIDs. **Server-side only — clients receive `isLikedByMe: boolean`.**
 *   **`rules`:** The logic blocks governing behavior.
 
 ## 7. Current Implementation Status
@@ -80,3 +86,39 @@ The app is global-first.
     *   **The Social Feed:** Feeds are mature, featuring polished Post Cards with editorial titles.
     *   **Character Bible:** Fully active with detailed View/Edit modes and extensive customization.
 *   **In Development:** Further refinement of the "Character Editor" suite and expansion of deep-conversational algorithms.
+
+## 8. File Map & Agent Quickstart
+
+### How to Run
+```bash
+npm run dev   # starts Next.js dev server on http://localhost:3000
+```
+**Required env vars** (in `.env.local`): `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `GEMINI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `UNSPLASH_ACCESS_KEY`, `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY`.
+
+### Key Directories
+| Directory | Purpose |
+|-----------|---------|
+| `src/app/` | Next.js App Router pages and API routes |
+| `src/app/api/` | Server-side API routes (checkin, mirror, character, upload, cron) |
+| `src/components/` | All React components |
+| `src/components/auth/` | `OTPLogin.tsx` (phone auth), `ProtectedRoute.tsx` |
+| `src/lib/firebase/` | Firebase config (`config.ts` client, `admin.ts` server), `posts.ts` |
+| `src/lib/auth/` | `AuthContext.tsx` (React auth provider) |
+| `src/lib/ai/` | AI model configuration (`models.ts`) |
+| `src/types/` | TypeScript type definitions |
+| `src/config/` | App configuration (ecosystem ads, etc.) |
+
+### Critical Files
+| File | What it does |
+|------|-------------|
+| `src/app/page.tsx` | Main page — shows landing (unauth) or dashboard (auth) |
+| `src/components/Ledger.tsx` | The feed — fetches and renders posts |
+| `src/components/FeedPostCard.tsx` | Individual post card with flip (public/private) |
+| `src/components/MirrorChat.tsx` | Conversational AI interface |
+| `src/components/TriagePanel.tsx` | Entry point for check-in flow |
+| `src/app/api/checkin/post/route.ts` | Creates posts with AI ghost-writing |
+| `src/app/api/posts/feed/route.ts` | Server-side feed with privacy sanitization |
+| `src/lib/firebase/admin.ts` | Firebase Admin SDK (server-side Firestore) |
+
+### Related Docs
+*   **[Design System](./DESIGN_SYSTEM.md)**: UI/UX standards, color palettes, component guidelines.

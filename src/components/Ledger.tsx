@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { collection, query, orderBy, limit, where, getDocs, doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
@@ -9,17 +9,20 @@ import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
 import { FeedAdCard } from "@/components/FeedAdCard";
 import { ecosystemAds } from "@/config/ecosystem";
+import { Timestamp } from "firebase/firestore";
 
 export function Ledger() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [entries, setEntries] = useState<any[]>([]);
+    const [followingMap, setFollowingMap] = useState<Record<string, string>>({});
+    const [savedPosts, setSavedPosts] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [pendingPostId, setPendingPostId] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<string | null>(null);
 
-    // 1. Subscribe to User Profile
+    // Subscribe to user profile (needed for FollowAuthorModal)
     useEffect(() => {
         if (!user) return;
         const unsub = subscribeToCharacterProfile(user.uid, (p) => {
@@ -28,113 +31,48 @@ export function Ledger() {
         return () => unsub();
     }, [user]);
 
-    // 2. Fetch the Blended Feed Algorithm
-    const fetchBlendedFeed = useCallback(async () => {
-        if (!user || !profile) return;
+    // Fetch the feed from the server-side API
+    const fetchFeed = useCallback(async () => {
+        if (!user) return;
         setIsRefreshing(true);
 
         try {
-            const followingMap = profile.following || {};
-            const followedIds = Object.keys(followingMap);
-            let myRegion = profile.region || "";
-
-            if (!myRegion) {
-                try {
-                    const res = await fetch('/api/user/region', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ uid: user.uid })
-                    });
-                    const data = await res.json();
-                    if (data.region) {
-                        myRegion = data.region;
-                    }
-                } catch (e) {
-                    console.error("Failed to sync initial region:", e);
-                }
-            }
-
-            const postsRef = collection(db, "posts");
-            let blendedPosts: any[] = [];
-            const seenIds = new Set<string>();
-
-            // Helper to add unique posts
-            const addPosts = (docs: any[]) => {
-                docs.forEach(doc => {
-                    if (!seenIds.has(doc.id)) {
-                        seenIds.add(doc.id);
-                        blendedPosts.push({ id: doc.id, ...doc.data() });
-                    }
-                });
-            };
-
-            // Bucket A: Mine
-            // Note: We avoid composite indexes by fetching without order and sorting locally 
-            // since this is a personal filter. But let's try ordering first.
-            const queryA = query(postsRef, where("authorId", "==", user.uid), orderBy("created_at", "desc"), limit(10));
-            try {
-                const snapA = await getDocs(queryA);
-                addPosts(snapA.docs);
-            } catch (e) {
-                // Fallback if index is missing (e.g. fresh deployment)
-                const fallbackA = query(postsRef, where("authorId", "==", user.uid), limit(20));
-                const snapA = await getDocs(fallbackA);
-                addPosts(snapA.docs);
-            }
-
-            // Bucket B: Following (Chunked because 'in' supports max 10)
-            if (followedIds.length > 0) {
-                // Chunk into arrays of 10
-                for (let i = 0; i < followedIds.length; i += 10) {
-                    const chunk = followedIds.slice(i, i + 10);
-                    const queryB = query(postsRef, where("authorId", "in", chunk), orderBy("created_at", "desc"), limit(10));
-                    try {
-                        const snapB = await getDocs(queryB);
-                        addPosts(snapB.docs);
-                    } catch (e) {
-                        const fallbackB = query(postsRef, where("authorId", "in", chunk), limit(20));
-                        const snapB = await getDocs(fallbackB);
-                        addPosts(snapB.docs);
-                    }
-                }
-            }
-
-            // Bucket C: Discovery
-            const queryC = query(postsRef, orderBy("created_at", "desc"), limit(25));
-            const snapC = await getDocs(queryC);
-
-            const discoveryDocs = snapC.docs.filter(doc => {
-                const data = doc.data();
-                const isMe = data.authorId === user.uid;
-                const isFollowed = followedIds.includes(data.authorId);
-                const isSameRegion = myRegion && data.region === myRegion;
-                return !isMe && !isFollowed && !isSameRegion;
+            const idToken = await user.getIdToken();
+            const res = await fetch('/api/posts/feed', {
+                headers: { 'Authorization': `Bearer ${idToken}` },
             });
 
-            addPosts(discoveryDocs.slice(0, 15)); // Limit discovery to 15 after filtering
+            if (!res.ok) {
+                throw new Error(`Feed API returned ${res.status}`);
+            }
 
-            // Final Sort: Chronological descending
-            blendedPosts.sort((a, b) => {
-                const aTime = a.created_at?.toMillis() || 0;
-                const bTime = b.created_at?.toMillis() || 0;
-                return bTime - aTime;
+            const data = await res.json();
+
+            // Convert serialized timestamps back to Firestore Timestamps for compatibility
+            const posts = (data.posts || []).map((post: any) => {
+                if (post.created_at && post.created_at._seconds !== undefined) {
+                    post.created_at = new Timestamp(post.created_at._seconds, post.created_at._nanoseconds || 0);
+                }
+                return post;
             });
 
-            setEntries(blendedPosts);
+            setEntries(posts);
+            setFollowingMap(data.following || {});
+            setSavedPosts(data.savedPosts || []);
         } catch (error) {
-            console.error("Failed to fetch blended feed:", error);
+            console.error("Failed to fetch feed:", error);
         } finally {
             setLoading(false);
             setIsRefreshing(false);
         }
-    }, [user, profile]);
+    }, [user]);
 
-    // Initial load when profile becomes available
+    // Initial load
     useEffect(() => {
-        if (profile && loading) {
-            fetchBlendedFeed();
+        if (user && loading) {
+            fetchFeed();
         }
-    }, [profile, loading, fetchBlendedFeed]);
+    }, [user, loading, fetchFeed]);
 
     // Listen for checkout-publishing-start
     useEffect(() => {
@@ -142,7 +80,6 @@ export function Ledger() {
             const id = e.detail?.postId;
             if (id) {
                 setPendingPostId(id);
-                // Also optimistically scroll to top or just let the feed render the spinner
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         };
@@ -153,7 +90,7 @@ export function Ledger() {
         };
     }, []);
 
-    // Monitor the background check-in post
+    // Monitor the background check-in post (own post — no privacy concern)
     useEffect(() => {
         if (!pendingPostId) return;
 
@@ -162,13 +99,13 @@ export function Ledger() {
                 const data = snapshot.data();
                 if (data.status === 'completed' || data.status === 'failed') {
                     setPendingPostId(null);
-                    fetchBlendedFeed(); // Fetch the new post to show in feed
+                    fetchFeed();
                 }
             }
         });
 
         return () => unsub();
-    }, [pendingPostId, fetchBlendedFeed]);
+    }, [pendingPostId, fetchFeed]);
 
     if (loading) {
         return <div className="p-12 text-center text-xs uppercase tracking-widest animate-pulse">Syncing Reality...</div>;
@@ -205,9 +142,9 @@ export function Ledger() {
                         <FeedPostCard
                             key={entry.id}
                             post={entry as any}
-                            followingMap={profile?.following}
+                            followingMap={followingMap}
                             onFollowClick={(id) => setSelectedAuthorToFollow(id)}
-                            savedPosts={profile?.saved_posts || []}
+                            savedPosts={savedPosts}
                         />
                         {isAdSlot && <FeedAdCard ad={ad} />}
                     </React.Fragment>
@@ -223,4 +160,3 @@ export function Ledger() {
         </section>
     );
 }
-
