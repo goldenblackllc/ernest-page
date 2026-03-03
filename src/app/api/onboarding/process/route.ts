@@ -1,0 +1,167 @@
+import { z } from "zod";
+import { db } from "@/lib/firebase/admin";
+import { generateWithFallback, SONNET_MODEL } from "@/lib/ai/models";
+import { FieldValue } from "firebase-admin/firestore";
+
+export const maxDuration = 120;
+
+const PROCESS_PROMPT = `You are a Character Simulation Engine for a personal development platform.
+
+A user has written a "dream rant" — a raw, unstructured description of who they wish they were, their ideal life, and their aspirations. Your job is to process this into three outputs:
+
+1. TITLE: Extract 3 concrete, VISUAL roles from the rant. These should be nouns/roles that instantly paint a picture of who this person is — not abstract traits. The roles should be gendered when appropriate (e.g., "Father" not "Parent", "Gentleman" not "Person", "Mother" not "Caregiver"). Infer gender from context clues in the rant (mentions of being a father/mother, husband/wife, he/she, etc.). Use gendered language naturally.
+   - GOOD: "Father, Husband, Gentleman" or "R&B Artist, Son" or "Chef, Traveler, Mother"
+   - BAD: "Disciplined, Present, Free" (these are traits, not visual roles)
+   - BAD: "Leader, Innovator, Visionary" (too corporate/generic)
+   The title should be something someone could share with a stranger, and that stranger would immediately picture a type of person. Format: "Role, Role, Role"
+
+2. DREAM SELF: Write a present-tense identity paragraph (3-5 sentences) describing this person AS IF THEY ALREADY ARE who they described. CRITICAL: The user may express desires as wishes ("I want to be rich", "I wish I was fit"). You MUST transform ALL wish-language into present-tense identity. "I wish I was rich" → "I am financially abundant." "I want to be a better father" → "I am a present, engaged father." The output must read as a confident, realized identity — never aspirational. Use pronouns/gendered language consistent with the rant.
+
+3. INITIAL DOSSIER: Extract any concrete facts mentioned (location, family, occupation, preferences, gender). Format as a structured document. If facts are sparse, that's fine — the dossier will grow over time through conversations.
+
+The dream rant:
+"{RANT}"`;
+
+const DOSSIER_TEMPLATE = `DOSSIER — {TITLE}
+Updated: {DATE} | Sessions: 0
+
+═══ PROFILE ═══
+{PROFILE_FACTS}
+
+═══ KEY PEOPLE ═══
+{PEOPLE}
+
+═══ ACTIVE GOALS ═══
+{GOALS}
+
+═══ PREFERENCES & STYLE ═══
+{PREFERENCES}`;
+
+export async function POST(req: Request) {
+    try {
+        const body = await req.json();
+        const { uid, rant, gender, age } = body;
+
+        if (!uid || !rant) {
+            return Response.json(
+                { error: "UID and rant are required." },
+                { status: 400 }
+            );
+        }
+
+        // Prepend gender/age context to the rant so the AI has it
+        const contextPrefix = [
+            gender ? `The user identifies as: ${gender}.` : null,
+            age ? `Age: ${age}.` : null,
+        ].filter(Boolean).join(' ');
+
+        const rantWithContext = contextPrefix
+            ? `${contextPrefix}\n\n${rant}`
+            : rant;
+
+        const prompt = PROCESS_PROMPT.replace("{RANT}", rantWithContext);
+
+        const result = await generateWithFallback({
+            primaryModelId: SONNET_MODEL,
+            prompt,
+            schema: z.object({
+                title: z.string().describe("3 visual roles, comma-separated"),
+                dream_self: z.string().describe("Present-tense identity paragraph, 3-5 sentences"),
+                dossier: z.object({
+                    profile_facts: z.string().describe("Location, occupation, family — or 'Not yet known' if sparse"),
+                    people: z.string().describe("Key people mentioned with relationships — or 'Not yet known'"),
+                    goals: z.string().describe("Goals extracted from the rant"),
+                    preferences: z.string().describe("Tastes, brands, routines mentioned — or 'Not yet known'"),
+                }),
+            }),
+        });
+
+        const data = result.object as {
+            title: string;
+            dream_self: string;
+            dossier: {
+                profile_facts: string;
+                people: string;
+                goals: string;
+                preferences: string;
+            };
+        };
+
+        // Build the dossier document
+        const today = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+        const dossierText = DOSSIER_TEMPLATE
+            .replace("{TITLE}", data.title)
+            .replace("{DATE}", today)
+            .replace("{PROFILE_FACTS}", data.dossier.profile_facts)
+            .replace("{PEOPLE}", data.dossier.people)
+            .replace("{GOALS}", data.dossier.goals)
+            .replace("{PREFERENCES}", data.dossier.preferences);
+
+        // Save to Firestore
+        const identity = {
+            title: data.title,
+            dream_self: data.dream_self,
+            dream_rant: rant,
+            gender: gender || '',
+            age: age || '',
+            dossier: dossierText,
+            dossier_updated_at: FieldValue.serverTimestamp(),
+            session_count: 0,
+        };
+
+        // Also populate the legacy source_code fields for backward compatibility
+        const legacySourceCode = {
+            archetype: data.title,
+            manifesto: data.dream_self,
+            core_beliefs: "",
+            important_people: data.dossier.people,
+            current_constraints: data.dossier.profile_facts,
+            things_i_enjoy: data.dossier.preferences,
+        };
+
+        await db.collection("users").doc(uid).set(
+            {
+                identity,
+                character_bible: {
+                    source_code: legacySourceCode,
+                    compiled_bible: {},
+                    compiled_output: { ideal: [] },
+                    last_updated: Date.now(),
+                },
+            },
+            { merge: true }
+        );
+
+        return Response.json({
+            success: true,
+            title: data.title,
+            dream_self: data.dream_self,
+            dossier: dossierText,
+        });
+    } catch (error: any) {
+        console.error("Onboarding Process API Error:", error);
+
+        if (
+            error.name === "AbortError" ||
+            (error.message || "").toLowerCase().includes("timeout")
+        ) {
+            return Response.json(
+                {
+                    success: false,
+                    errorType: "TIMEOUT",
+                    message: "The algorithm is taking longer than expected. Please try again.",
+                },
+                { status: 504 }
+            );
+        }
+
+        return Response.json(
+            { error: error.message || "An unexpected error occurred." },
+            { status: 500 }
+        );
+    }
+}

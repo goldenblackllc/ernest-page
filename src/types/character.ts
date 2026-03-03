@@ -1,3 +1,14 @@
+export interface CharacterIdentity {
+    title: string;              // 3 visual roles: "Father, Husband, Gentleman"
+    dream_self: string;         // Present-tense identity summary (AI-generated from rant)
+    dream_rant: string;         // Raw user input (their rant about their dream life)
+    gender: string;             // User-provided gender identity
+    age: string;                // User-provided age
+    dossier: string;            // AI-maintained structured case notes
+    dossier_updated_at?: any;   // Firestore Timestamp
+    session_count: number;      // Number of check-in/mirror sessions
+}
+
 export interface CharacterBible {
     source_code: {
         archetype: string;
@@ -28,6 +39,7 @@ export interface CharacterBible {
 
 export interface CharacterProfile {
     uid: string;
+    identity?: CharacterIdentity;   // New onboarding-driven identity
     character_bible: CharacterBible; // Now mandatory structure
     my_story?: string;
     active_todos?: Array<{ id: string, task: string, completed: boolean, created_at: any }>;
