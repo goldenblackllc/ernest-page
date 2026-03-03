@@ -1,20 +1,17 @@
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { Driver, Vision } from "@/types/recast";
-
 export interface CreatePostParams {
     content: string;
     content_raw?: string; // Original input (rant)
     authorId: string;
     authorName?: string;
     characterId?: string;
-    constraints?: string[]; // e.g. ["recast"]
+    constraints?: string[];
     tags?: string[];
-    type?: 'text' | 'recast' | 'recast_event';
+    type?: 'text';
     // Optional structured data for extended display
     rant?: string;
-    core_beliefs?: string[] | Driver[]; // Relaxed to support both
-    vision?: Vision[];
+    core_beliefs?: string[];
     likedBy?: string[];
 }
 
@@ -37,7 +34,6 @@ export async function createPost(params: CreatePostParams) {
         // Legacy / Extended
         rant: params.rant,
         core_beliefs: params.core_beliefs,
-        vision: params.vision,
 
         created_at: serverTimestamp(),
         likes: 0,

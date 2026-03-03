@@ -45,6 +45,6 @@ export interface Directive {
     status: 'active' | 'completed' | 'pending';
     type: 'PROTOCOL' | 'QUEST' | 'SIGNAL';
     createdAt: any; // Firestore Timestamp
-    source?: string; // e.g., 'recast', 'spark'
+    source?: string; // e.g., 'spark'
     expiresAt?: any;
 }

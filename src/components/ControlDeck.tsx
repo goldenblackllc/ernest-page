@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, Fingerprint, Zap, Star } from "lucide-react";
+import { Fingerprint, Zap, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -34,10 +34,7 @@ export function ControlDeck({ onIdentityClick, onTakeActionClick }: ControlDeckP
 
     return (
         <div className="grid grid-cols-4 gap-2 md:gap-4 mt-6">
-            <ControlButton
-                icon={<RefreshCw className="w-4 h-4 md:w-6 md:h-6" />}
-                label="Recast"
-            />
+
             <ControlButton
                 icon={<Fingerprint className="w-4 h-4 md:w-6 md:h-6" />}
                 label="Identity"

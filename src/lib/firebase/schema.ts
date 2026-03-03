@@ -17,15 +17,6 @@ export interface MasterAction {
     created_at: Timestamp;
 }
 
-// Collection: recasts
-// Usage: A log of the user debugging their emotions.
-export interface Recast {
-    id: string;
-    feeling: string;
-    negative_belief: string;
-    preferred_definition: string;
-    generated_action_id?: string; // Optional link to a generated action
-}
 
 // Collection: entries
 // Usage: The core "Newspaper Articles."
@@ -41,6 +32,5 @@ export interface Entry {
 export const COLLECTIONS = {
     DEFINITIONS: 'definitions',
     MASTER_ACTIONS: 'master_actions',
-    RECASTS: 'recasts',
     ENTRIES: 'entries',
 } as const;

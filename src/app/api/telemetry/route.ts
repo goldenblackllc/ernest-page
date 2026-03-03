@@ -1,10 +1,4 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
-
-// Initialize the Google provider
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
-});
+import { generateTextWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 
 export const maxDuration = 30;
 
@@ -20,8 +14,6 @@ export async function POST(req: Request) {
         const { input, type, broadcast } = await req.json();
         console.log(`Processing: ${type}, Broadcast: ${broadcast}`);
 
-        // Use 'gemini-2.0-flash' (latest experimental) - Reverting to original now that imports fixed
-        const model = google('gemini-2.0-flash');
 
         let narrative = null;
 
@@ -48,8 +40,8 @@ export async function POST(req: Request) {
                     }
                 `;
 
-                const { text } = await generateText({
-                    model: model,
+                const { text } = await generateTextWithFallback({
+                    primaryModelId: OPUS_MODEL,
                     prompt: ghostPrompt,
                 });
 
@@ -127,8 +119,8 @@ export async function POST(req: Request) {
              `;
         }
 
-        const { text: responseText } = await generateText({
-            model: model,
+        const { text: responseText } = await generateTextWithFallback({
+            primaryModelId: OPUS_MODEL,
             prompt: prompt,
         });
 
