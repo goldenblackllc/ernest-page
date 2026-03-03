@@ -3,6 +3,8 @@ import { db, storage } from '@/lib/firebase/admin';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { generateTextWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
@@ -181,6 +183,79 @@ If the transcript is valuable, synthesize it into a single anonymous post. Outpu
                                 } catch (e) {
                                     console.error("Failed to insert generated post: ", e);
                                 }
+                            }
+                        }
+
+                        // Update dossier with conversation data (runs for ALL chats with messages)
+                        if (messages.length > 0) {
+                            try {
+                                const identity = userData?.identity;
+                                if (identity) {
+                                    const chatTranscript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+                                    const currentDossier = identity.dossier || '';
+                                    const sessionCount = (identity.session_count || 0) + 1;
+
+                                    const dossierPrompt = `You are maintaining a personal consultant's client dossier. Your job is to produce an updated dossier that captures everything important about this person.
+
+CURRENT DOSSIER:
+${currentDossier}
+
+NEW SESSION TRANSCRIPT:
+${chatTranscript}
+
+WHAT COUNTS AS A FACT:
+- Only extract things the USER explicitly said about their own life: people, places, jobs, living situation, preferences, hobbies, goals, and concrete events.
+- Do NOT extract the consultant's analysis, opinions, or observations about the user's behavior or communication style.
+- Do NOT include session dynamics, meta-commentary about the conversation itself, or editorial analysis of the user's honesty or motives.
+- If in doubt, ask: "Did the user tell me this about themselves?" If the answer is no, it does not belong in the dossier.
+
+REWRITE RULES:
+- Produce a COMPLETE REWRITE of the dossier — not an append. The output replaces the current dossier entirely.
+- Keep all existing life facts that are still relevant. Drop anything outdated or contradicted by new information.
+- DROP any behavioral observations, communication analysis, or session meta-commentary that may exist in the previous dossier. These do not belong in any section.
+- The dossier must be UNDER 1200 WORDS. If it grows beyond that, prioritize: active goals > key people > profile > preferences. Cut the least actionable details.
+- Update session count to: ${sessionCount}
+- Update date to today
+- Write from the consultant's perspective — professional, structured, factual. Stick to what is known. Do not speculate.
+
+Use ONLY the following section format with ═══ headers. Do not invent, rename, merge, or add any sections beyond these four:
+
+DOSSIER — [Client Title]
+Updated: [Date] | Sessions: ${sessionCount}
+
+═══ PROFILE ═══
+Hard facts: gender, age, location, living situation, occupation, employer, life stage, identity summary
+
+═══ KEY PEOPLE ═══
+Important relationships with enough detail to reference naturally in conversation
+
+═══ ACTIVE GOALS ═══
+What they are currently working toward — concrete projects, ambitions, and active pursuits
+
+═══ PREFERENCES & STYLE ═══
+Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbies, sports teams, routines, and anything else they enjoy or favor. Do NOT include communication style or behavioral observations here.
+
+Output the complete updated dossier as plain text.`;
+
+                                    const dossierResult = await generateTextWithFallback({
+                                        primaryModelId: SONNET_MODEL,
+                                        prompt: dossierPrompt,
+                                    });
+
+                                    await userDoc.ref.set({
+                                        identity: {
+                                            ...identity,
+                                            dossier: dossierResult.text,
+                                            dossier_updated_at: FieldValue.serverTimestamp(),
+                                            session_count: sessionCount,
+                                        },
+                                    }, { merge: true });
+
+                                    console.log(`[Cron] Dossier updated for user ${uid} (session ${sessionCount})`);
+                                }
+                            } catch (dossierError: any) {
+                                console.error(`[Cron] Dossier update failed for user ${uid}:`, dossierError.message);
+                                // Don't block chat cleanup if dossier update fails
                             }
                         }
 

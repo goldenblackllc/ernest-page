@@ -39,34 +39,37 @@ ${currentDossier}
 NEW SESSION TRANSCRIPT:
 ${conversation_summary}
 
-INSTRUCTIONS:
-- Read the transcript and extract any new facts about the client (people, places, preferences, events, goals, emotional patterns)
+WHAT COUNTS AS A FACT:
+- Only extract things the USER explicitly said about their own life: people, places, jobs, living situation, preferences, hobbies, goals, and concrete events.
+- Do NOT extract the consultant's analysis, opinions, or observations about the user's behavior or communication style.
+- Do NOT include session dynamics, meta-commentary about the conversation itself, or editorial analysis of the user's honesty or motives.
+- If in doubt, ask: "Did the user tell me this about themselves?" If the answer is no, it does not belong in the dossier.
+
+REWRITE RULES:
 - Produce a COMPLETE REWRITE of the dossier — not an append. The output replaces the current dossier entirely.
-- Keep all existing facts that are still relevant. Drop anything outdated or contradicted by new information.
-- The dossier must be UNDER 1200 WORDS. If it grows beyond that, prioritize: active goals > key people > patterns > profile > preferences. Cut the least actionable details.
+- Keep all existing life facts that are still relevant. Drop anything outdated or contradicted by new information.
+- DROP any behavioral observations, communication analysis, or session meta-commentary that may exist in the previous dossier. These do not belong in any section.
+- The dossier must be UNDER 1200 WORDS. If it grows beyond that, prioritize: active goals > key people > profile > preferences. Cut the least actionable details.
 - Update session count to: ${sessionCount}
 - Update date to today
-- Write from the consultant's perspective — professional, structured, factual
+- Write from the consultant's perspective — professional, structured, factual. Stick to what is known. Do not speculate.
 
-Use this section format with ═══ headers:
+Use ONLY the following section format with ═══ headers. Do not invent, rename, merge, or add any sections beyond these four:
 
 DOSSIER — [Client Title]
 Updated: [Date] | Sessions: ${sessionCount}
 
 ═══ PROFILE ═══
-Gender, age, location, occupation, life stage, identity summary
+Hard facts: gender, age, location, living situation, occupation, employer, life stage, identity summary
 
 ═══ KEY PEOPLE ═══
 Important relationships with enough detail to reference naturally in conversation
 
 ═══ ACTIVE GOALS ═══
-What they are currently working toward — concrete and specific
-
-═══ OBSERVED PATTERNS ═══
-Recurring themes, blind spots, tendencies noticed across sessions
+What they are currently working toward — concrete projects, ambitions, and active pursuits
 
 ═══ PREFERENCES & STYLE ═══
-How they communicate, what resonates, tastes and routines
+Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbies, sports teams, routines, and anything else they enjoy or favor. Do NOT include communication style or behavioral observations here.
 
 Output the complete updated dossier as plain text.`;
 

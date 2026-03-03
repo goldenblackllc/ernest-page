@@ -71,7 +71,7 @@ export async function POST(req: Request) {
                     profile_facts: z.string().describe("Location, occupation, family — or 'Not yet known' if sparse"),
                     people: z.string().describe("Key people mentioned with relationships — or 'Not yet known'"),
                     goals: z.string().describe("Goals extracted from the rant"),
-                    preferences: z.string().describe("Tastes, brands, routines mentioned — or 'Not yet known'"),
+                    preferences: z.string().describe("Personal tastes: music, movies, books, food, drinks, brands, hobbies, routines — or 'Not yet known'"),
                 }),
             }),
         });

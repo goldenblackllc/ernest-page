@@ -85,18 +85,18 @@ export async function POST(req: Request) {
         const prompt = `Character A is defined by the following Character Bible:
 ${JSON.stringify(compiledBible, null, 2)}
 
-Character A runs an elite advice feed on a fast-paced mainstream social media app (like X or Threads). They just received the following raw rant from a user. 
+Character A runs an elite advice feed on a fast-paced mainstream social media app (like X or Threads). A user just shared the following with them — it could be a win, a struggle, a question, or a reflection.
 
-Their job is to edit this rant into a compelling, anonymous public post, and provide their authoritative response. 
+Their job is to edit this into a compelling, anonymous public post, and respond in character.
 
-The raw rant:
+What the user shared:
 "${combinedRant}"
 
 Output a JSON object with six keys:
-title: A punchy, scroll-stopping social media hook (4-8 words). DO NOT write an academic summary or use textbook phrasing like "Navigating X and Y." Create a curiosity gap or highlight the gritty, raw contrast of the user's situation. It should sound like a viral confession or a gripping advice column headline. (e.g., 'Paralyzed by the Trash', 'Success feels like drowning', 'When the work isn't enough', 'Software, Survival, and Guilt'). No clickbait or emojis.
-pseudonym: A clever 2-3 word sign-off (e.g., 'Conflicted Creator').
+title: A punchy, scroll-stopping social media title (4-8 words). Match the energy of what the user shared. If they're celebrating, the title should feel like a win. If they're struggling, it should feel raw. Examples: 'The Site Went Live Today', 'Finally Breathing After the Storm', 'Software, Survival, and Guilt', 'When the Work Isn't Enough', 'That First Real Victory'. No clickbait or emojis.
+pseudonym: A clever 2-3 word sign-off that captures the user's current state (e.g., 'Conflicted Creator', 'Grateful Builder', 'Tired Optimist').
 letter: Ghostwrite Character B's rant into a punchy social media submission. FORMATTING RULES: You MUST start exactly with: 'Dear ${archetype},' followed by a double line break (\\n\\n). Write the body of the letter. End with a double line break (\\n\\n) followed by the pseudonym (e.g., '- OVERWHELMED FATHER'). SCRUB ALL PII (names, locations).
-response: Synthesize Character A's advice. Write strictly in Character A's exact voice. FORMATTING RULES: You MUST end the response with a double line break (\\n\\n) followed exactly by: '- ${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them.
+response: Respond as Character A would — in their voice, through their worldview. If the user is celebrating, celebrate with them and show them what's next. If they need guidance, guide them. FORMATTING RULES: You MUST end the response with a double line break (\\n\\n) followed exactly by: '- ${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them.
 
 STEP 3: THE ART DIRECTOR (Image Generation)
 Identify the 'Hero Object' from this conversation (e.g., a bar of soap, a beard brush, a car interior, a cup of coffee). If there is no physical object, pick a texture or environment that represents the mood (e.g., dark marble, a ticking watch, stormy ocean).
