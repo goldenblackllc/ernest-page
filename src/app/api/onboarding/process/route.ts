@@ -40,7 +40,7 @@ Updated: {DATE} | Sessions: 0
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { uid, rant, gender, age } = body;
+        const { uid, rant, gender, age, dream_life, important_people, things_i_enjoy } = body;
 
         if (!uid || !rant) {
             return Response.json(
@@ -53,7 +53,10 @@ export async function POST(req: Request) {
         const contextPrefix = [
             gender ? `The user identifies as: ${gender}.` : null,
             age ? `Age: ${age}.` : null,
-        ].filter(Boolean).join(' ');
+            dream_life ? `Their dream life: ${dream_life}` : null,
+            important_people ? `People in their life: ${important_people}` : null,
+            things_i_enjoy ? `Things they enjoy: ${things_i_enjoy}` : null,
+        ].filter(Boolean).join('\n');
 
         const rantWithContext = contextPrefix
             ? `${contextPrefix}\n\n${rant}`
@@ -106,6 +109,9 @@ export async function POST(req: Request) {
             title: data.title,
             dream_self: data.dream_self,
             dream_rant: rant,
+            dream_life: dream_life || '',
+            important_people: important_people || '',
+            things_i_enjoy: things_i_enjoy || '',
             gender: gender || '',
             age: age || '',
             dossier: dossierText,

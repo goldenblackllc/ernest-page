@@ -6,7 +6,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { Sparkles, Loader2, ArrowRight, RotateCcw } from 'lucide-react';
 
-type OnboardingStep = 'RANT' | 'PROCESSING' | 'REVEAL';
+type OnboardingStep = 'FOUNDATION' | 'RANT' | 'PROCESSING' | 'REVEAL';
 
 interface OnboardingProps {
     onComplete: () => void;
@@ -14,10 +14,16 @@ interface OnboardingProps {
 
 export function Onboarding({ onComplete }: OnboardingProps) {
     const { user } = useAuth();
-    const [step, setStep] = useState<OnboardingStep>('RANT');
+    const [step, setStep] = useState<OnboardingStep>('FOUNDATION');
     const [gender, setGender] = useState('');
     const [age, setAge] = useState('');
     const [rant, setRant] = useState('');
+
+    // New foundation fields
+    const [dreamLife, setDreamLife] = useState('');
+    const [people, setPeople] = useState('');
+    const [enjoyments, setEnjoyments] = useState('');
+
     const [result, setResult] = useState<{
         title: string;
         dream_self: string;
@@ -35,7 +41,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             const res = await fetch('/api/onboarding/process', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: user.uid, rant: rant.trim(), gender: gender.trim(), age: age.trim() }),
+                body: JSON.stringify({
+                    uid: user.uid,
+                    rant: rant.trim(),
+                    gender: gender.trim(),
+                    age: age.trim(),
+                    dream_life: dreamLife.trim(),
+                    important_people: people.trim(),
+                    things_i_enjoy: enjoyments.trim(),
+                }),
             });
 
             const data = await res.json();
@@ -67,7 +81,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
         setStep('PROCESSING');
         try {
-            // Trigger Character Bible compilation with the new identity
             const res = await fetch('/api/character/compile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -77,9 +90,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         archetype: result.title,
                         manifesto: result.dream_self,
                         core_beliefs: '',
-                        important_people: '',
+                        important_people: people.trim(),
                         current_constraints: '',
-                        things_i_enjoy: '',
+                        things_i_enjoy: enjoyments.trim(),
+                        dream_life: dreamLife.trim(),
                     },
                 }),
             });
@@ -97,9 +111,88 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         }
     };
 
+    const canProceedFromFoundation = dreamLife.trim().length > 0 || people.trim().length > 0 || enjoyments.trim().length > 0;
+
     return (
         <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
             <div className="w-full max-w-lg mx-auto">
+
+                {/* Step 0: Foundation — Dream Life, People, Preferences */}
+                {step === 'FOUNDATION' && (
+                    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+                        <div className="text-center mb-2">
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-3">
+                                Let's Build Your World
+                            </h1>
+                            <p className="text-sm text-zinc-500 max-w-sm mx-auto leading-relaxed">
+                                The more you share, the better I can see who you really are.
+                                Be honest. Be specific. Skip what doesn't feel right.
+                            </p>
+                        </div>
+
+                        {/* Dream Life */}
+                        <div>
+                            <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">
+                                What's your dream life?
+                            </label>
+                            <textarea
+                                value={dreamLife}
+                                onChange={(e) => setDreamLife(e.target.value)}
+                                placeholder="Wake up in a sunlit loft, coffee's already brewing, no alarm clock needed..."
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[100px] resize-none leading-relaxed"
+                            />
+                        </div>
+
+                        {/* People */}
+                        <div>
+                            <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">
+                                Tell me about the people in your life
+                            </label>
+                            <textarea
+                                value={people}
+                                onChange={(e) => setPeople(e.target.value)}
+                                placeholder="My wife Sarah, my son Marcus who's 7, my best friend Dave from college, my boss who drives me insane..."
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[100px] resize-none leading-relaxed"
+                            />
+                        </div>
+
+                        {/* Enjoyments */}
+                        <div>
+                            <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">
+                                What does the dream you enjoy?
+                            </label>
+                            <textarea
+                                value={enjoyments}
+                                onChange={(e) => setEnjoyments(e.target.value)}
+                                placeholder="Cooking Italian food from scratch, running at 5am, old jazz records, building things with my hands..."
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[100px] resize-none leading-relaxed"
+                            />
+                        </div>
+
+                        <button
+                            onClick={() => setStep('RANT')}
+                            disabled={!canProceedFromFoundation}
+                            className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            Next
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+
+                        <button
+                            onClick={() => setStep('RANT')}
+                            className="text-zinc-700 text-xs text-center hover:text-zinc-400 transition-colors"
+                        >
+                            Skip for now
+                        </button>
+
+                        <button
+                            onClick={() => signOut(auth)}
+                            className="text-zinc-700 text-xs text-center hover:text-zinc-400 transition-colors -mt-2"
+                        >
+                            Sign out
+                        </button>
+                    </div>
+                )}
 
                 {/* Step 1: The Dream Rant */}
                 {step === 'RANT' && (
@@ -160,10 +253,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         </button>
 
                         <button
-                            onClick={() => signOut(auth)}
+                            onClick={() => setStep('FOUNDATION')}
                             className="text-zinc-700 text-xs text-center hover:text-zinc-400 transition-colors mt-2"
                         >
-                            Sign out
+                            ← Back to Foundation
                         </button>
                     </div>
                 )}
