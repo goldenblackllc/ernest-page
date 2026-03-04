@@ -150,6 +150,9 @@ export function CharacterShowcase() {
                 currentRant={identity?.dream_rant || ""}
                 currentGender={identity?.gender || ""}
                 currentAge={identity?.age || ""}
+                currentDreamLife={identity?.dream_life || ""}
+                currentPeople={identity?.important_people || ""}
+                currentEnjoyments={identity?.things_i_enjoy || ""}
             />
 
             {/* Dossier Modal */}
@@ -166,12 +169,15 @@ export function CharacterShowcase() {
 
 // ——— Edit Identity Modal (Rant → Process → Generate) ———
 
-function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string }) {
+function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentDreamLife, currentPeople, currentEnjoyments }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentDreamLife: string; currentPeople: string; currentEnjoyments: string }) {
     const { user } = useAuth();
     const [step, setStep] = useState<'EDIT' | 'PROCESSING' | 'REVEAL'>('EDIT');
     const [gender, setGender] = useState(currentGender || '');
     const [age, setAge] = useState(currentAge || '');
     const [rant, setRant] = useState(currentRant);
+    const [dreamLife, setDreamLife] = useState(currentDreamLife || '');
+    const [people, setPeople] = useState(currentPeople || '');
+    const [enjoyments, setEnjoyments] = useState(currentEnjoyments || '');
     const [result, setResult] = useState<{ title: string; dream_self: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -181,11 +187,14 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
             setGender(currentGender);
             setAge(currentAge);
             setRant(currentRant);
+            setDreamLife(currentDreamLife);
+            setPeople(currentPeople);
+            setEnjoyments(currentEnjoyments);
             setStep('EDIT');
             setResult(null);
             setError(null);
         }
-    }, [isOpen, currentRant, currentGender, currentAge]);
+    }, [isOpen, currentRant, currentGender, currentAge, currentDreamLife, currentPeople, currentEnjoyments]);
 
     if (!isOpen) return null;
 
@@ -198,7 +207,15 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
             const res = await fetch('/api/onboarding/process', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: user.uid, rant: rant.trim(), gender: gender.trim(), age: age.trim() }),
+                body: JSON.stringify({
+                    uid: user.uid,
+                    rant: rant.trim(),
+                    gender: gender.trim(),
+                    age: age.trim(),
+                    dream_life: dreamLife.trim(),
+                    important_people: people.trim(),
+                    things_i_enjoy: enjoyments.trim(),
+                }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || data.error || 'Processing failed.');
@@ -223,9 +240,10 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                         archetype: result.title,
                         manifesto: result.dream_self,
                         core_beliefs: '',
-                        important_people: '',
+                        important_people: people.trim(),
                         current_constraints: '',
-                        things_i_enjoy: '',
+                        things_i_enjoy: enjoyments.trim(),
+                        dream_life: dreamLife.trim(),
                     },
                 }),
             });
@@ -283,12 +301,46 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                     />
                                 </div>
                             </div>
-                            <textarea
-                                value={rant}
-                                onChange={(e) => setRant(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-base text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[200px] resize-none leading-relaxed"
-                                autoFocus
-                            />
+
+                            {/* Foundation fields */}
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">What's your dream life?</label>
+                                <textarea
+                                    value={dreamLife}
+                                    onChange={(e) => setDreamLife(e.target.value)}
+                                    placeholder="Wake up in a sunlit loft, coffee's already brewing..."
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[80px] resize-none leading-relaxed"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">Tell me about the people in your life</label>
+                                <textarea
+                                    value={people}
+                                    onChange={(e) => setPeople(e.target.value)}
+                                    placeholder="My wife Sarah, my son Marcus who's 7..."
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[80px] resize-none leading-relaxed"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">What does the dream you enjoy?</label>
+                                <textarea
+                                    value={enjoyments}
+                                    onChange={(e) => setEnjoyments(e.target.value)}
+                                    placeholder="Cooking Italian food from scratch, running at 5am..."
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[80px] resize-none leading-relaxed"
+                                />
+                            </div>
+
+                            {/* Rant */}
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">Your Dream Rant</label>
+                                <textarea
+                                    value={rant}
+                                    onChange={(e) => setRant(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-base text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[150px] resize-none leading-relaxed"
+                                    autoFocus
+                                />
+                            </div>
                             <button
                                 onClick={handleProcess}
                                 disabled={!rant.trim() || !gender.trim()}
