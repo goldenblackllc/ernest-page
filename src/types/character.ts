@@ -2,7 +2,6 @@ export interface CharacterIdentity {
     title: string;              // 3 visual roles: "Father, Husband, Gentleman"
     dream_self: string;         // Present-tense identity summary (AI-generated from rant)
     dream_rant: string;         // Raw user input (their rant about their dream life)
-    dream_life: string;         // Foundation: What's your dream life?
     important_people: string;   // Foundation: Tell me about the people in your life
     things_i_enjoy: string;     // Foundation: What does the dream you enjoy?
     gender: string;             // User-provided gender identity

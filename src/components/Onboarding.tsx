@@ -19,8 +19,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     const [age, setAge] = useState('');
     const [rant, setRant] = useState('');
 
-    // New foundation fields
-    const [dreamLife, setDreamLife] = useState('');
+    // Foundation fields
     const [people, setPeople] = useState('');
     const [enjoyments, setEnjoyments] = useState('');
 
@@ -46,7 +45,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     rant: rant.trim(),
                     gender: gender.trim(),
                     age: age.trim(),
-                    dream_life: dreamLife.trim(),
                     important_people: people.trim(),
                     things_i_enjoy: enjoyments.trim(),
                 }),
@@ -93,7 +91,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         important_people: people.trim(),
                         current_constraints: '',
                         things_i_enjoy: enjoyments.trim(),
-                        dream_life: dreamLife.trim(),
                     },
                 }),
             });
@@ -111,7 +108,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         }
     };
 
-    const canProceedFromFoundation = dreamLife.trim().length > 0 || people.trim().length > 0 || enjoyments.trim().length > 0;
+    const canProceedFromFoundation = people.trim().length > 0 || enjoyments.trim().length > 0;
 
     return (
         <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
@@ -128,19 +125,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                                 The more you share, the better I can see who you really are.
                                 Be honest. Be specific. Skip what doesn't feel right.
                             </p>
-                        </div>
-
-                        {/* Dream Life */}
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">
-                                What's your dream life?
-                            </label>
-                            <textarea
-                                value={dreamLife}
-                                onChange={(e) => setDreamLife(e.target.value)}
-                                placeholder="Wake up in a sunlit loft, coffee's already brewing, no alarm clock needed..."
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[100px] resize-none leading-relaxed"
-                            />
                         </div>
 
                         {/* People */}

@@ -150,7 +150,6 @@ export function CharacterShowcase() {
                 currentRant={identity?.dream_rant || ""}
                 currentGender={identity?.gender || ""}
                 currentAge={identity?.age || ""}
-                currentDreamLife={identity?.dream_life || ""}
                 currentPeople={identity?.important_people || ""}
                 currentEnjoyments={identity?.things_i_enjoy || ""}
             />
@@ -169,13 +168,12 @@ export function CharacterShowcase() {
 
 // ——— Edit Identity Modal (Rant → Process → Generate) ———
 
-function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentDreamLife, currentPeople, currentEnjoyments }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentDreamLife: string; currentPeople: string; currentEnjoyments: string }) {
+function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentPeople, currentEnjoyments }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentPeople: string; currentEnjoyments: string }) {
     const { user } = useAuth();
     const [step, setStep] = useState<'EDIT' | 'PROCESSING' | 'REVEAL'>('EDIT');
     const [gender, setGender] = useState(currentGender || '');
     const [age, setAge] = useState(currentAge || '');
     const [rant, setRant] = useState(currentRant);
-    const [dreamLife, setDreamLife] = useState(currentDreamLife || '');
     const [people, setPeople] = useState(currentPeople || '');
     const [enjoyments, setEnjoyments] = useState(currentEnjoyments || '');
     const [result, setResult] = useState<{ title: string; dream_self: string } | null>(null);
@@ -187,14 +185,13 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
             setGender(currentGender);
             setAge(currentAge);
             setRant(currentRant);
-            setDreamLife(currentDreamLife);
             setPeople(currentPeople);
             setEnjoyments(currentEnjoyments);
             setStep('EDIT');
             setResult(null);
             setError(null);
         }
-    }, [isOpen, currentRant, currentGender, currentAge, currentDreamLife, currentPeople, currentEnjoyments]);
+    }, [isOpen, currentRant, currentGender, currentAge, currentPeople, currentEnjoyments]);
 
     if (!isOpen) return null;
 
@@ -212,7 +209,6 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     rant: rant.trim(),
                     gender: gender.trim(),
                     age: age.trim(),
-                    dream_life: dreamLife.trim(),
                     important_people: people.trim(),
                     things_i_enjoy: enjoyments.trim(),
                 }),
@@ -243,7 +239,6 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                         important_people: people.trim(),
                         current_constraints: '',
                         things_i_enjoy: enjoyments.trim(),
-                        dream_life: dreamLife.trim(),
                     },
                 }),
             });
@@ -303,15 +298,6 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                             </div>
 
                             {/* Foundation fields */}
-                            <div>
-                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">What's your dream life?</label>
-                                <textarea
-                                    value={dreamLife}
-                                    onChange={(e) => setDreamLife(e.target.value)}
-                                    placeholder="Wake up in a sunlit loft, coffee's already brewing..."
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[80px] resize-none leading-relaxed"
-                                />
-                            </div>
                             <div>
                                 <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">Tell me about the people in your life</label>
                                 <textarea
