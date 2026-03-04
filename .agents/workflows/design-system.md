@@ -1,3 +1,6 @@
+---
+description: design system and brand voice rules for all UI work
+---
 # Antigravity Design System & Brand Voice: Earnest Page
 
 ## 1. Core Visual Philosophy: "Radical Familiarity"

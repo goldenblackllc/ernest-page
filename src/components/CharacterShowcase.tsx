@@ -260,7 +260,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
             <div className="relative w-full max-w-lg max-h-[85vh] bg-zinc-950 border border-white/10 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between">
                     <h2 className="text-sm font-bold text-white">Edit Identity</h2>
-                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-xs font-semibold">
+                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3">
                         Close
                     </button>
                 </div>
@@ -268,7 +268,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                 <div className="flex-1 overflow-y-auto p-6">
                     {step === 'EDIT' && (
                         <div className="flex flex-col gap-5">
-                            <p className="text-sm text-zinc-400 leading-relaxed">
+                            <p className="text-base text-zinc-400 leading-relaxed">
                                 Update your dream. Write as the person you want to be — present tense, no limits.
                             </p>
                             {error && (
@@ -333,7 +333,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                 disabled={!rant.trim() || !gender.trim()}
                                 className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
                             >
-                                Regenerate Identity <ArrowRight className="w-4 h-4" />
+                                Recast Identity <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
                     )}
@@ -341,7 +341,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     {step === 'PROCESSING' && (
                         <div className="flex flex-col items-center gap-6 py-12">
                             <Sparkles className="w-10 h-10 text-emerald-500 animate-pulse" />
-                            <p className="text-sm text-zinc-400">Reprocessing your identity...</p>
+                            <p className="text-base text-zinc-400">Rebuilding your identity...</p>
                             <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
                         </div>
                     )}
@@ -352,9 +352,9 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                 <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2">New Title</p>
                                 <h2 className="text-2xl font-black text-white">{result.title}</h2>
                             </div>
-                            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
+                            <div className="bg-zinc-900/60 border border-white/10 rounded-xl p-5">
                                 <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2">Identity</p>
-                                <p className="text-sm text-zinc-300 leading-relaxed">{result.dream_self}</p>
+                                <p className="text-base text-zinc-300 leading-relaxed">{result.dream_self}</p>
                             </div>
                             {error && (
                                 <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">{error}</div>
@@ -363,7 +363,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                 onClick={handleAcceptAndCompile}
                                 className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                             >
-                                <Sparkles className="w-4 h-4" /> Accept & Regenerate Character
+                                <Sparkles className="w-4 h-4" /> Accept & Rebuild Character
                             </button>
                             <button
                                 onClick={() => setStep('EDIT')}
@@ -378,3 +378,4 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
         </div>
     );
 }
+

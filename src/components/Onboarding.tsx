@@ -119,7 +119,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             <h1 className="text-3xl font-black tracking-tight mb-3">
                                 Who Do You Want to Be?
                             </h1>
-                            <p className="text-sm text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                            <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
                                 If you had a genie in a lamp — who would you wish to wake up as?
                                 Not what you'd want to <em className="text-zinc-300">have</em>. Who would you want to <em className="text-zinc-300">be</em>?
                             </p>
@@ -173,7 +173,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
                         <button
                             onClick={() => signOut(auth)}
-                            className="text-zinc-600 text-xs text-center hover:text-zinc-400 transition-colors mt-1"
+                            className="text-zinc-500 text-sm text-center hover:text-zinc-300 transition-colors mt-1 py-3"
                         >
                             Sign out
                         </button>
@@ -187,7 +187,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             <h1 className="text-3xl font-black tracking-tight mb-3">
                                 Build Your World
                             </h1>
-                            <p className="text-sm text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                            <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
                                 Who's in your life? What lights you up?
                                 The more detail, the better. You can always update later.
                             </p>
@@ -238,13 +238,13 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => setStep('RANT')}
-                                className="text-zinc-500 text-xs hover:text-white transition-colors flex items-center gap-1"
+                                className="text-zinc-500 text-sm hover:text-white transition-colors flex items-center gap-1 py-3 px-4"
                             >
                                 ← Back
                             </button>
                             <button
                                 onClick={handleProcess}
-                                className="text-zinc-500 text-xs hover:text-white transition-colors"
+                                className="text-zinc-500 text-sm hover:text-white transition-colors py-3 px-4"
                             >
                                 Skip for now
                             </button>
@@ -257,9 +257,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <div className="flex flex-col items-center gap-6 animate-in fade-in duration-300">
                         <Sparkles className="w-10 h-10 text-emerald-500 animate-pulse" />
                         <div className="text-center">
-                            <h2 className="text-lg font-bold mb-2">The Algorithm is reading you...</h2>
-                            <p className="text-sm text-zinc-400">
-                                Extracting your identity from the noise.
+                            <h2 className="text-lg font-bold mb-2">Reading you...</h2>
+                            <p className="text-base text-zinc-400">
+                                Discovering who you are.
                             </p>
                         </div>
                         <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
@@ -280,11 +280,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         </div>
 
                         {/* Dream Self */}
-                        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
+                        <div className="bg-zinc-900/60 border border-white/10 rounded-xl p-5">
                             <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">
                                 Who You Are
                             </p>
-                            <p className="text-[15px] text-zinc-300 leading-relaxed whitespace-pre-line">
+                            <p className="text-base text-zinc-300 leading-relaxed whitespace-pre-line">
                                 {result.dream_self}
                             </p>
                         </div>
