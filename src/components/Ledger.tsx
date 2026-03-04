@@ -74,6 +74,33 @@ export function Ledger() {
         }
     }, [user, loading, fetchFeed]);
 
+    // Auto-refresh: re-fetch when tab becomes visible again
+    useEffect(() => {
+        if (!user) return;
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && !pendingPostId) {
+                fetchFeed();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [user, fetchFeed, pendingPostId]);
+
+    // Auto-refresh: poll every 60 seconds while tab is active
+    useEffect(() => {
+        if (!user || pendingPostId) return;
+
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                fetchFeed();
+            }
+        }, 60000);
+
+        return () => clearInterval(interval);
+    }, [user, fetchFeed, pendingPostId]);
+
     // Listen for checkout-publishing-start
     useEffect(() => {
         const handleStart = (e: any) => {
