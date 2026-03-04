@@ -257,10 +257,10 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={step === 'PROCESSING' ? undefined : onClose} />
 
-            <div className="relative w-full max-w-lg max-h-[85vh] bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-lg max-h-[85vh] bg-zinc-950 border border-white/10 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-zinc-200">Edit Identity</h2>
-                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                    <h2 className="text-sm font-bold text-white">Edit Identity</h2>
+                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-xs font-semibold">
                         Close
                     </button>
                 </div>
@@ -268,69 +268,70 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                 <div className="flex-1 overflow-y-auto p-6">
                     {step === 'EDIT' && (
                         <div className="flex flex-col gap-5">
-                            <p className="text-sm text-zinc-500 leading-relaxed">
+                            <p className="text-sm text-zinc-400 leading-relaxed">
                                 Update your dream. Write as the person you want to be — present tense, no limits.
                             </p>
                             {error && (
-                                <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl">{error}</div>
+                                <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">{error}</div>
                             )}
                             <div className="flex gap-3">
                                 <div className="flex-1">
-                                    <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">I am a</label>
+                                    <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">I am a</label>
                                     <input
                                         type="text"
                                         value={gender}
                                         onChange={(e) => setGender(e.target.value)}
                                         placeholder="Man, Woman, etc."
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none"
+                                        className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
                                     />
                                 </div>
                                 <div className="w-24">
-                                    <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">Age</label>
+                                    <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Age</label>
                                     <input
                                         type="text"
                                         value={age}
                                         onChange={(e) => setAge(e.target.value)}
                                         placeholder="35"
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none"
+                                        className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
                                     />
                                 </div>
                             </div>
 
+                            {/* Rant (first) */}
+                            <div>
+                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Your Dream</label>
+                                <textarea
+                                    value={rant}
+                                    onChange={(e) => setRant(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-[15px] text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[140px] resize-none leading-relaxed"
+                                    autoFocus
+                                />
+                            </div>
+
                             {/* Foundation fields */}
                             <div>
-                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">Tell me about the people in your life</label>
+                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">People in your life</label>
                                 <textarea
                                     value={people}
                                     onChange={(e) => setPeople(e.target.value)}
                                     placeholder="My wife Sarah, my son Marcus who's 7..."
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[80px] resize-none leading-relaxed"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[80px] resize-none leading-relaxed"
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">What does the dream you enjoy?</label>
+                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">What does the dream you enjoy?</label>
                                 <textarea
                                     value={enjoyments}
                                     onChange={(e) => setEnjoyments(e.target.value)}
                                     placeholder="Cooking Italian food from scratch, running at 5am..."
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[80px] resize-none leading-relaxed"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[80px] resize-none leading-relaxed"
                                 />
                             </div>
 
-                            {/* Rant */}
-                            <div>
-                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">Your Dream Rant</label>
-                                <textarea
-                                    value={rant}
-                                    onChange={(e) => setRant(e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-base text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[150px] resize-none leading-relaxed"
-                                    autoFocus
-                                />
-                            </div>
                             <button
                                 onClick={handleProcess}
                                 disabled={!rant.trim() || !gender.trim()}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
                             >
                                 Regenerate Identity <ArrowRight className="w-4 h-4" />
                             </button>
@@ -340,33 +341,33 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     {step === 'PROCESSING' && (
                         <div className="flex flex-col items-center gap-6 py-12">
                             <Sparkles className="w-10 h-10 text-emerald-500 animate-pulse" />
-                            <p className="text-sm text-zinc-500">Reprocessing your identity...</p>
-                            <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
+                            <p className="text-sm text-zinc-400">Reprocessing your identity...</p>
+                            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
                         </div>
                     )}
 
                     {step === 'REVEAL' && result && (
                         <div className="flex flex-col gap-6">
                             <div className="text-center">
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 mb-2">New Title</p>
+                                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2">New Title</p>
                                 <h2 className="text-2xl font-black text-white">{result.title}</h2>
                             </div>
-                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 mb-2">Identity</p>
+                            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
+                                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2">Identity</p>
                                 <p className="text-sm text-zinc-300 leading-relaxed">{result.dream_self}</p>
                             </div>
                             {error && (
-                                <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl">{error}</div>
+                                <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">{error}</div>
                             )}
                             <button
                                 onClick={handleAcceptAndCompile}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Sparkles className="w-4 h-4" /> Accept & Regenerate Character
                             </button>
                             <button
                                 onClick={() => setStep('EDIT')}
-                                className="w-full border border-zinc-800 py-3 text-sm text-zinc-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+                                className="w-full border border-zinc-800 py-3 text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2"
                             >
                                 <RotateCcw className="w-3 h-3" /> Edit Again
                             </button>

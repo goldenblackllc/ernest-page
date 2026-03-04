@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
-import { Sparkles, Loader2, ArrowRight, RotateCcw } from 'lucide-react';
+import { Sparkles, Loader2, ArrowRight, RotateCcw, Users, Heart } from 'lucide-react';
 
-type OnboardingStep = 'FOUNDATION' | 'RANT' | 'PROCESSING' | 'REVEAL';
+type OnboardingStep = 'RANT' | 'FOUNDATION' | 'PROCESSING' | 'REVEAL';
 
 interface OnboardingProps {
     onComplete: () => void;
@@ -14,7 +14,7 @@ interface OnboardingProps {
 
 export function Onboarding({ onComplete }: OnboardingProps) {
     const { user } = useAuth();
-    const [step, setStep] = useState<OnboardingStep>('FOUNDATION');
+    const [step, setStep] = useState<OnboardingStep>('RANT');
     const [gender, setGender] = useState('');
     const [age, setAge] = useState('');
     const [rant, setRant] = useState('');
@@ -65,7 +65,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         } catch (err: any) {
             console.error('Onboarding error:', err);
             setError(err.message || 'Something went wrong. Please try again.');
-            setStep('RANT');
+            setStep('FOUNDATION');
         }
     };
 
@@ -108,114 +108,48 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         }
     };
 
-    const canProceedFromFoundation = people.trim().length > 0 || enjoyments.trim().length > 0;
-
     return (
         <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
             <div className="w-full max-w-lg mx-auto">
 
-                {/* Step 0: Foundation — Dream Life, People, Preferences */}
-                {step === 'FOUNDATION' && (
-                    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
-                        <div className="text-center mb-2">
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-3">
-                                Let's Build Your World
-                            </h1>
-                            <p className="text-sm text-zinc-500 max-w-sm mx-auto leading-relaxed">
-                                The more you share, the better I can see who you really are.
-                                Be honest. Be specific. Skip what doesn't feel right.
-                            </p>
-                        </div>
-
-                        {/* People */}
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">
-                                Tell me about the people in your life
-                            </label>
-                            <textarea
-                                value={people}
-                                onChange={(e) => setPeople(e.target.value)}
-                                placeholder="My wife Sarah, my son Marcus who's 7, my best friend Dave from college, my boss who drives me insane..."
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[100px] resize-none leading-relaxed"
-                            />
-                        </div>
-
-                        {/* Enjoyments */}
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">
-                                What does the dream you enjoy?
-                            </label>
-                            <textarea
-                                value={enjoyments}
-                                onChange={(e) => setEnjoyments(e.target.value)}
-                                placeholder="Cooking Italian food from scratch, running at 5am, old jazz records, building things with my hands..."
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[100px] resize-none leading-relaxed"
-                            />
-                        </div>
-
-                        <button
-                            onClick={() => setStep('RANT')}
-                            disabled={!canProceedFromFoundation}
-                            className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            Next
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
-
-                        <button
-                            onClick={() => setStep('RANT')}
-                            className="text-zinc-700 text-xs text-center hover:text-zinc-400 transition-colors"
-                        >
-                            Skip for now
-                        </button>
-
-                        <button
-                            onClick={() => signOut(auth)}
-                            className="text-zinc-700 text-xs text-center hover:text-zinc-400 transition-colors -mt-2"
-                        >
-                            Sign out
-                        </button>
-                    </div>
-                )}
-
-                {/* Step 1: The Dream Rant */}
+                {/* Step 1: The Dream Rant (FIRST) */}
                 {step === 'RANT' && (
-                    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
-                        <div className="text-center mb-4">
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-3">
+                    <div className="flex flex-col gap-5 animate-in fade-in duration-300">
+                        <div className="text-center mb-2">
+                            <h1 className="text-3xl font-black tracking-tight mb-3">
                                 Who Do You Want to Be?
                             </h1>
-                            <p className="text-sm text-zinc-500 max-w-sm mx-auto leading-relaxed">
+                            <p className="text-sm text-zinc-400 max-w-sm mx-auto leading-relaxed">
                                 If you had a genie in a lamp — who would you wish to wake up as?
-                                Not what you'd want to <em>have</em>. Who would you want to <em>be</em>?
+                                Not what you'd want to <em className="text-zinc-300">have</em>. Who would you want to <em className="text-zinc-300">be</em>?
                             </p>
                         </div>
 
                         {error && (
-                            <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
                                 {error}
                             </div>
                         )}
 
                         <div className="flex gap-3">
                             <div className="flex-1">
-                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">I am a</label>
+                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">I am a</label>
                                 <input
                                     type="text"
                                     value={gender}
                                     onChange={(e) => setGender(e.target.value)}
                                     placeholder="Man, Woman, etc."
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
                                 />
                             </div>
                             <div className="w-24">
-                                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-1.5 block">Age</label>
+                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Age</label>
                                 <input
                                     type="text"
                                     value={age}
                                     onChange={(e) => setAge(e.target.value)}
                                     placeholder="35"
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
                                 />
                             </div>
                         </div>
@@ -224,66 +158,139 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             value={rant}
                             onChange={(e) => setRant(e.target.value)}
                             placeholder="I want to be the kind of person who..."
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-base text-zinc-200 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none min-h-[200px] resize-none leading-relaxed"
+                            className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-[15px] text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[200px] resize-none leading-relaxed"
+                            autoFocus
                         />
 
                         <button
-                            onClick={handleProcess}
+                            onClick={() => setStep('FOUNDATION')}
                             disabled={!rant.trim() || !gender.trim()}
-                            className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            Show Me Who I Am
+                            Next
                             <ArrowRight className="w-4 h-4" />
                         </button>
 
                         <button
-                            onClick={() => setStep('FOUNDATION')}
-                            className="text-zinc-700 text-xs text-center hover:text-zinc-400 transition-colors mt-2"
+                            onClick={() => signOut(auth)}
+                            className="text-zinc-600 text-xs text-center hover:text-zinc-400 transition-colors mt-1"
                         >
-                            ← Back to Foundation
+                            Sign out
                         </button>
                     </div>
                 )}
 
-                {/* Step 2: Processing */}
+                {/* Step 2: Foundation — People & Enjoyments */}
+                {step === 'FOUNDATION' && (
+                    <div className="flex flex-col gap-5 animate-in fade-in duration-300">
+                        <div className="text-center mb-2">
+                            <h1 className="text-3xl font-black tracking-tight mb-3">
+                                Build Your World
+                            </h1>
+                            <p className="text-sm text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                                Who's in your life? What lights you up?
+                                The more detail, the better. You can always update later.
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                                {error}
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="text-xs text-zinc-400 font-semibold mb-1.5 flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5" />
+                                People in your life
+                            </label>
+                            <textarea
+                                value={people}
+                                onChange={(e) => setPeople(e.target.value)}
+                                placeholder="My wife Sarah, my son Marcus who's 7, my best friend Dave from college, my boss who drives me insane..."
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[120px] resize-none leading-relaxed"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs text-zinc-400 font-semibold mb-1.5 flex items-center gap-1.5">
+                                <Heart className="w-3.5 h-3.5" />
+                                What does the dream you enjoy?
+                            </label>
+                            <textarea
+                                value={enjoyments}
+                                onChange={(e) => setEnjoyments(e.target.value)}
+                                placeholder="Cooking Italian food from scratch, running at 5am, old jazz records, building things with my hands..."
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[120px] resize-none leading-relaxed"
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleProcess}
+                            disabled={!rant.trim() || !gender.trim()}
+                            className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            Show Me Who I Am
+                            <Sparkles className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex items-center justify-between">
+                            <button
+                                onClick={() => setStep('RANT')}
+                                className="text-zinc-500 text-xs hover:text-white transition-colors flex items-center gap-1"
+                            >
+                                ← Back
+                            </button>
+                            <button
+                                onClick={handleProcess}
+                                className="text-zinc-500 text-xs hover:text-white transition-colors"
+                            >
+                                Skip for now
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 3: Processing */}
                 {step === 'PROCESSING' && (
                     <div className="flex flex-col items-center gap-6 animate-in fade-in duration-300">
                         <Sparkles className="w-10 h-10 text-emerald-500 animate-pulse" />
                         <div className="text-center">
                             <h2 className="text-lg font-bold mb-2">The Algorithm is reading you...</h2>
-                            <p className="text-sm text-zinc-500">
+                            <p className="text-sm text-zinc-400">
                                 Extracting your identity from the noise.
                             </p>
                         </div>
-                        <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
+                        <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
                     </div>
                 )}
 
-                {/* Step 3: Reveal */}
+                {/* Step 4: Reveal */}
                 {step === 'REVEAL' && result && (
-                    <div className="flex flex-col gap-8 animate-in fade-in duration-500">
+                    <div className="flex flex-col gap-6 animate-in fade-in duration-500">
                         {/* Title */}
                         <div className="text-center">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 mb-3">
+                            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2">
                                 Your Title
                             </p>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                            <h1 className="text-3xl font-black tracking-tight text-white">
                                 {result.title}
                             </h1>
                         </div>
 
                         {/* Dream Self */}
-                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 mb-3">
+                        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
+                            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">
                                 Who You Are
                             </p>
-                            <p className="text-base text-zinc-300 leading-relaxed whitespace-pre-line">
+                            <p className="text-[15px] text-zinc-300 leading-relaxed whitespace-pre-line">
                                 {result.dream_self}
                             </p>
                         </div>
 
                         {error && (
-                            <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
                                 {error}
                             </div>
                         )}
@@ -291,14 +298,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         <div className="flex flex-col gap-3">
                             <button
                                 onClick={handleAcceptAndCompile}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Sparkles className="w-4 h-4" />
                                 This Is Me — Generate My Character
                             </button>
                             <button
                                 onClick={handleRegenerate}
-                                className="w-full border border-zinc-800 py-3 text-sm text-zinc-500 hover:text-white hover:bg-zinc-900 transition-colors flex items-center justify-center gap-2"
+                                className="w-full border border-zinc-800 py-3 text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2"
                             >
                                 <RotateCcw className="w-3 h-3" />
                                 Edit My Rant
