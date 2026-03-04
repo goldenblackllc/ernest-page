@@ -82,6 +82,23 @@ export async function POST(req: Request) {
         const archetype =
           userData?.character_bible?.source_code?.archetype || "Advisor";
 
+        // Fetch recent posts to avoid repeating the same photo scale
+        let recentScales: string[] = [];
+        try {
+          const recentSnap = await db.collection("posts")
+            .where("authorId", "==", uid)
+            .orderBy("created_at", "desc")
+            .limit(3)
+            .get();
+          recentScales = recentSnap.docs
+            .map(d => d.data().photo_scale)
+            .filter(Boolean);
+        } catch { /* ignore — index may not exist yet */ }
+
+        const recentScaleHint = recentScales.length > 0
+          ? `\nThe user's last ${recentScales.length} post(s) used these photo scales: [${recentScales.join(', ')}]. Do NOT repeat the same scale. Choose a DIFFERENT scale for variety.`
+          : '';
+
         const prompt = `Character A is defined by the following Character Bible:
 ${JSON.stringify(compiledBible, null, 2)}
 
@@ -92,16 +109,28 @@ Their job is to edit this into a compelling, anonymous public post, and respond 
 What the user shared:
 "${combinedRant}"
 
-Output a JSON object with six keys:
+Output a JSON object with eight keys:
 title: A punchy, scroll-stopping social media title (4-8 words). Match the energy of what the user shared. If they're celebrating, the title should feel like a win. If they're struggling, it should feel raw. Examples: 'The Site Went Live Today', 'Finally Breathing After the Storm', 'Software, Survival, and Guilt', 'When the Work Isn't Enough', 'That First Real Victory'. No clickbait or emojis.
 pseudonym: A clever 2-3 word sign-off that captures the user's current state (e.g., 'Conflicted Creator', 'Grateful Builder', 'Tired Optimist').
 letter: Ghostwrite Character B's rant into a punchy social media submission. FORMATTING RULES: You MUST start exactly with: 'Dear ${archetype},' followed by a double line break (\\n\\n). Write the body of the letter. End with a double line break (\\n\\n) followed by the pseudonym (e.g., '- OVERWHELMED FATHER'). SCRUB ALL PII (names, locations).
 response: Respond as Character A would — in their voice, through their worldview. If the user is celebrating, celebrate with them and show them what's next. If they need guidance, guide them. FORMATTING RULES: You MUST end the response with a double line break (\\n\\n) followed exactly by: '- ${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them.
 
 STEP 3: THE ART DIRECTOR (Image Generation)
-Identify the 'Hero Object' from this conversation (e.g., a bar of soap, a beard brush, a car interior, a cup of coffee). If there is no physical object, pick a texture or environment that represents the mood (e.g., dark marble, a ticking watch, stormy ocean).
-imagen_prompt: Write a prompt for Google Imagen 3 to create a high-end, editorial macro-photograph of this object. Crucial Rules: Must be highly photorealistic. Use terms like 'macro shot', 'cinematic lighting', 'editorial photography'. NEVER include humans, faces, or text. Focus entirely on texture, lighting, and objects.
-unsplash_query: Provide a 1-to-2 word search term to find a real stock photograph of this object (e.g., 'artisan soap', 'dark marble').`;
+You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
+
+First, read the emotional tone of the post and choose a VIBE — the feeling that should emanate from the image. Examples: luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration.
+
+Then choose a SCALE — the type of shot:
+- "macro": Sharp close-up of a specific object or texture. Cinematic lighting, extreme detail. (e.g., steam curling off espresso, cracked leather journal, rain beads on a window)
+- "lifestyle": A composed scene or environment that tells a story. Tabletop, room, workspace. (e.g., warm kitchen counter at 6am with morning light, open notebook beside a candle, a styled workspace at golden hour)
+- "wide": An aspirational landscape, cityscape, or architectural shot. Expansive, atmospheric. (e.g., rooftop view of a city at dusk, fog rolling through a mountain valley, an empty bridge at dawn)
+- "human": Faceless human presence — silhouettes, hands doing something, over-the-shoulder, person walking away, feet on pavement. Deeply emotional and intimate. NEVER show faces. (e.g., hands holding a warm mug by a rain-streaked window, silhouette walking through golden hour light, person from behind looking out over a balcony)
+${recentScaleHint}
+
+photo_vibe: One word capturing the emotional tone (e.g., 'grit', 'serenity', 'ambition').
+photo_scale: One of "macro", "lifestyle", "wide", or "human".
+imagen_prompt: Write a detailed prompt for Google Imagen to create this image. Rules: Highly photorealistic. Cinematic lighting. Instagram-quality sharpness and color. NEVER include visible faces or readable text. Describe the specific scene, lighting, color palette, and mood. Reference the vibe and scale you chose.
+unsplash_query: Provide a 1-to-3 word search term to find a real photograph matching this mood on Unsplash.`;
 
         const result = await generateWithFallback({
           primaryModelId: SONNET_MODEL,
@@ -111,6 +140,8 @@ unsplash_query: Provide a 1-to-2 word search term to find a real stock photograp
             pseudonym: z.string(),
             letter: z.string(),
             response: z.string(),
+            photo_vibe: z.string(),
+            photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
             imagen_prompt: z.string(),
             unsplash_query: z.string(),
           }),
@@ -121,6 +152,8 @@ unsplash_query: Provide a 1-to-2 word search term to find a real stock photograp
           pseudonym: string;
           letter: string;
           response: string;
+          photo_vibe: string;
+          photo_scale: string;
           imagen_prompt: string;
           unsplash_query: string;
         };
@@ -203,6 +236,8 @@ unsplash_query: Provide a 1-to-2 word search term to find a real stock photograp
           },
           imagen_prompt: postData.imagen_prompt,
           unsplash_query: postData.unsplash_query,
+          photo_vibe: postData.photo_vibe,
+          photo_scale: postData.photo_scale,
           imagen_url: imagen_url,
           unsplash_url: unsplash_url,
           // Legacy fallbacks for uninterrupted rendering

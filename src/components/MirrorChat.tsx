@@ -204,9 +204,12 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                 body: JSON.stringify({ uid, messages })
             });
             const data = await res.json();
-            if (data.success) {
-                setPlanConfirmation(`Plan updated — ${data.directives.length} directive${data.directives.length !== 1 ? 's' : ''} set`);
-                setTimeout(() => setPlanConfirmation(null), 4000);
+            if (data.success && data.directives?.length > 0) {
+                // Inject the plan as a formatted assistant message in the chat
+                const planMessage = `Here's your plan — ${data.directives.length} directive${data.directives.length !== 1 ? 's' : ''} set:\n\n${data.directives.map((d: string, i: number) => `${i + 1}. ${d}`).join('\n')}\n\nThese are now saved to your directives. Go make it happen.`;
+                setMessages(prev => [...prev, { id: `plan-${Date.now()}`, role: 'assistant' as const, content: planMessage }]);
+                setPlanConfirmation('✓ Plan saved');
+                setTimeout(() => setPlanConfirmation(null), 3000);
             } else {
                 setPlanConfirmation('Failed to generate plan. Try again.');
                 setTimeout(() => setPlanConfirmation(null), 4000);
@@ -455,14 +458,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
                                         onClick={handleGeneratePlan}
                                         disabled={isGeneratingPlan || isLoading}
                                         className={cn(
-                                            "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all border",
+                                            "flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all border",
                                             isGeneratingPlan
                                                 ? "bg-emerald-950/50 text-emerald-500 border-emerald-900/50 animate-pulse"
-                                                : "bg-zinc-800 text-zinc-400 border-zinc-700/50 hover:text-white hover:bg-zinc-700"
+                                                : "bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20"
                                         )}
                                     >
                                         <Target className="w-3.5 h-3.5" />
-                                        {isGeneratingPlan ? 'Generating...' : 'Generate Plan'}
+                                        {isGeneratingPlan ? 'Generating...' : 'Give Me A Plan'}
                                     </button>
 
                                     <button

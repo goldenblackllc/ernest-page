@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark, Heart, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { Timestamp, deleteDoc, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { Timestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -47,6 +47,7 @@ interface FeedPostProps {
         created_at: Timestamp;
         is_public?: boolean;
         isLikedByMe?: boolean;
+        like_count?: number;
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
@@ -59,6 +60,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [imageSource, setImageSource] = useState<'ai' | 'stock'>('ai');
     const { user } = useAuth();
 
     const postAuthorId = post.authorId || post.uid;
@@ -115,15 +117,18 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
 
     const toggleLike = async () => {
         if (!user) return;
-        const isLiked = localLiked;
-        setLocalLiked(!isLiked);
+        setLocalLiked(true);
         try {
-            await updateDoc(doc(db, "posts", post.id), {
-                likedBy: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            const idToken = await user.getIdToken();
+            await fetch('/api/posts/like', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
             });
         } catch (error) {
-            console.error("Error toggling like:", error);
-            setLocalLiked(isLiked);
+            console.error("Error sending karma like:", error);
         }
     };
 
@@ -213,17 +218,56 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                             isFlipped ? "absolute opacity-0 pointer-events-none" : "relative opacity-100"
                         )}>
                             {/* AI / Stock Image */}
-                            {(post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url) && (
-                                <div className="px-3 sm:px-4 mb-2">
-                                    <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
-                                        <img
-                                            src={post.public_post?.imagen_url || post.imagen_url || post.public_post?.unsplash_url || post.unsplash_url || ""}
-                                            alt={publicTitle || "Hero Object"}
-                                            className="w-full h-full object-cover transition-all duration-500"
-                                        />
+                            {(() => {
+                                const imagenUrl = post.public_post?.imagen_url || post.imagen_url;
+                                const unsplashUrl = post.public_post?.unsplash_url || post.unsplash_url;
+                                const hasBoth = Boolean(imagenUrl) && Boolean(unsplashUrl);
+                                const displayUrl = hasBoth
+                                    ? (imageSource === 'ai' ? imagenUrl : unsplashUrl)
+                                    : (imagenUrl || unsplashUrl);
+
+                                if (!displayUrl) return null;
+
+                                return (
+                                    <div className="px-3 sm:px-4 mb-2">
+                                        <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                                            <img
+                                                src={displayUrl}
+                                                alt={publicTitle || "Hero Object"}
+                                                className="w-full h-full object-cover transition-all duration-500"
+                                            />
+
+                                            {/* AI / Stock Toggle */}
+                                            {hasBoth && (
+                                                <div className="absolute bottom-3 right-3 flex items-center bg-black/60 backdrop-blur-md rounded-full border border-white/10 p-0.5 shadow-lg z-10">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setImageSource('ai'); }}
+                                                        className={cn(
+                                                            "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full transition-all",
+                                                            imageSource === 'ai'
+                                                                ? "bg-emerald-500 text-black"
+                                                                : "text-zinc-400 hover:text-white"
+                                                        )}
+                                                    >
+                                                        AI
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setImageSource('stock'); }}
+                                                        className={cn(
+                                                            "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full transition-all",
+                                                            imageSource === 'stock'
+                                                                ? "bg-emerald-500 text-black"
+                                                                : "text-zinc-400 hover:text-white"
+                                                        )}
+                                                    >
+                                                        Stock
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
 
                             {publicTitle && (
                                 <div className="px-3 sm:px-4">
@@ -396,10 +440,17 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                             className={cn("transition-transform active:scale-75 hover:scale-110",
                                 localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
                             )}
-                            title={localLiked ? "Unlike" : "Like"}
+                            title="Send love to the universe"
                         >
                             <Heart className={cn("w-5 h-5", localLiked && "fill-red-500")} />
                         </button>
+
+                        {/* Like count — only visible to the post author */}
+                        {isAuthor && post.like_count && post.like_count > 0 && (
+                            <span className="text-xs text-zinc-500 font-medium -ml-2">
+                                {post.like_count} {post.like_count === 1 ? 'person resonated' : 'people resonated'}
+                            </span>
+                        )}
 
                         <button
                             onClick={handleToggleBookmark}

@@ -116,6 +116,7 @@ export async function GET(req: Request) {
                 delete clean.rant;
                 delete clean.conversation_messages;
                 delete clean.counsel;
+                delete clean.like_count;
             }
 
             // Convert Firestore Timestamps to serializable format
