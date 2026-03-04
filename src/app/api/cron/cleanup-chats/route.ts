@@ -52,6 +52,23 @@ export async function GET(req: Request) {
                         if (messages.length > 0 && shouldPublish) {
                             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
+                            // Fetch recent posts to avoid repeating the same photo scale
+                            let recentScales: string[] = [];
+                            try {
+                                const recentSnap = await db.collection("posts")
+                                    .where("authorId", "==", uid)
+                                    .orderBy("created_at", "desc")
+                                    .limit(3)
+                                    .get();
+                                recentScales = recentSnap.docs
+                                    .map(d => d.data().photo_scale)
+                                    .filter(Boolean);
+                            } catch { /* ignore — index may not exist yet */ }
+
+                            const recentScaleHint = recentScales.length > 0
+                                ? `\nThe user's last ${recentScales.length} post(s) used these photo scales: [${recentScales.join(', ')}]. Do NOT repeat the same scale. Choose a DIFFERENT scale for variety.`
+                                : '';
+
                             const prompt = `Character A is defined by the following Character Bible:
 ${JSON.stringify(compiledBible, null, 2)}
 You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received a raw chat transcript between a user (Character B) and Character A.
@@ -72,8 +89,23 @@ If the transcript is valuable, synthesize it into a single anonymous post. Outpu
 "pseudonym": "A clever 2-3 word sign-off (e.g., 'Curious Creator').",
 "letter": "Ghostwrite Character B's side into a punchy social media submission. FORMATTING RULES: You MUST start exactly with: 'Dear ${archetype},' followed by a double line break (\\n\\n). Write the body of the letter. End with a double line break (\\n\\n) followed by the pseudonym (e.g., '- OVERWHELMED FATHER'). SCRUB ALL PII (names, locations).",
 "response": "Synthesize Character A's advice. Write strictly in Character A's exact voice. FORMATTING RULES: You MUST end the response with a double line break (\\n\\n) followed exactly by: '- ${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them.",
-"imagen_prompt": "Write a prompt for Google Imagen 3 to create a high-end, editorial macro-photograph of the 'Hero Object' discussed. Must be fully photorealistic. Use terms like 'macro shot', 'cinematic lighting'. NO HUMANS, FACES, OR TEXT.",
-"unsplash_query": "Provide a 1-to-2 word search term to find a real stock photograph of this object (e.g., 'artisan soap', 'dark marble')."
+
+STEP 3: THE ART DIRECTOR (Image Generation)
+You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
+
+First, read the emotional tone of the post and choose a VIBE — the feeling that should emanate from the image. Examples: luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration.
+
+Then choose a SCALE — the type of shot:
+- "macro": Sharp close-up of a specific object or texture. Cinematic lighting, extreme detail.
+- "lifestyle": A composed scene or environment that tells a story. Tabletop, room, workspace.
+- "wide": An aspirational landscape, cityscape, or architectural shot. Expansive, atmospheric.
+- "human": Faceless human presence — silhouettes, hands doing something, over-the-shoulder, person walking away. NEVER show faces.
+${recentScaleHint}
+
+"photo_vibe": "One word capturing the emotional tone.",
+"photo_scale": "One of macro, lifestyle, wide, or human.",
+"imagen_prompt": "Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text.",
+"unsplash_query": "1-to-3 word search term to find a real photograph matching this mood on Unsplash."
 }
 }`;
 
@@ -87,6 +119,8 @@ If the transcript is valuable, synthesize it into a single anonymous post. Outpu
                                         pseudonym: z.string(),
                                         letter: z.string(),
                                         response: z.string(),
+                                        photo_vibe: z.string(),
+                                        photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
                                         imagen_prompt: z.string(),
                                         unsplash_query: z.string()
                                     }).nullable().optional()
@@ -156,7 +190,7 @@ If the transcript is valuable, synthesize it into a single anonymous post. Outpu
                                         authorId: uid,
                                         region: userData?.region || null,
                                         author: userData?.displayName || "Anonymous",
-                                        type: 'checkin', // align with checkin schema to properly display in UI
+                                        type: 'checkin',
                                         public_post: {
                                             title: object.post.title,
                                             pseudonym: object.post.pseudonym,
@@ -165,6 +199,8 @@ If the transcript is valuable, synthesize it into a single anonymous post. Outpu
                                         },
                                         imagen_prompt: object.post.imagen_prompt,
                                         unsplash_query: object.post.unsplash_query,
+                                        photo_vibe: object.post.photo_vibe,
+                                        photo_scale: object.post.photo_scale,
                                         imagen_url: imagen_url,
                                         unsplash_url: unsplash_url,
                                         // Legacy fallbacks for uninterrupted rendering
@@ -173,9 +209,9 @@ If the transcript is valuable, synthesize it into a single anonymous post. Outpu
                                         letter: object.post.letter,
                                         response: object.post.response,
                                         content_raw: transcript,
-                                        status: "completed", // Ensure alignment with UI status
+                                        status: "completed",
                                         created_at: new Date(),
-                                        is_public: true, // Auto publish explicitly 
+                                        is_public: true,
                                         likes: 0,
                                         comments: 0
                                     });
