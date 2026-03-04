@@ -49,10 +49,11 @@ export async function GET(req: Request) {
                 .limit(10)
                 .get();
             addPosts(snapA.docs);
-        } catch {
+        } catch (indexErr) {
+            console.warn("Bucket A index missing, using fallback:", indexErr);
+            // Fallback: fetch ALL user posts (no ordering available without index)
             const snapA = await postsRef
                 .where("authorId", "==", uid)
-                .limit(20)
                 .get();
             addPosts(snapA.docs);
         }
@@ -70,7 +71,6 @@ export async function GET(req: Request) {
             } catch {
                 const snapB = await postsRef
                     .where("authorId", "in", chunk)
-                    .limit(20)
                     .get();
                 addPosts(snapB.docs);
             }
