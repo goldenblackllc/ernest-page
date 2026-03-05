@@ -110,21 +110,23 @@ async function generateAIComment(commenterUid: string, origin: string) {
     if (!targetLetter) return;
 
     // 3. Generate the AI comment
-    const prompt = `You are "${characterTitle}". Read the following post and write a short, genuine comment (1-3 sentences) in response. Write as this character would speak — use their voice, their perspective, their warmth.
+    const prompt = `You are "${characterTitle}". You are commenting on a post written by SOMEONE ELSE — a stranger. Read their post and leave a short, genuine comment (1-3 sentences) directed at the POST AUTHOR.
 
-Character voice reference:
+Character voice reference (use this for tone and style only):
 ${bibleExcerpt}
 
-Post to respond to:
+Post written by someone else:
 "${targetLetter.substring(0, 500)}"
 
 Rules:
+- You are speaking TO THE POST AUTHOR, not to yourself or your own user.
 - Be specific to the post content. Reference something in it.
 - No generic comments ("great post!", "love this!", "so true!")
 - Be encouraging but authentic to the character's voice
 - Keep it under 50 words
-- Write as a comment, not a letter. Casual, warm, real.
-- Do not use quotation marks around your response`;
+- Write as a public comment on someone else's post. Casual, warm, real.
+- Do not use quotation marks around your response
+- If the post mentions a personal struggle, respond with empathy toward the AUTHOR of the post, not as if you are the one experiencing it`;
 
     try {
         const result = await generateTextWithFallback({
