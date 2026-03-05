@@ -470,12 +470,17 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                     <div className="flex items-center gap-4">
                         <button
                             onClick={toggleLike}
-                            className={cn("transition-transform active:scale-75 hover:scale-110",
+                            className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
                                 localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
                             )}
                             title="Send love to the universe"
                         >
                             <Heart className={cn("w-5 h-5", localLiked && "fill-red-500")} />
+                            {(post.like_count || 0) > 1 && (
+                                <span className="text-xs font-medium">
+                                    {post.like_count}
+                                </span>
+                            )}
                         </button>
 
                         <button
@@ -492,15 +497,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                                 </span>
                             )}
                         </button>
-
-                        {/* Like count — only visible to the post author */}
-                        {isAuthor && post.like_count && post.like_count > 0 && (
-                            <span className="text-xs text-zinc-500 font-medium -ml-2">
-                                {post.like_count} {post.like_count === 1 ? 'person resonated' : 'people resonated'}
-                            </span>
-                        )}
-
-
 
                         {/* Flip Toggle */}
                         {isAuthor && hasPrivateData && (

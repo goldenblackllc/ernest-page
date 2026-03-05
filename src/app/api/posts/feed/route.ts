@@ -252,7 +252,6 @@ export async function GET(req: Request) {
                 delete clean.rant;
                 delete clean.conversation_messages;
                 delete clean.counsel;
-                delete clean.like_count;
             }
 
             if (clean.created_at && clean.created_at._seconds !== undefined) {
