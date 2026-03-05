@@ -144,11 +144,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
         (post.rant && post.counsel)
     );
 
-    const [localLiked, setLocalLiked] = useState<boolean>(post.isLikedByMe || false);
+    const [localLiked, setLocalLiked] = useState<boolean>(post.isLikedByMe || (isAuthor && (post.like_count || 0) > 0));
 
     useEffect(() => {
-        setLocalLiked(post.isLikedByMe || false);
-    }, [post.isLikedByMe]);
+        setLocalLiked(post.isLikedByMe || (isAuthor && (post.like_count || 0) > 0));
+    }, [post.isLikedByMe, isAuthor, post.like_count]);
 
     // Following resolution
     const isFollowing = postAuthorId && followingMap && followingMap[postAuthorId];
