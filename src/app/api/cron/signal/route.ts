@@ -7,26 +7,23 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-const NEWSDATA_API_KEY = process.env.NEWSDATA_API_KEY;
-const NEWSDATA_BASE_URL = 'https://newsdata.io/api/1/latest';
+const NEWSAPI_AI_KEY = process.env.NEWSAPI_AI_KEY;
+const NEWSAPI_BASE_URL = 'https://eventregistry.org/api/v1/article/getArticles';
 
-// Categories for diverse coverage
-const NEWS_CATEGORIES = ['world', 'science', 'health', 'technology', 'environment', 'politics'];
-const BRIGHT_SPOT_KEYWORDS = 'breakthrough OR milestone OR "record low" OR solved OR restored OR recovered OR "first time" OR "new record"';
+// Categories for diverse coverage (NewsAPI.ai uses dmoz-style category URIs)
+const BRIGHT_SPOT_KEYWORDS = 'breakthrough OR milestone OR solved OR restored OR recovered OR "first time" OR "new record"';
 
-interface NewsDataArticle {
-    article_id: string;
+interface NewsArticle {
+    uri: string;
     title: string;
-    description: string | null;
-    content: string | null;
-    link: string;
-    source_name: string;
-    source_url: string;
-    image_url: string | null;
-    category: string[];
-    pubDate: string;
-    language: string;
-    country: string[];
+    body: string | null;
+    url: string;
+    source: { title: string; uri: string } | null;
+    image: string | null;
+    categories: { label: string }[] | null;
+    dateTimePub: string;
+    lang: string;
+    sentiment: number | null;
     _layer?: 'recent' | 'trending' | 'bright';
 }
 
@@ -59,8 +56,8 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!NEWSDATA_API_KEY) {
-        return NextResponse.json({ error: 'NEWSDATA_API_KEY is not configured' }, { status: 500 });
+    if (!NEWSAPI_AI_KEY) {
+        return NextResponse.json({ error: 'NEWSAPI_AI_KEY is not configured' }, { status: 500 });
     }
 
     try {
@@ -138,19 +135,19 @@ export async function GET(req: Request) {
                 category: signal.category,
                 type: signal.type,
                 bright_spot_type: signal.bright_spot_type || null,
-                source_urls: [sourceArticle.link],
-                source_names: [sourceArticle.source_name],
+                source_urls: [sourceArticle.url],
+                source_names: [sourceArticle.source?.title || 'Unknown'],
                 image_url: image_url,
                 image_prompt: signal.image_prompt,
-                news_date: sourceArticle.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
+                news_date: sourceArticle.dateTimePub?.split('T')[0] || new Date().toISOString().split('T')[0],
                 thread_id: signal.thread_id || null,
                 thread_label: signal.thread_label || null,
                 is_update: signal.is_update || false,
                 created_at: new Date(),
                 raw_article: {
                     title: sourceArticle.title,
-                    description: sourceArticle.description,
-                    source: sourceArticle.source_name,
+                    body: (sourceArticle.body || '').substring(0, 500),
+                    source: sourceArticle.source?.title || 'Unknown',
                 },
             });
             created++;
@@ -166,21 +163,33 @@ export async function GET(req: Request) {
     }
 }
 
-// ─── DUAL-LAYER FETCHING ─────────────────────────────────────────────
+// ─── DUAL-LAYER FETCHING (NewsAPI.ai) ────────────────────────────────
 
-async function fetchNewsArticles(): Promise<NewsDataArticle[]> {
-    const allArticles: NewsDataArticle[] = [];
+async function fetchNewsArticles(): Promise<NewsArticle[]> {
+    const allArticles: NewsArticle[] = [];
 
-    // LAYER A — "Right Now": Top recent headlines across categories
+    // LAYER A — "Right Now": Top recent articles sorted by date
     try {
-        const categoryParam = NEWS_CATEGORIES.join(',');
-        const url = `${NEWSDATA_BASE_URL}?apikey=${NEWSDATA_API_KEY}&language=en&category=${categoryParam}&size=15`;
-        const res = await fetch(url);
+        const res = await fetch(NEWSAPI_BASE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'getArticles',
+                keyword: 'world news OR politics OR conflict OR economy OR science OR health',
+                lang: 'eng',
+                articlesPage: 1,
+                articlesCount: 30,
+                articlesSortBy: 'date',
+                articlesSortByAsc: false,
+                dataType: ['news'],
+                apiKey: NEWSAPI_AI_KEY,
+            }),
+        });
         if (res.ok) {
             const data = await res.json();
-            if (data.results) {
-                allArticles.push(...data.results.map((a: any) => ({ ...a, _layer: 'recent' })));
-            }
+            const articles = data.articles?.results || [];
+            allArticles.push(...articles.map((a: any) => ({ ...a, _layer: 'recent' as const })));
+            console.log(`[Signal] Layer A: ${articles.length} recent articles`);
         } else {
             console.error('[Signal] Layer A fetch failed:', await res.text());
         }
@@ -188,15 +197,27 @@ async function fetchNewsArticles(): Promise<NewsDataArticle[]> {
         console.error('[Signal] Layer A error:', err);
     }
 
-    // LAYER B — "Big Stories": 24h trending (high-coverage stories)
+    // LAYER B — "Big Stories": Top articles by social score (most covered)
     try {
-        const url = `${NEWSDATA_BASE_URL}?apikey=${NEWSDATA_API_KEY}&language=en&size=10&prioritydomain=top`;
-        const res = await fetch(url);
+        const res = await fetch(NEWSAPI_BASE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'getArticles',
+                lang: 'eng',
+                articlesPage: 1,
+                articlesCount: 20,
+                articlesSortBy: 'socialScore',
+                articlesSortByAsc: false,
+                dataType: ['news'],
+                apiKey: NEWSAPI_AI_KEY,
+            }),
+        });
         if (res.ok) {
             const data = await res.json();
-            if (data.results) {
-                allArticles.push(...data.results.map((a: any) => ({ ...a, _layer: 'trending' })));
-            }
+            const articles = data.articles?.results || [];
+            allArticles.push(...articles.map((a: any) => ({ ...a, _layer: 'trending' as const })));
+            console.log(`[Signal] Layer B: ${articles.length} trending articles`);
         } else {
             console.error('[Signal] Layer B fetch failed:', await res.text());
         }
@@ -206,23 +227,36 @@ async function fetchNewsArticles(): Promise<NewsDataArticle[]> {
 
     // BRIGHT SPOTS — Positive news search
     try {
-        const url = `${NEWSDATA_BASE_URL}?apikey=${NEWSDATA_API_KEY}&language=en&q=${encodeURIComponent(BRIGHT_SPOT_KEYWORDS)}&size=5`;
-        const res = await fetch(url);
+        const res = await fetch(NEWSAPI_BASE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'getArticles',
+                keyword: BRIGHT_SPOT_KEYWORDS,
+                lang: 'eng',
+                articlesPage: 1,
+                articlesCount: 10,
+                articlesSortBy: 'date',
+                articlesSortByAsc: false,
+                dataType: ['news'],
+                apiKey: NEWSAPI_AI_KEY,
+            }),
+        });
         if (res.ok) {
             const data = await res.json();
-            if (data.results) {
-                allArticles.push(...data.results.map((a: any) => ({ ...a, _layer: 'bright' })));
-            }
+            const articles = data.articles?.results || [];
+            allArticles.push(...articles.map((a: any) => ({ ...a, _layer: 'bright' as const })));
+            console.log(`[Signal] Bright spots: ${articles.length} articles`);
         }
     } catch (err) {
         console.error('[Signal] Bright spots error:', err);
     }
 
-    // Deduplicate by article_id
+    // Deduplicate by uri
     const seen = new Set<string>();
     return allArticles.filter(a => {
-        if (!a.article_id || seen.has(a.article_id)) return false;
-        seen.add(a.article_id);
+        if (!a.uri || seen.has(a.uri)) return false;
+        seen.add(a.uri);
         return true;
     });
 }
@@ -280,14 +314,14 @@ async function getRecentSignalHeadlines(): Promise<string[]> {
 // ─── AI PROCESSING ───────────────────────────────────────────────────
 
 async function processArticlesWithAI(
-    articles: NewsDataArticle[],
+    articles: NewsArticle[],
     recentHeadlines: string[],
     activeThreads: ActiveThread[]
 ): Promise<z.infer<typeof signalSchema>['signals']> {
 
-    // Format articles with their layer labels
+    // Format articles with their layer labels — now with full body text from NewsAPI.ai
     const articleSummaries = articles.map((a, i) => (
-        `[${i}] [${(a._layer || 'unknown').toUpperCase()}] ${a.title}\nSource: ${a.source_name}\nDescription: ${a.description || 'N/A'}\nContent preview: ${(a.content || '').substring(0, 300)}\nCategory: ${(a.category || []).join(', ')}`
+        `[${i}] [${(a._layer || 'unknown').toUpperCase()}] ${a.title}\nSource: ${a.source?.title || 'Unknown'}\nBody: ${(a.body || 'N/A').substring(0, 500)}\nCategories: ${(a.categories || []).map(c => c.label).join(', ') || 'N/A'}\nSentiment: ${a.sentiment ?? 'N/A'}`
     )).join('\n\n');
 
     const recentHeadlinesList = recentHeadlines.length > 0
