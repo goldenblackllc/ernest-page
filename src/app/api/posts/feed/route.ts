@@ -113,17 +113,55 @@ export async function GET(req: Request) {
         });
         addPosts(discoveryDocs.slice(0, limit));
 
-        // 5. Sort chronologically
-        allPosts.sort((a, b) => {
-            const aTime = a.created_at?.toMillis?.() || a.created_at?._seconds * 1000 || 0;
-            const bTime = b.created_at?.toMillis?.() || b.created_at?._seconds * 1000 || 0;
-            return bTime - aTime;
-        });
+        // 5. Watermark-based sort: fresh posts first, then shuffled discovery
+        const getPostTime = (p: any) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
+        const watermark = userData.feed_watermark?.toMillis?.()
+            || (userData.feed_watermark?._seconds ? userData.feed_watermark._seconds * 1000 : 0);
+
+        if (!cursor) {
+            // First page: split into fresh (unseen) and seen
+            const freshPosts: any[] = [];
+            const seenPosts: any[] = [];
+
+            for (const post of allPosts) {
+                const postTime = getPostTime(post);
+                if (watermark && postTime <= watermark) {
+                    seenPosts.push(post);
+                } else {
+                    freshPosts.push(post);
+                }
+            }
+
+            // Fresh posts: newest first
+            freshPosts.sort((a, b) => getPostTime(b) - getPostTime(a));
+
+            // Seen posts: Fisher-Yates shuffle
+            for (let i = seenPosts.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [seenPosts[i], seenPosts[j]] = [seenPosts[j], seenPosts[i]];
+            }
+
+            // Rebuild allPosts: fresh first, then shuffled seen
+            allPosts.length = 0;
+            allPosts.push(...freshPosts, ...seenPosts);
+
+            // Update watermark to now (fire-and-forget)
+            db.collection("users").doc(uid).set(
+                { feed_watermark: new Date() },
+                { merge: true }
+            ).catch(() => { /* silent — non-critical */ });
+        } else {
+            // Paginated loads: shuffle everything (all "seen" by definition)
+            for (let i = allPosts.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allPosts[i], allPosts[j]] = [allPosts[j], allPosts[i]];
+            }
+        }
 
         // 6. Paginate: take only `limit` posts
         const page = allPosts.slice(0, limit);
 
-        // 7. Compute next cursor from the last post in the page
+        // 7. Compute next cursor (use index-based since order is no longer purely time-based)
         let nextCursor: string | null = null;
         if (page.length === limit && allPosts.length >= limit) {
             const lastPost = page[page.length - 1];
