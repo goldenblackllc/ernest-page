@@ -103,8 +103,13 @@ export async function POST(req: Request) {
             .replace("{GOALS}", data.dossier.goals)
             .replace("{PREFERENCES}", data.dossier.preferences);
 
-        // Save to Firestore
-        const identity = {
+        // Check if user already has an existing dossier (re-edit vs first onboarding)
+        const existingUserDoc = await db.collection("users").doc(uid).get();
+        const existingIdentity = existingUserDoc.data()?.identity;
+        const hasExistingDossier = !!existingIdentity?.dossier;
+
+        // Build identity — preserve existing dossier if one exists
+        const identity: Record<string, any> = {
             title: data.title,
             dream_self: data.dream_self,
             dream_rant: rant,
@@ -112,10 +117,16 @@ export async function POST(req: Request) {
             things_i_enjoy: things_i_enjoy || '',
             gender: gender || '',
             age: age || '',
-            dossier: dossierText,
-            dossier_updated_at: FieldValue.serverTimestamp(),
-            session_count: 0,
         };
+
+        if (!hasExistingDossier) {
+            // First onboarding: set the initial dossier
+            identity.dossier = dossierText;
+            identity.dossier_updated_at = FieldValue.serverTimestamp();
+            identity.session_count = 0;
+        }
+        // If dossier exists, we leave it untouched here.
+        // The compile route will merge important_people & things_i_enjoy into it.
 
         // Also populate the legacy source_code fields for backward compatibility
         const legacySourceCode = {

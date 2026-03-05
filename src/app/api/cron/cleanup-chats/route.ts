@@ -104,8 +104,7 @@ ${recentScaleHint}
 
 "photo_vibe": "One word capturing the emotional tone.",
 "photo_scale": "One of macro, lifestyle, wide, or human.",
-"imagen_prompt": "Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text.",
-"unsplash_query": "1-to-3 word search term to find a real photograph matching this mood on Unsplash."
+"imagen_prompt": "Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text."
 }
 }`;
 
@@ -121,8 +120,7 @@ ${recentScaleHint}
                                         response: z.string(),
                                         photo_vibe: z.string(),
                                         photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
-                                        imagen_prompt: z.string(),
-                                        unsplash_query: z.string()
+                                        imagen_prompt: z.string()
                                     }).nullable().optional()
                                 }),
                                 prompt: prompt
@@ -131,31 +129,21 @@ ${recentScaleHint}
                             if (object.is_publishable && object.post) {
                                 // 1. Generate URLs
                                 let imagen_url = null;
-                                let unsplash_url = null;
 
-                                // Fetch images in parallel
+                                // Fetch image from Imagen
                                 try {
                                     const postDocRef = db.collection('posts').doc();
-                                    const [imagenRes, unsplashRes] = await Promise.allSettled([
-                                        // Imagen 3 Call
-                                        fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                                instances: [{ prompt: object.post.imagen_prompt }],
-                                                parameters: { sampleCount: 1, aspectRatio: "16:9" }
-                                            })
-                                        }),
-                                        // Unsplash Call
-                                        fetch(`https://api.unsplash.com/search/photos?page=1&query=${encodeURIComponent(object.post.unsplash_query)}&orientation=landscape`, {
-                                            headers: {
-                                                'Authorization': `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`
-                                            }
+                                    const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            instances: [{ prompt: object.post.imagen_prompt }],
+                                            parameters: { sampleCount: 1, aspectRatio: "16:9" }
                                         })
-                                    ]);
+                                    });
 
-                                    if (imagenRes.status === 'fulfilled' && imagenRes.value.ok) {
-                                        const data = await imagenRes.value.json();
+                                    if (imagenRes.ok) {
+                                        const data = await imagenRes.json();
                                         if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
                                             const base64Data = data.predictions[0].bytesBase64Encoded;
                                             const buffer = Buffer.from(base64Data, 'base64');
@@ -170,17 +158,8 @@ ${recentScaleHint}
 
                                             imagen_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
                                         }
-                                    } else if (imagenRes.status === 'fulfilled') {
-                                        console.error("Imagen API Error:", await imagenRes.value.text());
-                                    }
-
-                                    if (unsplashRes.status === 'fulfilled' && unsplashRes.value.ok) {
-                                        const data = await unsplashRes.value.json();
-                                        if (data.results && data.results.length > 0) {
-                                            unsplash_url = data.results[0].urls.regular;
-                                        }
-                                    } else if (unsplashRes.status === 'fulfilled') {
-                                        console.error("Unsplash API Error:", await unsplashRes.value.text());
+                                    } else {
+                                        console.error("Imagen API Error:", await imagenRes.text());
                                     }
 
                                     // Create Post in DB
@@ -198,11 +177,9 @@ ${recentScaleHint}
                                             response: object.post.response,
                                         },
                                         imagen_prompt: object.post.imagen_prompt,
-                                        unsplash_query: object.post.unsplash_query,
                                         photo_vibe: object.post.photo_vibe,
                                         photo_scale: object.post.photo_scale,
                                         imagen_url: imagen_url,
-                                        unsplash_url: unsplash_url,
                                         // Legacy fallbacks for uninterrupted rendering
                                         title: object.post.title,
                                         pseudonym: object.post.pseudonym,

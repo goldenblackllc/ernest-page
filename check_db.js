@@ -15,12 +15,7 @@ async function check() {
     const post = snap.docs[0].data();
     console.log(JSON.stringify({
         id: snap.docs[0].id,
-        imagen_url: post.imagen_url,
-        unsplash_url: post.unsplash_url,
         public_post_imagen_url: post.public_post?.imagen_url,
-        public_post_unsplash_url: post.public_post?.unsplash_url,
-        imagen_prompt: post.imagen_prompt,
-        unsplash_query: post.unsplash_query
     }, null, 2));
 }
 check().catch(console.error);

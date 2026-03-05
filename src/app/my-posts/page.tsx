@@ -117,7 +117,6 @@ export default function MyPostsPage() {
                             <FeedPostCard
                                 key={post.id}
                                 post={post as any}
-                                savedPosts={[]}
                             />
                         ))}
 

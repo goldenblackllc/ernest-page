@@ -93,7 +93,7 @@ The app is global-first.
 ```bash
 npm run dev   # starts Next.js dev server on http://localhost:3000
 ```
-**Required env vars** (in `.env.local`): `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `GEMINI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `UNSPLASH_ACCESS_KEY`, `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY`.
+**Required env vars** (in `.env.local`): `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `GEMINI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY`.
 
 ### Key Directories
 | Directory | Purpose |

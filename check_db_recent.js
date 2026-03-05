@@ -21,9 +21,7 @@ async function check() {
             uid: data.uid,
             region: data.region,
             imagen_url: data.imagen_url,
-            unsplash_url: data.unsplash_url,
             public_post_imagen_url: data.public_post?.imagen_url,
-            public_post_unsplash_url: data.public_post?.unsplash_url,
             title: data.public_post?.title || data.title,
             created_at: data.created_at?.toDate()?.toISOString()
         };

@@ -81,7 +81,7 @@ export async function POST(req: Request) {
 
 
         // Generate Ideal Bible
-        console.log(`Generating Ideal Bible with Fallback Utility...`);
+
         const idealResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
             abortSignal: AbortSignal.timeout(90_000), // 90s before falling back
@@ -127,9 +127,7 @@ export async function POST(req: Request) {
             }
         ];
 
-        console.log("\n=== IDEAL BIBLE GENERATION RESPONSE ===");
-        console.log(JSON.stringify(idealSections, null, 2));
-        console.log("=======================================\n");
+
 
         // Generate Reality Bible was here - removed.
 
@@ -164,6 +162,26 @@ export async function POST(req: Request) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ uid }),
         }).catch(err => console.error('[Compile] Avatar generation fire-and-forget error:', err));
+
+        // Fire-and-forget: merge important_people & things_i_enjoy into the existing dossier
+        // This updates KEY PEOPLE and PREFERENCES & STYLE without wiping session-accumulated data
+        const importantPeople = source_code.important_people || '';
+        const thingsIEnjoy = source_code.things_i_enjoy || '';
+        if (importantPeople || thingsIEnjoy) {
+            const mergeSummary = [
+                importantPeople ? `USER'S IMPORTANT PEOPLE (updated):\n${importantPeople}` : '',
+                thingsIEnjoy ? `USER'S THINGS THEY ENJOY (updated):\n${thingsIEnjoy}` : '',
+            ].filter(Boolean).join('\n\n');
+
+            fetch(`${origin}/api/dossier/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid,
+                    conversation_summary: `[PROFILE UPDATE — NOT A CONVERSATION]\nThe user has updated their profile information. Merge the following into the appropriate dossier sections (KEY PEOPLE and PREFERENCES & STYLE). Do not remove any existing facts from other sections.\n\n${mergeSummary}`,
+                }),
+            }).catch(err => console.error('[Compile] Dossier merge fire-and-forget error:', err));
+        }
 
         return Response.json({
             success: true,

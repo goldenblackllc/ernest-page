@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase/admin';
+import { db, storage } from '@/lib/firebase/admin';
 import { generateWithFallback, SONNET_MODEL, SONNET_FALLBACK } from '@/lib/ai/models';
 import { z } from 'zod';
 
@@ -38,13 +38,14 @@ interface ActiveThread {
 
 const signalSchema = z.object({
     signals: z.array(z.object({
-        headline: z.string().describe('Neutral, factual headline — max 12 words. No sensationalism, no loaded adjectives.'),
-        summary: z.string().describe('2-4 sentence neutral summary of what happened. Facts only.'),
+        headline: z.string().describe('Compelling, scroll-stopping headline — max 15 words. Answer "why should I care?" Make the reader FEEL something. Use conversational language, stakes, surprise, or specificity. No clickbait lies — but make it human and vivid. Think viral tweet, not wire service.'),
+        summary: z.string().describe('2-4 sentence summary that tells the STORY — what happened, who it affects, and why it matters. Lead with the most surprising or consequential detail. Be vivid and specific, not clinical.'),
         context: z.string().describe('The bigger picture: historical trends, relevant statistics, multiple perspectives people hold. 3-5 sentences. Include the Dalai Lama Lens where appropriate.'),
         category: z.string().describe('One of: world, science, health, technology, environment, culture, politics'),
         type: z.enum(['event', 'context', 'bright_spot']).describe('event for standard news, bright_spot for positive stories'),
         bright_spot_type: z.enum(['macro_trend', 'micro_moment']).nullable().describe('Only for bright_spot type signals'),
         source_index: z.number().describe('Index of the primary source article from the input array'),
+        image_prompt: z.string().describe('A cinematic visual description for AI image generation. Describe the KEY VISUAL SYMBOL of this story — a specific object, scene, or moment. Be cinematic: include lighting, mood, color palette, and composition. Think like a film director choosing a still frame. Example: "Close-up of a judge\'s gavel mid-strike on a courtroom desk, dramatic side lighting, shallow depth of field, dark wood tones". NEVER describe text, logos, or recognizable faces. Highly photorealistic. Instagram-quality.'),
         thread_id: z.string().nullable().describe('Short slug for an ongoing story thread, e.g. "iran-conflict-2026". Null for one-off stories. Use the SAME thread_id from ACTIVE THREADS if this is an update to an ongoing story.'),
         thread_label: z.string().nullable().describe('Human-readable label for the thread, e.g. "Iran Conflict". Null if no thread.'),
         is_update: z.boolean().describe('True if this signal is an update to an active story thread, false if it is new'),
@@ -64,24 +65,71 @@ export async function GET(req: Request) {
 
     try {
         // 1. Fetch news articles (dual-layer: recent + trending)
+        console.log('[Signal Cron] Step 1: Fetching news articles...');
         const articles = await fetchNewsArticles();
+        console.log(`[Signal Cron] Step 1 complete: ${articles.length} articles fetched`);
         if (articles.length === 0) {
             return NextResponse.json({ success: true, message: 'No articles found', signalsCreated: 0 });
         }
 
         // 2. Fetch active story threads (past 72h)
+        console.log('[Signal Cron] Step 2: Fetching active threads...');
         const activeThreads = await getActiveThreads();
+        console.log(`[Signal Cron] Step 2 complete: ${activeThreads.length} active threads`);
 
         // 3. Deduplicate against recent signals (past 24h)
+        console.log('[Signal Cron] Step 3: Fetching recent headlines for dedup...');
         const recentHeadlines = await getRecentSignalHeadlines();
+        console.log(`[Signal Cron] Step 3 complete: ${recentHeadlines.length} recent headlines`);
 
         // 4. Process through AI to generate balanced signal cards
+        console.log('[Signal Cron] Step 4: Processing articles with AI...');
         const signals = await processArticlesWithAI(articles, recentHeadlines, activeThreads);
+        console.log(`[Signal Cron] Step 4 complete: ${signals.length} signals generated`);
 
         // 5. Store signals in Firestore
+        console.log('[Signal Cron] Step 5: Storing signals in Firestore...');
         let created = 0;
         for (const signal of signals) {
             const sourceArticle = articles[signal.source_index] || articles[0];
+
+            // Generate hero image via Imagen
+            let image_url: string | null = null;
+            try {
+                const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        instances: [{ prompt: signal.image_prompt }],
+                        parameters: { sampleCount: 1, aspectRatio: "16:9" }
+                    })
+                });
+
+                if (imagenRes.ok) {
+                    const data = await imagenRes.json();
+                    if (data.predictions?.[0]?.bytesBase64Encoded) {
+                        const base64Data = data.predictions[0].bytesBase64Encoded;
+                        const buffer = Buffer.from(base64Data, 'base64');
+                        const bucket = storage.bucket();
+                        const signalId = `signal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                        const fileName = `signal-images/${signalId}.jpg`;
+                        const file = bucket.file(fileName);
+
+                        await file.save(buffer, {
+                            metadata: { contentType: 'image/jpeg' },
+                            public: true
+                        });
+
+                        image_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                        console.log(`[Signal Cron] Generated image for: ${signal.headline.slice(0, 50)}...`);
+                    }
+                } else {
+                    console.error('[Signal Cron] Imagen API error:', await imagenRes.text());
+                }
+            } catch (imgErr: any) {
+                console.error('[Signal Cron] Image generation failed:', imgErr.message);
+                // Gracefully fall back to no image
+            }
 
             await db.collection('signals').add({
                 headline: signal.headline,
@@ -92,7 +140,8 @@ export async function GET(req: Request) {
                 bright_spot_type: signal.bright_spot_type || null,
                 source_urls: [sourceArticle.link],
                 source_names: [sourceArticle.source_name],
-                image_url: sourceArticle.image_url || null,
+                image_url: image_url,
+                image_prompt: signal.image_prompt,
                 news_date: sourceArticle.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
                 thread_id: signal.thread_id || null,
                 thread_label: signal.thread_label || null,
@@ -107,11 +156,12 @@ export async function GET(req: Request) {
             created++;
         }
 
-        console.log(`[Signal Cron] Created ${created} signal cards from ${articles.length} articles (${activeThreads.length} active threads)`);
+        console.log(`[Signal Cron] ✅ Complete: Created ${created} signal cards from ${articles.length} articles (${activeThreads.length} active threads)`);
         return NextResponse.json({ success: true, signalsCreated: created, articlesProcessed: articles.length, activeThreads: activeThreads.length });
 
     } catch (error: any) {
-        console.error('[Signal Cron] Error:', error);
+        console.error('[Signal Cron] ❌ FAILED:', error.message || error);
+        console.error('[Signal Cron] Stack:', error.stack);
         return NextResponse.json({ error: error.message || 'Signal generation failed' }, { status: 500 });
     }
 }
@@ -248,9 +298,9 @@ async function processArticlesWithAI(
         ? `\n\nACTIVE STORY THREADS (ongoing events from the past 72 hours — if today's articles contain updates to these, use the SAME thread_id and mark is_update: true):\n${activeThreads.map(t => `- thread_id: "${t.thread_id}" | ${t.thread_label} | Last: "${t.last_headline}"`).join('\n')}`
         : '';
 
-    const prompt = `You are The Signal — a calm, clear-eyed analyst who helps people understand reality without panic and without dismissal.
+    const prompt = `You are The Signal — a sharp, compelling storyteller who helps people understand reality. You write like the best of The Atlantic meets a viral tweet: smart, vivid, impossible to scroll past.
 
-People come to you because they WANT to know what's happening in the world. They want to feel connected and informed. But they also want a better lens — one that doesn't leave them anxious and helpless.
+People come to you because they WANT to know what's happening in the world. They want to feel connected, informed, and empowered. Your job is to make them STOP SCROLLING, read, and think.
 
 Here are today's news articles, gathered in two layers:
 - RECENT = latest headlines from the past few hours
@@ -270,19 +320,39 @@ COVERAGE RULES:
 4. At least 1 of the signals must be a bright_spot.
 5. AIM FOR DIVERSITY across categories — don't cluster all signals on one story.
 
-RULES FOR EVERY SIGNAL:
-1. STATE WHAT HAPPENED — factually, neutrally, in 2-4 sentences. No adjectives designed to provoke emotion. No loaded language. Don't dismiss or minimize — but don't dramatize either.
-2. PROVIDE THE BIGGER PICTURE — What's the historical trend? What are the different perspectives people hold? What relevant statistics exist? What does this event look like zoomed out over years or decades?
-3. APPLY THE DALAI LAMA LENS where appropriate: "This is in the news because it is abnormal. That, in itself, tells us something about what is normal." A war is news because peace is the norm. A murder is news because most people don't murder.
-4. ACKNOWLEDGE MULTIPLE PERSPECTIVES — not as false "both sides" equivalence, but as genuine recognition that different people experience the same event differently. What does this mean for different communities?
-5. Never use fear-based language ("devastating", "terrifying", "alarming")
-6. Never editorialize or take a political side
-7. Always include at least one contextualizing fact, statistic, or historical reference
+HEADLINE RULES (THIS IS CRITICAL):
+- Every headline must answer: "Why should I care RIGHT NOW?"
+- Use specific details: names, numbers, places. "A professor in Idaho" beats "a person."
+- Create a curiosity gap or emotional stakes. Make the reader NEED to know more.
+- Use conversational, punchy language. Think viral tweet, not wire service.
+- NO clickbait lies. Every word must be true. But boring is NOT the same as honest.
+- Bad: "Global Child Mortality Reaches Historic Low, Decades of Progress Documented"
+- Good: "Fewer Kids Are Dying Than Any Point in Human History"
+- Bad: "TikToker Ordered to Pay $10 Million Over False Murder Accusation"
+- Good: "A TikTok Psychic Ruined a Professor's Life — a Jury Just Handed Down $10M"
+
+SUMMARY RULES:
+- Lead with the most surprising or consequential detail, not the most obvious.
+- Tell the STORY — this happened, then this happened, and here's why it matters.
+- Use vivid, specific language. "A 24-year-old content creator with 3 million followers" beats "an influencer."
+- Still accurate, still fair. But make it feel like a story, not a report.
+
+CONTEXT RULES (KEEP THESE — THIS IS YOUR SUPERPOWER):
+1. PROVIDE THE BIGGER PICTURE — What's the historical trend? What are the different perspectives people hold? What relevant statistics exist? What does this event look like zoomed out over years or decades?
+2. APPLY THE DALAI LAMA LENS where appropriate: "This is in the news because it is abnormal. That, in itself, tells us something about what is normal." A war is news because peace is the norm. A murder is news because most people don't murder.
+3. ACKNOWLEDGE MULTIPLE PERSPECTIVES — not as false "both sides" equivalence, but as genuine recognition that different people experience the same event differently. What does this mean for different communities?
+4. Always include at least one contextualizing fact, statistic, or historical reference
+
+TONE GUARDRAILS:
+- Never use fear-mongering language ("devastating", "terrifying", "alarming") — but DO use vivid, emotional language that is grounded in truth
+- Never editorialize or take a political side
+- Never lie or exaggerate. Accuracy is sacred. But accuracy and engagement are NOT opposites.
 
 FOR BRIGHT SPOTS:
 - If any article describes genuine progress, a breakthrough, a positive trend, or a community doing something good — mark it as bright_spot
 - Macro trends: declining poverty, medical advances, environmental recovery, etc.
 - Micro moments: a town solving a problem, a community initiative working, a person's breakthrough
+- Bright spot headlines should make people feel HOPE, not just "oh that's nice." Make the scale of the achievement clear.
 
 Use the source_index to reference which input article each signal is based on.`;
 

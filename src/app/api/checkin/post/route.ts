@@ -129,8 +129,7 @@ ${recentScaleHint}
 
 photo_vibe: One word capturing the emotional tone (e.g., 'grit', 'serenity', 'ambition').
 photo_scale: One of "macro", "lifestyle", "wide", or "human".
-imagen_prompt: Write a detailed prompt for Google Imagen to create this image. Rules: Highly photorealistic. Cinematic lighting. Instagram-quality sharpness and color. NEVER include visible faces or readable text. Describe the specific scene, lighting, color palette, and mood. Reference the vibe and scale you chose.
-unsplash_query: Provide a 1-to-3 word search term to find a real photograph matching this mood on Unsplash.`;
+imagen_prompt: Write a detailed prompt for Google Imagen to create this image. Rules: Highly photorealistic. Cinematic lighting. Instagram-quality sharpness and color. NEVER include visible faces or readable text. Describe the specific scene, lighting, color palette, and mood. Reference the vibe and scale you chose.`;
 
         const result = await generateWithFallback({
           primaryModelId: SONNET_MODEL,
@@ -143,7 +142,6 @@ unsplash_query: Provide a 1-to-3 word search term to find a real photograph matc
             photo_vibe: z.string(),
             photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
             imagen_prompt: z.string(),
-            unsplash_query: z.string(),
           }),
         });
 
@@ -155,40 +153,26 @@ unsplash_query: Provide a 1-to-3 word search term to find a real photograph matc
           photo_vibe: string;
           photo_scale: string;
           imagen_prompt: string;
-          unsplash_query: string;
         };
 
         let imagen_url = null;
-        let unsplash_url = null;
 
-        // Fetch images in parallel
+        // Fetch image from Imagen
         try {
-          const [imagenRes, unsplashRes] = await Promise.allSettled([
-            // Imagen 3 Call
-            fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  instances: [{ prompt: postData.imagen_prompt }],
-                  parameters: { sampleCount: 1, aspectRatio: "16:9" },
-                }),
-              },
-            ),
-            // Unsplash Call
-            fetch(
-              `https://api.unsplash.com/search/photos?page=1&query=${encodeURIComponent(postData.unsplash_query)}&orientation=landscape`,
-              {
-                headers: {
-                  Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
-                },
-              },
-            ),
-          ]);
+          const imagenRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                instances: [{ prompt: postData.imagen_prompt }],
+                parameters: { sampleCount: 1, aspectRatio: "16:9" },
+              }),
+            },
+          );
 
-          if (imagenRes.status === "fulfilled" && imagenRes.value.ok) {
-            const data = await imagenRes.value.json();
+          if (imagenRes.ok) {
+            const data = await imagenRes.json();
             if (
               data.predictions &&
               data.predictions[0] &&
@@ -207,20 +191,8 @@ unsplash_query: Provide a 1-to-3 word search term to find a real photograph matc
 
               imagen_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
             }
-          } else if (imagenRes.status === "fulfilled") {
-            console.error("Imagen API Error:", await imagenRes.value.text());
-          }
-
-          if (unsplashRes.status === "fulfilled" && unsplashRes.value.ok) {
-            const data = await unsplashRes.value.json();
-            if (data.results && data.results.length > 0) {
-              unsplash_url = data.results[0].urls.regular;
-            }
-          } else if (unsplashRes.status === "fulfilled") {
-            console.error(
-              "Unsplash API Error:",
-              await unsplashRes.value.text(),
-            );
+          } else {
+            console.error("Imagen API Error:", await imagenRes.text());
           }
         } catch (imgError) {
           console.error("Error fetching images:", imgError);
@@ -235,11 +207,9 @@ unsplash_query: Provide a 1-to-3 word search term to find a real photograph matc
             response: postData.response,
           },
           imagen_prompt: postData.imagen_prompt,
-          unsplash_query: postData.unsplash_query,
           photo_vibe: postData.photo_vibe,
           photo_scale: postData.photo_scale,
           imagen_url: imagen_url,
-          unsplash_url: unsplash_url,
           // Legacy fallbacks for uninterrupted rendering
           title: postData.title,
           pseudonym: postData.pseudonym,

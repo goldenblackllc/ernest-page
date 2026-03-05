@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Bookmark, Heart, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Timestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
@@ -39,30 +39,102 @@ interface FeedPostProps {
             letter?: string;
             response?: string;
             imagen_url?: string;
-            unsplash_url?: string;
         };
         imageUrl?: string;
         imagen_url?: string;
-        unsplash_url?: string;
         created_at: Timestamp;
         is_public?: boolean;
         isLikedByMe?: boolean;
         like_count?: number;
         author_avatar_url?: string;
+        comments?: number;
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
-    savedPosts?: string[];
 }
 
-export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [] }: FeedPostProps) {
+export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [imageSource, setImageSource] = useState<'ai' | 'stock'>('ai');
+
     const { user } = useAuth();
+
+    // Comment state
+    const [isCommentOpen, setIsCommentOpen] = useState(false);
+    const [commentText, setCommentText] = useState('');
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [commentToast, setCommentToast] = useState<string | null>(null);
+    const [comments, setComments] = useState<any[]>([]);
+    const [commentsLoaded, setCommentsLoaded] = useState(false);
+
+    const fetchComments = useCallback(async () => {
+        if (!user || commentsLoaded) return;
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch(`/api/posts/comments?postId=${post.id}`, {
+                headers: { 'Authorization': `Bearer ${idToken}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setComments(data.comments || []);
+            }
+            setCommentsLoaded(true);
+        } catch (err) {
+            console.error('Failed to fetch comments:', err);
+        }
+    }, [user, post.id, commentsLoaded]);
+
+    const handleToggleComments = () => {
+        const newState = !isCommentOpen;
+        setIsCommentOpen(newState);
+        if (newState && !commentsLoaded) fetchComments();
+    };
+
+    // Auto-load comments if the post has them
+    useEffect(() => {
+        if ((post.comments && post.comments > 0) && !commentsLoaded) {
+            fetchComments();
+        }
+    }, [post.comments, commentsLoaded, fetchComments]);
+
+    const submitComment = async () => {
+        if (!user || !commentText.trim() || isSubmittingComment) return;
+        setIsSubmittingComment(true);
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch('/api/posts/comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ postId: post.id, comment: commentText.trim() }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                // Add the personal comment locally with avatar from API
+                setComments(prev => [{
+                    id: Date.now().toString(),
+                    content: commentText.trim(),
+                    type: 'personal',
+                    is_mine: true,
+                    author_title: 'You',
+                    author_avatar_url: data.author_avatar_url || null,
+                    created_at: null,
+                }, ...prev]);
+                setCommentText('');
+                setCommentToast('Saved. Your character also left a note on another post ✨');
+                setTimeout(() => setCommentToast(null), 4000);
+            }
+        } catch (err) {
+            console.error('Failed to submit comment:', err);
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
 
     const postAuthorId = post.authorId || post.uid;
     const isAuthor = user?.uid === postAuthorId;
@@ -133,18 +205,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
         }
     };
 
-    const isSaved = savedPosts.includes(post.id);
-    const handleToggleBookmark = async () => {
-        if (!user) return;
-        const newSavedPosts = isSaved
-            ? savedPosts.filter(id => id !== post.id)
-            : [...savedPosts, post.id];
-        try {
-            await updateDoc(doc(db, "users", user.uid), { saved_posts: newSavedPosts });
-        } catch (error) {
-            console.error("Error toggling bookmark:", error);
-        }
-    };
+
 
     if (isDeleting) return null;
 
@@ -222,14 +283,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                             "w-full top-0 left-0 [backface-visibility:hidden] transition-opacity duration-300",
                             isFlipped ? "absolute opacity-0 pointer-events-none" : "relative opacity-100"
                         )}>
-                            {/* AI / Stock Image */}
+                            {/* AI Generated Image */}
                             {(() => {
-                                const imagenUrl = post.public_post?.imagen_url || post.imagen_url;
-                                const unsplashUrl = post.public_post?.unsplash_url || post.unsplash_url;
-                                const hasBoth = Boolean(imagenUrl) && Boolean(unsplashUrl);
-                                const displayUrl = hasBoth
-                                    ? (imageSource === 'ai' ? imagenUrl : unsplashUrl)
-                                    : (imagenUrl || unsplashUrl);
+                                const displayUrl = post.public_post?.imagen_url || post.imagen_url;
 
                                 if (!displayUrl) return null;
 
@@ -241,34 +297,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                                                 alt={publicTitle || "Hero Object"}
                                                 className="w-full h-full object-cover transition-all duration-500"
                                             />
-
-                                            {/* AI / Stock Toggle */}
-                                            {hasBoth && (
-                                                <div className="absolute bottom-3 right-3 flex items-center bg-black/60 backdrop-blur-md rounded-full border border-white/10 p-0.5 shadow-lg z-10">
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setImageSource('ai'); }}
-                                                        className={cn(
-                                                            "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full transition-all",
-                                                            imageSource === 'ai'
-                                                                ? "bg-emerald-500 text-black"
-                                                                : "text-zinc-400 hover:text-white"
-                                                        )}
-                                                    >
-                                                        AI
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setImageSource('stock'); }}
-                                                        className={cn(
-                                                            "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full transition-all",
-                                                            imageSource === 'stock'
-                                                                ? "bg-emerald-500 text-black"
-                                                                : "text-zinc-400 hover:text-white"
-                                                        )}
-                                                    >
-                                                        Stock
-                                                    </button>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 );
@@ -450,6 +478,21 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                             <Heart className={cn("w-5 h-5", localLiked && "fill-red-500")} />
                         </button>
 
+                        <button
+                            onClick={handleToggleComments}
+                            className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
+                                isCommentOpen ? "text-emerald-500" : "text-zinc-500 hover:text-emerald-500/80"
+                            )}
+                            title="Comment"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            {(comments.length > 0 || (post.comments && post.comments > 0)) && (
+                                <span className="text-xs font-medium">
+                                    {comments.length || post.comments}
+                                </span>
+                            )}
+                        </button>
+
                         {/* Like count — only visible to the post author */}
                         {isAuthor && post.like_count && post.like_count > 0 && (
                             <span className="text-xs text-zinc-500 font-medium -ml-2">
@@ -457,15 +500,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                             </span>
                         )}
 
-                        <button
-                            onClick={handleToggleBookmark}
-                            className={cn("flex items-center gap-1.5 transition-colors group",
-                                isSaved ? "text-emerald-500" : "text-zinc-500 hover:text-emerald-500/80"
-                            )}
-                            title={isSaved ? "Remove Bookmark" : "Save to Bookmarks"}
-                        >
-                            <Bookmark className={cn("w-5 h-5 transition-all group-active:scale-90", isSaved && "fill-emerald-500")} />
-                        </button>
+
 
                         {/* Flip Toggle */}
                         {isAuthor && hasPrivateData && (
@@ -496,6 +531,63 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
                         </button>
                     )}
                 </div>
+
+                {/* Comment section */}
+                {isCommentOpen && (
+                    <div className="px-3 sm:px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
+                        {/* Comment toast */}
+                        {commentToast && (
+                            <div className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                                {commentToast}
+                            </div>
+                        )}
+
+                        {/* Comment input */}
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && submitComment()}
+                                placeholder="Share your thoughts — your character will leave a note on another post too"
+                                className="flex-1 bg-zinc-900 border border-zinc-700/50 rounded-full px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none"
+                                disabled={isSubmittingComment}
+                            />
+                            <button
+                                onClick={submitComment}
+                                disabled={!commentText.trim() || isSubmittingComment}
+                                className="p-2.5 bg-emerald-500 text-black rounded-full disabled:opacity-30 hover:bg-emerald-400 transition-colors shrink-0"
+                            >
+                                <Send className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Comments list */}
+                        {comments.length > 0 && (
+                            <div className="space-y-3 pt-1">
+                                {comments.map((c: any) => (
+                                    <div key={c.id} className="flex items-start gap-2.5">
+                                        <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden shrink-0 mt-0.5">
+                                            {c.author_avatar_url ? (
+                                                <img src={c.author_avatar_url} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <User className="w-3.5 h-3.5 text-zinc-500" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-xs font-semibold text-zinc-400">
+                                                {c.is_mine ? 'You' : c.author_title}
+                                            </span>
+                                            <p className="text-sm text-zinc-300 leading-relaxed mt-0.5">{c.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <DeleteConfirmationModal
