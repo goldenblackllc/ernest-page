@@ -3,6 +3,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
+import { SignalCard, SignalData } from "@/components/SignalCard";
 import { Sparkles, Loader2 } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
@@ -15,8 +16,9 @@ export function Ledger() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [entries, setEntries] = useState<any[]>([]);
+    const [signals, setSignals] = useState<SignalData[]>([]);
     const [followingMap, setFollowingMap] = useState<Record<string, string>>({});
-    const [savedPosts, setSavedPosts] = useState<string[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [pendingPostId, setPendingPostId] = useState<string | null>(null);
@@ -69,10 +71,14 @@ export function Ledger() {
                 });
             } else {
                 setEntries(posts);
+                // Store signals from the initial fetch
+                if (data.signals && data.signals.length > 0) {
+                    setSignals(data.signals);
+                }
             }
 
             setFollowingMap(data.following || {});
-            setSavedPosts(data.savedPosts || []);
+
             setNextCursor(data.nextCursor || null);
         } catch (error) {
             console.error("Failed to fetch feed:", error);
@@ -190,6 +196,11 @@ export function Ledger() {
                 const adIndex = Math.floor(index / 5);
                 const ad = ecosystemAds[adIndex % ecosystemAds.length];
 
+                // Insert a signal card every ~4 posts (at positions 3, 7, 11, ...)
+                const signalSlotIndex = Math.floor((index + 1) / 4) - 1;
+                const shouldShowSignal = (index + 1) % 4 === 0 && signalSlotIndex < signals.length;
+                const signalForSlot = shouldShowSignal ? signals[signalSlotIndex] : null;
+
                 return (
                     <React.Fragment key={`entry-group-${entry.id}`}>
                         <FeedPostCard
@@ -197,8 +208,8 @@ export function Ledger() {
                             post={entry as any}
                             followingMap={followingMap}
                             onFollowClick={(id) => setSelectedAuthorToFollow(id)}
-                            savedPosts={savedPosts}
                         />
+                        {signalForSlot && <SignalCard key={`signal-${signalForSlot.id}`} signal={signalForSlot} />}
                         {isAdSlot && <FeedAdCard ad={ad} />}
                     </React.Fragment>
                 );

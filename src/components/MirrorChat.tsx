@@ -16,9 +16,10 @@ interface MirrorChatProps {
     onClose: () => void;
     bible: CharacterBible | null;
     uid: string;
+    initialContext?: string | null;
 }
 
-export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
+export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: MirrorChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +48,40 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
             initSession();
         }
     }, [uid, isOpen, sessionId]);
+
+    // Auto-submit initial context from Signal card CTA
+    useEffect(() => {
+        if (!initialContext || !isOpen || !sessionId || messages.length > 0 || isLoading) return;
+
+        const autoSubmit = async () => {
+            const userMessage: Message = {
+                id: Date.now().toString(),
+                role: 'user',
+                content: initialContext,
+            };
+            const newMessages = [userMessage];
+            setMessages(newMessages);
+            setIsLoading(true);
+
+            try {
+                await fetch('/api/mirror', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid,
+                        sessionId,
+                        sessionTone,
+                        messages: newMessages,
+                    }),
+                });
+            } catch (err) {
+                console.error('Failed to auto-submit signal context:', err);
+                setIsLoading(false);
+            }
+        };
+
+        autoSubmit();
+    }, [initialContext, isOpen, sessionId]);
 
     // Close tone dropdown on outside click
     useEffect(() => {

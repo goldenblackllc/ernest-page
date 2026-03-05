@@ -15,6 +15,7 @@ export function TriagePanel() {
     const pathname = usePathname();
 
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
+    const [initialContext, setInitialContext] = useState<string | null>(null);
 
     // Data for Mirror Chat
     const [bible, setBible] = useState<CharacterBible | null>(null);
@@ -26,6 +27,20 @@ export function TriagePanel() {
         });
         return () => unsubscribe();
     }, [user]);
+
+    // Listen for Signal → Character integration
+    useEffect(() => {
+        const handleSignalProcess = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            if (detail?.headline) {
+                const context = `I just read this in The Signal:\n\n"${detail.headline}"\n\n${detail.summary}\n\nI want to think about what this means for me and my character.`;
+                setInitialContext(context);
+                setIsMirrorOpen(true);
+            }
+        };
+        window.addEventListener('signal-process-with-character', handleSignalProcess);
+        return () => window.removeEventListener('signal-process-with-character', handleSignalProcess);
+    }, []);
 
     return (
         <>
@@ -59,9 +74,10 @@ export function TriagePanel() {
             {/* Mirror Chat Modal */}
             <MirrorChat
                 isOpen={isMirrorOpen}
-                onClose={() => setIsMirrorOpen(false)}
+                onClose={() => { setIsMirrorOpen(false); setInitialContext(null); }}
                 bible={bible}
                 uid={user?.uid || ""}
+                initialContext={initialContext}
             />
         </>
     );
