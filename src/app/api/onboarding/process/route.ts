@@ -123,7 +123,6 @@ export async function POST(req: Request) {
             manifesto: data.dream_self,
             core_beliefs: "",
             important_people: data.dossier.people,
-            current_constraints: data.dossier.profile_facts,
             things_i_enjoy: data.dossier.preferences,
         };
 

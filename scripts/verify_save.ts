@@ -27,7 +27,6 @@ async function testSave() {
             manifesto: "",
             core_beliefs: "",
             important_people: "",
-            current_constraints: ""
         },
         compiled_bible: {
             behavioral_responses: [{ id: "r1", rule: "Test Rule", description: "Test Desc" }],

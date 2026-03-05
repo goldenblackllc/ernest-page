@@ -48,6 +48,7 @@ interface FeedPostProps {
         is_public?: boolean;
         isLikedByMe?: boolean;
         like_count?: number;
+        author_avatar_url?: string;
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
@@ -157,8 +158,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, savedPosts = [
             {/* Header */}
             <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 mb-2 w-full">
                 <div className="shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                        <User className="w-5 h-5 text-emerald-500" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 overflow-hidden">
+                        {post.author_avatar_url ? (
+                            <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="w-5 h-5 text-emerald-500" />
+                        )}
                     </div>
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">

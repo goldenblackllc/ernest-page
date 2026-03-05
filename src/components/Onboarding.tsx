@@ -89,7 +89,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         manifesto: result.dream_self,
                         core_beliefs: '',
                         important_people: people.trim(),
-                        current_constraints: '',
                         things_i_enjoy: enjoyments.trim(),
                     },
                 }),

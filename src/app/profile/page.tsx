@@ -1,6 +1,6 @@
 "use client";
 
-import { CharacterShowcase } from "@/components/CharacterShowcase";
+import { ProfileView } from "@/components/ProfileView";
 import { TriagePanel } from "@/components/TriagePanel";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { DashboardFooter } from "@/components/DashboardFooter";
@@ -13,7 +13,7 @@ export default function ProfilePage() {
                 <DashboardHeader />
 
                 <div className="container mx-auto px-0 sm:px-4 pt-[calc(64px+env(safe-area-inset-top))] pb-32 max-w-3xl">
-                    <CharacterShowcase />
+                    <ProfileView />
                     <TriagePanel />
                 </div>
 

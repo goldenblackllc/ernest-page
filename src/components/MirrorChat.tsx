@@ -190,7 +190,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid }: MirrorChatProps) {
     };
 
     const idealName = bible?.source_code?.archetype || "Your Ideal Self";
-    const avatarUrl = bible?.compiled_bible?.avatar_url;
+    const avatarUrl = bible?.compiled_output?.avatar_url;
 
     const handleGeneratePlan = async () => {
         if (isGeneratingPlan || messages.length < 2) return;

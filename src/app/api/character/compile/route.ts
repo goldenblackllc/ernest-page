@@ -57,8 +57,7 @@ User Inputs:
 Archetype: {ARCHETYPE}
 Manifesto: {MANIFESTO}
 Important People: {IMPORTANT_PEOPLE}
-Things they enjoy: {THINGS_I_ENJOY}
-Constraints: {CURRENT_CONSTRAINTS}`;
+Things they enjoy: {THINGS_I_ENJOY}`;
 
 // Removed PROMPT_REALITY_BIBLE
 export async function POST(req: Request) {
@@ -79,12 +78,13 @@ export async function POST(req: Request) {
             .replace('{MANIFESTO}', source_code.manifesto || 'None')
             .replace('{IMPORTANT_PEOPLE}', source_code.important_people || 'None')
             .replace('{THINGS_I_ENJOY}', source_code.things_i_enjoy || 'Not specified.')
-            .replace('{CURRENT_CONSTRAINTS}', source_code.current_constraints || 'None');
+
 
         // Generate Ideal Bible
         console.log(`Generating Ideal Bible with Fallback Utility...`);
         const idealResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
+            abortSignal: AbortSignal.timeout(90_000), // 90s before falling back
             providerOptions,
             system: SYSTEM_PROMPT,
             prompt: idealPrompt,
@@ -155,6 +155,15 @@ export async function POST(req: Request) {
 
             await userDocRef.set({ character_bible: updatedBible }, { merge: true });
         }
+
+        // Fire-and-forget: generate avatar in the background
+        // Uses the request URL origin to build the internal API call
+        const origin = new URL(req.url).origin;
+        fetch(`${origin}/api/character/avatar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid }),
+        }).catch(err => console.error('[Compile] Avatar generation fire-and-forget error:', err));
 
         return Response.json({
             success: true,

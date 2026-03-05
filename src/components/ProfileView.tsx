@@ -11,7 +11,7 @@ import { MirrorChat } from "./MirrorChat";
 import { DossierView } from "./DossierView";
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 
-export function CharacterShowcase() {
+export function ProfileView() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [bible, setBible] = useState<CharacterBible | null>(null);
@@ -49,8 +49,8 @@ export function CharacterShowcase() {
                 <div className="flex items-center justify-between pb-6 border-b border-white/5">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden shrink-0">
-                            {bible?.compiled_bible?.avatar_url ? (
-                                <img src={bible.compiled_bible.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            {bible?.compiled_output?.avatar_url ? (
+                                <img src={bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-zinc-500">
                                     <User className="w-6 h-6" />
@@ -179,9 +179,11 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
     const [result, setResult] = useState<{ title: string; dream_self: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Reset when modal opens
+    // Only reset when modal actually opens (false → true), not when Firestore props change mid-flow
+    const wasOpen = React.useRef(false);
     React.useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !wasOpen.current) {
+            // Modal just opened — populate with current values
             setGender(currentGender);
             setAge(currentAge);
             setRant(currentRant);
@@ -191,6 +193,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
             setResult(null);
             setError(null);
         }
+        wasOpen.current = isOpen;
     }, [isOpen, currentRant, currentGender, currentAge, currentPeople, currentEnjoyments]);
 
     if (!isOpen) return null;
@@ -237,7 +240,6 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                         manifesto: result.dream_self,
                         core_beliefs: '',
                         important_people: people.trim(),
-                        current_constraints: '',
                         things_i_enjoy: enjoyments.trim(),
                     },
                 }),

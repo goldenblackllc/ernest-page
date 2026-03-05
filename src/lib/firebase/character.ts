@@ -8,7 +8,6 @@ export const DEFAULT_BIBLE: CharacterBible = {
         manifesto: "I am a good person who is successful, unconditionally loved, and I enjoy my life.",
         core_beliefs: "",
         important_people: "",
-        current_constraints: ""
     },
     compiled_bible: {},
     compiled_output: {

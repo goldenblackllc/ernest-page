@@ -17,7 +17,6 @@ export interface CharacterBible {
         manifesto: string;
         core_beliefs: string;
         important_people: string;
-        current_constraints: string; // The new "Inventory/Reality Anchor" field
         things_i_enjoy?: string; // Preferences & Aesthetics
     };
     compiled_bible: {
@@ -30,6 +29,7 @@ export interface CharacterBible {
     };
     compiled_output?: {
         ideal?: Array<{ heading: string, content: string }>;
+        avatar_url?: string;
     };
 
     // --- SYSTEM METADATA ---

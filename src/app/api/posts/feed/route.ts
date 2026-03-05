@@ -3,9 +3,11 @@ import { getAuth } from "firebase-admin/auth";
 
 export const maxDuration = 30;
 
+const PAGE_SIZE = 15;
+
 export async function GET(req: Request) {
     try {
-        // 1. Authenticate the caller via Firebase ID token
+        // 1. Authenticate
         const authHeader = req.headers.get("Authorization");
         if (!authHeader?.startsWith("Bearer ")) {
             return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,14 +22,19 @@ export async function GET(req: Request) {
             return Response.json({ error: "Invalid token" }, { status: 401 });
         }
 
-        // 2. Fetch user profile for feed algorithm
+        // 2. Parse pagination params
+        const url = new URL(req.url);
+        const cursor = url.searchParams.get("cursor"); // ISO timestamp string
+        const limit = Math.min(parseInt(url.searchParams.get("limit") || String(PAGE_SIZE)), 50);
+
+        // 3. Fetch user profile
         const userDoc = await db.collection("users").doc(uid).get();
         const userData = userDoc.data() || {};
         const followingMap: Record<string, string> = userData.following || {};
         const followedIds = Object.keys(followingMap);
         const myRegion = userData.region || "";
 
-        // 3. Run the blended feed query (same logic as old Ledger.tsx)
+        // 4. Blended feed query with cursor support
         const postsRef = db.collection("posts");
         const seenIds = new Set<string>();
         const allPosts: any[] = [];
@@ -41,46 +48,62 @@ export async function GET(req: Request) {
             });
         };
 
+        // Build cursor date for startAfter
+        const cursorDate = cursor ? new Date(cursor) : null;
+
         // Bucket A: My posts
         try {
-            const snapA = await postsRef
+            let queryA = postsRef
                 .where("authorId", "==", uid)
-                .orderBy("created_at", "desc")
-                .limit(10)
-                .get();
+                .orderBy("created_at", "desc");
+            if (cursorDate) queryA = queryA.where("created_at", "<", cursorDate);
+            const snapA = await queryA.limit(limit).get();
             addPosts(snapA.docs);
         } catch (indexErr) {
             console.warn("Bucket A index missing, using fallback:", indexErr);
-            // Fallback: fetch ALL user posts (no ordering available without index)
-            const snapA = await postsRef
-                .where("authorId", "==", uid)
-                .get();
-            addPosts(snapA.docs);
+            const snapA = await postsRef.where("authorId", "==", uid).get();
+            // Manual cursor filter for fallback
+            snapA.docs.forEach(doc => {
+                const data = doc.data();
+                const time = data.created_at?.toMillis?.() || 0;
+                if (!cursorDate || time < cursorDate.getTime()) {
+                    if (!seenIds.has(doc.id)) {
+                        seenIds.add(doc.id);
+                        allPosts.push({ id: doc.id, ...data });
+                    }
+                }
+            });
         }
 
-        // Bucket B: Following (chunked, 'in' supports max 10)
+        // Bucket B: Following (chunked)
         for (let i = 0; i < followedIds.length; i += 10) {
             const chunk = followedIds.slice(i, i + 10);
             try {
-                const snapB = await postsRef
+                let queryB = postsRef
                     .where("authorId", "in", chunk)
-                    .orderBy("created_at", "desc")
-                    .limit(10)
-                    .get();
+                    .orderBy("created_at", "desc");
+                if (cursorDate) queryB = queryB.where("created_at", "<", cursorDate);
+                const snapB = await queryB.limit(limit).get();
                 addPosts(snapB.docs);
             } catch {
-                const snapB = await postsRef
-                    .where("authorId", "in", chunk)
-                    .get();
-                addPosts(snapB.docs);
+                const snapB = await postsRef.where("authorId", "in", chunk).get();
+                snapB.docs.forEach(doc => {
+                    const data = doc.data();
+                    const time = data.created_at?.toMillis?.() || 0;
+                    if (!cursorDate || time < cursorDate.getTime()) {
+                        if (!seenIds.has(doc.id)) {
+                            seenIds.add(doc.id);
+                            allPosts.push({ id: doc.id, ...data });
+                        }
+                    }
+                });
             }
         }
 
         // Bucket C: Discovery
-        const snapC = await postsRef
-            .orderBy("created_at", "desc")
-            .limit(25)
-            .get();
+        let queryC = postsRef.orderBy("created_at", "desc");
+        if (cursorDate) queryC = queryC.where("created_at", "<", cursorDate);
+        const snapC = await queryC.limit(limit * 2).get();
         const discoveryDocs = snapC.docs.filter((doc) => {
             const data = doc.data();
             const isMe = data.authorId === uid;
@@ -88,29 +111,62 @@ export async function GET(req: Request) {
             const isSameRegion = myRegion && data.region === myRegion;
             return !isMe && !isFollowed && !isSameRegion;
         });
-        addPosts(discoveryDocs.slice(0, 15));
+        addPosts(discoveryDocs.slice(0, limit));
 
-        // 4. Sort chronologically
+        // 5. Sort chronologically
         allPosts.sort((a, b) => {
             const aTime = a.created_at?.toMillis?.() || a.created_at?._seconds * 1000 || 0;
             const bTime = b.created_at?.toMillis?.() || b.created_at?._seconds * 1000 || 0;
             return bTime - aTime;
         });
 
-        // 5. Sanitize: strip private fields from non-owned posts, replace likedBy
-        const sanitized = allPosts.map((post) => {
+        // 6. Paginate: take only `limit` posts
+        const page = allPosts.slice(0, limit);
+
+        // 7. Compute next cursor from the last post in the page
+        let nextCursor: string | null = null;
+        if (page.length === limit && allPosts.length >= limit) {
+            const lastPost = page[page.length - 1];
+            const lastTime = lastPost.created_at?.toMillis?.()
+                || (lastPost.created_at?._seconds ? lastPost.created_at._seconds * 1000 : null);
+            if (lastTime) {
+                nextCursor = new Date(lastTime).toISOString();
+            }
+        }
+
+        // 8. Batch-fetch author avatars
+        const uniqueAuthorIds = [...new Set(page.map(p => p.authorId || p.uid).filter(Boolean))];
+        const avatarMap: Record<string, string> = {};
+        if (uniqueAuthorIds.length > 0) {
+            const authorRefs = uniqueAuthorIds.map(id => db.collection('users').doc(id));
+            try {
+                const authorDocs = await db.getAll(...authorRefs);
+                authorDocs.forEach((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const avatarUrl = data?.character_bible?.compiled_output?.avatar_url;
+                        if (avatarUrl) {
+                            avatarMap[doc.id] = avatarUrl;
+                        }
+                    }
+                });
+            } catch (err) {
+                console.warn('Failed to batch-fetch author avatars:', err);
+            }
+        }
+
+        // 9. Sanitize
+        const sanitized = page.map((post) => {
             const isOwner = post.authorId === uid || post.uid === uid;
             const likedBy: string[] = post.likedBy || [];
             const isLikedByMe = likedBy.includes(uid);
 
-            // Build the sanitized post
             const clean: any = { ...post };
+            clean.author_avatar_url = avatarMap[post.authorId || post.uid] || null;
 
-            // Replace likedBy with isLikedByMe for ALL posts
             delete clean.likedBy;
             clean.isLikedByMe = isLikedByMe;
 
-            // Strip private fields from posts that don't belong to the user
             if (!isOwner) {
                 delete clean.content_raw;
                 delete clean.rant;
@@ -119,7 +175,6 @@ export async function GET(req: Request) {
                 delete clean.like_count;
             }
 
-            // Convert Firestore Timestamps to serializable format
             if (clean.created_at && clean.created_at._seconds !== undefined) {
                 clean.created_at = {
                     _seconds: clean.created_at._seconds,
@@ -134,6 +189,7 @@ export async function GET(req: Request) {
             posts: sanitized,
             following: followingMap,
             savedPosts: userData.saved_posts || [],
+            nextCursor,
         });
     } catch (error: any) {
         console.error("Feed API Error:", error);
