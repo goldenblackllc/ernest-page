@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const NEWSAPI_AI_KEY = process.env.NEWSAPI_AI_KEY;
 const NEWSAPI_BASE_URL = 'https://eventregistry.org/api/v1/article/getArticles';
@@ -61,71 +61,70 @@ export async function GET(req: Request) {
     }
 
     try {
-        // 1. Fetch news articles (dual-layer: recent + trending)
-        console.log('[Signal Cron] Step 1: Fetching news articles...');
-        const articles = await fetchNewsArticles();
-        console.log(`[Signal Cron] Step 1 complete: ${articles.length} articles fetched`);
+        // 1-3. Fetch articles, active threads, and recent headlines in parallel
+        console.log('[Signal Cron] Steps 1-3: Fetching articles, threads, and recent headlines in parallel...');
+        const [articles, activeThreads, recentHeadlines] = await Promise.all([
+            fetchNewsArticles(),
+            getActiveThreads(),
+            getRecentSignalHeadlines(),
+        ]);
+        console.log(`[Signal Cron] Steps 1-3 complete: ${articles.length} articles, ${activeThreads.length} threads, ${recentHeadlines.length} recent headlines`);
+
         if (articles.length === 0) {
             return NextResponse.json({ success: true, message: 'No articles found', signalsCreated: 0 });
         }
-
-        // 2. Fetch active story threads (past 72h)
-        console.log('[Signal Cron] Step 2: Fetching active threads...');
-        const activeThreads = await getActiveThreads();
-        console.log(`[Signal Cron] Step 2 complete: ${activeThreads.length} active threads`);
-
-        // 3. Deduplicate against recent signals (past 24h)
-        console.log('[Signal Cron] Step 3: Fetching recent headlines for dedup...');
-        const recentHeadlines = await getRecentSignalHeadlines();
-        console.log(`[Signal Cron] Step 3 complete: ${recentHeadlines.length} recent headlines`);
 
         // 4. Process through AI to generate balanced signal cards
         console.log('[Signal Cron] Step 4: Processing articles with AI...');
         const signals = await processArticlesWithAI(articles, recentHeadlines, activeThreads);
         console.log(`[Signal Cron] Step 4 complete: ${signals.length} signals generated`);
 
-        // 5. Store signals in Firestore
+        // 5. Store signals in Firestore (in parallel)
         console.log('[Signal Cron] Step 5: Storing signals in Firestore...');
-        let created = 0;
-        for (const signal of signals) {
+        const results = await Promise.all(signals.map(async (signal) => {
             const sourceArticle = articles[signal.source_index] || articles[0];
 
-            // Generate hero image via Imagen
+            // Use original article photo if available, fall back to Imagen
             let image_url: string | null = null;
-            try {
-                const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instances: [{ prompt: signal.image_prompt }],
-                        parameters: { sampleCount: 1, aspectRatio: "16:9" }
-                    })
-                });
+            if (sourceArticle.image) {
+                image_url = sourceArticle.image;
+                console.log(`[Signal Cron] Using original article photo for: ${signal.headline.slice(0, 50)}...`);
+            } else {
+                // No original photo — generate via Imagen as fallback
+                try {
+                    const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            instances: [{ prompt: signal.image_prompt }],
+                            parameters: { sampleCount: 1, aspectRatio: "16:9" }
+                        })
+                    });
 
-                if (imagenRes.ok) {
-                    const data = await imagenRes.json();
-                    if (data.predictions?.[0]?.bytesBase64Encoded) {
-                        const base64Data = data.predictions[0].bytesBase64Encoded;
-                        const buffer = Buffer.from(base64Data, 'base64');
-                        const bucket = storage.bucket();
-                        const signalId = `signal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                        const fileName = `signal-images/${signalId}.jpg`;
-                        const file = bucket.file(fileName);
+                    if (imagenRes.ok) {
+                        const data = await imagenRes.json();
+                        if (data.predictions?.[0]?.bytesBase64Encoded) {
+                            const base64Data = data.predictions[0].bytesBase64Encoded;
+                            const buffer = Buffer.from(base64Data, 'base64');
+                            const bucket = storage.bucket();
+                            const signalId = `signal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                            const fileName = `signal-images/${signalId}.jpg`;
+                            const file = bucket.file(fileName);
 
-                        await file.save(buffer, {
-                            metadata: { contentType: 'image/jpeg' },
-                            public: true
-                        });
+                            await file.save(buffer, {
+                                metadata: { contentType: 'image/jpeg' },
+                                public: true
+                            });
 
-                        image_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                        console.log(`[Signal Cron] Generated image for: ${signal.headline.slice(0, 50)}...`);
+                            image_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                            console.log(`[Signal Cron] Generated Imagen fallback for: ${signal.headline.slice(0, 50)}...`);
+                        }
+                    } else {
+                        console.error('[Signal Cron] Imagen API error:', await imagenRes.text());
                     }
-                } else {
-                    console.error('[Signal Cron] Imagen API error:', await imagenRes.text());
+                } catch (imgErr: any) {
+                    console.error('[Signal Cron] Image generation failed:', imgErr.message);
                 }
-            } catch (imgErr: any) {
-                console.error('[Signal Cron] Image generation failed:', imgErr.message);
-                // Gracefully fall back to no image
             }
 
             await db.collection('signals').add({
@@ -150,9 +149,10 @@ export async function GET(req: Request) {
                     source: sourceArticle.source?.title || 'Unknown',
                 },
             });
-            created++;
-        }
+            return true;
+        }));
 
+        const created = results.filter(Boolean).length;
         console.log(`[Signal Cron] ✅ Complete: Created ${created} signal cards from ${articles.length} articles (${activeThreads.length} active threads)`);
         return NextResponse.json({ success: true, signalsCreated: created, articlesProcessed: articles.length, activeThreads: activeThreads.length });
 
@@ -168,9 +168,10 @@ export async function GET(req: Request) {
 async function fetchNewsArticles(): Promise<NewsArticle[]> {
     const allArticles: NewsArticle[] = [];
 
-    // LAYER A — "Right Now": Top recent articles sorted by date
-    try {
-        const res = await fetch(NEWSAPI_BASE_URL, {
+    // Fetch all three layers in parallel
+    const [recentResult, trendingResult, brightResult] = await Promise.allSettled([
+        // LAYER A — "Right Now": Top recent articles sorted by date
+        fetch(NEWSAPI_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -184,22 +185,16 @@ async function fetchNewsArticles(): Promise<NewsArticle[]> {
                 dataType: ['news'],
                 apiKey: NEWSAPI_AI_KEY,
             }),
-        });
-        if (res.ok) {
+        }).then(async res => {
+            if (!res.ok) throw new Error(await res.text());
             const data = await res.json();
             const articles = data.articles?.results || [];
-            allArticles.push(...articles.map((a: any) => ({ ...a, _layer: 'recent' as const })));
             console.log(`[Signal] Layer A: ${articles.length} recent articles`);
-        } else {
-            console.error('[Signal] Layer A fetch failed:', await res.text());
-        }
-    } catch (err) {
-        console.error('[Signal] Layer A error:', err);
-    }
+            return articles.map((a: any) => ({ ...a, _layer: 'recent' as const }));
+        }),
 
-    // LAYER B — "Big Stories": Top articles by social score (most covered)
-    try {
-        const res = await fetch(NEWSAPI_BASE_URL, {
+        // LAYER B — "Big Stories": Top articles by social score
+        fetch(NEWSAPI_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -212,22 +207,16 @@ async function fetchNewsArticles(): Promise<NewsArticle[]> {
                 dataType: ['news'],
                 apiKey: NEWSAPI_AI_KEY,
             }),
-        });
-        if (res.ok) {
+        }).then(async res => {
+            if (!res.ok) throw new Error(await res.text());
             const data = await res.json();
             const articles = data.articles?.results || [];
-            allArticles.push(...articles.map((a: any) => ({ ...a, _layer: 'trending' as const })));
             console.log(`[Signal] Layer B: ${articles.length} trending articles`);
-        } else {
-            console.error('[Signal] Layer B fetch failed:', await res.text());
-        }
-    } catch (err) {
-        console.error('[Signal] Layer B error:', err);
-    }
+            return articles.map((a: any) => ({ ...a, _layer: 'trending' as const }));
+        }),
 
-    // BRIGHT SPOTS — Positive news search
-    try {
-        const res = await fetch(NEWSAPI_BASE_URL, {
+        // BRIGHT SPOTS — Positive news search
+        fetch(NEWSAPI_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -241,15 +230,22 @@ async function fetchNewsArticles(): Promise<NewsArticle[]> {
                 dataType: ['news'],
                 apiKey: NEWSAPI_AI_KEY,
             }),
-        });
-        if (res.ok) {
+        }).then(async res => {
+            if (!res.ok) throw new Error(await res.text());
             const data = await res.json();
             const articles = data.articles?.results || [];
-            allArticles.push(...articles.map((a: any) => ({ ...a, _layer: 'bright' as const })));
             console.log(`[Signal] Bright spots: ${articles.length} articles`);
+            return articles.map((a: any) => ({ ...a, _layer: 'bright' as const }));
+        }),
+    ]);
+
+    // Collect successful results, log failures
+    for (const [label, result] of [['A', recentResult], ['B', trendingResult], ['Bright', brightResult]] as const) {
+        if (result.status === 'fulfilled') {
+            allArticles.push(...result.value);
+        } else {
+            console.error(`[Signal] Layer ${label} failed:`, result.reason);
         }
-    } catch (err) {
-        console.error('[Signal] Bright spots error:', err);
     }
 
     // Deduplicate by uri
