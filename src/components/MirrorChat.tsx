@@ -352,7 +352,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -4 }}
                                             transition={{ duration: 0.15 }}
-                                            className="absolute top-full left-0 mt-1.5 z-20 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden min-w-[220px]"
+                                            className="absolute top-full left-0 mt-1.5 z-20 bg-zinc-950 border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[260px]"
                                         >
                                             {(Object.entries(ENGAGEMENT_TONES) as [SessionTone, typeof ENGAGEMENT_TONES[SessionTone]][]).map(([key, tone]) => (
                                                 <button
@@ -374,11 +374,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                                 >
                                                     <span className={cn(
                                                         "text-sm font-medium",
-                                                        key === sessionTone ? "text-white" : "text-zinc-300"
+                                                        key === sessionTone ? "text-zinc-100" : "text-zinc-300"
                                                     )}>
                                                         {tone.label}
                                                     </span>
-                                                    <span className="text-[11px] text-zinc-500">{tone.description}</span>
+                                                    <span className="text-sm text-zinc-400">{tone.description}</span>
                                                 </button>
                                             ))}
                                         </motion.div>
