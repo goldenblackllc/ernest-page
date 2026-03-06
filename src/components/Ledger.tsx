@@ -4,13 +4,15 @@ import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
 import { FeedAdCard } from "@/components/FeedAdCard";
 import { ecosystemAds } from "@/config/ecosystem";
 import { Timestamp } from "firebase/firestore";
+
+const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 export function Ledger() {
     const { user } = useAuth();
@@ -20,11 +22,13 @@ export function Ledger() {
     const [followingMap, setFollowingMap] = useState<Record<string, string>>({});
 
     const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
+
     const [pendingPostId, setPendingPostId] = useState<string | null>(null);
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<string | null>(null);
-    const [nextCursor, setNextCursor] = useState<string | null>(null);
-    const sentinelRef = useRef<HTMLDivElement>(null);
+
+
+    const newestPostTimeRef = useRef<string | null>(null);
+    const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Subscribe to user profile
     useEffect(() => {
@@ -33,21 +37,14 @@ export function Ledger() {
         return () => unsub();
     }, [user]);
 
-    // Fetch feed (initial or paginated)
-    const fetchFeed = useCallback(async (cursor?: string | null) => {
+    // Fetch feed (full refresh, no pagination)
+    const fetchFeed = useCallback(async () => {
         if (!user) return;
-
-        const isLoadMore = !!cursor;
-        if (isLoadMore) {
-            setLoadingMore(true);
-        }
 
         try {
             const idToken = await user.getIdToken();
-            const params = new URLSearchParams();
-            if (cursor) params.set("cursor", cursor);
 
-            const res = await fetch(`/api/posts/feed?${params.toString()}`, {
+            const res = await fetch(`/api/posts/feed`, {
                 headers: { 'Authorization': `Bearer ${idToken}` },
             });
 
@@ -62,27 +59,25 @@ export function Ledger() {
                 return post;
             });
 
-            if (isLoadMore) {
-                // Append, deduplicate by id
-                setEntries(prev => {
-                    const existingIds = new Set(prev.map(e => e.id));
-                    const newPosts = posts.filter((p: any) => !existingIds.has(p.id));
-                    return [...prev, ...newPosts];
-                });
-            } else {
-                setEntries(posts);
-            }
-
+            setEntries(posts);
             setFollowingMap(data.following || {});
 
-            setNextCursor(data.nextCursor || null);
+
+            // Track the newest post timestamp for polling
+            if (posts.length > 0) {
+                const newest = posts[0];
+                const time = newest.created_at?.toMillis?.() || (newest.created_at?._seconds ? newest.created_at._seconds * 1000 : 0);
+                if (time) {
+                    newestPostTimeRef.current = new Date(time).toISOString();
+                }
+            }
         } catch (error) {
             console.error("Failed to fetch feed:", error);
         } finally {
             setLoading(false);
-            setLoadingMore(false);
         }
     }, [user]);
+
 
     // Initial load
     useEffect(() => {
@@ -91,23 +86,56 @@ export function Ledger() {
         }
     }, [user, loading, fetchFeed]);
 
-    // Infinite scroll: IntersectionObserver on sentinel
+    // Visibility-aware poll for new posts (every 15 minutes, only when tab visible)
     useEffect(() => {
-        if (!sentinelRef.current) return;
+        if (!user) return;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const entry = entries[0];
-                if (entry.isIntersecting && nextCursor && !loadingMore) {
-                    fetchFeed(nextCursor);
+        const checkForNewPosts = async () => {
+            if (document.visibilityState !== "visible") return;
+            if (!newestPostTimeRef.current) return;
+
+            try {
+                const idToken = await user.getIdToken();
+                const params = new URLSearchParams({ newer_than: newestPostTimeRef.current });
+
+                const res = await fetch(`/api/posts/feed?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${idToken}` },
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.newPostCount > 0) {
+                        fetchFeed();
+                    }
                 }
-            },
-            { rootMargin: '200px' } // Start loading 200px before reaching bottom
-        );
+            } catch {
+                // Silent — non-critical polling
+            }
+        };
 
-        observer.observe(sentinelRef.current);
-        return () => observer.disconnect();
-    }, [nextCursor, loadingMore, fetchFeed]);
+        // Start polling interval
+        pollTimerRef.current = setInterval(checkForNewPosts, POLL_INTERVAL_MS);
+
+        // Pause/resume on visibility change
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") {
+                // Resume: check immediately, then restart interval
+                checkForNewPosts();
+                if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+                pollTimerRef.current = setInterval(checkForNewPosts, POLL_INTERVAL_MS);
+            } else {
+                // Pause: clear interval
+                if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibility);
+
+        return () => {
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+            document.removeEventListener("visibilitychange", handleVisibility);
+        };
+    }, [user]);
 
     // Listen for checkin-publishing-start
     useEffect(() => {
@@ -141,7 +169,7 @@ export function Ledger() {
         return () => unsub();
     }, [pendingPostId]);
 
-    // Skeleton loading (fast, native feel)
+    // Skeleton loading
     if (loading) {
         return (
             <section className="flex flex-col gap-6">
@@ -175,7 +203,8 @@ export function Ledger() {
     }
 
     return (
-        <section className="flex flex-col gap-8">
+        <section className="flex flex-col gap-6 pt-2">
+
             {pendingPostId && (
                 <div className="bg-[#1a1a1a] border border-emerald-500/20 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">
                     <div className="flex flex-col items-center gap-3">
@@ -205,18 +234,8 @@ export function Ledger() {
                 );
             })}
 
-            {/* Infinite scroll sentinel */}
-            <div ref={sentinelRef} className="h-1" />
-
-            {/* Loading more indicator */}
-            {loadingMore && (
-                <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 text-zinc-500 animate-spin" />
-                </div>
-            )}
-
             {/* End of feed */}
-            {!nextCursor && entries.length > 0 && !loadingMore && (
+            {entries.length > 0 && (
                 <div className="text-center py-8">
                     <p className="text-xs text-zinc-600">You're all caught up.</p>
                 </div>

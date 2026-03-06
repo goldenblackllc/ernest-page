@@ -44,9 +44,7 @@ export async function GET(req: Request) {
 
                         // Only generate a post if there is actual conversation content AND user hasn't opted out
                         if (messages.length > 0 && shouldPublish) {
-                            // Truncate to last 15 messages for cost efficiency — enough context for synthesis
-                            const truncatedMessages = messages.length > 15 ? messages.slice(-15) : messages;
-                            const transcript = truncatedMessages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+                            const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
                             // Fetch recent posts to avoid repeating the same photo scale
                             let recentScales: string[] = [];

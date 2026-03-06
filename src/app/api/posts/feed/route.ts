@@ -3,7 +3,7 @@ import { getAuth } from "firebase-admin/auth";
 
 export const maxDuration = 30;
 
-const PAGE_SIZE = 15;
+const FEED_LIMIT = 20;
 
 export async function GET(req: Request) {
     try {
@@ -22,10 +22,10 @@ export async function GET(req: Request) {
             return Response.json({ error: "Invalid token" }, { status: 401 });
         }
 
-        // 2. Parse pagination params
+        // 2. Parse optional newer_than param (for new-post detection)
         const url = new URL(req.url);
-        const cursor = url.searchParams.get("cursor"); // ISO timestamp string
-        const limit = Math.min(parseInt(url.searchParams.get("limit") || String(PAGE_SIZE)), 50);
+        const newerThan = url.searchParams.get("newer_than"); // ISO timestamp
+        const newerThanDate = newerThan ? new Date(newerThan) : null;
 
         // 3. Fetch user profile
         const userDoc = await db.collection("users").doc(uid).get();
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
         const followedIds = Object.keys(followingMap);
         const myRegion = userData.region || "";
 
-        // 4. Blended feed query with cursor support
+        // 4. Chronological feed: fetch from all buckets, merge, sort newest-first
         const postsRef = db.collection("posts");
         const seenIds = new Set<string>();
         const allPosts: any[] = [];
@@ -48,25 +48,21 @@ export async function GET(req: Request) {
             });
         };
 
-        // Build cursor date for startAfter
-        const cursorDate = cursor ? new Date(cursor) : null;
-
-        // Bucket A: My posts
+        // Bucket A: My posts (all of them)
         try {
             let queryA = postsRef
                 .where("authorId", "==", uid)
                 .orderBy("created_at", "desc");
-            if (cursorDate) queryA = queryA.where("created_at", "<", cursorDate);
-            const snapA = await queryA.limit(limit).get();
+            if (newerThanDate) queryA = queryA.where("created_at", ">", newerThanDate);
+            const snapA = await queryA.limit(FEED_LIMIT).get();
             addPosts(snapA.docs);
         } catch (indexErr) {
             console.warn("Bucket A index missing, using fallback:", indexErr);
             const snapA = await postsRef.where("authorId", "==", uid).get();
-            // Manual cursor filter for fallback
             snapA.docs.forEach(doc => {
                 const data = doc.data();
                 const time = data.created_at?.toMillis?.() || 0;
-                if (!cursorDate || time < cursorDate.getTime()) {
+                if (!newerThanDate || time > newerThanDate.getTime()) {
                     if (!seenIds.has(doc.id)) {
                         seenIds.add(doc.id);
                         allPosts.push({ id: doc.id, ...data });
@@ -75,22 +71,22 @@ export async function GET(req: Request) {
             });
         }
 
-        // Bucket B: Following (chunked)
+        // Bucket B: Following (chunked, Firestore 'in' limited to 30)
         for (let i = 0; i < followedIds.length; i += 10) {
             const chunk = followedIds.slice(i, i + 10);
             try {
                 let queryB = postsRef
                     .where("authorId", "in", chunk)
                     .orderBy("created_at", "desc");
-                if (cursorDate) queryB = queryB.where("created_at", "<", cursorDate);
-                const snapB = await queryB.limit(limit).get();
+                if (newerThanDate) queryB = queryB.where("created_at", ">", newerThanDate);
+                const snapB = await queryB.limit(FEED_LIMIT).get();
                 addPosts(snapB.docs);
             } catch {
                 const snapB = await postsRef.where("authorId", "in", chunk).get();
                 snapB.docs.forEach(doc => {
                     const data = doc.data();
                     const time = data.created_at?.toMillis?.() || 0;
-                    if (!cursorDate || time < cursorDate.getTime()) {
+                    if (!newerThanDate || time > newerThanDate.getTime()) {
                         if (!seenIds.has(doc.id)) {
                             seenIds.add(doc.id);
                             allPosts.push({ id: doc.id, ...data });
@@ -100,10 +96,10 @@ export async function GET(req: Request) {
             }
         }
 
-        // Bucket C: Discovery
+        // Bucket C: Discovery (not me, not following, not same region)
         let queryC = postsRef.orderBy("created_at", "desc");
-        if (cursorDate) queryC = queryC.where("created_at", "<", cursorDate);
-        const snapC = await queryC.limit(limit * 2).get();
+        if (newerThanDate) queryC = queryC.where("created_at", ">", newerThanDate);
+        const snapC = await queryC.limit(FEED_LIMIT * 2).get();
         const discoveryDocs = snapC.docs.filter((doc) => {
             const data = doc.data();
             const isMe = data.authorId === uid;
@@ -111,68 +107,21 @@ export async function GET(req: Request) {
             const isSameRegion = myRegion && data.region === myRegion;
             return !isMe && !isFollowed && !isSameRegion;
         });
-        addPosts(discoveryDocs.slice(0, limit));
+        addPosts(discoveryDocs.slice(0, FEED_LIMIT));
 
-        // 5. Watermark-based sort: fresh posts first, then shuffled discovery
+        // 5. Sort all posts chronologically: newest first
         const getPostTime = (p: any) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
-        const watermark = userData.feed_watermark?.toMillis?.()
-            || (userData.feed_watermark?._seconds ? userData.feed_watermark._seconds * 1000 : 0);
+        allPosts.sort((a, b) => getPostTime(b) - getPostTime(a));
 
-        if (!cursor) {
-            // First page: split into fresh (unseen) and seen
-            const freshPosts: any[] = [];
-            const seenPosts: any[] = [];
+        // 6. Slice to feed limit
+        const page = allPosts.slice(0, FEED_LIMIT);
 
-            for (const post of allPosts) {
-                const postTime = getPostTime(post);
-                if (watermark && postTime <= watermark) {
-                    seenPosts.push(post);
-                } else {
-                    freshPosts.push(post);
-                }
-            }
-
-            // Fresh posts: newest first
-            freshPosts.sort((a, b) => getPostTime(b) - getPostTime(a));
-
-            // Seen posts: Fisher-Yates shuffle
-            for (let i = seenPosts.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [seenPosts[i], seenPosts[j]] = [seenPosts[j], seenPosts[i]];
-            }
-
-            // Rebuild allPosts: fresh first, then shuffled seen
-            allPosts.length = 0;
-            allPosts.push(...freshPosts, ...seenPosts);
-
-            // Update watermark to now (fire-and-forget)
-            db.collection("users").doc(uid).set(
-                { feed_watermark: new Date() },
-                { merge: true }
-            ).catch(() => { /* silent — non-critical */ });
-        } else {
-            // Paginated loads: shuffle everything (all "seen" by definition)
-            for (let i = allPosts.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [allPosts[i], allPosts[j]] = [allPosts[j], allPosts[i]];
-            }
+        // 7. If this is a newer_than check, return just the count (lightweight)
+        if (newerThanDate) {
+            return Response.json({
+                newPostCount: page.length,
+            });
         }
-
-        // 6. Paginate: take only `limit` posts
-        const page = allPosts.slice(0, limit);
-
-        // 7. Compute next cursor (use index-based since order is no longer purely time-based)
-        let nextCursor: string | null = null;
-        if (page.length === limit && allPosts.length >= limit) {
-            const lastPost = page[page.length - 1];
-            const lastTime = lastPost.created_at?.toMillis?.()
-                || (lastPost.created_at?._seconds ? lastPost.created_at._seconds * 1000 : null);
-            if (lastTime) {
-                nextCursor = new Date(lastTime).toISOString();
-            }
-        }
-
-
 
         // 8. Batch-fetch author avatars
         const uniqueAuthorIds = [...new Set(page.map(p => p.authorId || p.uid).filter(Boolean))];
@@ -228,7 +177,6 @@ export async function GET(req: Request) {
             posts: sanitized,
             following: followingMap,
             savedPosts: userData.saved_posts || [],
-            nextCursor,
         });
     } catch (error: any) {
         console.error("Feed API Error:", error);
