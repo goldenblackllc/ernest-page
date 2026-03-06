@@ -154,14 +154,17 @@ export async function POST(req: Request) {
             await userDocRef.set({ character_bible: updatedBible }, { merge: true });
         }
 
-        // Fire-and-forget: generate avatar in the background
-        // Uses the request URL origin to build the internal API call
+        // Generate avatar — awaited so the client knows everything is ready
         const origin = new URL(req.url).origin;
-        fetch(`${origin}/api/character/avatar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uid }),
-        }).catch(err => console.error('[Compile] Avatar generation fire-and-forget error:', err));
+        try {
+            await fetch(`${origin}/api/character/avatar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid }),
+            });
+        } catch (err) {
+            console.error('[Compile] Avatar generation failed (non-fatal):', err);
+        }
 
         // Fire-and-forget: merge important_people & things_i_enjoy into the existing dossier
         // This updates KEY PEOPLE and PREFERENCES & STYLE without wiping session-accumulated data

@@ -29,6 +29,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         dossier: string;
     } | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [compilePhase, setCompilePhase] = useState<'analyze' | 'bible' | 'avatar' | null>(null);
 
     const handleProcess = async () => {
         if (!rant.trim() || !gender.trim() || !user) return;
@@ -78,6 +79,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         if (!user || !result) return;
 
         setStep('PROCESSING');
+        setCompilePhase('bible');
         try {
             const res = await fetch('/api/character/compile', {
                 method: 'POST',
@@ -99,10 +101,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 throw new Error(data.message || data.error || 'Compilation failed.');
             }
 
+            // Compile route now awaits both bible + avatar, so we're fully ready
             onComplete();
         } catch (err: any) {
             console.error('Compile error:', err);
             setError(err.message || 'Failed to generate your character. Please try again.');
+            setCompilePhase(null);
             setStep('REVEAL');
         }
     };
@@ -260,12 +264,22 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 {/* Step 3: Processing */}
                 {step === 'PROCESSING' && (
                     <div className="flex flex-col items-center gap-6 animate-in fade-in duration-300">
-                        <Sparkles className="w-10 h-10 text-emerald-500 animate-pulse" />
+                        <Sparkles className="w-10 h-10 text-zinc-300 animate-pulse" />
                         <div className="text-center">
-                            <h2 className="text-lg font-bold mb-2">Reading you...</h2>
+                            <h2 className="text-lg font-bold mb-2">
+                                {compilePhase === 'bible' ? 'Building Your Character' : 'Analyzing Your Vision'}
+                            </h2>
                             <p className="text-base text-zinc-400">
-                                Discovering who you are.
+                                {compilePhase === 'bible'
+                                    ? 'Writing your character bible & generating your portrait...'
+                                    : 'Discovering who you are.'
+                                }
                             </p>
+                            {compilePhase === 'bible' && (
+                                <p className="text-xs text-zinc-600 mt-3">
+                                    This can take up to a minute.
+                                </p>
+                            )}
                         </div>
                         <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
                     </div>
