@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { generateTextWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, generateTextWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,7 +44,9 @@ export async function GET(req: Request) {
 
                         // Only generate a post if there is actual conversation content AND user hasn't opted out
                         if (messages.length > 0 && shouldPublish) {
-                            const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+                            // Truncate to last 15 messages for cost efficiency — enough context for synthesis
+                            const truncatedMessages = messages.length > 15 ? messages.slice(-15) : messages;
+                            const transcript = truncatedMessages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
                             // Fetch recent posts to avoid repeating the same photo scale
                             let recentScales: string[] = [];
@@ -70,7 +66,7 @@ export async function GET(req: Request) {
                                 : '';
 
                             const prompt = `Character A is defined by the following Character Bible:
-${JSON.stringify(compiledBible, null, 2)}
+${JSON.stringify(compiledBible)}
 You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received a raw chat transcript between a user (Character B) and Character A.
 Here is the raw chat transcript:
 ${transcript}
@@ -109,8 +105,8 @@ ${recentScaleHint}
 }`;
 
                             // Generate 'Dear Earnest' Post
-                            const { object } = await generateObject({
-                                model: google('gemini-2.5-pro'),
+                            const result = await generateWithFallback({
+                                primaryModelId: SONNET_MODEL,
                                 schema: z.object({
                                     is_publishable: z.boolean(),
                                     post: z.object({
@@ -125,6 +121,7 @@ ${recentScaleHint}
                                 }),
                                 prompt: prompt
                             });
+                            const object = result.object as any;
 
                             if (object.is_publishable && object.post) {
                                 // 1. Generate URLs

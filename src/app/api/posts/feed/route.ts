@@ -172,47 +172,7 @@ export async function GET(req: Request) {
             }
         }
 
-        // 7b. Fetch recent signals and interleave into feed (only on first page)
-        let signals: any[] = [];
-        if (!cursor) {
-            try {
-                const signalCutoff = new Date();
-                signalCutoff.setHours(signalCutoff.getHours() - 48);
 
-                const signalSnap = await db.collection('signals')
-                    .where('created_at', '>=', signalCutoff)
-                    .orderBy('created_at', 'desc')
-                    .limit(8)
-                    .get();
-
-                signals = signalSnap.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        _type: 'signal' as const,
-                        type: data.type,
-                        headline: data.headline,
-                        summary: data.summary,
-                        context: data.context,
-                        category: data.category,
-                        source_urls: data.source_urls || [],
-                        source_names: data.source_names || [],
-                        image_url: data.image_url || null,
-                        news_date: data.news_date || null,
-                        bright_spot_type: data.bright_spot_type || null,
-                        thread_id: data.thread_id || null,
-                        thread_label: data.thread_label || null,
-                        is_update: data.is_update || false,
-                        created_at: data.created_at ? {
-                            _seconds: data.created_at._seconds ?? Math.floor((data.created_at as Date).getTime?.() / 1000) ?? 0,
-                            _nanoseconds: data.created_at._nanoseconds ?? 0,
-                        } : null,
-                    };
-                });
-            } catch (signalErr) {
-                console.warn('Failed to fetch signals for feed:', signalErr);
-            }
-        }
 
         // 8. Batch-fetch author avatars
         const uniqueAuthorIds = [...new Set(page.map(p => p.authorId || p.uid).filter(Boolean))];
@@ -266,7 +226,6 @@ export async function GET(req: Request) {
 
         return Response.json({
             posts: sanitized,
-            signals,
             following: followingMap,
             savedPosts: userData.saved_posts || [],
             nextCursor,

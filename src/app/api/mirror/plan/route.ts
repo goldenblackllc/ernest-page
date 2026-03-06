@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase/admin';
-import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
+import { generateTextWithFallback, SONNET_MODEL, SONNET_FALLBACK } from '@/lib/ai/models';
 
 export const maxDuration = 300;
 
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
 
         const systemPrompt = `You are a Character Simulation Engine running this Character Bible:
-${JSON.stringify(compiledBible, null, 2)}
+${JSON.stringify(compiledBible)}
 
 You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their action plan covering the rest of today AND tomorrow.
 
@@ -40,8 +40,8 @@ Example output: 'Go eat that cookie with full attention — no screen, just the 
         ).join('\n\n');
 
         const result = await generateTextWithFallback({
-            primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
+            primaryModelId: SONNET_MODEL,
+            fallbackModelId: SONNET_FALLBACK,
             system: systemPrompt,
             messages: [{ role: 'user', content: `Based on this conversation, generate the action plan:\n\n${conversationContext}` }],
             abortSignal: AbortSignal.timeout(120000)
