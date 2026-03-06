@@ -68,13 +68,13 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-900">
-                    <div className="flex items-center gap-2 text-white">
-                        <Bell className="w-5 h-5 text-emerald-500" />
-                        <h2 className="text-sm font-bold tracking-widest uppercase">My Daily Plan</h2>
+                    <div className="flex items-center gap-2">
+                        <Bell className="w-5 h-5 text-zinc-300" />
+                        <h2 className="text-sm font-bold tracking-widest uppercase text-zinc-100">My Daily Plan</h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-zinc-500 hover:text-white transition-colors rounded-full hover:bg-zinc-900"
+                        className="p-2 text-zinc-500 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-900"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -94,17 +94,17 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                                     onClick={() => handleToggleTodo(todo.id, todo.completed)}
                                     disabled={isUpdating}
                                     className={cn(
-                                        "w-full flex items-start gap-3 p-4 rounded-xl border text-left transition-all duration-200 group relative overflow-hidden",
+                                        "w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200 group relative overflow-hidden",
                                         todo.completed
                                             ? "bg-zinc-900/40 border-zinc-800/50"
-                                            : "bg-zinc-900 border-zinc-700 hover:border-emerald-500/50"
+                                            : "bg-zinc-900 border-zinc-600 hover:border-zinc-400"
                                     )}
                                 >
                                     <div className="mt-0.5 shrink-0">
                                         {todo.completed ? (
-                                            <CheckCircle2 className="w-5 h-5 text-emerald-500/50" />
+                                            <CheckCircle2 className="w-5 h-5 text-zinc-100" />
                                         ) : (
-                                            <Circle className="w-5 h-5 text-zinc-500 group-hover:text-emerald-500/70 transition-colors" />
+                                            <Circle className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
                                         )}
                                     </div>
                                     <div className={cn(
