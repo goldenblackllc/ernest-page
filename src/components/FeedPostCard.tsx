@@ -154,6 +154,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
     const isFollowing = postAuthorId && followingMap && followingMap[postAuthorId];
     const customAlias = isFollowing ? followingMap[postAuthorId] : null;
 
+    // Comment count: prefer loaded comments array, fallback to post field
+    const commentCount = comments.length > 0 ? comments.length : (post.comments || 0);
+
+    // Total likes: karma pool likes + viewer's own like
+    const totalLikes = (post.like_count || 0) + (localLiked ? 1 : 0);
+
     // Public face content
     const publicLetter = post.public_post?.letter || post.letter || post.tension;
     const publicResponse = post.public_post?.response || post.response || post.counsel;
@@ -471,14 +477,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                         <button
                             onClick={toggleLike}
                             className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
-                                localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
+                                totalLikes >= 1 ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
                             )}
                             title="Send love to the universe"
                         >
-                            <Heart className={cn("w-5 h-5", localLiked && "fill-red-500")} />
-                            {(post.like_count || 0) > 1 && (
+                            <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
+                            {totalLikes > 1 && (
                                 <span className="text-xs font-medium">
-                                    {post.like_count}
+                                    {totalLikes}
                                 </span>
                             )}
                         </button>
@@ -486,14 +492,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                         <button
                             onClick={handleToggleComments}
                             className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
-                                isCommentOpen ? "text-emerald-500" : "text-zinc-500 hover:text-emerald-500/80"
+                                isCommentOpen || commentCount >= 1 ? "text-emerald-500" : "text-zinc-500 hover:text-emerald-500/80"
                             )}
                             title="Comment"
                         >
-                            <MessageCircle className="w-5 h-5" />
-                            {(comments.length > 0 || (post.comments && post.comments > 0)) && (
+                            <MessageCircle className={cn("w-5 h-5", commentCount >= 1 && "fill-emerald-500")} />
+                            {commentCount > 1 && (
                                 <span className="text-xs font-medium">
-                                    {comments.length || post.comments}
+                                    {commentCount}
                                 </span>
                             )}
                         </button>
