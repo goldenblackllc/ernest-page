@@ -236,7 +236,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                 <div className="flex flex-col flex-1 min-w-0">
                     <div className="flex flex-row items-center gap-2 w-full">
                         <span className="text-sm font-semibold text-white truncate">
-                            {isAuthor ? "Me" : customAlias ? `Counsel from ${customAlias}` : "Dear Earnest"}
+                            {isAuthor ? "Me" : customAlias || publicPseudonym || "Anonymous"}
                         </span>
                         <div className="shrink-0 flex items-center gap-2">
                             {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
@@ -378,7 +378,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                                         </span>
 
                                         {/* Response Block (The Ideal Self's Advice) */}
-                                        <div className="text-zinc-100 not-italic whitespace-pre-wrap text-sm sm:text-[15px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0 space-y-4">
+                                        <div className="text-zinc-100 not-italic text-sm sm:text-[15px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{publicResponse}</ReactMarkdown>
                                         </div>
 

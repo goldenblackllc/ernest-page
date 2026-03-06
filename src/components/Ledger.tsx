@@ -11,23 +11,24 @@ import { FollowAuthorModal } from "@/components/FollowAuthorModal";
 import { FeedAdCard } from "@/components/FeedAdCard";
 import { ecosystemAds } from "@/config/ecosystem";
 import { Timestamp } from "firebase/firestore";
+import { getFeedCache, setFeedCache } from "@/lib/feedCache";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 export function Ledger() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
-    const [entries, setEntries] = useState<any[]>([]);
 
-    const [followingMap, setFollowingMap] = useState<Record<string, string>>({});
-
-    const [loading, setLoading] = useState(true);
+    // Restore from module-level cache so returning to this tab is instant
+    const cache = getFeedCache();
+    const [entries, setEntries] = useState<any[]>(cache.entries || []);
+    const [followingMap, setFollowingMap] = useState<Record<string, string>>(cache.followingMap || {});
+    const [loading, setLoading] = useState(cache.entries === null); // skip skeleton if cached
 
     const [pendingPostId, setPendingPostId] = useState<string | null>(null);
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<string | null>(null);
 
-
-    const newestPostTimeRef = useRef<string | null>(null);
+    const newestPostTimeRef = useRef<string | null>(cache.newestPostTime);
     const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Subscribe to user profile
@@ -62,15 +63,16 @@ export function Ledger() {
             setEntries(posts);
             setFollowingMap(data.following || {});
 
-
-            // Track the newest post timestamp for polling
-            if (posts.length > 0) {
-                const newest = posts[0];
-                const time = newest.created_at?.toMillis?.() || (newest.created_at?._seconds ? newest.created_at._seconds * 1000 : 0);
-                if (time) {
-                    newestPostTimeRef.current = new Date(time).toISOString();
-                }
-            }
+            // Persist to module-level cache for instant re-mount
+            const newNewest = posts.length > 0
+                ? (() => {
+                    const newest = posts[0];
+                    const time = newest.created_at?.toMillis?.() || (newest.created_at?._seconds ? newest.created_at._seconds * 1000 : 0);
+                    return time ? new Date(time).toISOString() : newestPostTimeRef.current;
+                })()
+                : newestPostTimeRef.current;
+            newestPostTimeRef.current = newNewest;
+            setFeedCache(posts, data.following || {}, newNewest);
         } catch (error) {
             console.error("Failed to fetch feed:", error);
         } finally {
