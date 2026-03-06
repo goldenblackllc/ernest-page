@@ -153,13 +153,17 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             </div>
                         </div>
 
-                        <textarea
-                            value={rant}
-                            onChange={(e) => setRant(e.target.value)}
-                            placeholder="I want to be the kind of person who..."
-                            className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[200px] resize-none leading-relaxed"
-                            autoFocus
-                        />
+                        <div>
+                            <label className="text-xs text-white font-semibold mb-1 block">The Vision</label>
+                            <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Describe the person you want to be. Don&apos;t worry about formatting—just get your thoughts down. We will translate this into your official blueprint.</p>
+                            <textarea
+                                value={rant}
+                                onChange={(e) => setRant(e.target.value)}
+                                placeholder="I want to be the kind of person who..."
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[200px] resize-none leading-relaxed"
+                                autoFocus
+                            />
+                        </div>
 
                         <button
                             onClick={() => setStep('FOUNDATION')}
@@ -199,10 +203,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         )}
 
                         <div>
-                            <label className="text-xs text-zinc-400 font-semibold mb-1.5 flex items-center gap-1.5">
+                            <label className="text-xs text-white font-semibold mb-1 flex items-center gap-1.5">
                                 <Users className="w-3.5 h-3.5" />
                                 Key People
                             </label>
+                            <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Who is in your daily orbit? List family, friends, or anyone causing friction.</p>
                             <textarea
                                 value={people}
                                 onChange={(e) => setPeople(e.target.value)}
@@ -213,10 +218,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         </div>
 
                         <div>
-                            <label className="text-xs text-zinc-400 font-semibold mb-1.5 flex items-center gap-1.5">
+                            <label className="text-xs text-white font-semibold mb-1 flex items-center gap-1.5">
                                 <Heart className="w-3.5 h-3.5" />
                                 What You Love
                             </label>
+                            <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">What brings you joy? List your favorite foods, media, or unchanging preferences. Your ideal self is still you.</p>
                             <textarea
                                 value={enjoyments}
                                 onChange={(e) => setEnjoyments(e.target.value)}
@@ -230,8 +236,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             disabled={!rant.trim() || !gender.trim()}
                             className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            Show Me Who I Am
-                            <Sparkles className="w-4 h-4" />
+                            Lock In Blueprint
+                            <ArrowRight className="w-4 h-4" />
                         </button>
 
                         <div className="flex items-center justify-between">

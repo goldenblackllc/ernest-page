@@ -26,7 +26,7 @@ export async function getMostRecentActiveChat(uid: string): Promise<ActiveChat |
         const chatDoc = querySnapshot.docs[0];
         const chatData = chatDoc.data() as ActiveChat;
 
-        const timeoutMs = 15 * 60 * 1000; // 15 mins
+        const timeoutMs = 30 * 60 * 1000; // 30 mins
         const isExpired = chatData.updatedAt && (Date.now() - chatData.updatedAt > timeoutMs);
 
         if (!chatData.isClosed && !isExpired) {

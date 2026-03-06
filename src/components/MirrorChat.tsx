@@ -71,6 +71,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                         uid,
                         sessionId,
                         sessionTone,
+                        localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
                         messages: newMessages,
                     }),
                 });
@@ -154,6 +155,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInput(e.target.value);
+        autoResizeTextarea(e.target);
+    };
+
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const autoResizeTextarea = (el: HTMLTextAreaElement) => {
+        el.style.height = 'auto';
+        el.style.height = `${Math.min(el.scrollHeight, 132)}px`; // ~6 lines max
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -182,6 +191,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                     uid,
                     sessionId,
                     sessionTone,
+                    localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
                     messages: newMessages
                 })
             });
@@ -215,6 +225,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                     uid,
                     sessionId,
                     sessionTone,
+                    localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
                     messages: messages
                 })
             });
@@ -299,11 +310,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-md z-10 shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-emerald-500/30 overflow-hidden flex items-center justify-center relative">
+                                <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden flex items-center justify-center relative">
                                     {avatarUrl ? (
                                         <img src={avatarUrl} alt={idealName} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Sparkles className="w-5 h-5 text-emerald-400" />
+                                        <Sparkles className="w-5 h-5 text-zinc-400" />
                                     )}
                                 </div>
                                 <div>
@@ -330,7 +341,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                     className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors group"
                                 >
                                     <span className="uppercase tracking-widest font-bold text-[10px] text-zinc-600">Mode</span>
-                                    <span className="text-emerald-400/80 font-medium">{ENGAGEMENT_TONES[sessionTone].label}</span>
+                                    <span className="text-zinc-100 font-medium">{ENGAGEMENT_TONES[sessionTone].label}</span>
                                     <ChevronDown className={cn("w-3 h-3 transition-transform", isToneOpen && "rotate-180")} />
                                 </button>
 
@@ -357,13 +368,13 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                                     className={cn(
                                                         "w-full text-left px-4 py-2.5 flex flex-col gap-0.5 transition-colors",
                                                         key === sessionTone
-                                                            ? "bg-emerald-950/30 border-l-2 border-emerald-500"
+                                                            ? "bg-zinc-800/60 border-l-2 border-white"
                                                             : "hover:bg-zinc-800/50 border-l-2 border-transparent"
                                                     )}
                                                 >
                                                     <span className={cn(
                                                         "text-sm font-medium",
-                                                        key === sessionTone ? "text-emerald-400" : "text-zinc-300"
+                                                        key === sessionTone ? "text-white" : "text-zinc-300"
                                                     )}>
                                                         {tone.label}
                                                     </span>
@@ -381,11 +392,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                             {messages.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-70">
                                     <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                                        <Sparkles className="w-8 h-8 text-emerald-500/50" />
+                                        <Sparkles className="w-8 h-8 text-zinc-500" />
                                     </div>
                                     <div>
                                         <p className="text-zinc-400 mb-2">You are speaking to your created potential.</p>
-                                        <p className="text-sm font-medium text-emerald-400/80 max-w-xs mx-auto">
+                                        <p className="text-sm font-medium text-zinc-300 max-w-xs mx-auto">
                                             "What current limitation are you facing?"
                                         </p>
                                     </div>
@@ -406,11 +417,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                                         <User className="w-4 h-4" />
                                                     </div>
                                                 ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-emerald-950/50 flex items-center justify-center text-emerald-400 border border-emerald-900/50 overflow-hidden">
+                                                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 border border-zinc-700 overflow-hidden">
                                                         {avatarUrl ? (
                                                             <img src={avatarUrl} alt={idealName} className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <Sparkles className="w-4 h-4" />
+                                                            <Sparkles className="w-4 h-4 text-zinc-400" />
                                                         )}
                                                     </div>
                                                 )}
@@ -421,11 +432,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                                     "rounded-2xl px-4 py-3 text-[15px] leading-relaxed",
                                                     m.role === "user"
                                                         ? "bg-zinc-800 text-zinc-100 rounded-tr-sm"
-                                                        : "bg-emerald-950/20 border border-emerald-900/30 text-emerald-50 rounded-tl-sm shadow-inner shadow-emerald-900/10"
+                                                        : "bg-zinc-900/60 border border-white/10 text-zinc-100 rounded-tl-sm"
                                                 )}
                                             >
                                                 {m.role === "assistant" ? (
-                                                    <div className="prose prose-invert prose-sm prose-p:leading-relaxed prose-a:text-emerald-400 prose-strong:text-emerald-300 max-w-none whitespace-pre-wrap">
+                                                    <div className="prose prose-invert prose-sm prose-p:leading-relaxed prose-a:text-zinc-200 prose-strong:text-white max-w-none whitespace-pre-wrap">
                                                         <ReactMarkdown>{m.content}</ReactMarkdown>
                                                     </div>
                                                 ) : (
@@ -441,14 +452,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                 <div className="flex justify-start">
                                     <div className="flex gap-3 max-w-[85%]">
                                         <div className="shrink-0 mt-1">
-                                            <div className="w-8 h-8 rounded-full bg-emerald-950/50 flex items-center justify-center border border-emerald-900/50">
-                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
+                                                <div className="w-2 h-2 rounded-full bg-zinc-400 animate-pulse" />
                                             </div>
                                         </div>
-                                        <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5 h-[46px]">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-bounce" style={{ animationDelay: "0ms" }} />
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-bounce" style={{ animationDelay: "150ms" }} />
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+                                        <div className="bg-zinc-900/60 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5 h-[46px]">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "300ms" }} />
                                         </div>
                                     </div>
                                 </div>
@@ -479,7 +490,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                         initial={{ opacity: 0, y: 8 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: 8 }}
-                                        className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs bg-emerald-950/80 text-emerald-400 px-4 py-1.5 rounded-full border border-emerald-900/50 shadow-lg whitespace-nowrap"
+                                        className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs bg-zinc-800 text-zinc-200 px-4 py-1.5 rounded-full border border-zinc-700 shadow-lg whitespace-nowrap"
                                     >
                                         {planConfirmation}
                                     </motion.div>
@@ -495,8 +506,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                         className={cn(
                                             "flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all border",
                                             isGeneratingPlan
-                                                ? "bg-emerald-950/50 text-emerald-500 border-emerald-900/50 animate-pulse"
-                                                : "bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20"
+                                                ? "bg-zinc-800 text-zinc-400 border-zinc-700 animate-pulse"
+                                                : "bg-white text-black border-transparent hover:bg-zinc-200 shadow-lg"
                                         )}
                                     >
                                         <Target className="w-3.5 h-3.5" />
@@ -509,8 +520,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                     >
                                         {autoPublish ? (
                                             <>
-                                                <Globe className="w-3 h-3 text-blue-400" />
-                                                <span className="text-blue-400">Publish on Close</span>
+                                                <Globe className="w-3 h-3 text-zinc-400" />
+                                                <span className="text-zinc-400 hover:text-zinc-200 transition-colors">Publish on Close</span>
                                             </>
                                         ) : (
                                             <>
@@ -524,10 +535,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
 
                             <form
                                 onSubmit={handleSubmit}
-                                className="relative flex items-end gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-2 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 transition-all"
+                                className="relative flex items-end gap-2 bg-zinc-900/50 border border-white/10 rounded-2xl p-2 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500 transition-all"
                             >
                                 <textarea
-                                    className="w-full bg-transparent text-white px-3 py-2 -my-2 min-h-[44px] max-h-32 resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar mt-0.5"
+                                    ref={textareaRef}
+                                    className="w-full bg-transparent text-white px-3 py-2 -my-2 min-h-[44px] max-h-[132px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar mt-0.5"
                                     value={input}
                                     onChange={handleInputChange}
                                     placeholder={`Tell ${idealName} your situation...`}
@@ -536,6 +548,9 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                             e.preventDefault();
                                             if (input.trim() && !isLoading) {
                                                 handleSubmit();
+                                                if (textareaRef.current) {
+                                                    textareaRef.current.style.height = 'auto';
+                                                }
                                             }
                                         }
                                     }}
@@ -549,7 +564,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                         "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors mb-0.5",
                                         isLoading
                                             ? "bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-zinc-900 border border-zinc-700"
-                                            : "bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 border border-transparent text-white"
+                                            : "bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-600 border border-transparent text-black"
                                     )}
                                 >
                                     {isLoading ? <Square className="w-4 h-4 fill-current" /> : <Send className="w-4 h-4 ml-0.5" />}

@@ -9,7 +9,7 @@ export const maxDuration = 300;
 
 export async function POST(req: Request) {
     try {
-        const { messages, uid, sessionId, sessionTone } = await req.json();
+        const { messages, uid, sessionId, sessionTone, localTime } = await req.json();
 
         if (!uid || !sessionId) {
             return Response.json({ error: "Unauthorized or missing session ID" }, { status: 401 });
@@ -32,6 +32,10 @@ export async function POST(req: Request) {
         const toneDirective = ENGAGEMENT_TONES[tone].directive;
 
         const systemPrompt = `You are a Character Simulation Engine. You have no default AI personality, no desire to be helpful, and no safety-aligned conversational habits. Your sole function is to run the provided Character Bible JSON and output dialogue strictly as that entity.
+
+[CURRENT TIME]
+${localTime || 'Unknown'}
+Use this to give time-appropriate advice. Do not suggest "tomorrow morning" if it is currently morning. Do not suggest "tonight" if it is early in the day unless contextually appropriate.
 
 [CHARACTER DATA]
 ${JSON.stringify(compiledBible)}
