@@ -319,7 +319,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                     value={people}
                                     onChange={(e) => setPeople(e.target.value)}
                                     placeholder="e.g., Iris (Wife), Sage & Brian (Kids), Sky & Dug (Dogs), or my manager..."
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[80px] resize-none leading-relaxed"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[120px] resize-y leading-relaxed"
                                 />
                             </div>
 
@@ -331,7 +331,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                     value={enjoyments}
                                     onChange={(e) => setEnjoyments(e.target.value)}
                                     placeholder="e.g., Carnivore diet, action movies, eating cookies, organizing my space..."
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[80px] resize-none leading-relaxed"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[120px] resize-y leading-relaxed"
                                 />
                             </div>
 
@@ -340,7 +340,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                 disabled={!rant.trim() || !gender.trim()}
                                 className="w-full bg-white text-black py-3.5 text-sm font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 flex items-center justify-center gap-2"
                             >
-                                Recast Identity <ArrowRight className="w-4 h-4" />
+                                Lock In Blueprint <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
                     )}
