@@ -2,11 +2,12 @@
 
 @theme {
   --font-sans: var(--font-sans);
+  --color-accent: oklch(0.637 0.237 261.35);
 }
 
 @layer base {
   html {
-    @apply bg-zinc-950;
+    @apply bg-zinc-950 scroll-smooth;
   }
 
   body {

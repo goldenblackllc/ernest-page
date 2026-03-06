@@ -138,7 +138,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                                     value={gender}
                                     onChange={(e) => setGender(e.target.value)}
                                     placeholder="Man, Woman, etc."
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                                 />
                             </div>
                             <div className="w-24">
@@ -148,7 +148,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                                     value={age}
                                     onChange={(e) => setAge(e.target.value)}
                                     placeholder="35"
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                                 />
                             </div>
                         </div>
@@ -157,7 +157,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             value={rant}
                             onChange={(e) => setRant(e.target.value)}
                             placeholder="I want to be the kind of person who..."
-                            className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-[15px] text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[200px] resize-none leading-relaxed"
+                            className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[200px] resize-none leading-relaxed"
                             autoFocus
                         />
 
@@ -201,13 +201,13 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         <div>
                             <label className="text-xs text-zinc-400 font-semibold mb-1.5 flex items-center gap-1.5">
                                 <Users className="w-3.5 h-3.5" />
-                                People in your life
+                                Key People
                             </label>
                             <textarea
                                 value={people}
                                 onChange={(e) => setPeople(e.target.value)}
-                                placeholder="My wife Sarah, my son Marcus who's 7, my best friend Dave from college, my boss who drives me insane..."
-                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[120px] resize-none leading-relaxed"
+                                placeholder="e.g., Iris (Wife), Sage & Brian (Kids), Sky & Dug (Dogs), or my manager..."
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[120px] resize-none leading-relaxed"
                                 autoFocus
                             />
                         </div>
@@ -215,13 +215,13 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         <div>
                             <label className="text-xs text-zinc-400 font-semibold mb-1.5 flex items-center gap-1.5">
                                 <Heart className="w-3.5 h-3.5" />
-                                What does the dream you enjoy?
+                                What You Love
                             </label>
                             <textarea
                                 value={enjoyments}
                                 onChange={(e) => setEnjoyments(e.target.value)}
-                                placeholder="Cooking Italian food from scratch, running at 5am, old jazz records, building things with my hands..."
-                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[120px] resize-none leading-relaxed"
+                                placeholder="e.g., Carnivore diet, action movies, eating cookies, organizing my space..."
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[120px] resize-none leading-relaxed"
                             />
                         </div>
 

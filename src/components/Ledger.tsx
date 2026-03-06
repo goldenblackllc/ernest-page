@@ -217,8 +217,8 @@ export function Ledger() {
             )}
 
             {entries.map((entry, index) => {
-                const isAdSlot = (index + 1) % 5 === 0;
-                const adIndex = Math.floor(index / 5);
+                const isAdSlot = (index + 1) % 3 === 0;
+                const adIndex = Math.floor(index / 3);
                 const ad = ecosystemAds[adIndex % ecosystemAds.length];
 
                 return (

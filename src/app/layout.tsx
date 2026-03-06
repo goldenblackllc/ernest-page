@@ -25,7 +25,7 @@ const hkGrotesk = localFont({
 
 export const metadata: Metadata = {
   title: "Earnest Page",
-  description: "A Life Operating System.",
+  description: "Stop reacting. Start commanding. Build your real-life character bible.",
 };
 
 import { LockedProvider } from "@/context/LockedContext";

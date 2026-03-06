@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { CharacterIdentity } from '@/types/character';
-import { FileText, Calendar, Hash } from 'lucide-react';
+import { FileText, Calendar, Hash, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface DossierViewProps {
     identity: CharacterIdentity;
@@ -9,10 +11,38 @@ interface DossierViewProps {
     onClose: () => void;
 }
 
+function toTitleCase(str: string): string {
+    const minorWords = new Set(['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'by', 'of', 'in', 'up', 'as']);
+    return str
+        .toLowerCase()
+        .split(/\s+/)
+        .map((word, i) => {
+            if (i === 0 || !minorWords.has(word)) {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }
+            return word;
+        })
+        .join(' ');
+}
+
 export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
+    const [openSections, setOpenSections] = useState<Set<number>>(new Set([0]));
+
     if (!isOpen) return null;
 
     const sections = parseDossier(identity.dossier);
+
+    const toggleSection = (index: number) => {
+        setOpenSections(prev => {
+            const next = new Set(prev);
+            if (next.has(index)) {
+                next.delete(index);
+            } else {
+                next.add(index);
+            }
+            return next;
+        });
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -30,7 +60,7 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
+                            className="text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest min-h-[44px] flex items-center"
                         >
                             Close
                         </button>
@@ -52,19 +82,52 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                     {identity.dossier ? (
-                        <div className="space-y-5">
-                            {sections.map((section, i) => (
-                                <div key={i}>
-                                    {section.heading && (
-                                        <h3 className="text-[10px] uppercase tracking-[0.2em] text-emerald-500/70 font-bold mb-2">
-                                            {section.heading}
-                                        </h3>
-                                    )}
-                                    <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line">
-                                        {section.content}
+                        <div className="space-y-3">
+                            {sections.map((section, i) => {
+                                const isSectionOpen = openSections.has(i);
+                                return (
+                                    <div key={i} className="border border-white/10 rounded-xl overflow-hidden">
+                                        {section.heading ? (
+                                            <>
+                                                <button
+                                                    onClick={() => toggleSection(i)}
+                                                    className="w-full flex items-center justify-between px-4 min-h-[44px] py-3 text-left hover:bg-white/[0.03] transition-colors duration-200"
+                                                >
+                                                    <h3 className="text-base font-semibold text-zinc-100 tracking-wide">
+                                                        {toTitleCase(section.heading)}
+                                                    </h3>
+                                                    <ChevronDown
+                                                        className={cn(
+                                                            "w-4 h-4 text-zinc-500 shrink-0 ml-2 transition-transform duration-200 ease-out",
+                                                            isSectionOpen && "rotate-180"
+                                                        )}
+                                                    />
+                                                </button>
+                                                <div
+                                                    className={cn(
+                                                        "grid transition-all duration-200 ease-out",
+                                                        isSectionOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                                                    )}
+                                                >
+                                                    <div className="overflow-hidden">
+                                                        <div className="px-4 pb-4 pt-1 border-t border-white/5">
+                                                            <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line">
+                                                                {section.content}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="px-4 py-3">
+                                                <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line">
+                                                    {section.content}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-center py-12">

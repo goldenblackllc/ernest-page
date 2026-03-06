@@ -337,30 +337,54 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                                 </div>
                             )}
 
-                            {/* Public Letter & Response */}
+                            {/* Public Letter & Response — Q&A Layout */}
                             <div className={cn("px-3 sm:px-4 pb-3 sm:pb-4 mt-1", !isExpanded && "mb-2")}>
-                                <p className={cn(
-                                    "text-sm sm:text-[15px] italic text-zinc-300 whitespace-pre-wrap leading-snug",
-                                    !isExpanded && "line-clamp-6"
-                                )}>
-                                    {publicLetter}
-                                </p>
+                                {/* Letter Block (The User's Tension) */}
+                                {(() => {
+                                    const lines = (publicLetter || '').split('\n');
+                                    const firstLine = lines[0]?.trim() || '';
+                                    const hasGreeting = /^dear\s/i.test(firstLine);
+                                    const greeting = hasGreeting ? firstLine : null;
+                                    const body = hasGreeting ? lines.slice(1).join('\n').trimStart() : publicLetter;
+                                    return (
+                                        <div className="mb-4">
+                                            {greeting && (
+                                                <p className="text-sm sm:text-[15px] italic text-zinc-400 whitespace-pre-wrap leading-relaxed mb-1">
+                                                    {greeting}
+                                                </p>
+                                            )}
+                                            <p className={cn(
+                                                "text-sm sm:text-[15px] not-italic leading-relaxed text-zinc-300 whitespace-pre-wrap",
+                                                !isExpanded && "line-clamp-3"
+                                            )}>
+                                                {body}
+                                            </p>
+                                        </div>
+                                    );
+                                })()}
 
                                 {!isExpanded ? (
                                     <button
                                         onClick={() => setIsExpanded(true)}
-                                        className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors"
+                                        className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors duration-200"
                                     >
                                         Read the Counsel ⌄
                                     </button>
                                 ) : (
                                     <>
-                                        <div className="mt-2 text-zinc-100 whitespace-pre-wrap text-sm sm:text-[15px] leading-snug opacity-100 transition-all [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-3 [&>p:last-child]:mb-0">
+                                        {/* Counsel Divider */}
+                                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 block">
+                                            THE COUNSEL:
+                                        </span>
+
+                                        {/* Response Block (The Ideal Self's Advice) */}
+                                        <div className="text-zinc-100 not-italic whitespace-pre-wrap text-sm sm:text-[15px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0 space-y-4">
                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{publicResponse}</ReactMarkdown>
                                         </div>
+
                                         <button
                                             onClick={() => setIsExpanded(false)}
-                                            className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors"
+                                            className="text-sm font-semibold text-zinc-400 hover:text-white mt-3 transition-colors duration-200"
                                         >
                                             Show Less ⌃
                                         </button>
@@ -512,8 +536,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                                     setIsResponseExpanded(false);
                                 }}
                                 className={cn(
-                                    "flex items-center gap-1.5 transition-colors group ml-2",
-                                    isFlipped ? "text-emerald-500" : "text-zinc-500 hover:text-white"
+                                    "flex items-center gap-1.5 transition-colors duration-200 group ml-2",
+                                    isFlipped ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-200"
                                 )}
                                 title={isFlipped ? "View Public" : "View Private"}
                             >
@@ -526,7 +550,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                     {user?.uid === post.uid && (
                         <button
                             onClick={handleDelete}
-                            className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                            className="text-zinc-400 hover:text-red-500 transition-colors duration-200 p-1"
                             title="Delete Post"
                         >
                             <Trash2 className="w-4 h-4" />

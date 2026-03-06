@@ -86,7 +86,7 @@ export function ProfileView() {
                     </div>
                 </div>
 
-                {/* DREAM SELF (shown when no compiled bible yet) */}
+                {/* IDENTITY VISION (shown when no compiled bible yet) */}
                 {identity?.dream_self && (!displaySections || displaySections.length === 0) && (
                     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
                         <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-3">Identity</p>
@@ -270,8 +270,8 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                 <div className="flex-1 overflow-y-auto p-6">
                     {step === 'EDIT' && (
                         <div className="flex flex-col gap-5">
-                            <p className="text-base text-zinc-400 leading-relaxed">
-                                Update your dream. Write as the person you want to be — present tense, no limits.
+                            <p className="text-sm text-zinc-500 leading-relaxed">
+                                Define your baseline. Be brutally honest.
                             </p>
                             {error && (
                                 <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">{error}</div>
@@ -284,7 +284,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                         value={gender}
                                         onChange={(e) => setGender(e.target.value)}
                                         placeholder="Man, Woman, etc."
-                                        className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
+                                        className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                                     />
                                 </div>
                                 <div className="w-24">
@@ -294,46 +294,51 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                         value={age}
                                         onChange={(e) => setAge(e.target.value)}
                                         placeholder="35"
-                                        className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50"
+                                        className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                                     />
                                 </div>
                             </div>
 
-                            {/* Rant (first) */}
+                            {/* Input 1: The Vision */}
                             <div>
-                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Your Dream</label>
+                                <label className="text-xs text-white font-semibold mb-1 block">The Vision</label>
+                                <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Describe the person you want to be. Don&apos;t worry about formatting—just get your thoughts down. We will translate this into your official blueprint.</p>
                                 <textarea
                                     value={rant}
                                     onChange={(e) => setRant(e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-[15px] text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[140px] resize-none leading-relaxed"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[140px] resize-none leading-relaxed"
                                     autoFocus
                                 />
                             </div>
 
-                            {/* Foundation fields */}
+                            {/* Input 2: Key People */}
                             <div>
-                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">People in your life</label>
+                                <label className="text-xs text-white font-semibold mb-1 block">Key People</label>
+                                <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Who is in your daily orbit? List family, friends, or anyone causing friction.</p>
                                 <textarea
                                     value={people}
                                     onChange={(e) => setPeople(e.target.value)}
-                                    placeholder="My wife Sarah, my son Marcus who's 7..."
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[80px] resize-none leading-relaxed"
+                                    placeholder="e.g., Iris (Wife), Sage & Brian (Kids), Sky & Dug (Dogs), or my manager..."
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[80px] resize-none leading-relaxed"
                                 />
                             </div>
+
+                            {/* Input 3: What You Love */}
                             <div>
-                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">What does the dream you enjoy?</label>
+                                <label className="text-xs text-white font-semibold mb-1 block">What You Love</label>
+                                <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">What brings you joy? List your favorite foods, media, or unchanging preferences. Your ideal self is still you.</p>
                                 <textarea
                                     value={enjoyments}
                                     onChange={(e) => setEnjoyments(e.target.value)}
-                                    placeholder="Cooking Italian food from scratch, running at 5am..."
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 min-h-[80px] resize-none leading-relaxed"
+                                    placeholder="e.g., Carnivore diet, action movies, eating cookies, organizing my space..."
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[80px] resize-none leading-relaxed"
                                 />
                             </div>
 
                             <button
                                 onClick={handleProcess}
                                 disabled={!rant.trim() || !gender.trim()}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold hover:bg-zinc-200 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 flex items-center justify-center gap-2"
                             >
                                 Recast Identity <ArrowRight className="w-4 h-4" />
                             </button>
