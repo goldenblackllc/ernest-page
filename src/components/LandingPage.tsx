@@ -165,10 +165,27 @@ export function LandingPage() {
 
     const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber) : '';
 
+    const scrollToAuth = () => {
+        document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
     return (
         <main className="min-h-screen bg-black text-white scroll-smooth">
             {/* Invisible reCAPTCHA container */}
             <div id="landing-recaptcha" />
+
+            {/* ── STICKY TOP NAV ── */}
+            <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/10">
+                <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
+                    <span className="font-bold text-lg text-zinc-100 tracking-tight">Earnest Page</span>
+                    <button
+                        onClick={scrollToAuth}
+                        className="rounded-full bg-white text-black px-5 py-2 text-sm font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
+                    >
+                        Log In
+                    </button>
+                </div>
+            </nav>
 
             {/* ── HERO SECTION ── */}
             <section className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center">
@@ -201,6 +218,21 @@ export function LandingPage() {
                             Don&apos;t wait for life to happen. Dictate the terms.
                         </span>
                     </motion.p>
+
+                    <motion.div
+                        custom={2}
+                        variants={fadeUp}
+                        initial="hidden"
+                        animate="visible"
+                        className="mt-8"
+                    >
+                        <button
+                            onClick={scrollToAuth}
+                            className="rounded-xl bg-white text-black px-8 py-3 font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150 w-full sm:w-auto text-base"
+                        >
+                            Start Commanding
+                        </button>
+                    </motion.div>
                 </div>
 
                 {/* Scroll indicator */}
@@ -245,7 +277,7 @@ export function LandingPage() {
             </section>
 
             {/* ── AUTH CARD ── */}
-            <section className="relative px-6 pb-24 md:pb-32">
+            <section id="auth-section" className="relative px-6 pb-24 md:pb-32">
                 <motion.div
                     className="max-w-md mx-auto rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-8 sm:p-10"
                     variants={cardReveal}
@@ -260,7 +292,7 @@ export function LandingPage() {
                             Earnest Page
                         </h2>
                         <p className="text-sm text-zinc-500">
-                            Engineer your ideal response.
+                            Engineer your ideal life.
                         </p>
                     </div>
 
