@@ -4,7 +4,9 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const uid = body.uid;
-        const region = req.headers.get('x-vercel-ip-country-region') || "LOCAL";
+        const country = req.headers.get('x-vercel-ip-country') || "";
+        const subRegion = req.headers.get('x-vercel-ip-country-region') || "";
+        const region = country && subRegion ? `${country}-${subRegion}` : country || "LOCAL";
 
         if (!uid) {
             return Response.json({ error: "UID is required to sync region." }, { status: 400 });
