@@ -209,8 +209,9 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
             if (!res.ok) throw new Error(result.message || result.error || 'Processing failed.');
 
             // Process API kicks off bible+avatar generation in background.
-            // Close modal — the feed status card will show progress.
+            // Navigate to dashboard where the status card shows progress.
             onClose();
+            window.location.href = '/';
         } catch (err: any) {
             setError(err.message || 'Something went wrong.');
             setIsProcessing(false);
