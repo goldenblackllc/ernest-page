@@ -6,6 +6,7 @@ export interface CharacterIdentity {
     things_i_enjoy: string;     // Foundation: What does the dream you enjoy?
     gender: string;             // User-provided gender identity
     age: string;                // User-provided age
+    ethnicity?: string;         // Optional — unchangeable physical traits for avatar accuracy
     dossier: string;            // AI-maintained structured case notes
     dossier_updated_at?: any;   // Firestore Timestamp
     session_count: number;      // Number of check-in/mirror sessions

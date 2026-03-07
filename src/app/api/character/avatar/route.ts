@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         const title = identity.title || 'A person of purpose';
         const gender = identity.gender || 'person';
         const age = identity.age || '';
+        const ethnicity = identity.ethnicity || '';
         const dreamSelf = identity.dream_self || '';
 
         // Extract visual cues from the dream self (first ~200 chars for prompt)
@@ -34,15 +35,17 @@ export async function POST(req: Request) {
 
         // Build the portrait prompt
         const ageStr = age ? `${age}-year-old ` : '';
+        const ethnicityStr = ethnicity ? `${ethnicity} ` : '';
         const prompt = [
             `Intimate vertical portrait photograph.`,
-            `A ${ageStr}${gender} who embodies "${title}".`,
+            `A ${ageStr}${ethnicityStr}${gender} who embodies "${title}".`,
             visualCues ? `Visual essence: ${visualCues}` : '',
             `Cinematic studio lighting, shallow depth of field, warm tones.`,
             `Instagram-quality sharpness and color saturation.`,
             `Shot from chest up. Natural, confident, relaxed expression.`,
-            `Do not default to any racial or ethnic stereotype.`,
-            `Use ambiguous, diverse features unless background is specified.`,
+            // Only use the generic fallback when ethnicity is not specified
+            !ethnicity ? `Do not default to any racial or ethnic stereotype.` : '',
+            !ethnicity ? `Use ambiguous, diverse features unless background is specified.` : '',
             `No text, no watermarks, no logos.`,
         ].filter(Boolean).join(' ');
 

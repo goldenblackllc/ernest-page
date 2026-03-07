@@ -204,8 +204,71 @@ export function Ledger() {
         );
     }
 
+    // Bible generation status
+    const bibleStatus = profile?.character_bible?.status;
+    const [dismissedBibleReady, setDismissedBibleReady] = useState(false);
+    const prevBibleStatus = useRef<string | undefined>(undefined);
+    const showBibleCompiling = bibleStatus === 'compiling';
+    const showBibleReady = bibleStatus === 'stable' && !dismissedBibleReady && prevBibleStatus.current === 'compiling';
+
+    useEffect(() => {
+        if (bibleStatus && bibleStatus !== prevBibleStatus.current) {
+            if (bibleStatus === 'stable' && prevBibleStatus.current === 'compiling') {
+                // Bible just finished — show "ready" card, auto-dismiss after 15s
+                setDismissedBibleReady(false);
+                const timer = setTimeout(() => setDismissedBibleReady(true), 15000);
+                prevBibleStatus.current = bibleStatus;
+                return () => clearTimeout(timer);
+            }
+            prevBibleStatus.current = bibleStatus;
+        }
+    }, [bibleStatus]);
+
     return (
         <section className="flex flex-col gap-6 pt-2">
+
+            {/* Bible Generation Status Card */}
+            {showBibleCompiling && (
+                <div className="bg-[#1a1a1a] border border-emerald-500/20 rounded-xl overflow-hidden shadow-sm relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent animate-pulse" />
+                    <div className="flex items-center gap-4 p-5 relative">
+                        <div className="w-12 h-12 rounded-full bg-zinc-800 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                            <Sparkles className="w-5 h-5 text-emerald-500 animate-pulse" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-white mb-0.5">Your character is being written...</p>
+                            <p className="text-xs text-zinc-500">Building your character bible and generating your portrait. This can take up to a minute.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showBibleReady && (
+                <button
+                    onClick={() => {
+                        setDismissedBibleReady(true);
+                        // Scroll to top or navigate to profile
+                        window.dispatchEvent(new CustomEvent('navigate-to-profile'));
+                    }}
+                    className="bg-[#1a1a1a] border border-emerald-500/30 rounded-xl overflow-hidden shadow-sm relative text-left w-full hover:bg-zinc-900 transition-colors"
+                >
+                    <div className="flex items-center gap-4 p-5">
+                        <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-emerald-500/50 overflow-hidden shrink-0">
+                            {profile?.character_bible?.compiled_output?.avatar_url ? (
+                                <img src={profile.character_bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Sparkles className="w-5 h-5 text-emerald-500" />
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-emerald-400 mb-0.5">Your character is ready ✓</p>
+                            <p className="text-xs text-zinc-500">Tap to view your new character profile.</p>
+                        </div>
+                    </div>
+                </button>
+            )}
 
             {pendingPostId && (
                 <div className="bg-[#1a1a1a] border border-emerald-500/20 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">

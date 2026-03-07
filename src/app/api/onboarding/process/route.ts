@@ -2,6 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/firebase/admin";
 import { generateWithFallback, SONNET_MODEL } from "@/lib/ai/models";
 import { FieldValue } from "firebase-admin/firestore";
+import { waitUntil } from "@vercel/functions";
 
 export const maxDuration = 120;
 
@@ -40,7 +41,7 @@ Updated: {DATE} | Sessions: 0
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { uid, rant, gender, age, important_people, things_i_enjoy } = body;
+        const { uid, rant, gender, age, ethnicity, important_people, things_i_enjoy } = body;
 
         if (!uid || !rant) {
             return Response.json(
@@ -49,10 +50,11 @@ export async function POST(req: Request) {
             );
         }
 
-        // Prepend gender/age context to the rant so the AI has it
+        // Prepend gender/age/ethnicity context to the rant so the AI has it
         const contextPrefix = [
             gender ? `The user identifies as: ${gender}.` : null,
             age ? `Age: ${age}.` : null,
+            ethnicity ? `Ethnicity: ${ethnicity}.` : null,
             important_people ? `People in their life: ${important_people}` : null,
             things_i_enjoy ? `Things they enjoy: ${things_i_enjoy}` : null,
         ].filter(Boolean).join('\n');
@@ -117,6 +119,7 @@ export async function POST(req: Request) {
             things_i_enjoy: things_i_enjoy || '',
             gender: gender || '',
             age: age || '',
+            ethnicity: ethnicity || '',
         };
 
         if (!hasExistingDossier) {
@@ -126,7 +129,6 @@ export async function POST(req: Request) {
             identity.session_count = 0;
         }
         // If dossier exists, we leave it untouched here.
-        // The compile route will merge important_people & things_i_enjoy into it.
 
         // Also populate the legacy source_code fields for backward compatibility
         const legacySourceCode = {
@@ -137,6 +139,7 @@ export async function POST(req: Request) {
             things_i_enjoy: data.dossier.preferences,
         };
 
+        // Set status to 'compiling' so the feed can show the status card
         await db.collection("users").doc(uid).set(
             {
                 identity,
@@ -145,11 +148,52 @@ export async function POST(req: Request) {
                     compiled_bible: {},
                     compiled_output: { ideal: [] },
                     last_updated: Date.now(),
+                    status: 'compiling',
                 },
             },
             { merge: true }
         );
 
+        // Kick off bible + avatar generation in the background
+        const origin = new URL(req.url).origin;
+        waitUntil((async () => {
+            try {
+                console.log(`[Onboarding] Background: Starting bible compilation for ${uid}`);
+                const compileRes = await fetch(`${origin}/api/character/compile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid,
+                        source_code: {
+                            archetype: data.title,
+                            manifesto: data.dream_self,
+                            core_beliefs: '',
+                            important_people: important_people || '',
+                            things_i_enjoy: things_i_enjoy || '',
+                        },
+                    }),
+                });
+
+                if (!compileRes.ok) {
+                    console.error(`[Onboarding] Background: Bible compile failed with status ${compileRes.status}`);
+                }
+
+                // Mark bible as stable
+                await db.collection("users").doc(uid).set({
+                    character_bible: { status: 'stable' }
+                }, { merge: true });
+
+                console.log(`[Onboarding] Background: Complete for ${uid}`);
+            } catch (err: any) {
+                console.error(`[Onboarding] Background generation error for ${uid}:`, err.message);
+                // Still mark as stable so the user isn't stuck in limbo
+                await db.collection("users").doc(uid).set({
+                    character_bible: { status: 'stable' }
+                }, { merge: true });
+            }
+        })());
+
+        // Return immediately — client proceeds to dashboard
         return Response.json({
             success: true,
             title: data.title,
