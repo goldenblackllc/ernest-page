@@ -33,6 +33,18 @@ export async function POST(req: Request) {
         // Extract visual cues from the dream self (first ~200 chars for prompt)
         const visualCues = dreamSelf.substring(0, 200);
 
+        // Extract Style & Presence from compiled bible (if available)
+        const compiledBible = bible?.compiled_bible || {};
+        const styleSection = compiledBible.lifestyle?.['Style & Presence']
+            || compiledBible.lifestyle?.['style_and_presence']
+            || '';
+        // Truncate to keep prompt manageable
+        const styleCues = typeof styleSection === 'string'
+            ? styleSection.substring(0, 300)
+            : typeof styleSection === 'object'
+                ? JSON.stringify(styleSection).substring(0, 300)
+                : '';
+
         // Build the portrait prompt
         const ageStr = age ? `${age}-year-old ` : '';
         const ethnicityStr = ethnicity ? `${ethnicity} ` : '';
@@ -40,6 +52,7 @@ export async function POST(req: Request) {
             `Intimate vertical portrait photograph.`,
             `A ${ageStr}${ethnicityStr}${gender} who embodies "${title}".`,
             visualCues ? `Visual essence: ${visualCues}` : '',
+            styleCues ? `Style and appearance: ${styleCues}` : '',
             `Cinematic studio lighting, shallow depth of field, warm tones.`,
             `Instagram-quality sharpness and color saturation.`,
             `Shot from chest up. Natural, confident, relaxed expression.`,
