@@ -99,11 +99,15 @@ export async function POST(req: Request) {
         const file = bucket.file(fileName);
 
         await file.save(buffer, {
-            metadata: { contentType: 'image/jpeg' },
+            metadata: {
+                contentType: 'image/jpeg',
+                cacheControl: 'public, max-age=3600',
+            },
             public: true,
         });
 
-        const avatarUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        // Cache-bust: append timestamp so browsers/CDN don't serve the old image
+        const avatarUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}?v=${Date.now()}`;
         console.log(`[Avatar] Saved: ${avatarUrl}`);
 
         // Save to Firestore under character_bible.compiled_output.avatar_url
