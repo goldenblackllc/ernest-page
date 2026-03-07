@@ -59,6 +59,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [localIsPublic, setLocalIsPublic] = useState(post.is_public ?? false);
 
     const { user } = useAuth();
 
@@ -186,11 +187,13 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
 
     const togglePrivacy = async () => {
         if (!user || user.uid !== post.uid) return;
-        const newStatus = !post.is_public;
+        const newStatus = !localIsPublic;
+        setLocalIsPublic(newStatus);
         try {
             await updateDoc(doc(db, "posts", post.id), { is_public: newStatus });
         } catch (error) {
             console.error("Error toggling privacy:", error);
+            setLocalIsPublic(!newStatus); // revert on failure
         }
     };
 
@@ -252,7 +255,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                                     onClick={togglePrivacy}
                                     className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 py-1 px-1.5 rounded-md transition-all group/privacy"
                                 >
-                                    {post.is_public ? (
+                                    {localIsPublic ? (
                                         <>
                                             <Globe className="w-3 h-3 text-blue-400" />
                                             <span className="text-blue-400">Everyone</span>
