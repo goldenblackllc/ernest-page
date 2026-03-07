@@ -52,10 +52,17 @@ export function TriagePanel() {
             {/* FAB — Opens Mirror Chat directly */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
                 <button
-                    onClick={() => setIsMirrorOpen(true)}
-                    className="w-16 h-16 rounded-full bg-white text-black shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black hover:scale-110 active:scale-95"
+                    onClick={() => bible?.status !== 'compiling' && setIsMirrorOpen(true)}
+                    disabled={bible?.status === 'compiling'}
+                    className={cn(
+                        "w-16 h-16 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black",
+                        bible?.status === 'compiling'
+                            ? "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
+                            : "bg-white text-black hover:scale-110 active:scale-95"
+                    )}
+                    title={bible?.status === 'compiling' ? 'Your character is being written...' : 'Open chat'}
                 >
-                    <MessageCircle className="w-7 h-7" />
+                    <MessageCircle className={cn("w-7 h-7", bible?.status === 'compiling' && "animate-pulse")} />
                 </button>
             </div>
 

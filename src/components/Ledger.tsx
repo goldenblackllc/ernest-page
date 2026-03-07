@@ -204,25 +204,22 @@ export function Ledger() {
         );
     }
 
-    // Bible generation status
+    // Bible generation status — backed by Firestore, survives page reloads
     const bibleStatus = profile?.character_bible?.status;
-    const [dismissedBibleReady, setDismissedBibleReady] = useState(false);
-    const prevBibleStatus = useRef<string | undefined>(undefined);
     const showBibleCompiling = bibleStatus === 'compiling';
-    const showBibleReady = bibleStatus === 'stable' && !dismissedBibleReady && prevBibleStatus.current === 'compiling';
+    const showBibleReady = bibleStatus === 'ready';
 
-    useEffect(() => {
-        if (bibleStatus && bibleStatus !== prevBibleStatus.current) {
-            if (bibleStatus === 'stable' && prevBibleStatus.current === 'compiling') {
-                // Bible just finished — show "ready" card, auto-dismiss after 15s
-                setDismissedBibleReady(false);
-                const timer = setTimeout(() => setDismissedBibleReady(true), 15000);
-                prevBibleStatus.current = bibleStatus;
-                return () => clearTimeout(timer);
-            }
-            prevBibleStatus.current = bibleStatus;
+    const dismissBibleReady = async () => {
+        if (!user) return;
+        try {
+            const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
+            await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
+                'character_bible.status': 'stable',
+            });
+        } catch (e) {
+            console.error('Failed to dismiss bible ready card:', e);
         }
-    }, [bibleStatus]);
+    };
 
     return (
         <section className="flex flex-col gap-6 pt-2">
@@ -246,14 +243,13 @@ export function Ledger() {
             {showBibleReady && (
                 <button
                     onClick={() => {
-                        setDismissedBibleReady(true);
-                        // Scroll to top or navigate to profile
-                        window.dispatchEvent(new CustomEvent('navigate-to-profile'));
+                        dismissBibleReady();
+                        window.location.href = '/profile';
                     }}
                     className="bg-[#1a1a1a] border border-emerald-500/30 rounded-xl overflow-hidden shadow-sm relative text-left w-full hover:bg-zinc-900 transition-colors"
                 >
                     <div className="flex items-center gap-4 p-5">
-                        <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-emerald-500/50 overflow-hidden shrink-0">
+                        <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-emerald-500/50 overflow-hidden shrink-0">
                             {profile?.character_bible?.compiled_output?.avatar_url ? (
                                 <img src={profile.character_bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -263,8 +259,9 @@ export function Ledger() {
                             )}
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-emerald-400 mb-0.5">Your character is ready ✓</p>
-                            <p className="text-xs text-zinc-500">Tap to view your new character profile.</p>
+                            <p className="text-sm font-bold text-emerald-400 mb-0.5">Build Finished ✓</p>
+                            <p className="text-base font-bold text-white">{profile?.identity?.title || 'Your Character'}</p>
+                            <p className="text-xs text-zinc-500 mt-0.5">Tap to see your new character →</p>
                         </div>
                     </div>
                 </button>
