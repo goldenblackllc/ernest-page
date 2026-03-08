@@ -226,11 +226,11 @@ export function Ledger() {
 
             {/* Bible Generation Status Card */}
             {showBibleCompiling && (
-                <div className="bg-[#1a1a1a] border border-emerald-500/20 rounded-xl overflow-hidden shadow-sm relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent animate-pulse" />
+                <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
                     <div className="flex items-center gap-4 p-5 relative">
-                        <div className="w-12 h-12 rounded-full bg-zinc-800 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                            <Sparkles className="w-5 h-5 text-emerald-500 animate-pulse" />
+                        <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
+                            <Sparkles className="w-5 h-5 text-zinc-100 animate-pulse" />
                         </div>
                         <div>
                             <p className="text-sm font-bold text-white mb-0.5">Your character is being written...</p>
@@ -246,20 +246,20 @@ export function Ledger() {
                         dismissBibleReady();
                         window.location.href = '/profile';
                     }}
-                    className="bg-[#1a1a1a] border border-emerald-500/30 rounded-xl overflow-hidden shadow-sm relative text-left w-full hover:bg-zinc-900 transition-colors"
+                    className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative text-left w-full hover:bg-zinc-800 transition-colors"
                 >
                     <div className="flex items-center gap-4 p-5">
-                        <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-emerald-500/50 overflow-hidden shrink-0">
+                        <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-white/20 overflow-hidden shrink-0">
                             {profile?.character_bible?.compiled_output?.avatar_url ? (
                                 <img src={profile.character_bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <Sparkles className="w-5 h-5 text-emerald-500" />
+                                    <Sparkles className="w-5 h-5 text-zinc-100" />
                                 </div>
                             )}
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-emerald-400 mb-0.5">Build Finished ✓</p>
+                            <p className="text-sm font-bold text-white mb-0.5">Build Finished ✓</p>
                             <p className="text-base font-bold text-white">{profile?.identity?.title || 'Your Character'}</p>
                             <p className="text-xs text-zinc-500 mt-0.5">Tap to see your new character →</p>
                         </div>
@@ -268,10 +268,10 @@ export function Ledger() {
             )}
 
             {pendingPostId && (
-                <div className="bg-[#1a1a1a] border border-emerald-500/20 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">
+                <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">
                     <div className="flex flex-col items-center gap-3">
-                        <Sparkles className="w-6 h-6 text-emerald-500/80 animate-spin-slow" />
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest inline-block text-center mt-2">
+                        <Sparkles className="w-6 h-6 text-zinc-300 animate-spin-slow" />
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest inline-block text-center mt-2">
                             Writing to Dear Earnest...
                         </span>
                     </div>

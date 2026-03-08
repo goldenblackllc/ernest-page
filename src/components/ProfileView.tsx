@@ -233,7 +233,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                 <div className="flex-1 overflow-y-auto p-6">
                     {isProcessing ? (
                         <div className="flex flex-col items-center gap-6 py-12">
-                            <Sparkles className="w-10 h-10 text-emerald-500 animate-pulse" />
+                            <Sparkles className="w-10 h-10 text-zinc-100 animate-pulse" />
                             <p className="text-base text-zinc-400">Rebuilding your identity...</p>
                             <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
                         </div>
