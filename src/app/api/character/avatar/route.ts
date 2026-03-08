@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         const ageStr = age ? `${age}-year-old ` : '';
         const ethnicityStr = ethnicity ? `${ethnicity} ` : '';
         const prompt = [
-            `Intimate vertical portrait photograph.`,
+            `Square portrait photograph.`,
             `A ${ageStr}${ethnicityStr}${gender} who embodies "${title}".`,
             visualCues ? `Visual essence: ${visualCues}` : '',
             styleCues ? `Style and appearance: ${styleCues}` : '',
