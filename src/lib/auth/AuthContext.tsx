@@ -26,6 +26,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setLoading(false);
+
+            // Sync region on every login — fire-and-forget
+            if (user) {
+                fetch('/api/user/region', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: user.uid }),
+                }).catch(() => { }); // Silent fail — non-critical
+            }
         });
 
         return () => unsubscribe();
