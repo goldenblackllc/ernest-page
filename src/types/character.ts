@@ -10,6 +10,14 @@ export interface CharacterIdentity {
     dossier: string;            // AI-maintained structured case notes
     dossier_updated_at?: any;   // Firestore Timestamp
     session_count: number;      // Number of check-in/mirror sessions
+    belief_patterns?: string;   // AI-maintained summary of recurring beliefs, excitement signals, and shifts
+    monthly_reviews?: Array<{   // Monthly character review letters from the Ideal Self
+        id: string;
+        month: string;
+        content: string;
+        read?: boolean;
+        created_at: any;
+    }>;
 }
 
 export interface CharacterBible {
@@ -45,7 +53,7 @@ export interface CharacterProfile {
     identity?: CharacterIdentity;   // New onboarding-driven identity
     character_bible: CharacterBible; // Now mandatory structure
     my_story?: string;
-    active_todos?: Array<{ id: string, task: string, completed: boolean, created_at: any }>;
+    active_todos?: Array<{ id: string, task: string, completed: boolean, priority?: 'immediate' | 'next', created_at: any }>;
     following?: Record<string, string>; // authorId -> custom Alias
     region?: string; // e.g., 'US-MA'
     last_check_in?: any;

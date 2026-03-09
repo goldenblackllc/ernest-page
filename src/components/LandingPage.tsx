@@ -5,7 +5,8 @@ import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'fi
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { User, MessageSquare, ShieldCheck, ChevronDown } from 'lucide-react';
+import { ChevronDown, Lock, BarChart3, Target, Shield } from 'lucide-react';
+import Image from 'next/image';
 
 // ─── Timezone → Dial Code Detection ────────────────────────────────
 function getDefaultDialCode(): string {
@@ -76,22 +77,31 @@ const cardReveal = {
     }),
 };
 
+const sectionFade = {
+    hidden: { opacity: 0, y: 40 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+    },
+};
+
 // ─── Mechanics Data ────────────────────────────────────────────────
 const MECHANICS = [
     {
-        icon: User,
-        title: 'The Description',
-        text: 'Outline exactly who your ideal self is and what they stand for.',
+        icon: Lock,
+        title: 'The Blueprint',
+        text: 'You do not rent your principles. You define your highest standard—your Character Bible—and lock it in. This is the immutable baseline you will answer to every single day.',
     },
     {
-        icon: MessageSquare,
-        title: 'The Style',
-        text: 'Define how this version of you speaks, thinks, and approaches the world.',
+        icon: Target,
+        title: 'The Friction Audit',
+        text: 'When you fail to execute, the system does not rely on brute-force guilt. It initiates a Friction Audit. The engine diagnoses whether you are facing resistance or a flawed strategy, instantly scaling your goal down to a frictionless micro-action to force immediate physical momentum.',
     },
     {
-        icon: ShieldCheck,
-        title: 'The Rules',
-        text: 'Set the concrete, non-negotiable guidelines for how you respond to friction.',
+        icon: BarChart3,
+        title: 'The Ledger',
+        text: 'A silent, stark, data-driven vault of your execution. When doubt sets in, the system pulls from your own history, proving with hard data that you have navigated this exact friction before and won.',
     },
 ];
 
@@ -175,7 +185,7 @@ export function LandingPage() {
             <div id="landing-recaptcha" />
 
             {/* ── STICKY TOP NAV ── */}
-            <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/10">
+            <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
                     <span className="font-bold text-lg text-zinc-100 tracking-tight">Earnest Page</span>
                     <button
@@ -187,99 +197,380 @@ export function LandingPage() {
                 </div>
             </nav>
 
-            {/* ── HERO SECTION ── */}
-            <section className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center">
-                {/* Subtle radial gradient behind hero text */}
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(59,130,246,0.08)_0%,_transparent_70%)]" />
-
+            {/* ═══════════════════════════════════════════════════════════
+                HERO — "The standard you walk past..."
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center overflow-hidden">
                 <div className="relative z-10 max-w-3xl mx-auto">
-                    <motion.h1
-                        className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight leading-[1.1] mb-6"
+                    <motion.p
+                        className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-zinc-500 mb-8"
                         custom={0}
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
                     >
-                        Stop reacting.
-                        <br />
-                        <span className="text-blue-500">Start commanding.</span>
-                    </motion.h1>
+                        Your daily execution engine
+                    </motion.p>
 
-                    <motion.p
-                        className="text-base sm:text-lg md:text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto"
+                    <motion.h1
+                        className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-8"
                         custom={1}
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
                     >
-                        Most of your day is spent on autopilot. Earnest Page lets you architect
-                        your ideal self so you can stop letting circumstances dictate your behavior.
-                        <span className="block mt-3 text-white font-semibold">
-                            Don&apos;t wait for life to happen. Dictate the terms.
-                        </span>
-                    </motion.p>
+                        The standard you walk past
+                        <br />
+                        is the standard you accept.
+                    </motion.h1>
 
-                    <motion.div
+                    <motion.p
+                        className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-4"
                         custom={2}
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
-                        className="mt-8"
+                    >
+                        Earnest Page is your daily execution engine. Define your highest standard,
+                        consult your Ideal Self, and force immediate action. Stop reacting to circumstances.
+                    </motion.p>
+
+                    <motion.p
+                        className="text-sm sm:text-base text-white font-semibold tracking-wide mb-10"
+                        custom={3}
+                        variants={fadeUp}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        Accountability is not optional.
+                    </motion.p>
+
+                    <motion.div
+                        custom={4}
+                        variants={fadeUp}
+                        initial="hidden"
+                        animate="visible"
                     >
                         <button
                             onClick={scrollToAuth}
-                            className="rounded-xl bg-white text-black px-8 py-3 font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150 w-full sm:w-auto text-base"
+                            className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
                         >
                             Start Commanding
                         </button>
                     </motion.div>
                 </div>
 
+                {/* Interface mockup peeking from bottom */}
+                <motion.div
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[280px] sm:w-[320px] md:w-[360px]"
+                    initial={{ opacity: 0, y: 80 }}
+                    animate={{ opacity: 1, y: 20 }}
+                    transition={{ delay: 0.8, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <div className="relative rounded-t-3xl overflow-hidden border border-white/10 border-b-0 shadow-2xl shadow-white/[0.03]">
+                        <Image
+                            src="/img/hero-mockup.png"
+                            alt="Earnest Page interface"
+                            width={360}
+                            height={640}
+                            className="w-full h-auto"
+                            priority
+                        />
+                        {/* Fade-to-black gradient at the bottom */}
+                        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent" />
+                    </div>
+                </motion.div>
+
                 {/* Scroll indicator */}
                 <motion.div
-                    className="absolute bottom-10 left-1/2 -translate-x-1/2"
+                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2, duration: 0.6 }}
+                    transition={{ delay: 1.4, duration: 0.6 }}
                 >
                     <motion.div
                         animate={{ y: [0, 8, 0] }}
                         transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
                     >
-                        <ChevronDown className="w-6 h-6 text-zinc-600" />
+                        <ChevronDown className="w-5 h-5 text-zinc-600" />
                     </motion.div>
                 </motion.div>
             </section>
 
-            {/* ── MECHANICS GRID ── */}
-            <section className="relative px-6 py-24 md:py-32">
-                <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {MECHANICS.map((item, i) => (
+            {/* ═══════════════════════════════════════════════════════════
+                SECTION 1 — THE ARCHITECTURE
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative px-6 py-24 md:py-36">
+                <motion.div
+                    className="max-w-3xl mx-auto"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-80px' }}
+                >
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
+                        The Architecture
+                    </p>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
+                        An Intentional Investment
+                        <br />
+                        <span className="text-zinc-500">for Your Mind.</span>
+                    </h2>
+                    <div className="space-y-6 text-base sm:text-lg text-zinc-400 leading-relaxed">
+                        <p>
+                            Most of your day is spent on a high-end autopilot. The market is flooded with
+                            cheap, $15‑a‑month productivity apps that give you permission to quit the
+                            moment things get difficult. We reject the short-term trap.
+                        </p>
+                        <p className="text-zinc-300">
+                            Earnest Page is not a digital diary. It is a masterfully crafted, uncompromising
+                            Executive Command Center. It is an everyday necessity for those who refuse to
+                            compromise, engineered to strip away your excuses and hand you absolute control
+                            over your daily ritual.
+                        </p>
+                    </div>
+                </motion.div>
+            </section>
+
+            {/* Thin divider */}
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
+            {/* ═══════════════════════════════════════════════════════════
+                SECTION 2 — THE MECHANICS (3 Cards)
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative px-6 py-24 md:py-36">
+                <motion.div
+                    className="max-w-5xl mx-auto"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-80px' }}
+                >
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
+                        The Mechanics
+                    </p>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-16">
+                        How the Engine Runs
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {MECHANICS.map((item, i) => (
+                            <motion.div
+                                key={item.title}
+                                className="group relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 transition-colors duration-200 hover:border-white/20 hover:bg-zinc-900/60"
+                                custom={i}
+                                variants={cardReveal}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: '-60px' }}
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center mb-6">
+                                    <item.icon className="w-5 h-5 text-zinc-300" />
+                                </div>
+                                <h3 className="text-lg font-bold tracking-tight text-white mb-3">
+                                    {item.title}
+                                </h3>
+                                <p className="text-sm text-zinc-500 leading-relaxed">
+                                    {item.text}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </motion.div>
+            </section>
+
+            {/* Thin divider */}
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
+            {/* ═══════════════════════════════════════════════════════════
+                SECTION 3 — THE FIREWALL
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative px-6 py-24 md:py-36">
+                <motion.div
+                    className="max-w-3xl mx-auto"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-80px' }}
+                >
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
+                        The Firewall
+                    </p>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
+                        The Bouncer at the Door.
+                    </h2>
+
+                    {/* Blurred "Dear Earnest" preview */}
+                    <div className="relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-6 sm:p-8 mb-10 overflow-hidden">
+                        <div className="blur-[6px] select-none pointer-events-none space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-zinc-800" />
+                                <div className="space-y-1">
+                                    <div className="h-3 w-24 bg-zinc-700 rounded" />
+                                    <div className="h-2 w-16 bg-zinc-800 rounded" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="h-3 w-full bg-zinc-800 rounded" />
+                                <div className="h-3 w-5/6 bg-zinc-800 rounded" />
+                                <div className="h-3 w-3/4 bg-zinc-800 rounded" />
+                            </div>
+                            <div className="border-t border-white/5 pt-4 flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-zinc-800" />
+                                <div className="space-y-1">
+                                    <div className="h-3 w-20 bg-zinc-700 rounded" />
+                                    <div className="h-2 w-14 bg-zinc-800 rounded" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="h-3 w-full bg-zinc-800 rounded" />
+                                <div className="h-3 w-4/5 bg-zinc-800 rounded" />
+                            </div>
+                        </div>
+                        {/* Shield overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                            <div className="flex flex-col items-center gap-2">
+                                <Shield className="w-8 h-8 text-zinc-500" />
+                                <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-semibold">
+                                    Dear Earnest Feed
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6 text-base sm:text-lg text-zinc-400 leading-relaxed">
+                        <p>
+                            You are not paying for a human coach; you are paying to access a radically
+                            curated, heavily fenced network of peers who refuse to settle.
+                        </p>
+                        <p>
+                            Through a strict Contact Firewall and geographical inversion, real tensions are
+                            stripped of identifying fingerprints and published to the &ldquo;Dear Earnest&rdquo;
+                            feed. It provides a raw, sanitized view of reality that proves you are not fighting
+                            alone. The steep barrier to entry ensures this network remains pristine.
+                        </p>
+                        <p className="text-zinc-300 font-semibold">
+                            Only those with true skin in the game make it inside.
+                        </p>
+                    </div>
+                </motion.div>
+            </section>
+
+            {/* Thin divider */}
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
+            {/* ═══════════════════════════════════════════════════════════
+                SECTION 4 — THE TOLLBOOTH (Pricing)
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative px-6 py-24 md:py-36">
+                <motion.div
+                    className="max-w-4xl mx-auto"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-80px' }}
+                >
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
+                        The Tollbooth
+                    </p>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
+                        Demand a Better Life.
+                    </h2>
+                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mb-6">
+                        Choosing Earnest Page is about empowerment and self-respect. We ground this
+                        luxury in undeniable math: securing your operational baseline costs a fraction of
+                        the fallout from a blown business deal, a derailed quarter, or a life lived
+                        reacting to circumstances.
+                    </p>
+                    <p className="text-base sm:text-lg text-zinc-300 font-semibold mb-16">
+                        At roughly $3.28 a day, this is a highly rational, everyday decision to permanently
+                        secure your standard.
+                    </p>
+
+                    {/* Pricing cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Executive Retainer */}
                         <motion.div
-                            key={item.title}
-                            className="group relative rounded-2xl border border-white/10 bg-white/[0.03] p-8 transition-colors duration-200 hover:border-blue-500/40 hover:bg-blue-500/[0.04]"
-                            custom={i}
+                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/20"
+                            custom={0}
                             variants={cardReveal}
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: '-60px' }}
                         >
-                            <item.icon className="w-7 h-7 text-blue-500 mb-5 transition-transform duration-200 group-hover:scale-110" />
-                            <h3 className="text-lg font-bold tracking-tight text-white mb-2">
-                                {item.title}
-                            </h3>
-                            <p className="text-sm text-zinc-400 leading-relaxed">
-                                {item.text}
+                            <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
+                                Annual
                             </p>
+                            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">
+                                The Executive Retainer
+                            </h3>
+                            <div className="flex items-baseline gap-2 mb-6">
+                                <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+                                    $1,200
+                                </span>
+                                <span className="text-sm text-zinc-600">/ annually</span>
+                            </div>
+                            <p className="text-sm text-zinc-500 leading-relaxed mb-8">
+                                Hire a 24/7 strategic advisor for your own mind. No month-to-month option.
+                                We demand an annual lock-in to guarantee your execution.
+                            </p>
+                            <button
+                                onClick={scrollToAuth}
+                                className="w-full rounded-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
+                            >
+                                Commit
+                            </button>
                         </motion.div>
-                    ))}
-                </div>
+
+                        {/* Founders Key */}
+                        <motion.div
+                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 relative overflow-hidden transition-colors duration-200 hover:border-white/20"
+                            custom={1}
+                            variants={cardReveal}
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true, margin: '-60px' }}
+                        >
+                            {/* Subtle "prestige" shimmer */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
+                            <div className="relative">
+                                <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
+                                    Lifetime
+                                </p>
+                                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">
+                                    The Founders Key
+                                </h3>
+                                <div className="flex items-baseline gap-2 mb-6">
+                                    <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+                                        $2,500
+                                    </span>
+                                    <span className="text-sm text-zinc-600">/ one-time</span>
+                                </div>
+                                <p className="text-sm text-zinc-500 leading-relaxed mb-8">
+                                    You do not rent your own mind. Buy the architecture once, and own the
+                                    asset forever. Tether your ego to your own success.
+                                </p>
+                                <button
+                                    onClick={scrollToAuth}
+                                    className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
+                                >
+                                    Secure the Asset
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                </motion.div>
             </section>
 
-            {/* ── AUTH CARD ── */}
-            <section id="auth-section" className="relative px-6 pb-24 md:pb-32">
+            {/* Thin divider */}
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
+            {/* ═══════════════════════════════════════════════════════════
+                AUTH CARD
+               ═══════════════════════════════════════════════════════════ */}
+            <section id="auth-section" className="relative px-6 py-24 md:py-32">
                 <motion.div
-                    className="max-w-md mx-auto rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-8 sm:p-10"
+                    className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10"
                     variants={cardReveal}
                     custom={0}
                     initial="hidden"
@@ -292,7 +583,7 @@ export function LandingPage() {
                             Earnest Page
                         </h2>
                         <p className="text-sm text-zinc-500">
-                            Engineer your ideal life.
+                            Accountability is not optional.
                         </p>
                     </div>
 
@@ -315,13 +606,13 @@ export function LandingPage() {
                                     placeholder="555 555 5555"
                                     value={phoneNumber}
                                     onChange={(e) => setPhoneNumber(e.target.value)}
-                                    className="w-full bg-zinc-900/80 border border-white/10 pl-12 pr-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all duration-150"
+                                    className="w-full bg-zinc-900/80 border border-white/10 pl-12 pr-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                 />
                             </div>
                             <button
                                 onClick={handleSendCode}
                                 disabled={loading}
-                                className="w-full bg-blue-500 text-white py-3.5 text-sm font-bold tracking-wide rounded-xl hover:bg-blue-400 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-blue-500"
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
                             >
                                 {loading ? 'Sending...' : 'Continue'}
                             </button>
@@ -344,14 +635,14 @@ export function LandingPage() {
                                 placeholder="000000"
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder-zinc-700 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all duration-150"
+                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                 maxLength={6}
                                 autoFocus
                             />
                             <button
                                 onClick={handleVerifyCode}
                                 disabled={loading || verificationCode.length < 6}
-                                className="w-full bg-blue-500 text-white py-3.5 text-sm font-bold tracking-wide rounded-xl hover:bg-blue-400 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-blue-500"
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
                             >
                                 {loading ? 'Verifying...' : 'Verify'}
                             </button>
@@ -369,6 +660,19 @@ export function LandingPage() {
                     )}
                 </motion.div>
             </section>
+
+            {/* ── FOOTER ── */}
+            <footer className="border-t border-white/[0.06] px-6 py-10">
+                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-zinc-600">
+                    <span>© {new Date().getFullYear()} Earnest Page. All rights reserved.</span>
+                    <span>
+                        This site is protected by reCAPTCHA. Google{' '}
+                        <a href="https://policies.google.com/privacy" className="underline hover:text-zinc-400 transition-colors">Privacy</a>
+                        {' '}&amp;{' '}
+                        <a href="https://policies.google.com/terms" className="underline hover:text-zinc-400 transition-colors">Terms</a>.
+                    </span>
+                </div>
+            </footer>
         </main>
     );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CharacterIdentity } from '@/types/character';
-import { FileText, Calendar, Hash, ChevronDown } from 'lucide-react';
+import { FileText, Calendar, Hash, ChevronDown, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DossierViewProps {
@@ -128,6 +128,43 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
                                     </div>
                                 );
                             })}
+
+                            {/* Belief Patterns Section */}
+                            {identity.belief_patterns && (
+                                <div className="border border-white/10 rounded-xl overflow-hidden">
+                                    <button
+                                        onClick={() => toggleSection(sections.length)}
+                                        className="w-full flex items-center justify-between px-4 min-h-[44px] py-3 text-left hover:bg-white/[0.03] transition-colors duration-200"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Activity className="w-4 h-4 text-zinc-500" />
+                                            <h3 className="text-base font-semibold text-zinc-100 tracking-wide">
+                                                Belief Patterns
+                                            </h3>
+                                        </div>
+                                        <ChevronDown
+                                            className={cn(
+                                                "w-4 h-4 text-zinc-500 shrink-0 ml-2 transition-transform duration-200 ease-out",
+                                                openSections.has(sections.length) && "rotate-180"
+                                            )}
+                                        />
+                                    </button>
+                                    <div
+                                        className={cn(
+                                            "grid transition-all duration-200 ease-out",
+                                            openSections.has(sections.length) ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                                        )}
+                                    >
+                                        <div className="overflow-hidden">
+                                            <div className="px-4 pb-4 pt-1 border-t border-white/5">
+                                                <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line">
+                                                    {identity.belief_patterns}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="text-center py-12">

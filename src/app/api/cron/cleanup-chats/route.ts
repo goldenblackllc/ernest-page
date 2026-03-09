@@ -265,6 +265,57 @@ Output the complete updated dossier as plain text.`;
                                 console.error(`[Cron] Dossier update failed for user ${uid}:`, dossierError.message);
                                 // Don't block chat cleanup if dossier update fails
                             }
+
+                            // --- BELIEF PATTERN TRACKING ---
+                            try {
+                                const identity = userData?.identity;
+                                if (identity) {
+                                    const chatTranscript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+                                    const currentPatterns = identity.belief_patterns || '';
+
+                                    const beliefPrompt = `You are maintaining a longitudinal belief analysis for a personal growth platform. Your job is to track how this person's beliefs are evolving across sessions.
+
+CURRENT BELIEF PATTERNS (from previous sessions):
+${currentPatterns || 'No previous patterns recorded.'}
+
+NEW SESSION TRANSCRIPT:
+${chatTranscript}
+
+Analyze this session and produce an updated belief patterns document. Track:
+
+1. RECURRING BELIEFS CREATING FRICTION — What beliefs keep showing up that create negative feelings? Name the belief specifically (e.g., "I don't have enough" or "I'm not good enough to charge more"). If a belief appeared in previous sessions, note how many times it has recurred.
+
+2. EXCITEMENT SIGNALS — Where was the person's energy highest? What topics, ideas, or possibilities lit them up? These point to alignment.
+
+3. SHIFTS — Did any previously-held belief change in this session compared to earlier sessions? If so, name what changed and when.
+
+4. UNEXPECTED RESULTS — Did the person mention anything surprising that happened after following their excitement? These connections between action and unexpected outcomes are important to track.
+
+RULES:
+- Produce a COMPLETE REWRITE, not an append. The output replaces the current document.
+- Keep it under 600 words. Prioritize: active friction beliefs > excitement signals > shifts > unexpected results.
+- Write from an analytical perspective — factual, pattern-focused, not judgmental.
+- Do not include advice or recommendations. Just observe and record.
+
+Output the updated belief patterns as plain text.`;
+
+                                    const beliefResult = await generateTextWithFallback({
+                                        primaryModelId: SONNET_MODEL,
+                                        prompt: beliefPrompt,
+                                    });
+
+                                    await userDoc.ref.set({
+                                        identity: {
+                                            belief_patterns: beliefResult.text,
+                                        },
+                                    }, { merge: true });
+
+                                    console.log(`[Cron] Belief patterns updated for user ${uid}`);
+                                }
+                            } catch (beliefError: any) {
+                                console.error(`[Cron] Belief pattern update failed for user ${uid}:`, beliefError.message);
+                                // Don't block chat cleanup if belief update fails
+                            }
                         }
 
                         // Delete the processed or empty chat session

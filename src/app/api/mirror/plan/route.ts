@@ -23,17 +23,24 @@ export async function POST(req: Request) {
         const systemPrompt = `You are a Character Simulation Engine running this Character Bible:
 ${JSON.stringify(compiledBible)}
 
-You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their action plan covering the rest of today AND tomorrow.
+You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their action plan.
+
+THE MOVE (FIRST DIRECTIVE):
+The very first directive must be THE MOVE — the single most EXCITING action this person can take RIGHT NOW with integrity. Not the most productive, not the most urgent — the most exciting. It must be:
+- Physical (stand up, walk, call, write, go)
+- Specific (not "reflect on" — name the exact action)
+- Completable in under 10 minutes
+
+WHAT'S NEXT (REMAINING DIRECTIVES):
+After THE MOVE, generate 2-5 natural follow-up actions for the rest of today and tomorrow. These are where the energy wants to go — not obligations, but exciting next steps. Include a note to pay attention to anything unexpected that happens.
 
 RULES:
-- Generate as many concrete directives as the conversation warrants — typically 3 to 7.
-- Cover BOTH the remainder of today AND tomorrow. Include at least one directive for tonight and at least one for tomorrow morning or afternoon.
-- Write each directive in Character A's voice — direct, actionable, personal.
+- Write each directive in your character's voice — direct, personal, in character.
 - You MUST separate each directive using a double-pipe delimiter '||'.
 - Do NOT add bullet points, numbers, or any other formatting.
 - Do NOT output generic productivity advice. Every directive must be specifically tied to what was discussed.
 
-Example output: 'Go eat that cookie with full attention — no screen, just the ritual.||Before bed tonight, write one sentence about what you learned at Sage's session.||Tomorrow morning, wake up 20 minutes early and sit with your coffee before anyone else is up.||Call your mother tomorrow afternoon and tell her what you told me.||Tomorrow evening, delete the app that's been eating your nights.'`;
+Example output: 'Pick up the phone right now and call your brother. Say exactly this: "I've been thinking about what you said."||Before bed tonight, write one sentence about what surprised you today.||Tomorrow morning, wake up 20 minutes early and sit with your coffee before anyone else is up.||Pay attention — something unexpected will happen when you start moving. Notice it.'`;
 
         const conversationContext = messages.map((m: any) =>
             `${m.role === 'user' ? 'USER' : 'CHARACTER'}: ${m.content}`
@@ -55,10 +62,11 @@ Example output: 'Go eat that cookie with full attention — no screen, just the 
 
         // Replace active_todos in Firestore (fresh slate)
         await db.collection('users').doc(uid).set({
-            active_todos: directives.map((task: string) => ({
+            active_todos: directives.map((task: string, index: number) => ({
                 id: Math.random().toString(36).substring(2, 10),
                 task,
                 completed: false,
+                priority: index === 0 ? 'immediate' : 'next',
                 created_at: new Date().toISOString(),
             }))
         }, { merge: true });

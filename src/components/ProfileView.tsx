@@ -5,9 +5,10 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { User, Sparkles, ChevronDown, Pencil, FileText, Loader2 } from "lucide-react";
+import { User, Sparkles, ChevronDown, Pencil, FileText, Loader2, Mail } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { DossierView } from "./DossierView";
+import { CharacterReview } from "./CharacterReview";
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
 
@@ -21,6 +22,7 @@ export function ProfileView() {
     const [isDossierOpen, setIsDossierOpen] = useState(false);
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
+    const [selectedReview, setSelectedReview] = useState<any>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -141,6 +143,41 @@ export function ProfileView() {
                         })}
                     </div>
                 )}
+
+                {/* LETTERS — Monthly Character Reviews */}
+                {identity?.monthly_reviews && identity.monthly_reviews.length > 0 && (
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-bold tracking-widest uppercase text-zinc-500 flex items-center gap-2">
+                            <Mail className="w-3.5 h-3.5" />
+                            Letters
+                        </h3>
+                        {[...identity.monthly_reviews].reverse().map((review: any) => {
+                            const monthLabel = (() => {
+                                try {
+                                    const [year, month] = review.month.split('-');
+                                    return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                                } catch { return review.month; }
+                            })();
+                            return (
+                                <button
+                                    key={review.id}
+                                    onClick={() => setSelectedReview(review)}
+                                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-left hover:bg-zinc-900/80 transition-colors flex items-center justify-between"
+                                >
+                                    <div>
+                                        <div className="text-sm font-semibold text-zinc-300">{monthLabel}</div>
+                                        <div className="text-xs text-zinc-600 mt-0.5">From {displayTitle}</div>
+                                    </div>
+                                    {!review.read && (
+                                        <span className="text-[9px] font-bold tracking-widest uppercase bg-white text-black px-2 py-0.5 rounded-full">
+                                            New
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Edit Modal — Rant-based flow */}
@@ -161,6 +198,17 @@ export function ProfileView() {
                     identity={identity}
                     isOpen={isDossierOpen}
                     onClose={() => setIsDossierOpen(false)}
+                />
+            )}
+
+            {/* Character Review Modal */}
+            {selectedReview && (
+                <CharacterReview
+                    review={selectedReview}
+                    characterTitle={displayTitle}
+                    avatarUrl={bible?.compiled_output?.avatar_url}
+                    isOpen={!!selectedReview}
+                    onClose={() => setSelectedReview(null)}
                 />
             )}
         </>
