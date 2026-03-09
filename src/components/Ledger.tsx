@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 
-import { Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
@@ -229,12 +229,10 @@ export function Ledger() {
                 <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
                     <div className="flex items-center gap-4 p-5 relative">
-                        <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
-                            <Sparkles className="w-5 h-5 text-zinc-100 animate-pulse" />
-                        </div>
+                        <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
                         <div>
-                            <p className="text-sm font-bold text-white mb-0.5">Your character is being written...</p>
-                            <p className="text-xs text-zinc-500">Building your character bible and generating your portrait. This can take up to a minute.</p>
+                            <p className="text-sm font-bold text-white mb-0.5">Compiling your Blueprint...</p>
+                            <p className="text-xs text-zinc-500">Building your Ideal Self and generating your portrait. This can take up to a minute.</p>
                         </div>
                     </div>
                 </div>
@@ -254,14 +252,14 @@ export function Ledger() {
                                 <img src={profile.character_bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <Sparkles className="w-5 h-5 text-zinc-100" />
+                                    <Loader2 className="w-5 h-5 text-zinc-100 animate-spin" />
                                 </div>
                             )}
                         </div>
                         <div>
                             <p className="text-sm font-bold text-white mb-0.5">Build Finished ✓</p>
-                            <p className="text-base font-bold text-white">{profile?.identity?.title || 'Your Character'}</p>
-                            <p className="text-xs text-zinc-500 mt-0.5">Tap to see your new character →</p>
+                            <p className="text-base font-bold text-white">{profile?.identity?.title || 'Your Ideal Self'}</p>
+                            <p className="text-xs text-zinc-500 mt-0.5">Tap to view your Ideal Self →</p>
                         </div>
                     </div>
                 </button>
@@ -270,7 +268,7 @@ export function Ledger() {
             {pendingPostId && (
                 <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">
                     <div className="flex flex-col items-center gap-3">
-                        <Sparkles className="w-6 h-6 text-zinc-300 animate-spin-slow" />
+                        <div className="w-6 h-6 rounded-full border-2 border-zinc-700 border-t-zinc-300 animate-spin" />
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest inline-block text-center mt-2">
                             Writing to Dear Earnest...
                         </span>

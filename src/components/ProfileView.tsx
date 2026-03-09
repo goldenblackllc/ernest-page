@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { User, Sparkles, ChevronDown, Pencil, FileText, Loader2, Mail } from "lucide-react";
+import { User, ChevronDown, Pencil, FileText, Loader2, Mail } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { DossierView } from "./DossierView";
 import { CharacterReview } from "./CharacterReview";
@@ -281,9 +281,8 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                 <div className="flex-1 overflow-y-auto p-6">
                     {isProcessing ? (
                         <div className="flex flex-col items-center gap-6 py-12">
-                            <Sparkles className="w-10 h-10 text-zinc-100 animate-pulse" />
-                            <p className="text-base text-zinc-400">Rebuilding your identity...</p>
-                            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+                            <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
+                            <p className="text-base text-zinc-400">Establishing operational baseline...</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-5">

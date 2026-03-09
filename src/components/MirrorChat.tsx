@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CharacterBible } from "@/types/character";
-import { X, Send, User, Sparkles, Square, RefreshCcw, ChevronDown, Target, Globe, Lock } from "lucide-react";
+import { X, Send, User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -314,7 +314,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                     {avatarUrl ? (
                                         <img src={avatarUrl} alt={idealName} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Sparkles className="w-5 h-5 text-zinc-400" />
+                                        <User className="w-5 h-5 text-zinc-400" />
                                     )}
                                 </div>
                                 <div>
@@ -392,12 +392,12 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                             {messages.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-70">
                                     <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                                        <Sparkles className="w-8 h-8 text-zinc-500" />
+                                        <Shield className="w-8 h-8 text-zinc-500" />
                                     </div>
                                     <div>
-                                        <p className="text-zinc-400 mb-2">You are speaking to your created potential.</p>
+                                        <p className="text-zinc-400 mb-2">Connection secured.</p>
                                         <p className="text-sm font-medium text-zinc-300 max-w-xs mx-auto">
-                                            "What current limitation are you facing?"
+                                            "Detail your current friction."
                                         </p>
                                     </div>
                                 </div>
@@ -421,7 +421,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                                         {avatarUrl ? (
                                                             <img src={avatarUrl} alt={idealName} className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <Sparkles className="w-4 h-4 text-zinc-400" />
+                                                            <User className="w-4 h-4 text-zinc-400" />
                                                         )}
                                                     </div>
                                                 )}
@@ -542,7 +542,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
                                     className="w-full bg-transparent text-white px-3 py-2 -my-2 min-h-[44px] max-h-[132px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar mt-0.5"
                                     value={input}
                                     onChange={handleInputChange}
-                                    placeholder={`Tell ${idealName} your situation...`}
+                                    placeholder="State your friction..."
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {
                                             e.preventDefault();

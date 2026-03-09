@@ -35,15 +35,15 @@ export function TriagePanel() {
             {/* BOTTOM NAV BAR */}
             <div className="fixed bottom-0 left-0 w-full z-40 bg-black/90 backdrop-blur-md border-t border-zinc-800 pb-safe">
                 <div className="max-w-md mx-auto px-8 h-16 flex items-center justify-between relative">
-                    <Link href="/" className={cn("p-2 transition-colors", pathname === "/" ? "text-emerald-500" : "text-zinc-500 hover:text-white")}>
+                    <Link href="/" className={cn("p-2 transition-colors", pathname === "/" ? "text-white" : "text-zinc-500 hover:text-white")}>
                         <Home className="w-6 h-6" />
                     </Link>
-                    <Link href="/my-posts" className={cn("p-2 transition-colors", pathname === "/my-posts" ? "text-emerald-500" : "text-zinc-500 hover:text-white")}>
+                    <Link href="/my-posts" className={cn("p-2 transition-colors", pathname === "/my-posts" ? "text-white" : "text-zinc-500 hover:text-white")}>
                         <BookOpen className="w-6 h-6" />
                     </Link>
                     {/* Spacer for center FAB */}
                     <div className="w-16" />
-                    <Link href="/profile" className={cn("p-2 transition-colors", pathname === "/profile" ? "text-emerald-500" : "text-zinc-500 hover:text-white")}>
+                    <Link href="/profile" className={cn("p-2 transition-colors", pathname === "/profile" ? "text-white" : "text-zinc-500 hover:text-white")}>
                         <UserIcon className="w-6 h-6" />
                     </Link>
                 </div>
@@ -60,7 +60,7 @@ export function TriagePanel() {
                             ? "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
                             : "bg-white text-black hover:scale-110 active:scale-95"
                     )}
-                    title={bible?.status === 'compiling' ? 'Your character is being written...' : 'Open chat'}
+                    title={bible?.status === 'compiling' ? 'Compiling your Blueprint...' : 'Open chat'}
                 >
                     <MessageCircle className={cn("w-7 h-7", bible?.status === 'compiling' && "animate-pulse")} />
                 </button>

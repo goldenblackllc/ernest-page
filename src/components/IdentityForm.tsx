@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, Heart, ArrowRight } from 'lucide-react';
+import { Users, Shield, ArrowRight } from 'lucide-react';
 
 export interface IdentityFormData {
     gender: string;
@@ -42,17 +42,17 @@ export function IdentityForm({
         onSubmit({ gender, age, ethnicity, rant, people, enjoyments });
     };
 
-    // Step 1: Who Do You Want to Be?
+    // Step 1: Define Your Standard
     if (step === 'VISION') {
         return (
             <div className="flex flex-col gap-5 animate-in fade-in duration-300">
                 {showHeadings && (
                     <div className="text-center mb-2">
                         <h1 className="text-3xl font-black tracking-tight mb-3">
-                            Who Do You Want to Be?
+                            Define Your Standard
                         </h1>
                         <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                            If you had a genie in a lamp, what life would you wish you had?
+                            Establish the uncompromising baseline for the life you demand.
                         </p>
                     </div>
                 )}
@@ -92,10 +92,10 @@ export function IdentityForm({
                     />
                 </div>
 
-                {/* The Vision */}
+                {/* The Architecture */}
                 <div>
-                    <label className="text-xs text-white font-semibold mb-1 block">The Vision</label>
-                    <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Describe the life you would wish for. Don&apos;t worry about formatting — just get your thoughts down. We&apos;ll translate this into your ideal character.</p>
+                    <label className="text-xs text-white font-semibold mb-1 block">The Architecture</label>
+                    <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Outline your highest standard of operation. Do not filter. We will translate this raw input into your tactical Ideal Self.</p>
                     <textarea
                         value={rant}
                         onChange={(e) => setRant(e.target.value)}
@@ -118,26 +118,26 @@ export function IdentityForm({
         );
     }
 
-    // Step 2: Your Life
+    // Step 2: The Reality Baseline
     return (
         <div className="flex flex-col gap-5 animate-in fade-in duration-300">
             {showHeadings && (
                 <div className="text-center mb-2">
                     <h1 className="text-3xl font-black tracking-tight mb-3">
-                        Your Life
+                        The Reality Baseline
                     </h1>
                     <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                        Who&apos;s in your world? What brings you joy?
+                        Define the people, assets, and non-negotiables in your immediate world.
                     </p>
                 </div>
             )}
-            {/* The People (and animals) In Your Life */}
+            {/* The Inner Circle */}
             <div>
                 <label className="text-sm text-white font-semibold mb-1 flex items-center gap-1.5">
                     <Users className="w-4 h-4" />
-                    The People (and animals) In Your Life
+                    The Inner Circle
                 </label>
-                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">Who matters in your world? Partners, kids, friends, coworkers, pets — tell us about them.</p>
+                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">Who matters in your world? Partners, children, critical alliances. Define who you are executing for.</p>
                 <textarea
                     value={people}
                     onChange={(e) => setPeople(e.target.value)}
@@ -147,13 +147,13 @@ export function IdentityForm({
                 />
             </div>
 
-            {/* What You Love */}
+            {/* The Non-Negotiables */}
             <div>
                 <label className="text-sm text-white font-semibold mb-1 flex items-center gap-1.5">
-                    <Heart className="w-4 h-4" />
-                    What You Love
+                    <Shield className="w-4 h-4" />
+                    The Non-Negotiables
                 </label>
-                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">What brings you joy? Favorite foods, media, hobbies, or unchanging preferences. Your ideal self is still you.</p>
+                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">What are your fixed preferences, standards, and required environments? Your Ideal Self still operates within your reality.</p>
                 <textarea
                     value={enjoyments}
                     onChange={(e) => setEnjoyments(e.target.value)}

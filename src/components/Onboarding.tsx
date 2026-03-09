@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { IdentityForm, IdentityFormData } from './IdentityForm';
 
 interface OnboardingProps {
@@ -57,12 +57,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         return (
             <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
                 <div className="flex flex-col items-center gap-6 animate-in fade-in duration-300">
-                    <Sparkles className="w-10 h-10 text-zinc-300 animate-pulse" />
+                    <div className="w-16 h-16 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
                     <div className="text-center">
-                        <h2 className="text-lg font-bold mb-2">Analyzing Your Vision</h2>
-                        <p className="text-base text-zinc-400">Discovering who you are.</p>
+                        <h2 className="text-lg font-bold mb-2">Compiling your Blueprint...</h2>
+                        <p className="text-base text-zinc-400">Establishing operational baseline.</p>
                     </div>
-                    <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
                 </div>
             </main>
         );
