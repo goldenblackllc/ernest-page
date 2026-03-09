@@ -17,9 +17,10 @@ interface MirrorChatProps {
     bible: CharacterBible | null;
     uid: string;
     initialContext?: string | null;
+    defaultPostRouting?: 'public' | 'private';
 }
 
-export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: MirrorChatProps) {
+export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +28,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
     const [sessionTone, setSessionTone] = useState<SessionTone>(DEFAULT_TONE);
     const [isToneOpen, setIsToneOpen] = useState(false);
     const toneRef = useRef<HTMLDivElement>(null);
-    const [autoPublish, setAutoPublish] = useState(true);
+    const [autoPublish, setAutoPublish] = useState(defaultPostRouting !== 'private');
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
 
@@ -283,7 +284,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext }: Mirr
         setIsLoading(false);
         setSessionTone(DEFAULT_TONE);
         setIsToneOpen(false);
-        setAutoPublish(true);
+        setAutoPublish(defaultPostRouting !== 'private');
         setPlanConfirmation(null);
 
         onClose();

@@ -34,6 +34,10 @@ export async function GET(req: Request) {
         const followedIds = Object.keys(followingMap);
         const myRegion = userData.region || "";
 
+        // 4a. Fetch user's Contact Firewall blocked hashes
+        const blockedSnap = await db.collection("users").doc(uid).collection("blocked_hashes").get();
+        const blockedHashes = new Set(blockedSnap.docs.map(d => d.id));
+
         // 4. Chronological feed: fetch from all buckets, merge, sort newest-first
         const postsRef = db.collection("posts");
         const seenIds = new Set<string>();
@@ -116,17 +120,20 @@ export async function GET(req: Request) {
         const getPostTime = (p: any) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
         allPosts.sort((a, b) => getPostTime(b) - getPostTime(a));
 
-        // 6. Slice to feed limit
-        const page = allPosts.slice(0, FEED_LIMIT);
+        // 6. Apply Contact Firewall — remove posts from blocked authors
+        const firewalled = allPosts.filter(p => !p.authorHash || !blockedHashes.has(p.authorHash));
 
-        // 7. If this is a newer_than check, return just the count (lightweight)
+        // 7. Slice to feed limit
+        const page = firewalled.slice(0, FEED_LIMIT);
+
+        // 8. If this is a newer_than check, return just the count (lightweight)
         if (newerThanDate) {
             return Response.json({
                 newPostCount: page.length,
             });
         }
 
-        // 8. Batch-fetch author avatars
+        // 9. Batch-fetch author avatars
         const uniqueAuthorIds = [...new Set(page.map(p => p.authorId || p.uid).filter(Boolean))];
         const avatarMap: Record<string, string> = {};
         if (uniqueAuthorIds.length > 0) {
@@ -147,7 +154,7 @@ export async function GET(req: Request) {
             }
         }
 
-        // 9. Sanitize
+        // 10. Sanitize
         const sanitized = page.map((post) => {
             const isOwner = post.authorId === uid || post.uid === uid;
             const likedBy: string[] = post.likedBy || [];
@@ -165,6 +172,9 @@ export async function GET(req: Request) {
                 delete clean.conversation_messages;
                 delete clean.counsel;
             }
+
+            // Strip authorHash — never expose to client
+            delete clean.authorHash;
 
             if (clean.created_at && clean.created_at._seconds !== undefined) {
                 clean.created_at = {

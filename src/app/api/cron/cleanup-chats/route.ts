@@ -3,6 +3,8 @@ import { db, storage } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import { generateWithFallback, generateTextWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -157,11 +159,22 @@ ${recentScaleHint}
                                         console.error("Imagen API Error:", await imagenRes.text());
                                     }
 
+                                    // Compute author hash for Contact Firewall filtering
+                                    let authorHash: string | null = null;
+                                    try {
+                                        const userRecord = await getAuth().getUser(uid);
+                                        if (userRecord.phoneNumber) {
+                                            const normalized = normalizePhoneNumberServer(userRecord.phoneNumber);
+                                            authorHash = hashPhoneNumberServer(normalized);
+                                        }
+                                    } catch { /* silent — hash is best-effort */ }
+
                                     // Create Post in DB
                                     await postDocRef.set({
                                         id: postDocRef.id,
                                         uid,
                                         authorId: uid,
+                                        authorHash: authorHash,
                                         region: userData?.region || null,
                                         author: userData?.displayName || "Anonymous",
                                         type: 'checkin',

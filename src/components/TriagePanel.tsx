@@ -19,11 +19,13 @@ export function TriagePanel() {
 
     // Data for Mirror Chat
     const [bible, setBible] = useState<CharacterBible | null>(null);
+    const [defaultPostRouting, setDefaultPostRouting] = useState<'public' | 'private'>('public');
 
     useEffect(() => {
         if (!user) return;
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
             setBible(data.character_bible);
+            setDefaultPostRouting(data.default_post_routing || 'public');
         });
         return () => unsubscribe();
     }, [user]);
@@ -73,6 +75,7 @@ export function TriagePanel() {
                 bible={bible}
                 uid={user?.uid || ""}
                 initialContext={initialContext}
+                defaultPostRouting={defaultPostRouting}
             />
         </>
     );

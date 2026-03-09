@@ -59,6 +59,8 @@ export interface CharacterProfile {
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
     saved_posts?: string[]; // Bookmarked posts
+    default_post_routing?: 'public' | 'private'; // Default routing for new Mirror Chat sessions
+    firewall_synced?: boolean; // Whether user has completed the Contact Firewall step
     subscription?: {
         status: 'active' | 'canceled' | 'expired';
         plan: 'executive_retainer' | 'founders_key';

@@ -5,12 +5,13 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Pencil, FileText, Loader2, Mail } from "lucide-react";
+import { User, ChevronDown, Pencil, FileText, Loader2, Mail, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { DossierView } from "./DossierView";
 import { CharacterReview } from "./CharacterReview";
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
+import { SecurityVault } from "./SecurityVault";
 
 export function ProfileView() {
     const { user } = useAuth();
@@ -23,6 +24,7 @@ export function ProfileView() {
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
     const [selectedReview, setSelectedReview] = useState<any>(null);
+    const [isVaultOpen, setIsVaultOpen] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -69,6 +71,13 @@ export function ProfileView() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsVaultOpen(true)}
+                            className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs font-bold p-2 rounded-full flex items-center transition-all"
+                            title="Security & Routing"
+                        >
+                            <Shield className="w-3.5 h-3.5" />
+                        </button>
                         {identity?.dossier && (
                             <button
                                 onClick={() => setIsDossierOpen(true)}
@@ -211,6 +220,13 @@ export function ProfileView() {
                     onClose={() => setSelectedReview(null)}
                 />
             )}
+
+            {/* Security Vault */}
+            <SecurityVault
+                isOpen={isVaultOpen}
+                onClose={() => setIsVaultOpen(false)}
+                profile={profile}
+            />
         </>
     );
 }
