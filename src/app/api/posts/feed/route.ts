@@ -77,6 +77,7 @@ export async function GET(req: Request) {
             try {
                 let queryB = postsRef
                     .where("authorId", "in", chunk)
+                    .where("is_public", "==", true)
                     .orderBy("created_at", "desc");
                 if (newerThanDate) queryB = queryB.where("created_at", ">", newerThanDate);
                 const snapB = await queryB.limit(FEED_LIMIT).get();
@@ -85,6 +86,7 @@ export async function GET(req: Request) {
                 const snapB = await postsRef.where("authorId", "in", chunk).get();
                 snapB.docs.forEach(doc => {
                     const data = doc.data();
+                    if (data.is_public !== true) return; // skip private posts
                     const time = data.created_at?.toMillis?.() || 0;
                     if (!newerThanDate || time > newerThanDate.getTime()) {
                         if (!seenIds.has(doc.id)) {
@@ -102,6 +104,7 @@ export async function GET(req: Request) {
         const snapC = await queryC.limit(FEED_LIMIT * 2).get();
         const discoveryDocs = snapC.docs.filter((doc) => {
             const data = doc.data();
+            if (data.is_public !== true) return false; // skip private posts
             const isMe = data.authorId === uid;
             const isFollowed = followedIds.includes(data.authorId);
             const isSameRegion = myRegion && data.region === myRegion;

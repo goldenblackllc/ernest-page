@@ -8,8 +8,7 @@ import { Loader2 } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
-import { FeedAdCard } from "@/components/FeedAdCard";
-import { ecosystemAds } from "@/config/ecosystem";
+
 import { Timestamp } from "firebase/firestore";
 import { getFeedCache, setFeedCache } from "@/lib/feedCache";
 
@@ -276,23 +275,14 @@ export function Ledger() {
                 </div>
             )}
 
-            {entries.map((entry, index) => {
-                const isAdSlot = (index + 1) % 3 === 0;
-                const adIndex = Math.floor(index / 3);
-                const ad = ecosystemAds[adIndex % ecosystemAds.length];
-
-                return (
-                    <React.Fragment key={`entry-group-${entry.id}`}>
-                        <FeedPostCard
-                            key={entry.id}
-                            post={entry as any}
-                            followingMap={followingMap}
-                            onFollowClick={(id) => setSelectedAuthorToFollow(id)}
-                        />
-                        {isAdSlot && <FeedAdCard ad={ad} />}
-                    </React.Fragment>
-                );
-            })}
+            {entries.map((entry) => (
+                <FeedPostCard
+                    key={entry.id}
+                    post={entry as any}
+                    followingMap={followingMap}
+                    onFollowClick={(id) => setSelectedAuthorToFollow(id)}
+                />
+            ))}
 
             {/* End of feed */}
             {entries.length > 0 && (

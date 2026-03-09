@@ -59,6 +59,11 @@ export interface CharacterProfile {
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
     saved_posts?: string[]; // Bookmarked posts
+    subscription?: {
+        status: 'active' | 'canceled' | 'expired';
+        plan: 'executive_retainer' | 'founders_key';
+        subscribedAt: string;
+    };
 }
 
 export interface Directive {
