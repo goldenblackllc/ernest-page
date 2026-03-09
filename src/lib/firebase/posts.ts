@@ -1,5 +1,7 @@
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { geohashForLocation } from "geofire-common";
+
 export interface CreatePostParams {
     content: string;
     content_raw?: string; // Original input (rant)
@@ -13,10 +15,21 @@ export interface CreatePostParams {
     rant?: string;
     core_beliefs?: string[];
     likedBy?: string[];
+    // Geolocation for proximity filtering
+    lat?: number;
+    lng?: number;
 }
 
 export async function createPost(params: CreatePostParams) {
     if (!params.authorId) throw new Error("User ID is required");
+
+    // Compute geohash if coordinates are provided
+    const geoFields: { lat?: number; lng?: number; geohash?: string } = {};
+    if (params.lat != null && params.lng != null) {
+        geoFields.lat = params.lat;
+        geoFields.lng = params.lng;
+        geoFields.geohash = geohashForLocation([params.lat, params.lng]);
+    }
 
     // Format for Feed Display
     const postData = {
@@ -35,6 +48,9 @@ export async function createPost(params: CreatePostParams) {
         rant: params.rant,
         core_beliefs: params.core_beliefs,
 
+        // Geolocation
+        ...geoFields,
+
         created_at: serverTimestamp(),
         likes: 0,
         likedBy: [],
@@ -47,3 +63,4 @@ export async function createPost(params: CreatePostParams) {
     const docRef = await addDoc(collection(db, "posts"), postData);
     return docRef.id;
 }
+

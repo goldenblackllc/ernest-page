@@ -11,6 +11,7 @@ import { FollowAuthorModal } from "@/components/FollowAuthorModal";
 
 import { Timestamp } from "firebase/firestore";
 import { getFeedCache, setFeedCache } from "@/lib/feedCache";
+import { getUserLocation, storeUserLocation } from "@/lib/geolocation";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -35,6 +36,17 @@ export function Ledger() {
         if (!user) return;
         const unsub = subscribeToCharacterProfile(user.uid, (p) => setProfile(p));
         return () => unsub();
+    }, [user]);
+
+    // Silently capture & store user location for proximity filtering
+    useEffect(() => {
+        if (!user) return;
+        (async () => {
+            const coords = await getUserLocation();
+            if (coords) {
+                await storeUserLocation(user.uid, coords);
+            }
+        })();
     }, [user]);
 
     // Fetch feed (full refresh, no pagination)

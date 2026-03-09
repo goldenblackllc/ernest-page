@@ -56,11 +56,14 @@ export interface CharacterProfile {
     active_todos?: Array<{ id: string, task: string, completed: boolean, priority?: 'immediate' | 'next', created_at: any }>;
     following?: Record<string, string>; // authorId -> custom Alias
     region?: string; // e.g., 'US-MA'
+    home_lat?: number; // Latitude for proximity filtering (200-mile blind spot)
+    home_lng?: number; // Longitude for proximity filtering
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
     saved_posts?: string[]; // Bookmarked posts
     default_post_routing?: 'public' | 'private'; // Default routing for new Mirror Chat sessions
     firewall_synced?: boolean; // Whether user has completed the Contact Firewall step
+    proximity_anchor?: string; // Zip code or city for Proximity Blind Spot radius
     subscription?: {
         status: 'active' | 'canceled' | 'expired';
         plan: 'executive_retainer' | 'founders_key';

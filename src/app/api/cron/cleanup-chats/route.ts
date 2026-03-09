@@ -5,6 +5,7 @@ import { generateWithFallback, generateTextWithFallback, SONNET_MODEL } from '@/
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
+import { geohashForLocation } from 'geofire-common';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -169,6 +170,14 @@ ${recentScaleHint}
                                         }
                                     } catch { /* silent — hash is best-effort */ }
 
+                                    // Compute geolocation fields from stored user coords
+                                    const geoFields: { lat?: number; lng?: number; geohash?: string } = {};
+                                    if (userData?.home_lat != null && userData?.home_lng != null) {
+                                        geoFields.lat = userData.home_lat;
+                                        geoFields.lng = userData.home_lng;
+                                        geoFields.geohash = geohashForLocation([userData.home_lat, userData.home_lng]);
+                                    }
+
                                     // Create Post in DB
                                     await postDocRef.set({
                                         id: postDocRef.id,
@@ -188,6 +197,8 @@ ${recentScaleHint}
                                         photo_vibe: object.post.photo_vibe,
                                         photo_scale: object.post.photo_scale,
                                         imagen_url: imagen_url,
+                                        // Geolocation for proximity filtering
+                                        ...geoFields,
                                         // Legacy fallbacks for uninterrupted rendering
                                         title: object.post.title,
                                         pseudonym: object.post.pseudonym,

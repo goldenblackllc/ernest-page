@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Shield, ShieldCheck, Radio, Flame, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { X, Shield, ShieldCheck, Radio, Flame, Loader2, Trash2, MapPin, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { updateCharacterProfile } from "@/lib/firebase/character";
@@ -16,13 +16,7 @@ import {
     where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import {
-    extractContactPhoneNumbers,
-    normalizePhoneNumber,
-    hashPhoneNumber,
-    syncFirewallHashes,
-    ContactPickerUnsupportedError,
-} from "@/lib/security/contactFirewall";
+import { ContactFirewall } from "./ContactFirewall";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface SecurityVaultProps {
@@ -35,7 +29,6 @@ interface SecurityVaultProps {
 export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) {
     const { user } = useAuth();
     const [blockedCount, setBlockedCount] = useState<number | null>(null);
-    const [isResyncing, setIsResyncing] = useState(false);
     const [isPurging, setIsPurging] = useState(false);
     const [isBurning, setIsBurning] = useState(false);
     const [burnConfirm, setBurnConfirm] = useState(false);
@@ -44,6 +37,12 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
         profile?.default_post_routing || 'public'
     );
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [showFirewall, setShowFirewall] = useState(false);
+    const [anchorInput, setAnchorInput] = useState('');
+    const [currentAnchor, setCurrentAnchor] = useState<string | null>(
+        profile?.proximity_anchor || null
+    );
+    const [isAnchoring, setIsAnchoring] = useState(false);
 
     // Fetch blocked hash count
     useEffect(() => {
@@ -57,7 +56,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
             }
         };
         fetchCount();
-    }, [user, isOpen, isResyncing, isPurging]);
+    }, [user, isOpen, isPurging]);
 
     // Sync routing from profile
     useEffect(() => {
@@ -75,35 +74,43 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
 
     // ── Handlers ──
 
-    const handleResync = useCallback(async () => {
-        if (!user) return;
-        setIsResyncing(true);
-        setStatusMessage(null);
-
+    const handleAnchorRadius = useCallback(async () => {
+        if (!user || !anchorInput.trim()) return;
+        setIsAnchoring(true);
         try {
-            const rawNumbers = await extractContactPhoneNumbers();
-            const hashes: string[] = [];
-            for (const raw of rawNumbers) {
-                try {
-                    const normalized = normalizePhoneNumber(raw);
-                    const hash = await hashPhoneNumber(normalized);
-                    hashes.push(hash);
-                } catch { /* skip invalid */ }
+            const value = anchorInput.trim();
+
+            // Geocode the zip/city using the free Nominatim API
+            const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value)}&format=json&limit=1`,
+                { headers: { 'Accept': 'application/json' } }
+            );
+            const geoData = await geoRes.json();
+
+            if (!geoData || geoData.length === 0) {
+                setStatusMessage('Location not found. Try a US zip code or city name.');
+                setIsAnchoring(false);
+                return;
             }
-            const unique = [...new Set(hashes)];
-            await syncFirewallHashes(user.uid, unique);
-            await updateCharacterProfile(user.uid, { firewall_synced: true });
-            setStatusMessage(`Perimeter updated. ${unique.length} identities secured.`);
-        } catch (err) {
-            if (err instanceof ContactPickerUnsupportedError) {
-                setStatusMessage("Contact sync unavailable on this browser.");
-            } else {
-                setStatusMessage("Resync failed. Try again.");
-            }
+
+            const lat = parseFloat(geoData[0].lat);
+            const lng = parseFloat(geoData[0].lon);
+
+            await updateCharacterProfile(user.uid, {
+                proximity_anchor: value,
+                home_lat: lat,
+                home_lng: lng,
+            });
+
+            setCurrentAnchor(value);
+            setAnchorInput('');
+            setStatusMessage(`Proximity anchor set to ${value}. Radius locked.`);
+        } catch {
+            setStatusMessage('Anchor update failed.');
         } finally {
-            setIsResyncing(false);
+            setIsAnchoring(false);
         }
-    }, [user]);
+    }, [user, anchorInput]);
 
     const handlePurge = useCallback(async () => {
         if (!user || !purgeConfirm) return;
@@ -227,7 +234,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     {/* STATUS MESSAGE */}
                     {statusMessage && (
                         <div className="mx-6 mt-5 p-3 rounded-lg border border-zinc-800 bg-zinc-900/80">
-                            <p className="text-xs text-zinc-300 font-mono">{statusMessage}</p>
+                            <p className="text-xs text-zinc-300">{statusMessage}</p>
                         </div>
                     )}
 
@@ -249,10 +256,10 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-zinc-700" />
                                 )}
                             </div>
-                            <p className="font-mono text-sm text-zinc-200 tracking-wide">
-                                STATUS: {firewallActive ? "LOCKED" : "OPEN"}.{" "}
+                            <p className="text-sm text-zinc-200 tracking-wide">
+                                Status: {firewallActive ? "Locked." : "Open."}{" "}
                                 {blockedCount !== null ? (
-                                    <span className="text-white font-semibold">{blockedCount}</span>
+                                    <span className="font-mono text-white font-semibold">{blockedCount}</span>
                                 ) : (
                                     <Loader2 className="w-3 h-3 inline animate-spin" />
                                 )}{" "}
@@ -263,16 +270,11 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                         {/* Action Buttons */}
                         <div className="flex gap-3">
                             <button
-                                onClick={handleResync}
-                                disabled={isResyncing}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 text-xs font-bold uppercase tracking-widest hover:border-zinc-500 hover:text-white transition-all disabled:opacity-40"
+                                onClick={() => setShowFirewall(true)}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/20 bg-white/5 text-white text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:border-white/30 transition-all"
                             >
-                                {isResyncing ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                    <RefreshCw className="w-3.5 h-3.5" />
-                                )}
-                                Resync
+                                <Shield className="w-3.5 h-3.5" />
+                                Manage Firewall
                             </button>
                             {!purgeConfirm ? (
                                 <button
@@ -299,7 +301,57 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                         </div>
                     </div>
 
-                    {/* ═══ SECTION 2: DEFAULT POST ROUTING ═══ */}
+                    {/* ═══ SECTION 2: PROXIMITY BLIND SPOT ═══ */}
+                    <div className="px-6 py-8 border-b border-zinc-800/50">
+                        <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
+                            Proximity Blind Spot
+                        </h3>
+                        <p className="text-xs text-zinc-600 mb-6 leading-relaxed">
+                            Posts within a 200-mile radius of your location are mathematically
+                            filtered from your feed. If browser GPS is disabled, anchor your
+                            radius manually.
+                        </p>
+
+                        {/* Input + Button */}
+                        <div className="flex gap-3 mb-5">
+                            <input
+                                type="text"
+                                value={anchorInput}
+                                onChange={(e) => setAnchorInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAnchorRadius()}
+                                placeholder="Enter Zip Code (e.g., 01741)"
+                                className="flex-1 px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-900 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+                            />
+                            <button
+                                onClick={handleAnchorRadius}
+                                disabled={isAnchoring || !anchorInput.trim()}
+                                className="flex items-center gap-2 px-5 py-3 rounded-xl border border-zinc-700 text-zinc-300 text-xs font-bold uppercase tracking-widest hover:border-zinc-500 hover:text-white transition-all disabled:opacity-40"
+                            >
+                                {isAnchoring ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <Crosshair className="w-3.5 h-3.5" />
+                                )}
+                                Anchor Radius
+                            </button>
+                        </div>
+
+                        {/* Status Readout */}
+                        <div className="flex items-center gap-3">
+                            <MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                            <p className="text-sm text-zinc-200 tracking-wide">
+                                Current Anchor:{" "}
+                                <span className={cn(
+                                    "text-white font-semibold",
+                                    currentAnchor && "font-mono"
+                                )}>
+                                    {currentAnchor || "Live GPS"}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* ═══ SECTION 3: DEFAULT POST ROUTING ═══ */}
                     <div className="px-6 py-8 border-b border-zinc-800/50">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
                             Default Post Routing
@@ -377,7 +429,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                         </div>
                     </div>
 
-                    {/* ═══ SECTION 3: DATA DESTRUCTION ═══ */}
+                    {/* ═══ SECTION 4: DATA DESTRUCTION ═══ */}
                     <div className="px-6 py-8">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
                             Data Destruction
@@ -398,7 +450,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                             </button>
                         ) : (
                             <div className="space-y-3">
-                                <p className="text-xs text-red-400/70 font-mono text-center">
+                                <p className="text-xs text-red-400/70 text-center">
                                     This action is irreversible. All posts will be destroyed.
                                 </p>
                                 <div className="flex gap-3">
@@ -438,6 +490,13 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     </div>
                 </div>
             </div>
+
+            {/* ── Dual-Path Firewall Overlay ── */}
+            {showFirewall && (
+                <div className="fixed inset-0 z-[110] bg-zinc-950 flex flex-col">
+                    <ContactFirewall onComplete={() => setShowFirewall(false)} />
+                </div>
+            )}
         </>
     );
 }

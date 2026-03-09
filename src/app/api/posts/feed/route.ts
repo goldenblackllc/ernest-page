@@ -1,5 +1,6 @@
 import { db } from "@/lib/firebase/admin";
 import { getAuth } from "firebase-admin/auth";
+import { distanceBetween } from "geofire-common";
 
 export const maxDuration = 30;
 
@@ -33,6 +34,9 @@ export async function GET(req: Request) {
         const followingMap: Record<string, string> = userData.following || {};
         const followedIds = Object.keys(followingMap);
         const myRegion = userData.region || "";
+        const myLat: number | undefined = userData.home_lat;
+        const myLng: number | undefined = userData.home_lng;
+        const hasMyCoords = myLat != null && myLng != null;
 
         // 4a. Fetch user's Contact Firewall blocked hashes
         const blockedSnap = await db.collection("users").doc(uid).collection("blocked_hashes").get();
@@ -102,7 +106,7 @@ export async function GET(req: Request) {
             }
         }
 
-        // Bucket C: Discovery (not me, not following, not same region)
+        // Bucket C: Discovery (not me, not following, proximity filtered)
         let queryC = postsRef.orderBy("created_at", "desc");
         if (newerThanDate) queryC = queryC.where("created_at", ">", newerThanDate);
         const snapC = await queryC.limit(FEED_LIMIT * 2).get();
@@ -111,8 +115,19 @@ export async function GET(req: Request) {
             if (data.is_public !== true) return false; // skip private posts
             const isMe = data.authorId === uid;
             const isFollowed = followedIds.includes(data.authorId);
-            const isSameRegion = myRegion && data.region === myRegion;
-            return !isMe && !isFollowed && !isSameRegion;
+            if (isMe || isFollowed) return false;
+
+            // Proximity check: if both reader & post have coords, enforce 200-mile blind spot
+            if (hasMyCoords && data.lat != null && data.lng != null) {
+                const distanceKm = distanceBetween([myLat!, myLng!], [data.lat, data.lng]);
+                if (distanceKm < 321.9) return false; // within 200 miles — block
+            } else {
+                // Fallback to region-based blocking for posts without coordinates
+                const isSameRegion = myRegion && data.region === myRegion;
+                if (isSameRegion) return false;
+            }
+
+            return true;
         });
         addPosts(discoveryDocs.slice(0, FEED_LIMIT));
 
@@ -123,8 +138,18 @@ export async function GET(req: Request) {
         // 6. Apply Contact Firewall — remove posts from blocked authors
         const firewalled = allPosts.filter(p => !p.authorHash || !blockedHashes.has(p.authorHash));
 
+        // 6b. Apply Proximity Blind Spot — remove followed-user posts within 200 miles
+        // (Bucket C already handled discovery posts; this catches followed-user posts from Bucket B)
+        const proximityFiltered = firewalled.filter(p => {
+            const isOwn = (p.authorId === uid || p.uid === uid);
+            if (isOwn) return true; // never filter own posts
+            if (!hasMyCoords || p.lat == null || p.lng == null) return true; // no coords — let through
+            const distanceKm = distanceBetween([myLat!, myLng!], [p.lat, p.lng]);
+            return distanceKm >= 321.9; // keep only posts >= 200 miles away
+        });
+
         // 7. Slice to feed limit
-        const page = firewalled.slice(0, FEED_LIMIT);
+        const page = proximityFiltered.slice(0, FEED_LIMIT);
 
         // 8. If this is a newer_than check, return just the count (lightweight)
         if (newerThanDate) {
@@ -175,6 +200,11 @@ export async function GET(req: Request) {
 
             // Strip authorHash — never expose to client
             delete clean.authorHash;
+
+            // Strip geolocation fields — never expose to client
+            delete clean.lat;
+            delete clean.lng;
+            delete clean.geohash;
 
             if (clean.created_at && clean.created_at._seconds !== undefined) {
                 clean.created_at = {
