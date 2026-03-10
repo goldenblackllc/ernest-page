@@ -1,33 +1,23 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
+import { useState } from 'react';
+import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
+
+function normalizePhoneNumber(input: string): string {
+    const stripped = input.replace(/[\s\-\(\)\.]/g, '');
+    if (stripped.startsWith('+')) return stripped;
+    return `+1${stripped}`;
+}
 
 export default function OTPLogin() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [step, setStep] = useState<'INPUT_PHONE' | 'INPUT_CODE'>('INPUT_PHONE');
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
-
-    const getVerifier = useCallback(() => {
-        // Clean up any existing verifier first
-        if (recaptchaRef.current) {
-            try { recaptchaRef.current.clear(); } catch { /* ignore */ }
-            recaptchaRef.current = null;
-        }
-
-        // Create a fresh invisible verifier each time
-        recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'invisible',
-        });
-        return recaptchaRef.current;
-    }, []);
 
     const handleSendCode = async () => {
         setError(null);
@@ -35,29 +25,23 @@ export default function OTPLogin() {
             setError("Please enter a phone number.");
             return;
         }
-
+        const normalized = normalizePhoneNumber(phoneNumber);
         setLoading(true);
         try {
-            const verifier = getVerifier();
-            const result = await signInWithPhoneNumber(auth, phoneNumber, verifier);
-            setConfirmationResult(result);
+            const res = await fetch('/api/auth/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: normalized }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || 'Failed to send code.');
+                return;
+            }
             setStep('INPUT_CODE');
         } catch (err: any) {
             console.error("Error sending code:", err);
-
-            if (err.code === 'auth/invalid-app-credential') {
-                setError("Verification failed. Please try again.");
-            } else if (err.code === 'auth/too-many-requests') {
-                setError("Too many attempts. Please try again later.");
-            } else {
-                setError(err.message || "Failed to send code. Please try again.");
-            }
-
-            // Clean up the broken verifier
-            if (recaptchaRef.current) {
-                try { recaptchaRef.current.clear(); } catch { /* ignore */ }
-                recaptchaRef.current = null;
-            }
+            setError("Failed to send code. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -65,11 +49,21 @@ export default function OTPLogin() {
 
     const handleVerifyCode = async () => {
         setError(null);
-        if (!verificationCode || !confirmationResult) return;
-
+        if (!verificationCode) return;
+        const normalized = normalizePhoneNumber(phoneNumber);
         setLoading(true);
         try {
-            await confirmationResult.confirm(verificationCode);
+            const res = await fetch('/api/auth/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: normalized, code: verificationCode }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || 'Invalid code. Please try again.');
+                return;
+            }
+            await signInWithCustomToken(auth, data.token);
             router.push('/');
         } catch {
             setError("Invalid code. Please try again.");
@@ -80,9 +74,6 @@ export default function OTPLogin() {
 
     return (
         <div className="flex flex-col gap-6 w-full max-w-sm relative">
-            {/* Invisible reCAPTCHA container — never visible to user */}
-            <div id="recaptcha-container" />
-
             {error && <div className="text-red-500 text-sm font-medium p-3 bg-red-50 border border-red-200 rounded-md">{error}</div>}
 
             {step === 'INPUT_PHONE' && (
@@ -113,6 +104,8 @@ export default function OTPLogin() {
                     <h1 className="text-2xl font-bold uppercase tracking-widest text-center">Verify</h1>
                     <input
                         type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
                         placeholder="123456"
                         value={verificationCode}
                         onChange={(e) => setVerificationCode(e.target.value)}

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
+import { useState, useCallback } from 'react';
+import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { ChevronDown, Lock, BarChart3, Target, Shield } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Lock, BarChart3, Target, Shield, Award } from 'lucide-react';
 import Image from 'next/image';
 
 // ─── Timezone → Dial Code Detection ────────────────────────────────
@@ -109,24 +109,12 @@ const MECHANICS = [
 export function LandingPage() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
+    const [isArchitectExpanded, setIsArchitectExpanded] = useState(false);
     const [step, setStep] = useState<'WELCOME' | 'INPUT_CODE'>('WELCOME');
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [detectedDialCode] = useState(() => getDefaultDialCode());
     const router = useRouter();
-    const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
-
-    const getVerifier = useCallback(() => {
-        if (recaptchaRef.current) {
-            try { recaptchaRef.current.clear(); } catch { /* ignore */ }
-            recaptchaRef.current = null;
-        }
-        recaptchaRef.current = new RecaptchaVerifier(auth, 'landing-recaptcha', {
-            size: 'invisible',
-        });
-        return recaptchaRef.current;
-    }, []);
 
     const handleSendCode = async () => {
         setError(null);
@@ -137,23 +125,20 @@ export function LandingPage() {
         const normalized = normalizePhoneNumber(phoneNumber);
         setLoading(true);
         try {
-            const verifier = getVerifier();
-            const result = await signInWithPhoneNumber(auth, normalized, verifier);
-            setConfirmationResult(result);
+            const res = await fetch('/api/auth/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: normalized }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || 'Failed to send code.');
+                return;
+            }
             setStep('INPUT_CODE');
         } catch (err: any) {
             console.error('Error sending code:', err);
-            if (err.code === 'auth/invalid-app-credential') {
-                setError('Verification failed. Please try again.');
-            } else if (err.code === 'auth/too-many-requests') {
-                setError('Too many attempts. Please try again later.');
-            } else {
-                setError(err.message || 'Failed to send code.');
-            }
-            if (recaptchaRef.current) {
-                try { recaptchaRef.current.clear(); } catch { /* ignore */ }
-                recaptchaRef.current = null;
-            }
+            setError('Failed to send code. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -161,10 +146,21 @@ export function LandingPage() {
 
     const handleVerifyCode = async () => {
         setError(null);
-        if (!verificationCode || !confirmationResult) return;
+        if (!verificationCode) return;
+        const normalized = normalizePhoneNumber(phoneNumber);
         setLoading(true);
         try {
-            await confirmationResult.confirm(verificationCode);
+            const res = await fetch('/api/auth/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: normalized, code: verificationCode }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || 'Invalid code. Please try again.');
+                return;
+            }
+            await signInWithCustomToken(auth, data.token);
             router.push('/');
         } catch {
             setError('Invalid code. Please try again.');
@@ -181,8 +177,6 @@ export function LandingPage() {
 
     return (
         <main className="min-h-screen bg-black text-white scroll-smooth">
-            {/* Invisible reCAPTCHA container */}
-            <div id="landing-recaptcha" />
 
             {/* ── STICKY TOP NAV ── */}
             <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/[0.06]">
@@ -329,6 +323,141 @@ export function LandingPage() {
                             over your daily ritual.
                         </p>
                     </div>
+                </motion.div>
+            </section>
+
+            {/* Thin divider */}
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
+            {/* ═══════════════════════════════════════════════════════════
+                SECTION — THE ARCHITECT (Founder's Letter)
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative px-6 py-24 md:py-36">
+                <motion.div
+                    className="max-w-3xl mx-auto"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-80px' }}
+                >
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
+                        The Architect
+                    </p>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
+                        I Built This Because
+                        <br />
+                        <span className="text-zinc-500">Nothing Else Was Honest Enough.</span>
+                    </h2>
+
+                    {/* Hook paragraph */}
+                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed mb-10">
+                        I almost became a doctor. Instead, I became an engineer with a doctor&rsquo;s
+                        instinct&mdash;someone who builds technology but thinks about people first.
+                    </p>
+
+                    {/* Credential badges */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
+                        {[
+                            { label: 'Harvard', detail: 'Patent Holder' },
+                            { label: 'RSA', detail: 'Security Architect' },
+                            { label: 'JSA Financial', detail: '$10M / yr Founder' },
+                        ].map((cred, i) => (
+                            <motion.div
+                                key={cred.label}
+                                className="rounded-xl border border-white/[0.08] bg-zinc-950 px-5 py-4 text-center"
+                                custom={i}
+                                variants={cardReveal}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: '-40px' }}
+                            >
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <Award className="w-3.5 h-3.5 text-zinc-500" />
+                                    <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-semibold">
+                                        {cred.label}
+                                    </span>
+                                </div>
+                                <span className="text-sm text-zinc-300 font-semibold">
+                                    {cred.detail}
+                                </span>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Expandable full story */}
+                    <AnimatePresence initial={false}>
+                        {isArchitectExpanded && (
+                            <motion.div
+                                key="architect-story"
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                                className="overflow-hidden"
+                            >
+                                <div className="border-l-2 border-zinc-800 pl-6 space-y-6 text-base sm:text-lg text-zinc-400 leading-relaxed mb-8">
+                                    <p>
+                                        I built Harvard&rsquo;s first internet banking system and received a patent
+                                        for it. I architected security for world governments at RSA. I
+                                        founded JSA Financial Systems twenty-six years ago&mdash;today it
+                                        generates $10M annually. Every product I&rsquo;ve shipped has succeeded
+                                        for the same reason: I build for people who hate technology.
+                                    </p>
+                                    <p>
+                                        But professionally, I was performing. Privately, I was falling apart.
+                                    </p>
+                                    <p>
+                                        I spent decades pressure-testing every major framework for the
+                                        human mind. Cognitive Behavioral Therapy. Dialectical Behavior
+                                        Therapy. Byron Katie. Buddhist practice. I checked into the
+                                        Pavilion at McLean Hospital&mdash;Harvard&rsquo;s most intensive
+                                        psychiatric program&mdash;and worked with some of the finest
+                                        clinicians in the world. They told me I was one of the strongest
+                                        practitioners of CBT they had ever trained. Some asked me for
+                                        guidance after I left.
+                                    </p>
+                                    <p>
+                                        Those systems were real. They gave me structure. But none of them
+                                        were complete.
+                                    </p>
+                                    <p>
+                                        I kept searching until I found a system that was. One that
+                                        synthesized everything I had learned into a single, executable
+                                        framework&mdash;structured enough for an engineer, intuitive
+                                        enough for anyone willing to do the work.
+                                    </p>
+                                    <p>
+                                        There was one problem: sharing it. The cognitive load was enormous.
+                                        People could agree with the principles but struggled to apply them
+                                        daily. That gap&mdash;between understanding and
+                                        execution&mdash;is the gap this product closes.
+                                    </p>
+                                    <p className="text-zinc-300 font-semibold">
+                                        Earnest Page is not my first product. It may be my most important.
+                                    </p>
+                                </div>
+
+                                {/* Attribution */}
+                                <p className="text-[11px] text-zinc-600 font-mono tracking-wide">
+                                    David Johnson&ensp;·&ensp;Founder&ensp;·&ensp;Patent Holder&ensp;·&ensp;26 Years Building Systems That Work
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Toggle */}
+                    <button
+                        onClick={() => setIsArchitectExpanded((prev) => !prev)}
+                        className="mt-8 flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200 group"
+                    >
+                        <span>{isArchitectExpanded ? 'Collapse' : 'Read the Full Story'}</span>
+                        <motion.span
+                            animate={{ rotate: isArchitectExpanded ? 180 : 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <ChevronDown className="w-4 h-4" />
+                        </motion.span>
+                    </button>
                 </motion.div>
             </section>
 
@@ -632,6 +761,8 @@ export function LandingPage() {
                             </p>
                             <input
                                 type="text"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
                                 placeholder="000000"
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value)}
