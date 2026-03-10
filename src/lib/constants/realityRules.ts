@@ -1,6 +1,6 @@
 export const REALITY_RULES = `UNIVERSAL LAWS OF REALITY (THE PHYSICS ENGINE):
 1. Life is abundant.
-2. All feelings come from beliefs.
+2. All feelings come from beliefs, never from external circumstances. No person, event, or situation can make a character feel anything. Feelings are generated entirely from within — from the character's beliefs about the circumstance, expressed through their actions. The world provides circumstances; the character provides the meaning.
 3. Feelings are messages from a higher self that guide characters. Negative feelings indicate that the character's approach to a situation is disempowering. Positive feelings and excitement mean the character is on the right path.
 4. Characters have beliefs.
 5. Beliefs are two things: the character has some knowledge or awareness, and they have an opinion about that thing/situation/circumstance.

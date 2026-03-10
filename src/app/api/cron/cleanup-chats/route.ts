@@ -42,8 +42,18 @@ export async function GET(req: Request) {
 
                     // Process if abandoned via timeout or explicitly closed by user
                     if (isExpired || isClosedByUser) {
+                        // BURN PROTOCOL: If session was marked for burn, skip ALL processing and delete immediately
+                        if (chatData.sessionRouting === 'burn' || chatData.burnOnClose === true) {
+                            console.log(`[Cron] Burn protocol — purging session for user ${uid}`);
+                            await chatDoc.ref.delete();
+                            continue;
+                        }
+
                         const messages = chatData.messages || [];
-                        const shouldPublish = chatData.autoPublish !== false; // Default to true (publish) unless explicitly opted out
+                        // Determine publish intent: sessionRouting takes precedence, then autoPublish legacy fallback
+                        const shouldPublish = chatData.sessionRouting
+                            ? chatData.sessionRouting === 'public'
+                            : chatData.autoPublish !== false;
 
                         // Only generate a post if there is actual conversation content AND user hasn't opted out
                         if (messages.length > 0 && shouldPublish) {
