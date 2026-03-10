@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, Send } from "lucide-react";
+import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Timestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
@@ -24,6 +24,7 @@ interface FeedPostProps {
         uid: string;
         authorId?: string;
         type: 'checkin';
+        post_type?: 'reality_shift';
         title?: string;
         pseudonym?: string;
         letter?: string;
@@ -31,6 +32,8 @@ interface FeedPostProps {
         tension?: string;
         counsel?: string;
         rant?: string;
+        directive_title?: string;
+        unexpected_yield?: string;
         conversation_messages?: ConversationMessage[];
         content_raw?: string;
         public_post?: {
@@ -167,10 +170,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
     const publicPseudonym = post.public_post?.pseudonym || post.pseudonym || "Anonymous";
     const publicTitle = post.public_post?.title || post.title;
 
-    if (!publicLetter || !publicResponse) {
-        return null;
-    }
-
     const timeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : "just now";
 
     const handleDelete = () => setIsConfirmingDelete(true);
@@ -214,9 +213,68 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
         }
     };
 
-
-
     if (isDeleting) return null;
+
+    // Reality Shift posts — compact card (must check BEFORE the letter/response null guard)
+    if (post.post_type === 'reality_shift') {
+        const shiftTimeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : "just now";
+        return (
+            <div className="bg-[#1a1a1a] border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative font-sans">
+                {/* Subtle top accent */}
+                <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                {/* Body */}
+                <div className="px-4 sm:px-5 pt-4 pb-3">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Field Note</span>
+                        <span className="text-[10px] text-zinc-600">{shiftTimeAgo}</span>
+                    </div>
+
+                    {post.directive_title && (
+                        <div className="text-xs text-zinc-500 mb-2 leading-snug italic">
+                            Completed: {post.directive_title.length > 80 ? post.directive_title.slice(0, 80) + "…" : post.directive_title}
+                        </div>
+                    )}
+                    <p className="text-[15px] text-zinc-200 leading-relaxed">
+                        {post.unexpected_yield}
+                    </p>
+                </div>
+
+                {/* Footer */}
+                <div className="px-4 sm:px-5 py-3 flex items-center justify-between border-t border-white/5">
+                    <button
+                        onClick={toggleLike}
+                        className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
+                            totalLikes >= 1 ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
+                        )}
+                    >
+                        <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
+                        {totalLikes > 1 && <span className="text-xs font-medium">{totalLikes}</span>}
+                    </button>
+                    {user?.uid === post.uid && (
+                        <button
+                            onClick={handleDelete}
+                            className="text-zinc-400 hover:text-red-500 transition-colors duration-200 p-1"
+                            title="Delete Post"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+
+                <DeleteConfirmationModal
+                    isOpen={isConfirmingDelete}
+                    onClose={() => setIsConfirmingDelete(false)}
+                    onConfirm={confirmDelete}
+                />
+            </div>
+        );
+    }
+
+    // For non–reality-shift posts, letter and response are required
+    if (!publicLetter || !publicResponse) {
+        return null;
+    }
 
     const isLongPrivateCounsel = (post.counsel || '').length > 400;
     const displayedPrivateCounsel = isLongPrivateCounsel && !isResponseExpanded

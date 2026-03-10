@@ -53,7 +53,7 @@ export interface CharacterProfile {
     identity?: CharacterIdentity;   // New onboarding-driven identity
     character_bible: CharacterBible; // Now mandatory structure
     my_story?: string;
-    active_todos?: Array<{ id: string, task: string, completed: boolean, priority?: 'immediate' | 'next', created_at: any }>;
+    active_todos?: Array<{ id: string, task: string, completed: boolean, priority?: 'immediate' | 'next', unexpected_yield?: string, created_at: any }>;
     following?: Record<string, string>; // authorId -> custom Alias
     region?: string; // e.g., 'US-MA'
     home_lat?: number; // Latitude for proximity filtering (200-mile blind spot)

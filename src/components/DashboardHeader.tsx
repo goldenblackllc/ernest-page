@@ -11,7 +11,7 @@ import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { Bell } from "lucide-react";
 
-import { ActiveMission } from "@/components/ActiveMission";
+
 import { DirectivesMenu } from "@/components/DirectivesMenu";
 
 export function DashboardHeader() {
@@ -102,10 +102,7 @@ export function DashboardHeader() {
                     </div>
                 </nav>
 
-                {/* Active Mission Bar - Integrated Sub-Header */}
-                <div className="pointer-events-auto">
-                    <ActiveMission />
-                </div>
+
 
             </header>
 
