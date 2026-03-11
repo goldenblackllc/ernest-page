@@ -10,6 +10,7 @@ import { TriagePanel } from "@/components/TriagePanel";
 import { Ledger } from "@/components/Ledger";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { DashboardFooter } from "@/components/DashboardFooter";
+import { SupportChat } from "@/components/SupportChat";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 
@@ -56,7 +57,12 @@ export default function Home() {
 
     // Unauthenticated → Landing page
     if (!user) {
-        return <LandingPage />;
+        return (
+            <>
+                <LandingPage />
+                <SupportChat />
+            </>
+        );
     }
 
     // Checking profile state
@@ -97,6 +103,7 @@ export default function Home() {
             </div>
 
             <DashboardFooter />
+            <SupportChat />
         </main>
     );
 }

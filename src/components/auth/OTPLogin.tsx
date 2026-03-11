@@ -100,36 +100,41 @@ export default function OTPLogin() {
             )}
 
             {step === 'INPUT_CODE' && (
-                <>
+                <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }}>
                     <h1 className="text-2xl font-bold uppercase tracking-widest text-center">Verify</h1>
                     <input
+                        id="otp-code"
+                        name="otp-code"
                         type="text"
                         inputMode="numeric"
+                        pattern="[0-9]*"
                         autoComplete="one-time-code"
                         placeholder="123456"
                         value={verificationCode}
                         onChange={(e) => setVerificationCode(e.target.value)}
-                        className="border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400 text-center tracking-widest"
+                        className="border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400 text-center tracking-widest w-full mt-6"
                         maxLength={6}
+                        autoFocus
                     />
                     <button
-                        onClick={handleVerifyCode}
+                        type="submit"
                         disabled={loading}
-                        className="bg-black text-white p-4 text-lg font-bold uppercase hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        className="bg-black text-white p-4 text-lg font-bold uppercase hover:bg-gray-800 transition-colors disabled:opacity-50 w-full mt-3"
                     >
                         {loading ? 'Verifying...' : 'Verify & Login'}
                     </button>
                     <button
+                        type="button"
                         onClick={() => {
                             setStep('INPUT_PHONE');
                             setVerificationCode('');
                             setError(null);
                         }}
-                        className="text-gray-500 text-sm underline mt-2 text-center"
+                        className="text-gray-500 text-sm underline mt-2 text-center w-full"
                     >
                         Change Phone Number
                     </button>
-                </>
+                </form>
             )}
         </div>
     );

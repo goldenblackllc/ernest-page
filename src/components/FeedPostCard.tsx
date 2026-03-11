@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
 import { Timestamp, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -44,6 +45,8 @@ interface FeedPostProps {
         };
         imageUrl?: string;
         imagen_url?: string;
+        region?: string;
+        language?: string;
         created_at: Timestamp;
         is_public?: boolean;
         isLikedByMe?: boolean;
@@ -317,6 +320,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         <span>{timeAgo}</span>
+                        {(post.region || post.language) && (
+                            <>
+                                <span className="text-zinc-700">·</span>
+                                <span>{getCountryFlag(post.region)} {post.language || ''}</span>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

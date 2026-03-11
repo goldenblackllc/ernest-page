@@ -76,6 +76,14 @@ export interface CharacterProfile {
         canceledAt?: string;
         refunded?: boolean;
     };
+    daily_digest?: {
+        title: string;
+        content: string;
+        full_content?: string;
+        image_url?: string | null;
+        date: string;
+        updated_at: string;
+    };
 }
 
 export interface Directive {

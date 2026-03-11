@@ -781,14 +781,17 @@ export function LandingPage() {
 
                     {/* STEP 2 — OTP verification */}
                     {step === 'INPUT_CODE' && (
-                        <div className="flex flex-col gap-3">
+                        <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
                             <p className="text-xs text-zinc-400 text-center mb-2">
                                 Enter the 6-digit code sent to{' '}
                                 <span className="text-white font-semibold">{displayNumber}</span>
                             </p>
                             <input
+                                id="otp-code"
+                                name="otp-code"
                                 type="text"
                                 inputMode="numeric"
+                                pattern="[0-9]*"
                                 autoComplete="one-time-code"
                                 placeholder="000000"
                                 value={verificationCode}
@@ -798,13 +801,14 @@ export function LandingPage() {
                                 autoFocus
                             />
                             <button
-                                onClick={handleVerifyCode}
+                                type="submit"
                                 disabled={loading || verificationCode.length < 6}
                                 className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
                             >
                                 {loading ? 'Verifying...' : 'Verify'}
                             </button>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setStep('WELCOME');
                                     setVerificationCode('');
@@ -814,7 +818,7 @@ export function LandingPage() {
                             >
                                 ← Change number
                             </button>
-                        </div>
+                        </form>
                     )}
                 </motion.div>
             </section>

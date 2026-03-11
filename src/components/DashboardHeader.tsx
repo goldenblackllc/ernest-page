@@ -33,6 +33,7 @@ export function DashboardHeader() {
     const incompleteCount = profile?.active_todos?.filter(t => !t.completed).length || 0;
     const sub = profile?.subscription;
     const hasActivePlan = sub && sub.status === 'active';
+    const hasUnreadReview = profile?.identity?.monthly_reviews?.some((r: any) => r.read === false) || false;
 
     const handleLogout = async () => {
         try {
@@ -71,7 +72,7 @@ export function DashboardHeader() {
                             {/* Hamburger / Menu */}
                             <div className="relative">
                                 <button
-                                    className="p-2 text-white hover:bg-zinc-800 rounded-none transition-colors"
+                                    className="relative p-2 text-white hover:bg-zinc-800 rounded-none transition-colors"
                                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 >
                                     <div className="space-y-1.5">
@@ -79,6 +80,9 @@ export function DashboardHeader() {
                                         <span className="block w-6 h-0.5 bg-current"></span>
                                         <span className="block w-6 h-0.5 bg-current"></span>
                                     </div>
+                                    {hasUnreadReview && (
+                                        <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                                    )}
                                 </button>
 
                                 {isMenuOpen && (

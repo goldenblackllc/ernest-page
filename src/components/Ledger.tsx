@@ -3,6 +3,7 @@ import { doc, onSnapshot, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
+import { DigestCard } from "@/components/DigestCard";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 
 import { Loader2 } from "lucide-react";
@@ -215,16 +216,20 @@ export function Ledger() {
 
     // Auto-dismiss bible ready card after 15 minutes
     useEffect(() => {
-        if (!showBibleReady || !user || !profile?.character_bible?.last_commit) return;
+        if (!showBibleReady || !user) return;
 
-        const lc = profile.character_bible.last_commit;
+        const lc = profile?.character_bible?.last_commit;
         const commitTime = lc?.toMillis
             ? lc.toMillis()
             : lc?.seconds
                 ? lc.seconds * 1000
                 : null;
 
-        if (!commitTime) return;
+        // No timestamp available — treat as stale and dismiss immediately
+        if (!commitTime) {
+            dismissBibleReady();
+            return;
+        }
 
         const ageMs = Date.now() - commitTime;
         const fifteenMin = 15 * 60 * 1000;
@@ -327,14 +332,23 @@ export function Ledger() {
                 </div>
             )}
 
-            {entries.map((entry) => (
-                <FeedPostCard
-                    key={entry.id}
-                    post={entry as any}
-                    followingMap={followingMap}
-                    onFollowClick={(id) => setSelectedAuthorToFollow(id)}
-                    onRequestDelete={setPostToDelete}
-                />
+            {entries.map((entry, index) => (
+                <React.Fragment key={entry.id}>
+                    {/* Insert digest card as the 3rd item */}
+                    {index === 2 && profile?.daily_digest?.title && (
+                        <DigestCard
+                            title={profile.daily_digest.title}
+                            content={profile.daily_digest.full_content || profile.daily_digest.content}
+                            imageUrl={profile.daily_digest.image_url}
+                        />
+                    )}
+                    <FeedPostCard
+                        post={entry as any}
+                        followingMap={followingMap}
+                        onFollowClick={(id) => setSelectedAuthorToFollow(id)}
+                        onRequestDelete={setPostToDelete}
+                    />
+                </React.Fragment>
             ))}
 
             {/* End of feed */}

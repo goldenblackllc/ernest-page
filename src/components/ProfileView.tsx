@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/character";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
 import { User, ChevronDown, Pencil, FileText, Loader2, Mail, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -181,7 +183,18 @@ export function ProfileView() {
                             return (
                                 <button
                                     key={review.id}
-                                    onClick={() => setSelectedReview(review)}
+                                    onClick={() => {
+                                        setSelectedReview(review);
+                                        // Mark as read in Firestore
+                                        if (!review.read && user && identity?.monthly_reviews) {
+                                            const updatedReviews = identity.monthly_reviews.map((r: any) =>
+                                                r.id === review.id ? { ...r, read: true } : r
+                                            );
+                                            updateDoc(doc(db, 'users', user.uid), {
+                                                'identity.monthly_reviews': updatedReviews,
+                                            }).catch(console.error);
+                                        }
+                                    }}
                                     className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-left hover:bg-zinc-900/80 transition-colors flex items-center justify-between"
                                 >
                                     <div>

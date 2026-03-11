@@ -111,7 +111,8 @@ ${recentScaleHint}
 
 "photo_vibe": "One word capturing the emotional tone.",
 "photo_scale": "One of macro, lifestyle, wide, or human.",
-"imagen_prompt": "Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee."
+"imagen_prompt": "Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.",
+"language": "Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français')."
 }
 }`;
 
@@ -127,7 +128,8 @@ ${recentScaleHint}
                                         response: z.string(),
                                         photo_vibe: z.string(),
                                         photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
-                                        imagen_prompt: z.string()
+                                        imagen_prompt: z.string(),
+                                        language: z.string()
                                     }).nullable().optional()
                                 }),
                                 prompt: prompt
@@ -206,6 +208,7 @@ ${recentScaleHint}
                                         imagen_prompt: object.post.imagen_prompt,
                                         photo_vibe: object.post.photo_vibe,
                                         photo_scale: object.post.photo_scale,
+                                        language: object.post.language || null,
                                         imagen_url: imagen_url,
                                         // Geolocation for proximity filtering
                                         ...geoFields,
