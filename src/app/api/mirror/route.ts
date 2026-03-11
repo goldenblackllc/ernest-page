@@ -33,6 +33,14 @@ export async function POST(req: Request) {
         }
 
         const userData = userDoc.data();
+
+        // ─── Subscription enforcement ───────────────────────────
+        const sub = userData?.subscription;
+        const isActive = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
+        if (!isActive) {
+            return Response.json({ error: 'Subscription expired or inactive.' }, { status: 403 });
+        }
+
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
         const dossier = userData?.identity?.dossier || '';
 

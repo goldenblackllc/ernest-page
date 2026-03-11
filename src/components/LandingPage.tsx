@@ -334,6 +334,30 @@ export function LandingPage() {
                 SECTION — THE ARCHITECT (Founder's Letter)
                ═══════════════════════════════════════════════════════════ */}
             <section className="relative px-6 py-24 md:py-36">
+                {/* Woodcut portrait — atmospheric, blended into dark bg */}
+                <motion.div
+                    className="relative w-full max-w-sm mx-auto mb-16"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                    viewport={{ once: true, margin: '-40px' }}
+                >
+                    <Image
+                        src="/woodcutman.jpeg"
+                        alt="Earnest Page"
+                        width={800}
+                        height={500}
+                        className="w-full h-auto"
+                        style={{
+                            mixBlendMode: 'luminosity',
+                            opacity: 0.6,
+                            maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
+                            WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
+                            filter: 'invert(1)',
+                        }}
+                    />
+                </motion.div>
+
                 <motion.div
                     className="max-w-3xl mx-auto"
                     variants={sectionFade}
