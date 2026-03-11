@@ -5,8 +5,10 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { TriagePanel } from "@/components/TriagePanel";
 import { FeedPostCard } from "@/components/FeedPostCard";
+import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 import { Loader2 } from "lucide-react";
-import { Timestamp } from "firebase/firestore";
+import { Timestamp, deleteDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 export default function MyPostsPage() {
     const { user } = useAuth();
@@ -15,6 +17,18 @@ export default function MyPostsPage() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
+    const [postToDelete, setPostToDelete] = useState<string | null>(null);
+
+    const handleConfirmDelete = async () => {
+        if (!postToDelete) return;
+        try {
+            await deleteDoc(doc(db, "posts", postToDelete));
+            setPosts(prev => prev.filter(p => p.id !== postToDelete));
+        } catch (error) {
+            console.error("Error deleting post:", error);
+        }
+        setPostToDelete(null);
+    };
 
     const fetchPosts = useCallback(async (cursor?: string | null) => {
         if (!user) return;
@@ -117,6 +131,7 @@ export default function MyPostsPage() {
                             <FeedPostCard
                                 key={post.id}
                                 post={post as any}
+                                onRequestDelete={setPostToDelete}
                             />
                         ))}
 
@@ -138,6 +153,12 @@ export default function MyPostsPage() {
             </div>
 
             <TriagePanel />
+
+            <DeleteConfirmationModal
+                isOpen={postToDelete !== null}
+                onClose={() => setPostToDelete(null)}
+                onConfirm={handleConfirmDelete}
+            />
         </main>
     );
 }

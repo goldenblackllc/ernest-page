@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { Timestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { Timestamp, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 import { useAuth } from "@/lib/auth/AuthContext";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -54,11 +53,10 @@ interface FeedPostProps {
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
+    onRequestDelete?: (postId: string) => void;
 }
 
-export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProps) {
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelete }: FeedPostProps) {
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -172,17 +170,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
 
     const timeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : "just now";
 
-    const handleDelete = () => setIsConfirmingDelete(true);
-
-    const confirmDelete = async () => {
-        setIsDeleting(true);
-        try {
-            await deleteDoc(doc(db, "posts", post.id));
-        } catch (error) {
-            console.error("Error deleting post:", error);
-            setIsDeleting(false);
-        }
-    };
+    const handleDelete = () => onRequestDelete?.(post.id);
 
     const togglePrivacy = async () => {
         if (!user || user.uid !== post.uid) return;
@@ -207,13 +195,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${idToken}`,
                 },
+                body: JSON.stringify({ postId: post.id }),
             });
         } catch (error) {
             console.error("Error sending karma like:", error);
         }
     };
 
-    if (isDeleting) return null;
+
 
     // Reality Shift posts — compact card (must check BEFORE the letter/response null guard)
     if (post.post_type === 'reality_shift') {
@@ -226,7 +215,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                 {/* Body */}
                 <div className="px-4 sm:px-5 pt-4 pb-3">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Field Note</span>
+                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Something Unexpected</span>
                         <span className="text-[10px] text-zinc-600">{shiftTimeAgo}</span>
                     </div>
 
@@ -262,11 +251,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                     )}
                 </div>
 
-                <DeleteConfirmationModal
-                    isOpen={isConfirmingDelete}
-                    onClose={() => setIsConfirmingDelete(false)}
-                    onConfirm={confirmDelete}
-                />
+
             </div>
         );
     }
@@ -669,6 +654,31 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                                             </span>
                                             <p className="text-sm text-zinc-300 leading-relaxed mt-0.5">{c.content}</p>
                                         </div>
+                                        {c.is_mine && (
+                                            <button
+                                                onClick={async () => {
+                                                    if (!user) return;
+                                                    setComments(prev => prev.filter(x => x.id !== c.id));
+                                                    try {
+                                                        const idToken = await user.getIdToken();
+                                                        await fetch('/api/posts/comment/delete', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'Authorization': `Bearer ${idToken}`,
+                                                            },
+                                                            body: JSON.stringify({ postId: post.id, commentId: c.id }),
+                                                        });
+                                                    } catch (err) {
+                                                        console.error('Failed to delete comment:', err);
+                                                    }
+                                                }}
+                                                className="shrink-0 p-1 text-zinc-600 hover:text-red-500 transition-colors mt-0.5"
+                                                title="Delete comment"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -677,11 +687,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick }: FeedPostProp
                 )}
             </div>
 
-            <DeleteConfirmationModal
-                isOpen={isConfirmingDelete}
-                onClose={() => setIsConfirmingDelete(false)}
-                onConfirm={confirmDelete}
-            />
+
         </div>
     );
 }

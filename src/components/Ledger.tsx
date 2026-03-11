@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
+import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 
 import { Loader2 } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
@@ -27,6 +28,18 @@ export function Ledger() {
 
     const [pendingPostId, setPendingPostId] = useState<string | null>(null);
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<string | null>(null);
+    const [postToDelete, setPostToDelete] = useState<string | null>(null);
+
+    const handleConfirmDelete = async () => {
+        if (!postToDelete) return;
+        try {
+            await deleteDoc(doc(db, "posts", postToDelete));
+            setEntries(prev => prev.filter(e => e.id !== postToDelete));
+        } catch (error) {
+            console.error("Error deleting post:", error);
+        }
+        setPostToDelete(null);
+    };
 
     const newestPostTimeRef = useRef<string | null>(cache.newestPostTime);
     const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -182,6 +195,50 @@ export function Ledger() {
         return () => unsub();
     }, [pendingPostId]);
 
+    // Bible generation status — backed by Firestore, survives page reloads
+    // IMPORTANT: These hooks must be ABOVE all early returns to satisfy Rules of Hooks
+    const bibleStatus = profile?.character_bible?.status;
+    const showBibleCompiling = bibleStatus === 'compiling';
+    const showBibleReady = bibleStatus === 'ready';
+
+    const dismissBibleReady = async () => {
+        if (!user) return;
+        try {
+            const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
+            await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
+                'character_bible.status': 'stable',
+            });
+        } catch (e) {
+            console.error('Failed to dismiss bible ready card:', e);
+        }
+    };
+
+    // Auto-dismiss bible ready card after 15 minutes
+    useEffect(() => {
+        if (!showBibleReady || !user || !profile?.character_bible?.last_commit) return;
+
+        const lc = profile.character_bible.last_commit;
+        const commitTime = lc?.toMillis
+            ? lc.toMillis()
+            : lc?.seconds
+                ? lc.seconds * 1000
+                : null;
+
+        if (!commitTime) return;
+
+        const ageMs = Date.now() - commitTime;
+        const fifteenMin = 15 * 60 * 1000;
+
+        if (ageMs >= fifteenMin) {
+            dismissBibleReady();
+        } else {
+            const timer = setTimeout(() => {
+                dismissBibleReady();
+            }, fifteenMin - ageMs);
+            return () => clearTimeout(timer);
+        }
+    }, [showBibleReady, user, profile?.character_bible?.last_commit]);
+
     // Skeleton loading
     if (loading) {
         return (
@@ -214,23 +271,6 @@ export function Ledger() {
             </div>
         );
     }
-
-    // Bible generation status — backed by Firestore, survives page reloads
-    const bibleStatus = profile?.character_bible?.status;
-    const showBibleCompiling = bibleStatus === 'compiling';
-    const showBibleReady = bibleStatus === 'ready';
-
-    const dismissBibleReady = async () => {
-        if (!user) return;
-        try {
-            const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
-            await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
-                'character_bible.status': 'stable',
-            });
-        } catch (e) {
-            console.error('Failed to dismiss bible ready card:', e);
-        }
-    };
 
     return (
         <section className="flex flex-col gap-6 pt-2">
@@ -293,6 +333,7 @@ export function Ledger() {
                     post={entry as any}
                     followingMap={followingMap}
                     onFollowClick={(id) => setSelectedAuthorToFollow(id)}
+                    onRequestDelete={setPostToDelete}
                 />
             ))}
 
@@ -308,6 +349,12 @@ export function Ledger() {
                 onClose={() => setSelectedAuthorToFollow(null)}
                 postAuthorId={selectedAuthorToFollow || ''}
                 profile={profile}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={postToDelete !== null}
+                onClose={() => setPostToDelete(null)}
+                onConfirm={handleConfirmDelete}
             />
         </section>
     );
