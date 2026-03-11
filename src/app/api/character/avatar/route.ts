@@ -1,14 +1,21 @@
 import { db, storage } from '@/lib/firebase/admin';
+import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
     try {
+        if (!verifyInternalAuth(req)) return unauthorizedResponse();
+
         const { uid } = await req.json();
 
         if (!uid) {
             return Response.json({ error: 'Missing uid' }, { status: 400 });
         }
+
+        const rl = checkRateLimit(`avatar:${uid}`, RATE_LIMITS.avatar);
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
         // Read identity and bible from Firestore
         const userDoc = await db.collection('users').doc(uid).get();

@@ -1,11 +1,14 @@
 import { db } from "@/lib/firebase/admin";
 import { generateTextWithFallback, SONNET_MODEL } from "@/lib/ai/models";
 import { FieldValue } from "firebase-admin/firestore";
+import { verifyInternalAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
     try {
+        if (!verifyInternalAuth(req)) return unauthorizedResponse();
+
         const body = await req.json();
         const { uid, conversation_summary } = body;
 

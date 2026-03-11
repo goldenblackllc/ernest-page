@@ -115,10 +115,14 @@ export function Tollbooth({ onComplete }: TollboothProps) {
 
         (async () => {
             try {
+                const idToken = await user.getIdToken();
                 const res = await fetch('/api/create-payment-intent', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tier: selectedPlan, uid: user.uid }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`,
+                    },
+                    body: JSON.stringify({ tier: selectedPlan }),
                 });
 
                 const data = await res.json();

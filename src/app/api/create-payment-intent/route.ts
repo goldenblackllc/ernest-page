@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2026-02-25.clover',
@@ -16,12 +17,15 @@ const PLAN_DESCRIPTIONS: Record<string, string> = {
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { tier, uid } = body;
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
-        if (!tier || !uid) {
+        const body = await req.json();
+        const { tier } = body;
+
+        if (!tier) {
             return Response.json(
-                { error: 'Tier and UID are required.' },
+                { error: 'Tier is required.' },
                 { status: 400 }
             );
         }

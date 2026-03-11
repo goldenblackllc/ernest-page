@@ -3,6 +3,7 @@ import { db } from "@/lib/firebase/admin";
 import { generateWithFallback, SONNET_MODEL } from "@/lib/ai/models";
 import { FieldValue } from "firebase-admin/firestore";
 import { waitUntil } from "@vercel/functions";
+import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
 
 export const maxDuration = 120;
 
@@ -40,12 +41,15 @@ Updated: {DATE} | Sessions: 0
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { uid, rant, gender, age, ethnicity, important_people, things_i_enjoy, character_name } = body;
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
-        if (!uid || !rant) {
+        const body = await req.json();
+        const { rant, gender, age, ethnicity, important_people, things_i_enjoy, character_name } = body;
+
+        if (!rant) {
             return Response.json(
-                { error: "UID and rant are required." },
+                { error: "Rant is required." },
                 { status: 400 }
             );
         }
@@ -162,7 +166,10 @@ export async function POST(req: Request) {
                 console.log(`[Onboarding] Background: Starting bible compilation for ${uid}`);
                 const compileRes = await fetch(`${origin}/api/character/compile`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-internal-key': process.env.CRON_SECRET || '',
+                    },
                     body: JSON.stringify({
                         uid,
                         source_code: {

@@ -1,13 +1,17 @@
 import { db } from '@/lib/firebase/admin';
 import { generateTextWithFallback, SONNET_MODEL, SONNET_FALLBACK } from '@/lib/ai/models';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
     try {
-        const { uid, messages } = await req.json();
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
-        if (!uid || !messages || messages.length < 2) {
+        const { messages } = await req.json();
+
+        if (!messages || messages.length < 2) {
             return Response.json({ error: "Insufficient conversation context" }, { status: 400 });
         }
 

@@ -7,6 +7,7 @@ import {
     useElements,
 } from '@stripe/react-stripe-js';
 import { Shield } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 interface CheckoutFormProps {
     plan: 'proving_ground' | 'long_game';
@@ -18,6 +19,7 @@ interface CheckoutFormProps {
 export function CheckoutForm({ plan, uid, onSuccess, onError }: CheckoutFormProps) {
     const stripe = useStripe();
     const elements = useElements();
+    const { user: authUser } = useAuth();
     const [processing, setProcessing] = useState(false);
     const [ready, setReady] = useState(false);
 
@@ -45,11 +47,14 @@ export function CheckoutForm({ plan, uid, onSuccess, onError }: CheckoutFormProp
         if (paymentIntent?.status === 'succeeded') {
             // Payment succeeded — write subscription to Firestore
             try {
+                const idToken = await authUser?.getIdToken();
                 const res = await fetch('/api/subscribe', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                    },
                     body: JSON.stringify({
-                        uid,
                         plan,
                         paymentIntentId: paymentIntent.id,
                     }),

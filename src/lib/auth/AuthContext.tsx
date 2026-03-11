@@ -29,11 +29,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             // Sync region on every login — fire-and-forget
             if (user) {
-                fetch('/api/user/region', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uid: user.uid }),
-                }).catch(() => { }); // Silent fail — non-critical
+                user.getIdToken().then(token => {
+                    fetch('/api/user/region', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({}),
+                    }).catch(() => { }); // Silent fail — non-critical
+                }).catch(() => { });
             }
         });
 

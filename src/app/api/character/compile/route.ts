@@ -4,6 +4,8 @@ import { db } from '@/lib/firebase/admin';
 import { CharacterBible } from '@/types/character';
 import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { REALITY_RULES } from '@/lib/constants/realityRules';
+import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
 
 export const maxDuration = 300;
 
@@ -63,12 +65,17 @@ Things they enjoy: {THINGS_I_ENJOY}`;
 // Removed PROMPT_REALITY_BIBLE
 export async function POST(req: Request) {
     try {
+        if (!verifyInternalAuth(req)) return unauthorizedResponse();
+
         const payload = await req.json();
         const { uid, source_code } = payload;
 
         if (!uid || !source_code) {
             return Response.json({ error: "Missing uid or source_code" }, { status: 400 });
         }
+
+        const rl = checkRateLimit(`compile:${uid}`, RATE_LIMITS.compile);
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
         const providerOptions = {
             google: { safetySettings: SAFETY_SETTINGS },
@@ -178,7 +185,10 @@ export async function POST(req: Request) {
         try {
             await fetch(`${origin}/api/character/avatar`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-key': process.env.CRON_SECRET || '',
+                },
                 body: JSON.stringify({ uid }),
             });
         } catch (err) {
@@ -197,7 +207,10 @@ export async function POST(req: Request) {
 
             fetch(`${origin}/api/dossier/update`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-key': process.env.CRON_SECRET || '',
+                },
                 body: JSON.stringify({
                     uid,
                     conversation_summary: `[PROFILE UPDATE — NOT A CONVERSATION]\nThe user has updated their profile information. Merge the following into the appropriate dossier sections (KEY PEOPLE and PREFERENCES & STYLE). Do not remove any existing facts from other sections.\n\n${mergeSummary}`,

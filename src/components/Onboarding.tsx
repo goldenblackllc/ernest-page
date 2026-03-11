@@ -23,11 +23,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         setError(null);
 
         try {
+            const idToken = await user.getIdToken();
             const res = await fetch('/api/onboarding/process', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
                 body: JSON.stringify({
-                    uid: user.uid,
                     rant: data.rant.trim(),
                     gender: data.gender.trim(),
                     age: data.age.trim(),

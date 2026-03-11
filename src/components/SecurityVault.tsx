@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Shield, ShieldCheck, Radio, Flame, Loader2, Trash2, MapPin, Crosshair } from "lucide-react";
+import { X, Shield, ShieldCheck, Radio, Flame, Loader2, Trash2, MapPin, Crosshair, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { updateCharacterProfile } from "@/lib/firebase/character";
@@ -43,6 +43,9 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
         profile?.proximity_anchor || null
     );
     const [isAnchoring, setIsAnchoring] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [deleteInput, setDeleteInput] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch blocked hash count
     useEffect(() => {
@@ -471,6 +474,97 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                             <>
                                                 <Flame className="w-3.5 h-3.5" />
                                                 Confirm
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ═══ SECTION 5: ACCOUNT DELETION ═══ */}
+                    <div className="px-6 py-8 border-t border-zinc-800/50">
+                        <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
+                            Account Deletion
+                        </h3>
+                        <p className="text-xs text-zinc-600 mb-6 leading-relaxed">
+                            Permanently delete your entire account, including all posts,
+                            conversations, character data, and authentication. This action
+                            is immediate and irreversible.
+                        </p>
+
+                        {!deleteConfirm ? (
+                            <button
+                                onClick={() => setDeleteConfirm(true)}
+                                disabled={isDeleting}
+                                className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl border border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-[0.15em] hover:text-red-400/60 hover:border-red-900/30 transition-all duration-200 disabled:opacity-30"
+                            >
+                                <AlertTriangle className="w-4 h-4" />
+                                Delete My Account
+                            </button>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="p-3 rounded-xl border border-red-900/30 bg-red-950/20">
+                                    <p className="text-xs text-red-400/80 text-center mb-3">
+                                        Type <span className="font-mono font-bold text-red-300">DELETE</span> to confirm.
+                                        All data will be destroyed.
+                                    </p>
+                                    <input
+                                        type="text"
+                                        value={deleteInput}
+                                        onChange={(e) => setDeleteInput(e.target.value)}
+                                        placeholder="Type DELETE"
+                                        className="w-full bg-black/50 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white font-mono text-center placeholder:text-zinc-700 focus:outline-none focus:border-red-800/50"
+                                    />
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
+                                        className="flex-1 py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-widest hover:text-white hover:border-zinc-600 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (deleteInput !== 'DELETE' || !user) return;
+                                            setIsDeleting(true);
+                                            try {
+                                                const idToken = await user.getIdToken();
+                                                const res = await fetch('/api/account/delete', {
+                                                    method: 'DELETE',
+                                                    headers: { 'Authorization': `Bearer ${idToken}` },
+                                                });
+                                                if (res.ok) {
+                                                    // Account is gone — sign out client
+                                                    const { signOut: fbSignOut } = await import('firebase/auth');
+                                                    const { auth } = await import('@/lib/firebase/config');
+                                                    await fbSignOut(auth);
+                                                    window.location.href = '/';
+                                                } else {
+                                                    const data = await res.json();
+                                                    setStatusMessage(data.error || 'Deletion failed.');
+                                                    setIsDeleting(false);
+                                                }
+                                            } catch (err) {
+                                                console.error('Account deletion failed:', err);
+                                                setStatusMessage('Account deletion failed. Contact support.');
+                                                setIsDeleting(false);
+                                            }
+                                        }}
+                                        disabled={isDeleting || deleteInput !== 'DELETE'}
+                                        className={cn(
+                                            "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-40",
+                                            deleteInput === 'DELETE'
+                                                ? "border-red-900/50 bg-red-950/30 text-red-400/80 hover:bg-red-950/50"
+                                                : "border-zinc-800 text-zinc-600 cursor-not-allowed"
+                                        )}
+                                    >
+                                        {isDeleting ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <>
+                                                <AlertTriangle className="w-3.5 h-3.5" />
+                                                Delete Forever
                                             </>
                                         )}
                                     </button>

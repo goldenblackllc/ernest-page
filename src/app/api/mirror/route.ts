@@ -4,15 +4,23 @@ import { waitUntil } from '@vercel/functions';
 import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { ENGAGEMENT_TONES, DEFAULT_TONE } from '@/lib/ai/engagementTones';
 import { SessionTone } from '@/types/chat';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
 
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
     try {
-        const { messages, uid, sessionId, sessionTone, localTime } = await req.json();
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
-        if (!uid || !sessionId) {
-            return Response.json({ error: "Unauthorized or missing session ID" }, { status: 401 });
+        const rl = checkRateLimit(`mirror:${uid}`, RATE_LIMITS.mirror);
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
+
+        const { messages, sessionId, sessionTone, localTime } = await req.json();
+
+        if (!sessionId) {
+            return Response.json({ error: "Missing session ID" }, { status: 400 });
         }
 
         // Validate tone or default
@@ -96,6 +104,8 @@ If the user expresses any of the following:
 - Active self-harm or plans to self-harm
 - Intent or plans to harm another person
 - Statements suggesting they or someone else is in immediate danger
+
+NOTE: This does NOT apply to users discussing violence in a professional capacity (law enforcement, military, medical, public safety). Occupational exposure to violence is not a crisis signal — respond in character as normal.
 
 You MUST:
 1. IMMEDIATELY break character. Do not respond as the character.

@@ -1,5 +1,6 @@
 import { db } from '@/lib/firebase/admin';
 import Stripe from 'stripe';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2026-02-25.clover',
@@ -12,12 +13,15 @@ const PLAN_AMOUNTS: Record<string, number> = {
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { uid, plan, paymentIntentId } = body;
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
-        if (!uid || !plan || !paymentIntentId) {
+        const body = await req.json();
+        const { plan, paymentIntentId } = body;
+
+        if (!plan || !paymentIntentId) {
             return Response.json(
-                { error: 'UID, plan, and paymentIntentId are required.' },
+                { error: 'Plan and paymentIntentId are required.' },
                 { status: 400 }
             );
         }

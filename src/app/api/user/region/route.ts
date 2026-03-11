@@ -1,16 +1,14 @@
 import { db } from '@/lib/firebase/admin';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const uid = body.uid;
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
+
         const country = req.headers.get('x-vercel-ip-country') || "";
         const subRegion = req.headers.get('x-vercel-ip-country-region') || "";
         const region = country && subRegion ? `${country}-${subRegion}` : country || "LOCAL";
-
-        if (!uid) {
-            return Response.json({ error: "UID is required to sync region." }, { status: 400 });
-        }
 
         // We only want to set the region if the user document exists, or merge it.
         // The safest approach is a merge set so we don't accidentally overwrite data.

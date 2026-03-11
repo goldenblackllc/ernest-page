@@ -10,6 +10,7 @@ import { subscribeToActiveChat, getMostRecentActiveChat, saveActiveChat, deleteA
 import { Message } from "@ai-sdk/react";
 import { SessionTone } from "@/types/chat";
 import { ENGAGEMENT_TONES, DEFAULT_TONE } from "@/lib/ai/engagementTones";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 type SessionRouting = 'public' | 'private' | 'burn';
 
@@ -23,6 +24,7 @@ interface MirrorChatProps {
 }
 
 export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
+    const { user: authUser } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -69,11 +71,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
             setIsLoading(true);
 
             try {
+                const idToken = await authUser?.getIdToken();
                 await fetch('/api/mirror', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                    },
                     body: JSON.stringify({
-                        uid,
                         sessionId,
                         sessionTone,
                         localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
@@ -192,11 +197,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         }
 
         try {
+            const idToken = await authUser?.getIdToken();
             await fetch('/api/mirror', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                },
                 body: JSON.stringify({
-                    uid,
                     sessionId,
                     sessionTone,
                     localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
@@ -224,11 +232,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
 
         setIsLoading(true);
         try {
+            const idToken = await authUser?.getIdToken();
             await fetch('/api/mirror', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                },
                 body: JSON.stringify({
-                    uid,
                     sessionId,
                     sessionTone,
                     localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
@@ -250,10 +261,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         setPlanConfirmation(null);
 
         try {
+            const idToken = await authUser?.getIdToken();
             const res = await fetch('/api/mirror/plan', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, messages })
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                },
+                body: JSON.stringify({ messages })
             });
             const data = await res.json();
             if (data.success && data.directives?.length > 0) {
