@@ -9,13 +9,15 @@ import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell, Shield, CreditCard, LogOut } from "lucide-react";
+import { Bell, Shield, CreditCard, LogOut, Users } from "lucide-react";
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";
+import { RolodexModal } from "@/components/RolodexModal";
 
 export function DashboardHeader() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDirectivesOpen, setIsDirectivesOpen] = useState(false);
+    const [isRolodexOpen, setIsRolodexOpen] = useState(false);
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const { user } = useAuth();
     const router = useRouter();
@@ -95,6 +97,18 @@ export function DashboardHeader() {
                                             Security Vault
                                         </button>
 
+                                        {/* Rolodex */}
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                setIsRolodexOpen(true);
+                                            }}
+                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <Users className="w-4 h-4 text-zinc-500" />
+                                            Rolodex
+                                        </button>
+
                                         {/* Subscription */}
                                         <button
                                             onClick={() => {
@@ -126,6 +140,12 @@ export function DashboardHeader() {
             <DirectivesMenu
                 isOpen={isDirectivesOpen}
                 onClose={() => setIsDirectivesOpen(false)}
+                profile={profile}
+            />
+
+            <RolodexModal
+                isOpen={isRolodexOpen}
+                onClose={() => setIsRolodexOpen(false)}
                 profile={profile}
             />
         </>

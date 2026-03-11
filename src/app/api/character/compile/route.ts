@@ -129,7 +129,6 @@ export async function POST(req: Request) {
         ];
 
 
-
         // Generate Reality Bible was here - removed.
 
         // Save back to Firestore
@@ -139,16 +138,35 @@ export async function POST(req: Request) {
             const data = userDoc.data();
             const currentBible: CharacterBible = data?.character_bible || { source_code, compiled_bible: {}, compiled_output: { ideal: [] }, last_updated: Date.now() };
 
+            // Resolve character name: use user-provided name, or generate one
+            const userProvidedName = data?.identity?.character_name || '';
+            let characterName = userProvidedName;
+
+            if (!characterName) {
+                try {
+                    const nameResult = await generateWithFallback({
+                        primaryModelId: SONNET_MODEL,
+                        abortSignal: AbortSignal.timeout(15_000),
+                        prompt: `Based on this character archetype "${source_code.archetype || 'Unknown'}" and manifesto "${(source_code.manifesto || '').slice(0, 200)}", generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
+                        schema: z.object({ name: z.string().describe("A single first name") }),
+                    });
+                    characterName = (nameResult.object as any).name || 'The Architect';
+                } catch {
+                    characterName = 'The Architect';
+                }
+            }
+
             const updatedBible: CharacterBible = {
                 ...currentBible,
                 source_code: {
                     ...currentBible.source_code,
-                    ...source_code // ensure we save the input config
+                    ...source_code
                 },
                 compiled_output: {
                     ...currentBible.compiled_output,
                     ideal: idealSections
                 },
+                character_name: characterName,
                 last_updated: Date.now()
             };
 

@@ -63,7 +63,7 @@ export function SubscriptionView() {
     }
 
     const planLabel = currentPlan === 'long_game' ? 'The Long Game' : 'The Proving Ground';
-    const planPrice = currentPlan === 'long_game' ? '$1,200/yr' : '$120/mo';
+    const planPrice = currentPlan === 'long_game' ? '$1,200' : '$120';
 
     return (
         <div className="space-y-10 py-6">
@@ -117,7 +117,7 @@ export function SubscriptionView() {
                         </p>
                         {expiresAt && (
                             <p className="text-sm text-zinc-500">
-                                Renews on{' '}
+                                Ends on{' '}
                                 <span className="text-zinc-300">
                                     {expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                 </span>

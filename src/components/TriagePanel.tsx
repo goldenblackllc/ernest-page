@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Home, User as UserIcon, BookOpen } from "lucide-react";
+import { MessageCircle, Home, User as UserIcon, BookOpen, Heart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
@@ -45,6 +45,9 @@ export function TriagePanel() {
                     </Link>
                     {/* Spacer for center FAB */}
                     <div className="w-16" />
+                    <Link href="/saved" className={cn("p-2 transition-colors", pathname === "/saved" ? "text-white" : "text-zinc-500 hover:text-white")}>
+                        <Heart className="w-6 h-6" />
+                    </Link>
                     <Link href="/profile" className={cn("p-2 transition-colors", pathname === "/profile" ? "text-white" : "text-zinc-500 hover:text-white")}>
                         <UserIcon className="w-6 h-6" />
                     </Link>

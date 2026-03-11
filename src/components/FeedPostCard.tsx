@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, Send, Sparkles } from "lucide-react";
+import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Timestamp, doc, updateDoc } from "firebase/firestore";
@@ -561,12 +561,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                         <button
                             onClick={handleToggleComments}
-                            className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
-                                isCommentOpen || commentCount >= 1 ? "text-emerald-500" : "text-zinc-500 hover:text-emerald-500/80"
-                            )}
+                            className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors active:scale-75 hover:scale-110"
                             title="Comment"
                         >
-                            <MessageCircle className={cn("w-5 h-5", commentCount >= 1 && "fill-emerald-500")} />
+                            <MessageCircle className={cn("w-5 h-5", commentCount >= 1 && "fill-zinc-400")} />
                             {commentCount > 1 && (
                                 <span className="text-xs font-medium">
                                     {commentCount}
@@ -583,12 +581,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 }}
                                 className={cn(
                                     "flex items-center gap-1.5 transition-colors duration-200 group ml-2",
-                                    isFlipped ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-200"
+                                    isFlipped ? "text-white" : "text-zinc-400 hover:text-white"
                                 )}
                                 title={isFlipped ? "View Public" : "View Private"}
                             >
                                 <RefreshCw className={cn("w-4 h-4 transition-transform duration-500", isFlipped && "rotate-180")} />
-                                <span className="text-xs font-medium">{isFlipped ? "View Public" : "View Private"}</span>
+                                <span className="text-zinc-400 text-sm">{isFlipped ? "View Public" : "View Private"}</span>
                             </button>
                         )}
                     </div>
@@ -596,7 +594,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     {user?.uid === post.uid && (
                         <button
                             onClick={handleDelete}
-                            className="text-zinc-400 hover:text-red-500 transition-colors duration-200 p-1"
+                            className="text-zinc-400 hover:text-white transition-colors duration-200 p-1"
                             title="Delete Post"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -609,28 +607,33 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     <div className="px-3 sm:px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
                         {/* Comment toast */}
                         {commentToast && (
-                            <div className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                            <div className="text-xs text-zinc-300 bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2">
                                 {commentToast}
                             </div>
                         )}
 
                         {/* Comment input */}
-                        <div className="flex items-center gap-2">
+                        <div className="relative bg-zinc-900/50 border border-zinc-800 rounded-full flex items-center px-4 py-2">
                             <input
                                 type="text"
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && submitComment()}
-                                placeholder="Share your thoughts — your character will leave a note on another post too"
-                                className="flex-1 bg-zinc-900 border border-zinc-700/50 rounded-full px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none"
+                                placeholder="Leave a reflection..."
+                                className="bg-transparent border-none focus:ring-0 focus:outline-none text-white placeholder-zinc-500 w-full pr-10 text-sm"
                                 disabled={isSubmittingComment}
                             />
                             <button
                                 onClick={submitComment}
                                 disabled={!commentText.trim() || isSubmittingComment}
-                                className="p-2.5 bg-emerald-500 text-black rounded-full disabled:opacity-30 hover:bg-emerald-400 transition-colors shrink-0"
+                                className={cn(
+                                    "absolute right-3 transition-all duration-200",
+                                    commentText.trim()
+                                        ? "text-white cursor-pointer hover:scale-105"
+                                        : "text-zinc-600 cursor-default"
+                                )}
                             >
-                                <Send className="w-4 h-4" />
+                                <ArrowUp className="w-5 h-5" />
                             </button>
                         </div>
 

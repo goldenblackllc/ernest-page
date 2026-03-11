@@ -181,16 +181,17 @@ export async function GET(req: Request) {
 
         // 10. Sanitize
         const sanitized = page.map((post) => {
-            const isOwner = post.authorId === uid || post.uid === uid;
-            const likedBy: string[] = post.likedBy || [];
-            const isLikedByMe = likedBy.includes(uid);
+            const likedPosts: string[] = userData.liked_posts || [];
+            const isLikedByMe = likedPosts.includes(post.id);
 
             const clean: any = { ...post };
             clean.author_avatar_url = avatarMap[post.authorId || post.uid] || null;
 
+            // Strip likedBy — never expose to client (legacy field)
             delete clean.likedBy;
             clean.isLikedByMe = isLikedByMe;
 
+            const isOwner = post.authorId === uid || post.uid === uid;
             if (!isOwner) {
                 delete clean.content_raw;
                 delete clean.rant;
@@ -219,7 +220,6 @@ export async function GET(req: Request) {
         return Response.json({
             posts: sanitized,
             following: followingMap,
-            savedPosts: userData.saved_posts || [],
         });
     } catch (error: any) {
         console.error("Feed API Error:", error);

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Users, Shield, ArrowRight } from 'lucide-react';
 
 export interface IdentityFormData {
+    character_name: string;
     gender: string;
     age: string;
     ethnicity: string;
@@ -30,6 +31,7 @@ export function IdentityForm({
     showHeadings = true,
 }: IdentityFormProps) {
     const [step, setStep] = useState<FormStep>('VISION');
+    const [characterName, setCharacterName] = useState(initialValues.character_name || '');
     const [gender, setGender] = useState(initialValues.gender || '');
     const [age, setAge] = useState(initialValues.age || '');
     const [ethnicity, setEthnicity] = useState(initialValues.ethnicity || '');
@@ -39,7 +41,7 @@ export function IdentityForm({
 
     const handleSubmit = () => {
         if (!rant.trim() || !gender.trim() || isSubmitting) return;
-        onSubmit({ gender, age, ethnicity, rant, people, enjoyments });
+        onSubmit({ character_name: characterName, gender, age, ethnicity, rant, people, enjoyments });
     };
 
     // Step 1: Define Your Standard
@@ -56,6 +58,19 @@ export function IdentityForm({
                         </p>
                     </div>
                 )}
+
+                {/* Character Name (optional) */}
+                <div>
+                    <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Name your character <span className="text-zinc-600">(optional — we'll create one if blank)</span></label>
+                    <input
+                        type="text"
+                        value={characterName}
+                        onChange={(e) => setCharacterName(e.target.value)}
+                        placeholder="Leave blank to auto-generate"
+                        className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
+                    />
+                </div>
+
                 {/* Row 1: Gender + Age */}
                 <div className="flex gap-3">
                     <div className="flex-1">

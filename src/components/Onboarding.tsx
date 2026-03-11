@@ -34,6 +34,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     ethnicity: data.ethnicity.trim(),
                     important_people: data.people.trim(),
                     things_i_enjoy: data.enjoyments.trim(),
+                    character_name: data.character_name.trim(),
                 }),
             });
 

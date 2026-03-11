@@ -7,13 +7,14 @@ export const maxDuration = 10;
 /**
  * Karma Pool Likes — "Send It to the Universe"
  * 
- * When a user taps the heart, the like is NOT applied to
- * the post they liked. Instead, a random recent public post
- * (not by the liker) receives +1 to its like_count.
+ * When a user taps the heart on a post:
+ * 1. The postId is recorded privately on the USER's document (liked_posts array).
+ *    This is the user's private record — only they can see it.
+ * 2. A random recent public post (not by the liker) receives +1 to its like_count.
+ *    The karma goes to the universe, not the tapped post.
  * 
- * The liker gets the dopamine of tapping the heart.
- * A random author gets the warmth of being liked.
- * Nobody knows who liked what or where the likes came from.
+ * Privacy: No trace of the like exists on the post document itself.
+ * The likedBy field on posts is NOT used — all like tracking lives on users/{uid}.
  */
 export async function POST(req: Request) {
     try {
@@ -32,10 +33,17 @@ export async function POST(req: Request) {
             return Response.json({ error: "Invalid token" }, { status: 401 });
         }
 
-        // Find recent public posts not authored by the liker
-        const cutoff = new Date();
-        cutoff.setHours(cutoff.getHours() - 48);
+        // Read the postId the user tapped
+        const { postId } = await req.json();
 
+        // 1. Record the like privately on the user's document
+        if (postId) {
+            await db.collection("users").doc(uid).update({
+                liked_posts: FieldValue.arrayUnion(postId),
+            });
+        }
+
+        // 2. Karma redistribution — send +1 to a random post
         const recentSnap = await db.collection("posts")
             .where("is_public", "==", true)
             .where("status", "==", "completed")
@@ -49,19 +57,13 @@ export async function POST(req: Request) {
             return data.authorId !== uid && data.uid !== uid;
         });
 
-        if (candidates.length === 0) {
-            // No candidates — silently succeed (user still gets their heart fill)
-            return Response.json({ success: true });
+        if (candidates.length > 0) {
+            const randomIndex = Math.floor(Math.random() * candidates.length);
+            const luckyPost = candidates[randomIndex];
+            await luckyPost.ref.update({
+                like_count: FieldValue.increment(1),
+            });
         }
-
-        // Pick a random candidate
-        const randomIndex = Math.floor(Math.random() * candidates.length);
-        const luckyPost = candidates[randomIndex];
-
-        // Increment its like_count
-        await luckyPost.ref.update({
-            like_count: FieldValue.increment(1),
-        });
 
         return Response.json({ success: true });
     } catch (error: any) {

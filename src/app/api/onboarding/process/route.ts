@@ -41,7 +41,7 @@ Updated: {DATE} | Sessions: 0
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { uid, rant, gender, age, ethnicity, important_people, things_i_enjoy } = body;
+        const { uid, rant, gender, age, ethnicity, important_people, things_i_enjoy, character_name } = body;
 
         if (!uid || !rant) {
             return Response.json(
@@ -120,6 +120,7 @@ export async function POST(req: Request) {
             gender: gender || '',
             age: age || '',
             ethnicity: ethnicity || '',
+            character_name: character_name || '',
         };
 
         if (!hasExistingDossier) {

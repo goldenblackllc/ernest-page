@@ -211,6 +211,7 @@ export function ProfileView() {
                 currentEthnicity={identity?.ethnicity || ""}
                 currentPeople={identity?.important_people || ""}
                 currentEnjoyments={identity?.things_i_enjoy || ""}
+                currentCharacterName={identity?.character_name || ""}
             />
 
             {/* Dossier Modal */}
@@ -245,7 +246,7 @@ export function ProfileView() {
 
 // ——— Edit Identity Modal (Shared Form → Background Generation) ———
 
-function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentEthnicity, currentPeople, currentEnjoyments }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentEthnicity: string; currentPeople: string; currentEnjoyments: string }) {
+function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentEthnicity, currentPeople, currentEnjoyments, currentCharacterName }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentEthnicity: string; currentPeople: string; currentEnjoyments: string; currentCharacterName: string }) {
     const { user } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -279,6 +280,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     ethnicity: data.ethnicity.trim(),
                     important_people: data.people.trim(),
                     things_i_enjoy: data.enjoyments.trim(),
+                    character_name: data.character_name.trim(),
                 }),
             });
             const result = await res.json();
@@ -319,6 +321,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                             )}
                             <IdentityForm
                                 initialValues={{
+                                    character_name: currentCharacterName,
                                     gender: currentGender,
                                     age: currentAge,
                                     ethnicity: currentEthnicity,

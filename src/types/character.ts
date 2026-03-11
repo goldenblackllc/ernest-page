@@ -7,6 +7,7 @@ export interface CharacterIdentity {
     gender: string;             // User-provided gender identity
     age: string;                // User-provided age
     ethnicity?: string;         // Optional — unchangeable physical traits for avatar accuracy
+    character_name?: string;    // Optional — user's chosen name for their Ideal Self
     dossier: string;            // AI-maintained structured case notes
     dossier_updated_at?: any;   // Firestore Timestamp
     session_count: number;      // Number of check-in/mirror sessions
@@ -42,6 +43,7 @@ export interface CharacterBible {
     };
 
     // --- SYSTEM METADATA ---
+    character_name?: string;    // Character's name (user-chosen or AI-generated)
     last_updated: number;   // Timestamp for the "Batch Post" logic.
     version?: number;       // e.g. 1.0, 1.1
     last_commit?: any;      // Firestore Timestamp of last "Finish & Commit"

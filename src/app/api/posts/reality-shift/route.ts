@@ -39,36 +39,52 @@ export async function POST(req: Request) {
         const result = await generateTextWithFallback({
             primaryModelId: SONNET_MODEL,
             fallbackModelId: SONNET_FALLBACK,
-            system: `You are a privacy filter for Earnest Page. You receive a user's report of something unexpected that happened after completing a task. Your ONLY job is to anonymize it by removing personally identifiable information.
+            system: `You are a privacy filter for Earnest Page. You receive a user's report of something unexpected that happened after completing a task. Your job is to anonymize it and rewrite it in FIRST PERSON.
 
 RULES:
-- Replace real names with generic terms: "a friend," "a family member," "a colleague," "their partner."
+- Write in FIRST PERSON: use "I", "my", "me". NEVER use "they", "their", "the user", "he", "she".
+- Replace all real names with generic first-person terms: "my friend", "my partner", "my brother", "my coworker", "my boss".
 - Replace specific locations, companies, or addresses with generic descriptions.
 - Output ONLY the unexpected thing that happened. Do NOT narrate the task they completed — that context is shown separately.
-- Preserve the user's own words and voice as much as possible. Do not rewrite for style.
-- Do not add narrative framing like "While doing X, they..." — just state what happened.
-- Write in third person.
+- Preserve the user's emotional tone and voice. Do not add drama or embellishment.
+- Do not add narrative framing like "While doing X, I..." — just state what happened.
 - Match the user's length. If they wrote one line, output one line.
 - Do NOT invent or embellish any details the user did not provide.
 
 FORMAT:
-Output ONLY the cleaned text. No quotes, no formatting, no preamble.`,
+Return a JSON object with two fields:
+{"scrubbed_title": "The task title with all names/PII removed (keep it short)", "dispatch": "The first-person account of what happened"}`,
             messages: [
                 {
                     role: "user",
-                    content: `DIRECTIVE COMPLETED: "${directiveTitle}"
-USER'S REPORT OF WHAT HAPPENED: "${unexpectedYield}"
+                    content: `TASK TITLE: "${directiveTitle}"
+USER'S REPORT: "${unexpectedYield}"
 
-Rewrite this into an anonymized Reality Shift dispatch.`,
+Anonymize both the task title AND the report. Return JSON only.`,
                 },
             ],
             abortSignal: AbortSignal.timeout(15000),
         });
 
-        const rewrittenContent = result.text?.trim();
+        const rawText = result.text?.trim();
 
-        if (!rewrittenContent) {
+        if (!rawText) {
             return Response.json({ error: "AI generation failed" }, { status: 500 });
+        }
+
+        // Parse AI JSON response
+        let scrubbedTitle = directiveTitle;
+        let rewrittenContent = rawText;
+        try {
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                scrubbedTitle = parsed.scrubbed_title || directiveTitle;
+                rewrittenContent = parsed.dispatch || rawText;
+            }
+        } catch {
+            // If JSON parse fails, use raw text as the dispatch
+            rewrittenContent = rawText;
         }
 
         // 4. Create the post
@@ -77,12 +93,11 @@ Rewrite this into an anonymized Reality Shift dispatch.`,
             authorId: uid,
             author: pseudonym,
             post_type: "reality_shift",
-            directive_title: directiveTitle,
+            directive_title: scrubbedTitle,
             unexpected_yield: rewrittenContent,
             is_public: isPublic,
             created_at: FieldValue.serverTimestamp(),
             likes: 0,
-            likedBy: [],
             comments: 0,
         };
 
