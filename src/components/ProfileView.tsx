@@ -40,6 +40,21 @@ export function ProfileView() {
         return () => unsubscribe();
     }, [user]);
 
+    // Listen for hash-based navigation (from hamburger menu)
+    useEffect(() => {
+        const handleHash = () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash === 'vault') {
+                setIsVaultOpen(true);
+                // Clear hash so it can be retriggered
+                history.replaceState(null, '', window.location.pathname);
+            }
+        };
+        handleHash(); // Check on mount
+        window.addEventListener('hashchange', handleHash);
+        return () => window.removeEventListener('hashchange', handleHash);
+    }, []);
+
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!bible && !identity) return null;
 
@@ -49,10 +64,11 @@ export function ProfileView() {
     return (
         <>
             <div className="w-full mb-8 space-y-6">
-                {/* HEAD PROFILE & ACTIONS */}
-                <div className="flex items-center justify-between pb-6 border-b border-white/5">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden shrink-0">
+                {/* ── PROFILE HEADER ── */}
+                <div className="px-4">
+                    {/* ── ROW 1: IDENTITY ── */}
+                    <div className="flex flex-row items-center gap-4 pb-4">
+                        <div className="w-14 h-14 rounded-full bg-zinc-800 ring-1 ring-zinc-800 overflow-hidden shrink-0">
                             {bible?.compiled_output?.avatar_url ? (
                                 <img src={bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -61,27 +77,22 @@ export function ProfileView() {
                                 </div>
                             )}
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-white mb-0.5 capitalize">
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-2xl font-bold text-white leading-tight capitalize">
                                 {displayTitle}
                             </h2>
-                            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">
+                            <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-bold mt-1">
                                 Profile
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setIsVaultOpen(true)}
-                            className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs font-bold p-2 rounded-full flex items-center transition-all"
-                            title="Security & Routing"
-                        >
-                            <Shield className="w-3.5 h-3.5" />
-                        </button>
+
+                    {/* ── ROW 2: ACTIONS ── */}
+                    <div className="flex items-center gap-3 pb-6 border-b border-white/5">
                         {identity?.dossier && (
                             <button
                                 onClick={() => setIsDossierOpen(true)}
-                                className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-bold px-3 py-2 rounded-full flex items-center gap-1.5 transition-all"
+                                className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-bold px-4 py-2.5 rounded-full transition-all"
                             >
                                 <FileText className="w-3.5 h-3.5" />
                                 Dossier
@@ -89,7 +100,7 @@ export function ProfileView() {
                         )}
                         <button
                             onClick={() => setIsEditOpen(true)}
-                            className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-2 transition-all shadow-sm"
+                            className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold px-4 py-2.5 rounded-full transition-all shadow-sm"
                         >
                             <Pencil className="w-3.5 h-3.5" />
                             Edit
@@ -187,6 +198,7 @@ export function ProfileView() {
                         })}
                     </div>
                 )}
+
             </div>
 
             {/* Edit Modal — Rant-based flow */}

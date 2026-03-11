@@ -95,7 +95,7 @@ const cardReveal = {
     }),
 };
 
-type Plan = 'executive_retainer' | 'founders_key';
+type Plan = 'proving_ground' | 'long_game';
 
 export function Tollbooth({ onComplete }: TollboothProps) {
     const { user } = useAuth();
@@ -166,19 +166,19 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                         Demand a Better Life.
                     </h1>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-xl">
-                        Choosing Earnest Page is an intentional investment for someone who refuses to
-                        compromise. Securing your operational baseline costs a fraction of the fallout
-                        from a life lived reacting to circumstances.
+                        Earnest Page is not another app you forget about. It is an intentional
+                        investment for someone who refuses to compromise. At $4 a day, securing
+                        your standard costs less than the coffee you drink while making excuses.
                     </p>
                 </motion.div>
 
                 {/* ── PRICING CARDS ── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 sm:mb-16">
 
-                    {/* Card A — The Executive Retainer */}
+                    {/* Card A — The Proving Ground */}
                     <motion.button
-                        onClick={() => selectPlan('executive_retainer')}
-                        className={`group rounded-2xl border bg-zinc-950 p-7 sm:p-8 text-left transition-all duration-200 ${selectedPlan === 'executive_retainer'
+                        onClick={() => selectPlan('proving_ground')}
+                        className={`group rounded-2xl border bg-zinc-950 p-7 sm:p-8 text-left transition-all duration-200 ${selectedPlan === 'proving_ground'
                             ? 'border-white/30 ring-1 ring-white/10'
                             : 'border-white/[0.08] hover:border-white/20'
                             }`}
@@ -188,27 +188,26 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                         animate="visible"
                     >
                         <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                            Annual
+                            30 Days
                         </p>
                         <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2">
-                            The Executive Retainer
+                            The Proving Ground
                         </h3>
                         <div className="flex items-baseline gap-2 mb-5">
                             <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                                $1,200
+                                $120
                             </span>
-                            <span className="text-sm text-zinc-600">/ annually</span>
+                            <span className="text-sm text-zinc-600">/ 30 days</span>
                         </div>
                         <p className="text-sm text-zinc-500 leading-relaxed">
-                            Hire a 24/7 strategic advisor for your own mind. No month-to-month option.
-                            We demand an annual lock-in to guarantee your execution.
+                            30 days to prove you mean it. No extensions.
                         </p>
                     </motion.button>
 
-                    {/* Card B — The Founders Key */}
+                    {/* Card B — The Long Game */}
                     <motion.button
-                        onClick={() => selectPlan('founders_key')}
-                        className={`group rounded-2xl border bg-zinc-950 p-7 sm:p-8 text-left relative overflow-hidden transition-all duration-200 ${selectedPlan === 'founders_key'
+                        onClick={() => selectPlan('long_game')}
+                        className={`group rounded-2xl border bg-zinc-950 p-7 sm:p-8 text-left transition-all duration-200 ${selectedPlan === 'long_game'
                             ? 'border-white/30 ring-1 ring-white/10'
                             : 'border-white/[0.08] hover:border-white/20'
                             }`}
@@ -217,26 +216,21 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                         initial="hidden"
                         animate="visible"
                     >
-                        {/* Subtle prestige shimmer */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
-                        <div className="relative">
-                            <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                Lifetime
-                            </p>
-                            <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2">
-                                The Founders Key
-                            </h3>
-                            <div className="flex items-baseline gap-2 mb-5">
-                                <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                                    $2,500
-                                </span>
-                                <span className="text-sm text-zinc-600">/ one-time</span>
-                            </div>
-                            <p className="text-sm text-zinc-500 leading-relaxed">
-                                You do not rent your own mind. Buy the architecture once, and own the
-                                asset forever. Tether your ego to your own success.
-                            </p>
+                        <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
+                            1 Year
+                        </p>
+                        <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2">
+                            The Long Game
+                        </h3>
+                        <div className="flex items-baseline gap-2 mb-5">
+                            <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+                                $1,200
+                            </span>
+                            <span className="text-sm text-zinc-600">/ 1 year</span>
                         </div>
+                        <p className="text-sm text-zinc-500 leading-relaxed">
+                            You already proved it. Now build the compound effect.
+                        </p>
                     </motion.button>
                 </div>
 

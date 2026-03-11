@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Lock, BarChart3, Target, Shield, Award } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 // ─── Timezone → Dial Code Detection ────────────────────────────────
 function getDefaultDialCode(): string {
@@ -606,19 +607,20 @@ export function LandingPage() {
                         Demand a Better Life.
                     </h2>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mb-6">
-                        Choosing Earnest Page is about empowerment and self-respect. We ground this
-                        luxury in undeniable math: securing your operational baseline costs a fraction of
-                        the fallout from a blown business deal, a derailed quarter, or a life lived
-                        reacting to circumstances.
+                        Earnest Page is not another app you forget about. It is an intentional
+                        investment for someone who refuses to compromise. We ground this in
+                        undeniable math: securing your standard costs less than the fallout
+                        from a blown opportunity, a derailed week, or a life lived reacting to
+                        circumstances.
                     </p>
                     <p className="text-base sm:text-lg text-zinc-300 font-semibold mb-16">
-                        At roughly $3.28 a day, this is a highly rational, everyday decision to permanently
+                        At $4 a day, this is a highly rational decision to permanently
                         secure your standard.
                     </p>
 
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        {/* Executive Retainer */}
+                        {/* The Proving Ground */}
                         <motion.div
                             className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/20"
                             custom={0}
@@ -628,64 +630,58 @@ export function LandingPage() {
                             viewport={{ once: true, margin: '-60px' }}
                         >
                             <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                Annual
+                                30 Days
                             </p>
                             <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">
-                                The Executive Retainer
+                                The Proving Ground
                             </h3>
                             <div className="flex items-baseline gap-2 mb-6">
                                 <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
-                                    $1,200
+                                    $120
                                 </span>
-                                <span className="text-sm text-zinc-600">/ annually</span>
+                                <span className="text-sm text-zinc-600">/ 30 days</span>
                             </div>
                             <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                Hire a 24/7 strategic advisor for your own mind. No month-to-month option.
-                                We demand an annual lock-in to guarantee your execution.
+                                30 days to prove you mean it. No extensions.
                             </p>
                             <button
                                 onClick={scrollToAuth}
                                 className="w-full rounded-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
                             >
-                                Commit
+                                Enter the Proving Ground
                             </button>
                         </motion.div>
 
-                        {/* Founders Key */}
+                        {/* The Long Game */}
                         <motion.div
-                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 relative overflow-hidden transition-colors duration-200 hover:border-white/20"
+                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/20"
                             custom={1}
                             variants={cardReveal}
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: '-60px' }}
                         >
-                            {/* Subtle "prestige" shimmer */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
-                            <div className="relative">
-                                <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                    Lifetime
-                                </p>
-                                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">
-                                    The Founders Key
-                                </h3>
-                                <div className="flex items-baseline gap-2 mb-6">
-                                    <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
-                                        $2,500
-                                    </span>
-                                    <span className="text-sm text-zinc-600">/ one-time</span>
-                                </div>
-                                <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                    You do not rent your own mind. Buy the architecture once, and own the
-                                    asset forever. Tether your ego to your own success.
-                                </p>
-                                <button
-                                    onClick={scrollToAuth}
-                                    className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
-                                >
-                                    Secure the Asset
-                                </button>
+                            <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
+                                1 Year
+                            </p>
+                            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">
+                                The Long Game
+                            </h3>
+                            <div className="flex items-baseline gap-2 mb-6">
+                                <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+                                    $1,200
+                                </span>
+                                <span className="text-sm text-zinc-600">/ 1 year</span>
                             </div>
+                            <p className="text-sm text-zinc-500 leading-relaxed mb-8">
+                                You already proved it. Now build the compound effect.
+                            </p>
+                            <button
+                                onClick={scrollToAuth}
+                                className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
+                            >
+                                Lock In the Long Game
+                            </button>
                         </motion.div>
                     </div>
                 </motion.div>
@@ -747,7 +743,14 @@ export function LandingPage() {
                             </button>
 
                             <p className="text-[10px] text-zinc-600 text-center mt-3 leading-relaxed">
-                                By continuing, you agree to be radically honest with yourself.
+                                By continuing, you agree to our{' '}
+                                <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
+                                    Terms of Service
+                                </Link>{' '}
+                                and{' '}
+                                <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
+                                    Privacy Policy
+                                </Link>.
                             </p>
                         </div>
                     )}
@@ -796,12 +799,11 @@ export function LandingPage() {
             <footer className="border-t border-white/[0.06] px-6 py-10">
                 <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-zinc-600">
                     <span>© {new Date().getFullYear()} Earnest Page. All rights reserved.</span>
-                    <span>
-                        This site is protected by reCAPTCHA. Google{' '}
-                        <a href="https://policies.google.com/privacy" className="underline hover:text-zinc-400 transition-colors">Privacy</a>
-                        {' '}&amp;{' '}
-                        <a href="https://policies.google.com/terms" className="underline hover:text-zinc-400 transition-colors">Terms</a>.
-                    </span>
+                    <div className="flex items-center gap-4">
+                        <Link href="/terms" className="hover:text-zinc-400 transition-colors">Terms</Link>
+                        <Link href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy</Link>
+                        <Link href="/acceptable-use" className="hover:text-zinc-400 transition-colors">Acceptable Use</Link>
+                    </div>
                 </div>
             </footer>
         </main>

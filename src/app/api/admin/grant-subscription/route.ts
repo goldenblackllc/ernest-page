@@ -3,7 +3,7 @@ import { getAuth } from 'firebase-admin/auth';
 
 const ADMIN_KEY = process.env.ADMIN_SECRET_KEY;
 
-const VALID_PLANS = ['executive_retainer', 'founders_key'] as const;
+const VALID_PLANS = ['proving_ground', 'long_game'] as const;
 
 export async function POST(req: Request) {
     try {
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { phone, plan = 'founders_key' } = body;
+        const { phone, plan = 'long_game' } = body;
 
         if (!phone) {
             return Response.json(
@@ -43,13 +43,27 @@ export async function POST(req: Request) {
         }
 
         // 3. Grant the subscription
+        const now = new Date();
+        const expiry = new Date(now);
+
+        if (plan === 'proving_ground') {
+            expiry.setDate(expiry.getDate() + 30);
+        } else {
+            // long_game: 1 year
+            expiry.setFullYear(expiry.getFullYear() + 1);
+        }
+
+        const subscribedUntil = expiry.toISOString();
+
         await db.collection('users').doc(uid).set(
             {
                 subscription: {
                     status: 'active',
                     plan,
                     grantedBy: 'admin',
-                    grantedAt: new Date().toISOString(),
+                    grantedAt: now.toISOString(),
+                    subscribedAt: now.toISOString(),
+                    subscribedUntil,
                 },
             },
             { merge: true }

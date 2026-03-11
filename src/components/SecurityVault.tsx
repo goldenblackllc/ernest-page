@@ -351,7 +351,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                         </div>
                     </div>
 
-                    {/* ═══ SECTION 3: DEFAULT POST ROUTING ═══ */}
+                    {/* ═══ SECTION 4: DEFAULT POST ROUTING ═══ */}
                     <div className="px-6 py-8 border-b border-zinc-800/50">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
                             Default Post Routing

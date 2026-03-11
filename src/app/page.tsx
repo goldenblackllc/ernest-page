@@ -15,6 +15,12 @@ import { CharacterProfile } from "@/types/character";
 
 const BYPASS_PAYWALL = process.env.NEXT_PUBLIC_BYPASS_PAYWALL === 'true';
 
+function isSubscriptionActive(sub?: CharacterProfile['subscription']): boolean {
+    if (!sub || sub.status !== 'active') return false;
+    if (!sub.subscribedUntil) return false;
+    return new Date(sub.subscribedUntil) > new Date();
+}
+
 export default function Home() {
     const { user, loading } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
@@ -37,7 +43,7 @@ export default function Home() {
 
     // Derived state
     const needsOnboarding = profileLoaded && !profile?.identity?.title;
-    const hasSubscription = BYPASS_PAYWALL || profile?.subscription?.status === 'active';
+    const hasSubscription = BYPASS_PAYWALL || isSubscriptionActive(profile?.subscription);
 
     // Show nothing while checking auth state
     if (loading) {

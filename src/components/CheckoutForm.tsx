@@ -9,7 +9,7 @@ import {
 import { Shield } from 'lucide-react';
 
 interface CheckoutFormProps {
-    plan: 'executive_retainer' | 'founders_key';
+    plan: 'proving_ground' | 'long_game';
     uid: string;
     onSuccess: () => void;
     onError: (message: string) => void;
@@ -68,7 +68,7 @@ export function CheckoutForm({ plan, uid, onSuccess, onError }: CheckoutFormProp
         }
     };
 
-    const buttonLabel = plan === 'executive_retainer' ? 'Commit & Initialize' : 'Secure the Asset';
+    const buttonLabel = plan === 'proving_ground' ? 'Enter the Proving Ground' : 'Lock In the Long Game';
 
     return (
         <form onSubmit={handleSubmit}>

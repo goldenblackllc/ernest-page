@@ -5,13 +5,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 const PLAN_AMOUNTS: Record<string, number> = {
-    executive_retainer: 120000, // $1,200.00 in cents
-    founders_key: 250000,       // $2,500.00 in cents
+    proving_ground: 12000,  // $120.00 in cents
+    long_game: 120000,      // $1,200.00 in cents
 };
 
 const PLAN_DESCRIPTIONS: Record<string, string> = {
-    executive_retainer: 'Earnest Page — The Executive Retainer (Annual)',
-    founders_key: 'Earnest Page — The Founders Key (Lifetime)',
+    proving_ground: 'Earnest Page — The Proving Ground (30 Days)',
+    long_game: 'Earnest Page — The Long Game (1 Year)',
 };
 
 export async function POST(req: Request) {

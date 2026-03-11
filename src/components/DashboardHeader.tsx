@@ -9,8 +9,7 @@ import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell } from "lucide-react";
-
+import { Bell, Shield, CreditCard, LogOut } from "lucide-react";
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";
 
@@ -30,6 +29,8 @@ export function DashboardHeader() {
     }, [user]);
 
     const incompleteCount = profile?.active_todos?.filter(t => !t.completed).length || 0;
+    const sub = profile?.subscription;
+    const hasActivePlan = sub && sub.status === 'active';
 
     const handleLogout = async () => {
         try {
@@ -43,10 +44,9 @@ export function DashboardHeader() {
     return (
         <>
             <header className="fixed top-0 w-full z-50 bg-zinc-950/90 backdrop-blur-md border-b border-white/10 pointer-events-none pt-safe">
-                {/* Navbar */}
                 <nav className="w-full relative">
                     <div className="container mx-auto flex justify-between items-center w-full px-4 py-3">
-                        {/* Brand - Cinematic Minimal */}
+                        {/* Brand */}
                         <Link href="/" className="pointer-events-auto text-sm font-bold tracking-widest uppercase flex items-center gap-1 hover:opacity-80 transition-opacity text-white">
                             Earnest Page
                         </Link>
@@ -79,31 +79,48 @@ export function DashboardHeader() {
                                     </div>
                                 </button>
 
-                                {/* Dropdown Menu */}
                                 {isMenuOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-900 border border-zinc-800 shadow-2xl z-50">
-                                        <ul className="py-0">
-                                            <li className="px-4 py-3 text-[10px] font-bold text-zinc-500 bg-zinc-950 uppercase tracking-widest mb-0 border-b border-zinc-800">
-                                                Menu
-                                            </li>
-                                            <li>
-                                                <button
-                                                    onClick={handleLogout}
-                                                    className="block w-full text-left px-4 py-3 text-xs text-red-400 hover:bg-zinc-800 font-bold uppercase tracking-widest transition-colors"
-                                                >
-                                                    Logout
-                                                </button>
-                                            </li>
-                                        </ul>
+                                    <div className="absolute right-0 top-full mt-2 w-64 bg-zinc-950/90 backdrop-blur-md border border-zinc-800 shadow-2xl shadow-black/50 rounded-xl overflow-hidden z-50">
+
+                                        {/* Security Vault */}
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                router.push('/profile');
+                                                setTimeout(() => { window.location.hash = 'vault'; }, 100);
+                                            }}
+                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <Shield className="w-4 h-4 text-zinc-500" />
+                                            Security Vault
+                                        </button>
+
+                                        {/* Subscription */}
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                router.push('/subscription');
+                                            }}
+                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <CreditCard className="w-4 h-4 text-zinc-500" />
+                                            {hasActivePlan ? 'Manage Access' : 'Enroll'}
+                                        </button>
+
+                                        {/* Log Out */}
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-red-500/80 hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Log Out
+                                        </button>
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
                 </nav>
-
-
-
             </header>
 
             <DirectivesMenu

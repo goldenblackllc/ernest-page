@@ -66,8 +66,13 @@ export interface CharacterProfile {
     proximity_anchor?: string; // Zip code or city for Proximity Blind Spot radius
     subscription?: {
         status: 'active' | 'canceled' | 'expired';
-        plan: 'executive_retainer' | 'founders_key';
+        plan: 'proving_ground' | 'long_game';
         subscribedAt: string;
+        subscribedUntil?: string;
+        paymentIntentId?: string;
+        grantedBy?: 'admin' | 'stripe';
+        canceledAt?: string;
+        refunded?: boolean;
     };
 }
 
