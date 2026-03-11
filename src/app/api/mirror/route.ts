@@ -157,8 +157,16 @@ After providing resources, you may gently acknowledge you are here if they want 
                 result = await generateTextWithFallback({
                     primaryModelId: OPUS_MODEL,
                     fallbackModelId: OPUS_FALLBACK,
-                    system: systemPrompt,
-                    messages,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: systemPrompt,
+                            providerOptions: {
+                                anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } },
+                            },
+                        },
+                        ...messages,
+                    ],
                     abortSignal: AbortSignal.timeout(120000)
                 });
             } catch (primaryError: any) {
