@@ -184,6 +184,10 @@ export async function POST(req: Request) {
 
                 if (!compileRes.ok) {
                     console.error(`[Onboarding] Background: Bible compile failed with status ${compileRes.status}`);
+                    await db.collection("users").doc(uid).set({
+                        character_bible: { status: 'failed' }
+                    }, { merge: true });
+                    return;
                 }
 
                 // Mark bible as ready + set last_commit so the feed auto-dismiss timer works
@@ -194,9 +198,8 @@ export async function POST(req: Request) {
                 console.log(`[Onboarding] Background: Complete for ${uid}`);
             } catch (err: any) {
                 console.error(`[Onboarding] Background generation error for ${uid}:`, err.message);
-                // Still mark as ready so the user isn't stuck in limbo
                 await db.collection("users").doc(uid).set({
-                    character_bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() }
+                    character_bible: { status: 'failed' }
                 }, { merge: true });
             }
         })());
