@@ -89,6 +89,12 @@ export function CheckoutForm({ plan, uid, onSuccess, onError }: CheckoutFormProp
                     onReady={() => setReady(true)}
                     options={{
                         layout: 'tabs',
+                        fields: {
+                            billingDetails: {
+                                email: 'never',
+                                phone: 'never',
+                            },
+                        },
                     }}
                 />
             </div>
