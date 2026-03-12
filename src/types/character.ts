@@ -66,6 +66,7 @@ export interface CharacterProfile {
     default_post_routing?: 'public' | 'private'; // Default routing for new Mirror Chat sessions
     firewall_synced?: boolean; // Whether user has completed the Contact Firewall step
     proximity_anchor?: string; // Zip code or city for Proximity Blind Spot radius
+    last_thirty_day_checkin?: string; // ISO date of last 30-day check-in session
     subscription?: {
         status: 'active' | 'canceled' | 'expired';
         plan: 'proving_ground' | 'long_game';

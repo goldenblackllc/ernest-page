@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { DigestCard } from "@/components/DigestCard";
+import { CheckInCard } from "@/components/CheckInCard";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 
 import { Loader2 } from "lucide-react";
@@ -16,6 +17,7 @@ import { getFeedCache, setFeedCache } from "@/lib/feedCache";
 import { getUserLocation, storeUserLocation } from "@/lib/geolocation";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const CHECKIN_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export function Ledger() {
     const { user } = useAuth();
@@ -214,6 +216,7 @@ export function Ledger() {
         }
     };
 
+
     // Auto-dismiss bible ready card after 15 minutes
     useEffect(() => {
         if (!showBibleReady || !user) return;
@@ -320,6 +323,20 @@ export function Ledger() {
                     </div>
                 </button>
             )}
+
+            {/* 30-Day Check-in Card */}
+            {(() => {
+                const anchor = profile?.last_thirty_day_checkin || profile?.subscription?.subscribedAt;
+                if (!anchor) return null;
+                const elapsed = Date.now() - new Date(anchor).getTime();
+                if (elapsed < CHECKIN_INTERVAL_MS) return null;
+                return (
+                    <CheckInCard
+                        characterTitle={profile?.identity?.title || 'Your Ideal Self'}
+                        avatarUrl={profile?.character_bible?.compiled_output?.avatar_url}
+                    />
+                );
+            })()}
 
             {pendingPostId && (
                 <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">

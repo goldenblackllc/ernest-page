@@ -10,8 +10,15 @@ interface Message {
     content: string;
 }
 
-export function SupportChat() {
-    const [isOpen, setIsOpen] = useState(false);
+interface SupportChatProps {
+    isOpen?: boolean;
+    onClose?: () => void;
+    standalone?: boolean;
+}
+
+export function SupportChat({ isOpen: controlledOpen, onClose, standalone = false }: SupportChatProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isOpen = standalone ? internalOpen : (controlledOpen ?? false);
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -75,10 +82,10 @@ export function SupportChat() {
 
     return (
         <>
-            {/* Floating button */}
-            {!isOpen && (
+            {/* Standalone floating button (landing page only) */}
+            {standalone && !isOpen && (
                 <button
-                    onClick={() => setIsOpen(true)}
+                    onClick={() => setInternalOpen(true)}
                     className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-zinc-900 border border-zinc-700 shadow-lg flex items-center justify-center hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
                     aria-label="Open support chat"
                 >
@@ -88,7 +95,7 @@ export function SupportChat() {
 
             {/* Chat panel */}
             {isOpen && (
-                <div className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-48px)] h-[480px] max-h-[calc(100vh-120px)] bg-[#0a0a0a] border border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+                <div className="fixed bottom-6 right-6 z-[60] w-[360px] max-w-[calc(100vw-48px)] h-[480px] max-h-[calc(100vh-120px)] bg-[#0a0a0a] border border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 bg-black/50">
                         <div className="flex items-center gap-2">
@@ -98,7 +105,7 @@ export function SupportChat() {
                             </span>
                         </div>
                         <button
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => { standalone ? setInternalOpen(false) : onClose?.(); }}
                             className="text-zinc-600 hover:text-white transition-colors"
                         >
                             <X className="w-4 h-4" />

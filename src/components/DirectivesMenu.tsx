@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Bell, CheckCircle2, Circle, Zap, Sparkles, Loader2 } from "lucide-react";
+import { X, Bell, CheckCircle2, Circle, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -38,8 +38,6 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
     }, [isOpen, onClose, pendingCompleteId]);
 
     const activeTodos = profile?.active_todos || [];
-    const theMove = activeTodos.find(t => t.priority === 'immediate' && !t.completed);
-    const whatsNext = activeTodos.filter(t => t.priority !== 'immediate' || t.completed);
 
     const pendingTodo = pendingCompleteId ? activeTodos.find(t => t.id === pendingCompleteId) : null;
 
@@ -221,73 +219,34 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                             No Active Directives
                         </div>
                     ) : (
-                        <div className="space-y-6">
-                            {/* THE MOVE — Primary Action */}
-                            {theMove && (
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Zap className="w-4 h-4 text-white" />
-                                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-white">The Move</span>
+                        <div className="space-y-2">
+                            {activeTodos.map((todo) => (
+                                <button
+                                    key={todo.id}
+                                    onClick={() => handleTodoClick(todo.id, todo.completed)}
+                                    disabled={isUpdating}
+                                    className={cn(
+                                        "w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all duration-200 group",
+                                        todo.completed
+                                            ? "bg-zinc-900/40 border-zinc-800/50"
+                                            : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-600"
+                                    )}
+                                >
+                                    <div className="mt-0.5 shrink-0">
+                                        {todo.completed ? (
+                                            <CheckCircle2 className="w-4 h-4 text-zinc-100" />
+                                        ) : (
+                                            <Circle className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={() => handleTodoClick(theMove.id, theMove.completed)}
-                                        disabled={isUpdating}
-                                        className="w-full flex items-start gap-3 p-5 rounded-xl border-2 border-white/30 bg-zinc-900 hover:border-white/60 text-left transition-all duration-200 group relative overflow-hidden"
-                                    >
-                                        {/* Breathing indicator */}
-                                        <div className="absolute top-3 right-3">
-                                            <span className="flex h-2 w-2">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                                            </span>
-                                        </div>
-                                        <div className="mt-0.5 shrink-0">
-                                            <Circle className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
-                                        </div>
-                                        <div className="text-base leading-snug font-semibold text-zinc-100">
-                                            {theMove.task}
-                                        </div>
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* WHAT'S NEXT — Follow-up Actions */}
-                            {whatsNext.length > 0 && (
-                                <div>
-                                    <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-3 block">
-                                        What&apos;s Next
-                                    </span>
-                                    <div className="space-y-2">
-                                        {whatsNext.map((todo) => (
-                                            <button
-                                                key={todo.id}
-                                                onClick={() => handleTodoClick(todo.id, todo.completed)}
-                                                disabled={isUpdating}
-                                                className={cn(
-                                                    "w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all duration-200 group",
-                                                    todo.completed
-                                                        ? "bg-zinc-900/40 border-zinc-800/50"
-                                                        : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-600"
-                                                )}
-                                            >
-                                                <div className="mt-0.5 shrink-0">
-                                                    {todo.completed ? (
-                                                        <CheckCircle2 className="w-4 h-4 text-zinc-100" />
-                                                    ) : (
-                                                        <Circle className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-                                                    )}
-                                                </div>
-                                                <div className={cn(
-                                                    "text-sm leading-snug",
-                                                    todo.completed ? "text-zinc-600 line-through" : "text-zinc-400"
-                                                )}>
-                                                    {todo.task}
-                                                </div>
-                                            </button>
-                                        ))}
+                                    <div className={cn(
+                                        "text-sm leading-snug",
+                                        todo.completed ? "text-zinc-600 line-through" : "text-zinc-300"
+                                    )}>
+                                        {todo.task}
                                     </div>
-                                </div>
-                            )}
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>

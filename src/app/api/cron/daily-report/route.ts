@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import nodemailer from 'nodemailer';
-import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,8 +9,11 @@ export const maxDuration = 60;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
 
 export async function GET(req: Request) {
-    const internalUid = await verifyInternalAuth(req);
-    if (!internalUid) return unauthorizedResponse();
+    // Verify cron secret (Vercel sends Authorization: Bearer <CRON_SECRET>)
+    const authHeader = req.headers.get('authorization');
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     try {
         const now = new Date();

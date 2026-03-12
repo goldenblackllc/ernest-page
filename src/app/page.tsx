@@ -60,7 +60,7 @@ export default function Home() {
         return (
             <>
                 <LandingPage />
-                <SupportChat />
+                <SupportChat standalone />
             </>
         );
     }
@@ -103,7 +103,6 @@ export default function Home() {
             </div>
 
             <DashboardFooter />
-            <SupportChat />
         </main>
     );
 }

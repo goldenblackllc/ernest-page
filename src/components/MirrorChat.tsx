@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CharacterBible } from "@/types/character";
-import { User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock, Flame } from "lucide-react";
+import { User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock, Flame, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -137,28 +137,28 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         return () => clearTimeout(watchdog);
     }, [isLoading, sessionId]);
 
-    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll to bottom of chat
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
 
+    // Prevent background scrolling when chamber is active (no body jump)
     useEffect(() => {
         if (isOpen) {
-            scrollToBottom();
-        }
-    }, [messages, isOpen, isLoading]);
-
-    // Prevent background scrolling when chamber is active
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = "hidden";
+            const scrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = '100%';
         } else {
-            document.body.style.overflow = "auto";
+            const scrollY = Math.abs(parseInt(document.body.style.top || '0', 10));
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            window.scrollTo(0, scrollY);
         }
         return () => {
-            document.body.style.overflow = "auto";
+            const scrollY = Math.abs(parseInt(document.body.style.top || '0', 10));
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            window.scrollTo(0, scrollY);
         };
     }, [isOpen]);
 
@@ -322,11 +322,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         onClose();
     };
 
-    // Should we show the Extract Directives button?
-    const showDirectivesButton =
-        messages.length >= 4 &&
-        !isLoading &&
-        messages[messages.length - 1]?.role === 'assistant';
+
 
     return (
         <AnimatePresence>
@@ -421,7 +417,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
 
                     {/* ═══ READING ZONE ═══ */}
                     <div className="flex-1 overflow-y-auto bg-zinc-950 custom-scrollbar scroll-smooth">
-                        <div className="max-w-3xl mx-auto px-5 sm:px-8 lg:px-12 py-6 space-y-6">
+                        <div className="max-w-3xl mx-auto px-5 sm:px-8 lg:px-12 py-6 space-y-3">
                             {messages.length === 0 ? (
                                 <div className="h-full min-h-[60vh] flex flex-col items-center justify-center text-center space-y-4 opacity-70">
                                     <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
@@ -462,14 +458,14 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
 
                                                 <div
                                                     className={cn(
-                                                        "rounded-2xl px-5 py-4 text-[15px]",
+                                                        "rounded-2xl px-5 py-4 text-[15px] leading-relaxed",
                                                         m.role === "user"
-                                                            ? "bg-zinc-800 text-zinc-100 rounded-tr-sm leading-relaxed"
-                                                            : "bg-zinc-900/60 border border-white/10 text-zinc-100 rounded-tl-sm leading-loose"
+                                                            ? "bg-zinc-800 text-zinc-100 rounded-tr-sm"
+                                                            : "bg-zinc-900/60 border border-white/10 text-zinc-100 rounded-tl-sm"
                                                     )}
                                                 >
                                                     {m.role === "assistant" ? (
-                                                        <div className="prose prose-invert prose-sm prose-p:leading-loose prose-a:text-zinc-200 prose-strong:text-white max-w-none whitespace-pre-wrap">
+                                                        <div className="prose prose-invert prose-sm prose-p:leading-relaxed prose-a:text-zinc-200 prose-strong:text-white max-w-none whitespace-pre-wrap">
                                                             <ReactMarkdown>{m.content}</ReactMarkdown>
                                                         </div>
                                                     ) : (
@@ -480,21 +476,22 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         </div>
 
                                         {/* ═══ EXTRACT DIRECTIVES — contextual, after last assistant message ═══ */}
-                                        {showDirectivesButton && m.role === 'assistant' && idx === messages.length - 1 && (
+                                        {m.role === 'assistant' && idx === messages.length - 1 && !isLoading && messages.length >= 4 && (
                                             <div className="flex justify-start mt-3 ml-11">
-                                                <button
-                                                    onClick={handleExtractDirectives}
-                                                    disabled={isGeneratingPlan}
-                                                    className={cn(
-                                                        "flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-5 py-2.5 transition-all border",
-                                                        isGeneratingPlan
-                                                            ? "bg-zinc-800 text-zinc-400 border-zinc-700 animate-pulse"
-                                                            : "bg-white text-black border-transparent hover:bg-zinc-200 shadow-lg"
-                                                    )}
-                                                >
-                                                    <Target className="w-3.5 h-3.5" />
-                                                    {isGeneratingPlan ? 'Extracting...' : 'Extract 24-Hour Directives'}
-                                                </button>
+                                                {isGeneratingPlan ? (
+                                                    <div className="flex items-center gap-2 text-xs text-zinc-500 font-medium uppercase tracking-wider px-5 py-2.5">
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        Extracting directives...
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={handleExtractDirectives}
+                                                        className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-5 py-2.5 transition-all border bg-white text-black border-transparent hover:bg-zinc-200 shadow-lg"
+                                                    >
+                                                        <Target className="w-3.5 h-3.5" />
+                                                        Extract 24-Hour Directives
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -518,7 +515,6 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                 </div>
                             )}
 
-                            <div ref={messagesEndRef} />
                         </div>
                     </div>
 

@@ -9,15 +9,17 @@ import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell, Shield, CreditCard, LogOut, Users } from "lucide-react";
+import { Bell, Shield, CreditCard, LogOut, Users, HelpCircle, Mail } from "lucide-react";
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";
 import { RolodexModal } from "@/components/RolodexModal";
+import { SupportChat } from "@/components/SupportChat";
 
 export function DashboardHeader() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDirectivesOpen, setIsDirectivesOpen] = useState(false);
     const [isRolodexOpen, setIsRolodexOpen] = useState(false);
+    const [isSupportOpen, setIsSupportOpen] = useState(false);
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const { user } = useAuth();
     const router = useRouter();
@@ -33,7 +35,7 @@ export function DashboardHeader() {
     const incompleteCount = profile?.active_todos?.filter(t => !t.completed).length || 0;
     const sub = profile?.subscription;
     const hasActivePlan = sub && sub.status === 'active';
-    const hasUnreadReview = profile?.identity?.monthly_reviews?.some((r: any) => r.read === false) || false;
+
 
     const handleLogout = async () => {
         try {
@@ -80,10 +82,7 @@ export function DashboardHeader() {
                                         <span className="block w-6 h-0.5 bg-current"></span>
                                         <span className="block w-6 h-0.5 bg-current"></span>
                                     </div>
-                                    {hasUnreadReview && (
-                                        <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                                    )}
-                                </button>
+                            </button>
 
                                 {isMenuOpen && (
                                     <div className="absolute right-0 top-full mt-2 w-64 bg-zinc-950/90 backdrop-blur-md border border-zinc-800 shadow-2xl shadow-black/50 rounded-xl overflow-hidden z-50">
@@ -133,6 +132,21 @@ export function DashboardHeader() {
                                             <LogOut className="w-4 h-4" />
                                             Log Out
                                         </button>
+
+                                        {/* Divider */}
+                                        <div className="border-t border-zinc-800/50 my-1" />
+
+                                        {/* Support */}
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                setIsSupportOpen(true);
+                                            }}
+                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-400 hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <HelpCircle className="w-4 h-4 text-zinc-500" />
+                                            Support
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -151,6 +165,11 @@ export function DashboardHeader() {
                 isOpen={isRolodexOpen}
                 onClose={() => setIsRolodexOpen(false)}
                 profile={profile}
+            />
+
+            <SupportChat
+                isOpen={isSupportOpen}
+                onClose={() => setIsSupportOpen(false)}
             />
         </>
     );

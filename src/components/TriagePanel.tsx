@@ -30,6 +30,19 @@ export function TriagePanel() {
         return () => unsubscribe();
     }, [user]);
 
+    // Listen for 30-day check-in card tap
+    useEffect(() => {
+        const handleCheckin = (e: any) => {
+            const context = e.detail?.context;
+            if (context) {
+                setInitialContext(context);
+                setIsMirrorOpen(true);
+            }
+        };
+        window.addEventListener('open-mirror-checkin', handleCheckin);
+        return () => window.removeEventListener('open-mirror-checkin', handleCheckin);
+    }, []);
+
 
 
     return (

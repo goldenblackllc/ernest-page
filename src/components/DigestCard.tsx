@@ -27,15 +27,12 @@ export function DigestCard({ title, content, imageUrl }: DigestCardProps) {
                 )}
 
                 {/* Category title — stark headline */}
-                <h3 className="text-xl font-bold text-white tracking-tight mb-2">
+                <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2 leading-tight">
                     {title}
                 </h3>
 
                 {/* Body text */}
-                <div className="text-sm text-zinc-400 leading-relaxed prose prose-invert prose-sm max-w-none
-                    prose-strong:text-zinc-300 prose-strong:font-semibold
-                    prose-em:text-zinc-300
-                    prose-p:my-1">
+                <div className="text-sm sm:text-[15px] text-zinc-300 leading-relaxed whitespace-pre-wrap">
                     <ReactMarkdown>{cleanContent}</ReactMarkdown>
                 </div>
             </div>

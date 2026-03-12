@@ -48,14 +48,21 @@ export function ProfileView() {
             const hash = window.location.hash.replace('#', '');
             if (hash === 'vault') {
                 setIsVaultOpen(true);
-                // Clear hash so it can be retriggered
+                history.replaceState(null, '', window.location.pathname);
+            }
+            if (hash === 'reviews') {
+                // Auto-open the most recent review
+                const reviews = identity?.monthly_reviews;
+                if (reviews && reviews.length > 0) {
+                    setSelectedReview(reviews[reviews.length - 1]);
+                }
                 history.replaceState(null, '', window.location.pathname);
             }
         };
         handleHash(); // Check on mount
         window.addEventListener('hashchange', handleHash);
         return () => window.removeEventListener('hashchange', handleHash);
-    }, []);
+    }, [identity]);
 
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!bible && !identity) return null;
