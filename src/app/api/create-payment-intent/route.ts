@@ -46,7 +46,7 @@ export async function POST(req: Request) {
                 uid,
                 plan: tier,
             },
-            payment_method_types: ['card'],
+            payment_method_types: ['card', 'apple_pay', 'google_pay'],
         });
 
         return Response.json({ clientSecret: paymentIntent.client_secret });

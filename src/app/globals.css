@@ -38,6 +38,7 @@
   textarea,
   select {
     @apply rounded-xl;
+    font-size: 16px; /* Prevents iOS Safari auto-zoom on input focus */
   }
 
   /* Buttons default to rounded-xl */

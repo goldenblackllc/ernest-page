@@ -22,7 +22,6 @@ type FirewallState = 'idle' | 'processing' | 'success' | 'error';
 type ActiveTab = 'precision' | 'bulk';
 
 interface TargetRow {
-    name: string;
     phone: string;
 }
 
@@ -48,9 +47,9 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
 
     // Precision Targeting State
     const [targets, setTargets] = useState<TargetRow[]>([
-        { name: '', phone: '' },
-        { name: '', phone: '' },
-        { name: '', phone: '' },
+        { phone: '' },
+        { phone: '' },
+        { phone: '' },
     ]);
 
     // Bulk Isolation State
@@ -115,16 +114,16 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
     }, [user, startCounterAnimation]);
 
     // ── Precision Targeting ──
-    const handleUpdateTarget = (index: number, field: 'name' | 'phone', value: string) => {
+    const handleUpdateTarget = (index: number, value: string) => {
         setTargets(prev => {
             const next = [...prev];
-            next[index] = { ...next[index], [field]: value };
+            next[index] = { phone: value };
             return next;
         });
     };
 
     const handleAddTarget = () => {
-        setTargets(prev => [...prev, { name: '', phone: '' }]);
+        setTargets(prev => [...prev, { phone: '' }]);
     };
 
     const handleRemoveTarget = (index: number) => {
@@ -307,18 +306,11 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                 {targets.map((target, i) => (
                                                     <div key={i} className="flex items-center gap-2">
                                                         <input
-                                                            type="text"
-                                                            placeholder="Name (Optional)"
-                                                            value={target.name}
-                                                            onChange={e => handleUpdateTarget(i, 'name', e.target.value)}
-                                                            className="flex-[2] bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
-                                                        />
-                                                        <input
                                                             type="tel"
                                                             placeholder="Phone Number"
                                                             value={target.phone}
-                                                            onChange={e => handleUpdateTarget(i, 'phone', e.target.value)}
-                                                            className="flex-[3] bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors font-mono"
+                                                            onChange={e => handleUpdateTarget(i, e.target.value)}
+                                                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors font-mono"
                                                         />
                                                         {targets.length > 1 && (
                                                             <button
