@@ -7,10 +7,10 @@ import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/cha
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Pencil, FileText, Loader2, Mail, Shield } from "lucide-react";
+import { User, ChevronDown, Pencil, FileText, Loader2, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { DossierView } from "./DossierView";
-import { CharacterReview } from "./CharacterReview";
+
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
 import { SecurityVault } from "./SecurityVault";
@@ -25,7 +25,7 @@ export function ProfileView() {
     const [isDossierOpen, setIsDossierOpen] = useState(false);
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
-    const [selectedReview, setSelectedReview] = useState<any>(null);
+
     const [isVaultOpen, setIsVaultOpen] = useState(false);
 
     useEffect(() => {
@@ -50,14 +50,7 @@ export function ProfileView() {
                 setIsVaultOpen(true);
                 history.replaceState(null, '', window.location.pathname);
             }
-            if (hash === 'reviews') {
-                // Auto-open the most recent review
-                const reviews = identity?.monthly_reviews;
-                if (reviews && reviews.length > 0) {
-                    setSelectedReview(reviews[reviews.length - 1]);
-                }
-                history.replaceState(null, '', window.location.pathname);
-            }
+
         };
         handleHash(); // Check on mount
         window.addEventListener('hashchange', handleHash);
@@ -173,51 +166,7 @@ export function ProfileView() {
                     </div>
                 )}
 
-                {/* LETTERS — Monthly Character Reviews */}
-                {identity?.monthly_reviews && identity.monthly_reviews.length > 0 && (
-                    <div className="space-y-3">
-                        <h3 className="text-xs font-bold tracking-widest uppercase text-zinc-500 flex items-center gap-2">
-                            <Mail className="w-3.5 h-3.5" />
-                            Letters
-                        </h3>
-                        {[...identity.monthly_reviews].reverse().map((review: any) => {
-                            const monthLabel = (() => {
-                                try {
-                                    const [year, month] = review.month.split('-');
-                                    return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                                } catch { return review.month; }
-                            })();
-                            return (
-                                <button
-                                    key={review.id}
-                                    onClick={() => {
-                                        setSelectedReview(review);
-                                        // Mark as read in Firestore
-                                        if (!review.read && user && identity?.monthly_reviews) {
-                                            const updatedReviews = identity.monthly_reviews.map((r: any) =>
-                                                r.id === review.id ? { ...r, read: true } : r
-                                            );
-                                            updateDoc(doc(db, 'users', user.uid), {
-                                                'identity.monthly_reviews': updatedReviews,
-                                            }).catch(console.error);
-                                        }
-                                    }}
-                                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-left hover:bg-zinc-900/80 transition-colors flex items-center justify-between"
-                                >
-                                    <div>
-                                        <div className="text-sm font-semibold text-zinc-300">{monthLabel}</div>
-                                        <div className="text-xs text-zinc-600 mt-0.5">From {displayTitle}</div>
-                                    </div>
-                                    {!review.read && (
-                                        <span className="text-[9px] font-bold tracking-widest uppercase bg-white text-black px-2 py-0.5 rounded-full">
-                                            New
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
+
 
             </div>
 
@@ -243,16 +192,7 @@ export function ProfileView() {
                 />
             )}
 
-            {/* Character Review Modal */}
-            {selectedReview && (
-                <CharacterReview
-                    review={selectedReview}
-                    characterTitle={displayTitle}
-                    avatarUrl={bible?.compiled_output?.avatar_url}
-                    isOpen={!!selectedReview}
-                    onClose={() => setSelectedReview(null)}
-                />
-            )}
+
 
             {/* Security Vault */}
             <SecurityVault
