@@ -1,7 +1,7 @@
 import { db } from '@/lib/firebase/admin';
 import { REALITY_RULES } from '@/lib/constants/realityRules';
 import { waitUntil } from '@vercel/functions';
-import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
+import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK, SONNET_MODEL, SONNET_FALLBACK } from '@/lib/ai/models';
 import { ENGAGEMENT_TONES, DEFAULT_TONE } from '@/lib/ai/engagementTones';
 import { SessionTone } from '@/types/chat';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
@@ -17,7 +17,12 @@ export async function POST(req: Request) {
         const rl = checkRateLimit(`mirror:${uid}`, RATE_LIMITS.mirror);
         if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
-        const { messages, sessionId, sessionTone, localTime } = await req.json();
+        const { messages, sessionId, sessionTone, localTime, modelTier } = await req.json();
+
+        // Model selection: default to Opus, allow Sonnet override
+        const useOpus = modelTier !== 'sonnet';
+        const primaryModel = useOpus ? OPUS_MODEL : SONNET_MODEL;
+        const fallbackModel = useOpus ? OPUS_FALLBACK : SONNET_FALLBACK;
 
         if (!sessionId) {
             return Response.json({ error: "Missing session ID" }, { status: 400 });
@@ -134,8 +139,8 @@ Write the raw, exact response in the first person. Speak directly to the user. D
                 console.log(`[MirrorChat] Attempting generation with fallback utility`);
                 // Attempt Generation
                 result = await generateTextWithFallback({
-                    primaryModelId: OPUS_MODEL,
-                    fallbackModelId: OPUS_FALLBACK,
+                    primaryModelId: primaryModel,
+                    fallbackModelId: fallbackModel,
                     messages: [
                         {
                             role: 'system',

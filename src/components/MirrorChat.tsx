@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CharacterBible } from "@/types/character";
-import { User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock, Flame, Loader2 } from "lucide-react";
+import { User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock, Flame, Loader2, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,7 @@ import { ENGAGEMENT_TONES, DEFAULT_TONE } from "@/lib/ai/engagementTones";
 import { useAuth } from "@/lib/auth/AuthContext";
 
 type SessionRouting = 'public' | 'private' | 'burn';
+type ModelTier = 'opus' | 'sonnet';
 
 interface MirrorChatProps {
     isOpen: boolean;
@@ -37,6 +38,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
     );
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
+    const [modelTier, setModelTier] = useState<ModelTier>('opus');
 
     // Initialize or Resume Session
     useEffect(() => {
@@ -81,6 +83,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                     body: JSON.stringify({
                         sessionId,
                         sessionTone,
+                        modelTier,
                         localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
                         messages: newMessages,
                     }),
@@ -207,6 +210,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                 body: JSON.stringify({
                     sessionId,
                     sessionTone,
+                    modelTier,
                     localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
                     messages: newMessages
                 })
@@ -242,6 +246,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                 body: JSON.stringify({
                     sessionId,
                     sessionTone,
+                    modelTier,
                     localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
                     messages: messages
                 })
@@ -360,9 +365,9 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                         </button>
                     </div>
 
-                    {/* ═══ TONE SELECTOR ═══ */}
+                    {/* ═══ TONE SELECTOR + MODEL TOGGLE ═══ */}
                     <div className="px-5 sm:px-8 py-2 border-b border-zinc-800/30 bg-zinc-950/60 shrink-0">
-                        <div className="max-w-3xl mx-auto">
+                        <div className="max-w-3xl mx-auto flex items-center justify-between">
                             <div className="relative" ref={toneRef}>
                                 <button
                                     onClick={() => setIsToneOpen(!isToneOpen)}
@@ -412,6 +417,17 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     )}
                                 </AnimatePresence>
                             </div>
+
+                            {/* ═══ MODEL TIER TOGGLE ═══ */}
+                            <button
+                                onClick={() => setModelTier(prev => prev === 'opus' ? 'sonnet' : 'opus')}
+                                className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold transition-colors hover:text-zinc-300"
+                            >
+                                <Cpu className="w-3 h-3" />
+                                <span className={modelTier === 'opus' ? 'text-zinc-300' : 'text-emerald-400'}>
+                                    {modelTier === 'opus' ? 'Opus' : 'Sonnet'}
+                                </span>
+                            </button>
                         </div>
                     </div>
 
