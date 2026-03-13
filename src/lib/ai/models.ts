@@ -6,8 +6,6 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
-export const OPUS_MODEL = 'claude-opus-4-6'; // Heavy Reasoning Engine
-export const OPUS_FALLBACK = 'claude-opus-4-5'; // Stable Fallback for Opus
 export const SONNET_MODEL = 'claude-sonnet-4-6'; // Creative Writing Engine
 export const SONNET_FALLBACK = 'claude-sonnet-4-5'; // Stable Fallback for Sonnet
 export const BACKUP_MODEL = 'gemini-3.1-pro-preview';
