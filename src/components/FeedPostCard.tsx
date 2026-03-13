@@ -207,33 +207,103 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
 
 
-    // Reality Shift posts — compact card (must check BEFORE the letter/response null guard)
+    // Reality Shift posts (must check BEFORE the letter/response null guard)
     if (post.post_type === 'reality_shift') {
         const shiftTimeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : "just now";
+        const yieldText = post.unexpected_yield || '';
+        const isLongYield = yieldText.length > 280;
+
         return (
             <div className="bg-[#1a1a1a] border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative font-sans">
                 {/* Subtle top accent */}
                 <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-                {/* Body */}
-                <div className="px-4 sm:px-5 pt-4 pb-3">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Something Unexpected</span>
-                        <span className="text-[10px] text-zinc-600">{shiftTimeAgo}</span>
-                    </div>
-
-                    {post.directive_title && (
-                        <div className="text-xs text-zinc-500 mb-2 leading-snug italic">
-                            Completed: {post.directive_title.length > 80 ? post.directive_title.slice(0, 80) + "…" : post.directive_title}
+                {/* ═══ Header — matching regular feed cards ═══ */}
+                <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 w-full">
+                    <div className="shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 overflow-hidden">
+                            {post.author_avatar_url ? (
+                                <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-5 h-5 text-emerald-500" />
+                            )}
                         </div>
-                    )}
-                    <p className="text-[15px] text-zinc-200 leading-relaxed">
-                        {post.unexpected_yield}
-                    </p>
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex flex-row items-center gap-2 w-full">
+                            <span className="text-sm font-semibold text-white truncate">
+                                {isAuthor ? "Me" : customAlias || publicPseudonym || "Anonymous"}
+                            </span>
+                            <div className="shrink-0 flex items-center gap-2">
+                                {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
+                                    <button
+                                        onClick={() => onFollowClick(postAuthorId)}
+                                        className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide"
+                                    >
+                                        + Follow Author
+                                    </button>
+                                )}
+                                {user?.uid === post.uid && (
+                                    <button
+                                        onClick={togglePrivacy}
+                                        className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 py-1 px-1.5 rounded-md transition-all group/privacy"
+                                    >
+                                        {localIsPublic ? (
+                                            <>
+                                                <Globe className="w-3 h-3 text-blue-400" />
+                                                <span className="text-blue-400">Everyone</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Lock className="w-3 h-3 text-zinc-500" />
+                                                <span className="text-zinc-500">Only Me</span>
+                                            </>
+                                        )}
+                                        <ChevronDown className="w-3 h-3 text-zinc-600 group-hover/privacy:text-zinc-400" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{shiftTimeAgo}</span>
+                            {(post.region || post.language) && (
+                                <>
+                                    <span className="text-zinc-700">·</span>
+                                    <span>{getCountryFlag(post.region)} {post.language || ''}</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Footer */}
-                <div className="px-4 sm:px-5 py-3 flex items-center justify-between border-t border-white/5">
+                {/* ═══ Body ═══ */}
+                <div className="p-0 flex flex-col">
+                    <div className="px-3 sm:px-4 pt-4 pb-3 sm:pb-4">
+                        <h2 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2 leading-tight">
+                            Something Unexpected
+                        </h2>
+
+                        <p className={cn(
+                            "text-sm sm:text-[15px] text-zinc-200 leading-relaxed whitespace-pre-wrap",
+                            !isExpanded && isLongYield && "line-clamp-4"
+                        )}>
+                            {yieldText}
+                        </p>
+
+                        {isLongYield && (
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="text-sm font-semibold text-zinc-400 hover:text-white mt-2 transition-colors duration-200"
+                            >
+                                {isExpanded ? "Show Less ⌃" : "Read More ⌄"}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* ═══ Footer ═══ */}
+                <div className="px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
                     <button
                         onClick={toggleLike}
                         className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
@@ -253,8 +323,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         </button>
                     )}
                 </div>
-
-
             </div>
         );
     }
