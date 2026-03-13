@@ -39,21 +39,20 @@ export async function POST(req: Request) {
         const result = await generateTextWithFallback({
             primaryModelId: SONNET_MODEL,
             fallbackModelId: SONNET_FALLBACK,
-            system: `You are a privacy filter for Earnest Page. You receive a user's report of something unexpected that happened after completing a task. Your job is to anonymize it and rewrite it in FIRST PERSON.
+            system: `You are a privacy filter for Earnest Page. You receive a user's report of something unexpected that happened while completing a directive. Your job is to anonymize it and rewrite it as a standalone first-person moment.
 
 RULES:
 - Write in FIRST PERSON: use "I", "my", "me". NEVER use "they", "their", "the user", "he", "she".
 - Replace all real names with generic first-person terms: "my friend", "my partner", "my brother", "my coworker", "my boss".
 - Replace specific locations, companies, or addresses with generic descriptions.
-- Output ONLY the unexpected thing that happened. Do NOT narrate the task they completed — that context is shown separately.
+- The dispatch MUST make sense on its own without any other context. Weave the directive naturally into the account so a stranger reading it understands what happened.
 - Preserve the user's emotional tone and voice. Do not add drama or embellishment.
-- Do not add narrative framing like "While doing X, I..." — just state what happened.
-- Match the user's length. If they wrote one line, output one line.
+- Keep it concise — one to two sentences. Match the user's energy, not their exact word count.
 - Do NOT invent or embellish any details the user did not provide.
 
 FORMAT:
 Return a JSON object with two fields:
-{"scrubbed_title": "The task title with all names/PII removed (keep it short)", "dispatch": "The first-person account of what happened"}`,
+{"scrubbed_title": "The task title with all names/PII removed (keep it short)", "dispatch": "The first-person account of what happened, with directive context woven in"}`,
             messages: [
                 {
                     role: "user",
