@@ -50,13 +50,13 @@ export async function GET(req: Request) {
                         }
 
                         const messages = chatData.messages || [];
-                        // Determine publish intent: sessionRouting takes precedence, then autoPublish legacy fallback
-                        const shouldPublish = chatData.sessionRouting
+                        // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback
+                        const isPublic = chatData.sessionRouting
                             ? chatData.sessionRouting === 'public'
                             : chatData.autoPublish !== false;
 
-                        // Only generate a post if there is actual conversation content AND user hasn't opted out
-                        if (messages.length > 0 && shouldPublish) {
+                        // Generate a post for both public and private sessions (private = is_public: false, visible only to author)
+                        if (messages.length > 0) {
                             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
                             // Fetch recent posts to avoid repeating the same photo scale
@@ -220,7 +220,7 @@ ${recentScaleHint}
                                         content_raw: transcript,
                                         status: "completed",
                                         created_at: new Date(),
-                                        is_public: true,
+                                        is_public: isPublic,
                                         likes: 0,
                                         comments: 0
                                     });

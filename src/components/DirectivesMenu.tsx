@@ -158,8 +158,8 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
                             {/* What's being completed */}
                             <div className="flex items-center gap-2 mb-4">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-emerald-500">Completing</span>
+                                <CheckCircle2 className="w-4 h-4 text-zinc-100" />
+                                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-100">Completing</span>
                             </div>
                             <div className="text-base font-semibold text-zinc-100 mb-6 leading-snug">
                                 {pendingTodo.task}

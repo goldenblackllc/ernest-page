@@ -35,8 +35,16 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
     const [sessionRouting, setSessionRouting] = useState<SessionRouting>(
         defaultPostRouting === 'private' ? 'private' : 'public'
     );
+    const hasManuallySetRouting = useRef(false);
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
+
+    // Sync sessionRouting when defaultPostRouting prop changes (unless user manually overrode)
+    useEffect(() => {
+        if (!hasManuallySetRouting.current && defaultPostRouting) {
+            setSessionRouting(defaultPostRouting === 'private' ? 'private' : 'public');
+        }
+    }, [defaultPostRouting]);
 
 
     // Initialize or Resume Session
@@ -318,6 +326,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         setSessionTone(DEFAULT_TONE);
         setIsToneOpen(false);
         setSessionRouting(defaultPostRouting === 'private' ? 'private' : 'public');
+        hasManuallySetRouting.current = false;
         setPlanConfirmation(null);
 
         onClose();
@@ -557,7 +566,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                 </span>
                                 <div className="flex items-center gap-1.5">
                                     <button
-                                        onClick={() => setSessionRouting('public')}
+                                        onClick={() => { setSessionRouting('public'); hasManuallySetRouting.current = true; }}
                                         className={cn(
                                             "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 border transition-all",
                                             sessionRouting === 'public'
@@ -569,7 +578,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         Public Feed
                                     </button>
                                     <button
-                                        onClick={() => setSessionRouting('private')}
+                                        onClick={() => { setSessionRouting('private'); hasManuallySetRouting.current = true; }}
                                         className={cn(
                                             "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 border transition-all",
                                             sessionRouting === 'private'
@@ -581,7 +590,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         Private Ledger
                                     </button>
                                     <button
-                                        onClick={() => setSessionRouting('burn')}
+                                        onClick={() => { setSessionRouting('burn'); hasManuallySetRouting.current = true; }}
                                         className={cn(
                                             "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 border transition-all",
                                             sessionRouting === 'burn'
@@ -613,7 +622,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                             <div className="bg-zinc-900/50 border border-white/10 rounded-xl p-3 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500 transition-all">
                                 <textarea
                                     ref={textareaRef}
-                                    className="w-full bg-transparent text-white px-1 min-h-[44px] max-h-[200px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar text-[15px] leading-relaxed"
+                                    className="w-full bg-transparent text-white px-1 min-h-[44px] max-h-[200px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar text-base leading-relaxed"
                                     value={input}
                                     onChange={handleInputChange}
                                     placeholder="State your friction..."
