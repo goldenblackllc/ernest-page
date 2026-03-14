@@ -1,7 +1,7 @@
 import { db } from '@/lib/firebase/admin';
 import { REALITY_RULES } from '@/lib/constants/realityRules';
 import { waitUntil } from '@vercel/functions';
-import { generateTextWithFallback, SONNET_MODEL, SONNET_FALLBACK } from '@/lib/ai/models';
+import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { ENGAGEMENT_TONES, DEFAULT_TONE } from '@/lib/ai/engagementTones';
 import { SessionTone } from '@/types/chat';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
@@ -19,8 +19,8 @@ export async function POST(req: Request) {
 
         const { messages, sessionId, sessionTone, localTime } = await req.json();
 
-        const primaryModel = SONNET_MODEL;
-        const fallbackModel = SONNET_FALLBACK;
+        const primaryModel = OPUS_MODEL;
+        const fallbackModel = OPUS_FALLBACK;
 
         if (!sessionId) {
             return Response.json({ error: "Missing session ID" }, { status: 400 });
