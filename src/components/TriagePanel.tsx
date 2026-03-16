@@ -166,25 +166,14 @@ export function TriagePanel() {
                     )}
                     title={
                         bible?.status === 'compiling'
-                            ? 'Compiling your Blueprint...'
+                            ? 'Building your character...'
                             : canChat ? 'Open chat' : 'Purchase a session'
                     }
                 >
                     <MessageCircle className={cn("w-7 h-7", bible?.status === 'compiling' && "animate-pulse")} />
                 </button>
 
-                {/* Badge: credits or daily remaining */}
-                {canChat && (
-                    <span className={cn(
-                        "mt-1 text-[10px] font-bold uppercase tracking-widest",
-                        dailyRemaining <= 1 ? "text-amber-500" : "text-zinc-500"
-                    )}>
-                        {hasActiveSubscription
-                            ? `${dailyRemaining} today`
-                            : `${sessionCredits} session${sessionCredits !== 1 ? 's' : ''}`
-                        }
-                    </span>
-                )}
+
 
                 {/* Daily cap toast */}
                 {isDailyCapHit && (

@@ -290,8 +290,8 @@ export function Ledger() {
                     <div className="flex items-center gap-4 p-5 relative">
                         <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
                         <div>
-                            <p className="text-sm font-bold text-white mb-0.5">Compiling your Blueprint...</p>
-                            <p className="text-xs text-zinc-500">Building your Ideal Self and generating your portrait. This can take up to a minute.</p>
+                            <p className="text-sm font-bold text-white mb-0.5">Building your character...</p>
+                            <p className="text-xs text-zinc-500">Crafting your Ideal Self and generating your portrait. This can take a few minutes.</p>
                         </div>
                     </div>
                 </div>

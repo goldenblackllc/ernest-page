@@ -1,6 +1,7 @@
 import { db, storage } from '@/lib/firebase/admin';
 import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import sharp from 'sharp';
 
 export const maxDuration = 60;
 
@@ -52,17 +53,20 @@ export async function POST(req: Request) {
                 ? JSON.stringify(styleSection).substring(0, 300)
                 : '';
 
-        // Build the portrait prompt
-        const ageStr = age ? `${age}-year-old ` : '';
+        // Compute age from birth year if possible
+        const birthYear = age ? parseInt(age, 10) : NaN;
+        const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+        const ageStr = computedAge ? `${computedAge}-year-old ` : '';
         const ethnicityStr = ethnicity ? `${ethnicity} ` : '';
         const prompt = [
-            `Square portrait photograph.`,
+            `Headshot portrait, square aspect ratio.`,
             `A ${ageStr}${ethnicityStr}${gender} who embodies "${title}".`,
             visualCues ? `Visual essence: ${visualCues}` : '',
             styleCues ? `Style and appearance: ${styleCues}` : '',
             `Cinematic studio lighting, shallow depth of field, warm tones.`,
             `Instagram-quality sharpness and color saturation.`,
             `Shot from chest up. Natural, confident, relaxed expression.`,
+            `Full-bleed composition. No borders, no frames, no margins, no white space around the subject.`,
             // Only use the generic fallback when ethnicity is not specified
             !ethnicity ? `Do not default to any racial or ethnic stereotype.` : '',
             !ethnicity ? `Use ambiguous, diverse features unless background is specified.` : '',
@@ -98,9 +102,16 @@ export async function POST(req: Request) {
             return Response.json({ error: 'No image returned from Imagen' }, { status: 502 });
         }
 
-        // Upload to Firebase Storage
+        // Resize and compress before uploading
         const base64Data = imagenData.predictions[0].bytesBase64Encoded;
-        const buffer = Buffer.from(base64Data, 'base64');
+        const rawBuffer = Buffer.from(base64Data, 'base64');
+        const buffer = await sharp(rawBuffer)
+            .resize(256, 256, { fit: 'cover' })
+            .jpeg({ quality: 80 })
+            .toBuffer();
+
+        console.log(`[Avatar] Resized: ${rawBuffer.length} → ${buffer.length} bytes`);
+
         const bucket = storage.bucket();
         const fileName = `avatars/${uid}.jpg`;
         const file = bucket.file(fileName);

@@ -51,10 +51,10 @@ export function IdentityForm({
                 {showHeadings && (
                     <div className="text-center mb-2">
                         <h1 className="text-3xl font-black tracking-tight mb-3">
-                            Define Your Standard
+                            Who Do You Want to Be?
                         </h1>
                         <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                            Establish the uncompromising baseline for the life you demand.
+                            Don&apos;t think about it too hard. Just write.
                         </p>
                     </div>
                 )}
@@ -67,6 +67,7 @@ export function IdentityForm({
                         value={characterName}
                         onChange={(e) => setCharacterName(e.target.value)}
                         placeholder="Leave blank to auto-generate"
+                        maxLength={100}
                         className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                     />
                 </div>
@@ -80,16 +81,19 @@ export function IdentityForm({
                             value={gender}
                             onChange={(e) => setGender(e.target.value)}
                             placeholder="Man, Woman, etc."
+                            maxLength={50}
                             className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                         />
                     </div>
                     <div className="w-24">
-                        <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Age</label>
+                        <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Born</label>
                         <input
                             type="text"
                             value={age}
                             onChange={(e) => setAge(e.target.value)}
-                            placeholder="35"
+                            placeholder="1989"
+                            maxLength={4}
+                            inputMode="numeric"
                             className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                         />
                     </div>
@@ -103,18 +107,20 @@ export function IdentityForm({
                         value={ethnicity}
                         onChange={(e) => setEthnicity(e.target.value)}
                         placeholder="e.g., Black, East Asian, Hispanic, Caucasian, Mixed..."
+                        maxLength={100}
                         className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                     />
                 </div>
 
-                {/* The Architecture */}
+                {/* The Rant */}
                 <div>
-                    <label className="text-xs text-white font-semibold mb-1 block">The Architecture</label>
-                    <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Outline your highest standard of operation. Do not filter. We will translate this raw input into your tactical Ideal Self.</p>
+                    <label className="text-xs text-white font-semibold mb-1 block">The Rant</label>
+                    <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Describe your ideal life — the person, the lifestyle, all of it. Raw is better than polished. We&apos;ll build your character from this.</p>
                     <textarea
                         value={rant}
                         onChange={(e) => setRant(e.target.value)}
-                        placeholder="I want to be the kind of person who..."
+                        placeholder="I want to be the kind of man who wakes up with a plan. Financially free. A father my kids actually look up to. In the best shape of my life. Running something that matters..."
+                        maxLength={5000}
                         className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[180px] resize-none leading-relaxed"
                         autoFocus
                     />
@@ -139,40 +145,42 @@ export function IdentityForm({
             {showHeadings && (
                 <div className="text-center mb-2">
                     <h1 className="text-3xl font-black tracking-tight mb-3">
-                        The Reality Baseline
+                        Your Reality
                     </h1>
                     <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                        Define the people, assets, and non-negotiables in your immediate world.
+                        Tell us about your life so your character fits your world.
                     </p>
                 </div>
             )}
-            {/* The Inner Circle */}
+            {/* Your People */}
             <div>
                 <label className="text-sm text-white font-semibold mb-1 flex items-center gap-1.5">
                     <Users className="w-4 h-4" />
-                    The Inner Circle
+                    Your People
                 </label>
-                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">Who matters in your world? Partners, children, critical alliances. Define who you are executing for.</p>
+                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">Who makes you feel something — good or bad? Family, friends, rivals, pets. Don&apos;t just list names — say what&apos;s real. We&apos;ll sort it out.</p>
                 <textarea
                     value={people}
                     onChange={(e) => setPeople(e.target.value)}
-                    placeholder="e.g., My partner (age), my kids, my best friend, my dog..."
+                    placeholder="My wife — we're solid but she thinks I work too much. My son (4) — my whole world. My dog Rex. My business partner — brilliant but I don't fully trust him yet..."
+                    maxLength={3000}
                     className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[140px] resize-none leading-relaxed"
                     autoFocus
                 />
             </div>
 
-            {/* The Non-Negotiables */}
+            {/* What Lights You Up */}
             <div>
                 <label className="text-sm text-white font-semibold mb-1 flex items-center gap-1.5">
                     <Shield className="w-4 h-4" />
-                    The Non-Negotiables
+                    What Lights You Up
                 </label>
-                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">What are your fixed preferences, standards, and required environments? Your Ideal Self still operates within your reality.</p>
+                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">What excites you? The things that make you happy stay — your character should love what you love.</p>
                 <textarea
                     value={enjoyments}
                     onChange={(e) => setEnjoyments(e.target.value)}
-                    placeholder="e.g., Coffee, hiking, sci-fi movies, cooking for friends..."
+                    placeholder="Cooking for people, 90s hip-hop, horror movies, long drives with no plan, my morning coffee ritual, pickup basketball..."
+                    maxLength={3000}
                     className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[140px] resize-none leading-relaxed"
                 />
             </div>

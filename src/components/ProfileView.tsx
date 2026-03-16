@@ -260,7 +260,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     {isProcessing ? (
                         <div className="flex flex-col items-center gap-6 py-12">
                             <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
-                            <p className="text-base text-zinc-400">Establishing operational baseline...</p>
+                            <p className="text-base text-zinc-400">Rebuilding your character...</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-5">

@@ -45,7 +45,16 @@ export async function POST(req: Request) {
         if (!uid) return unauthorizedResponse();
 
         const body = await req.json();
-        const { rant, gender, age, ethnicity, important_people, things_i_enjoy, character_name } = body;
+        const rawBody = body;
+
+        // Server-side length limits (defense-in-depth, mirrors client maxLength)
+        const rant = (rawBody.rant || '').substring(0, 5000);
+        const gender = (rawBody.gender || '').substring(0, 50);
+        const age = (rawBody.age || '').substring(0, 4);
+        const ethnicity = (rawBody.ethnicity || '').substring(0, 100);
+        const important_people = (rawBody.important_people || '').substring(0, 3000);
+        const things_i_enjoy = (rawBody.things_i_enjoy || '').substring(0, 3000);
+        const character_name = (rawBody.character_name || '').substring(0, 100);
 
         if (!rant) {
             return Response.json(
@@ -57,7 +66,7 @@ export async function POST(req: Request) {
         // Prepend gender/age/ethnicity context to the rant so the AI has it
         const contextPrefix = [
             gender ? `The user identifies as: ${gender}.` : null,
-            age ? `Age: ${age}.` : null,
+            age ? `Birth year: ${age}.` : null,
             ethnicity ? `Ethnicity: ${ethnicity}.` : null,
             important_people ? `People in their life: ${important_people}` : null,
             things_i_enjoy ? `Things they enjoy: ${things_i_enjoy}` : null,
