@@ -311,7 +311,10 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                     'Content-Type': 'application/json',
                     ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
                 },
-                body: JSON.stringify({ messages })
+                body: JSON.stringify({
+                            messages,
+                            localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+                        })
             });
             const data = await res.json();
             if (data.success && data.directives?.length > 0) {

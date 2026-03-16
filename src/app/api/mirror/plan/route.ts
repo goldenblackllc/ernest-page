@@ -9,7 +9,7 @@ export async function POST(req: Request) {
         const uid = await verifyAuth(req);
         if (!uid) return unauthorizedResponse();
 
-        const { messages } = await req.json();
+        const { messages, localTime } = await req.json();
 
         if (!messages || messages.length < 2) {
             return Response.json({ error: "Insufficient conversation context" }, { status: 400 });
@@ -26,6 +26,9 @@ export async function POST(req: Request) {
 
         const systemPrompt = `You are a Character Simulation Engine running this Character Bible:
 ${JSON.stringify(compiledBible)}
+
+[CURRENT TIME]
+${localTime || 'Unknown'}
 
 You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their action plan.
 

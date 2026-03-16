@@ -91,15 +91,7 @@ export function ProfileView() {
 
                     {/* ── ROW 2: ACTIONS ── */}
                     <div className="flex items-center gap-3 pb-6 border-b border-white/5">
-                        {identity?.dossier && (
-                            <button
-                                onClick={() => setIsDossierOpen(true)}
-                                className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-bold px-4 py-2.5 rounded-full transition-all"
-                            >
-                                <FileText className="w-3.5 h-3.5" />
-                                Dossier
-                            </button>
-                        )}
+                        {/* Dossier button hidden — data still maintained server-side */}
                         <button
                             onClick={() => setIsEditOpen(true)}
                             className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold px-4 py-2.5 rounded-full transition-all shadow-sm"
@@ -183,14 +175,7 @@ export function ProfileView() {
                 currentCharacterName={identity?.character_name || ""}
             />
 
-            {/* Dossier Modal */}
-            {identity && (
-                <DossierView
-                    identity={identity}
-                    isOpen={isDossierOpen}
-                    onClose={() => setIsDossierOpen(false)}
-                />
-            )}
+            {/* Dossier Modal — hidden from users, data still maintained */}
 
 
 

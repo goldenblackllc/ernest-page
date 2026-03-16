@@ -30,10 +30,20 @@ export async function GET(req: Request) {
             const uid = userDoc.id;
             const userData = userDoc.data();
 
-            // Only active paid users
+            // Eligible: active subscribers OR users who had a session in the last 30 days
             const sub = userData?.subscription;
-            const isActive = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
-            if (!isActive) continue;
+            const isSubscriber = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
+
+            let hadRecentSession = false;
+            if (!isSubscriber) {
+                const purchases = userData?.session_purchases || [];
+                const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+                hadRecentSession = purchases.some((p: any) =>
+                    p.purchasedAt && new Date(p.purchasedAt).getTime() > thirtyDaysAgo
+                );
+            }
+
+            if (!isSubscriber && !hadRecentSession) continue;
 
             // Need a compiled bible
             const compiledBible = userData?.character_bible?.compiled_output?.ideal;

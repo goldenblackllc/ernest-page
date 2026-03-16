@@ -159,15 +159,15 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                             {/* What's being completed */}
                             <div className="flex items-center gap-2 mb-4">
                                 <CheckCircle2 className="w-4 h-4 text-zinc-100" />
-                                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-100">Completing</span>
+                                <span className="text-[10px] tracking-[0.2em] uppercase text-zinc-100">Completing</span>
                             </div>
-                            <div className="text-base font-semibold text-zinc-100 mb-6 leading-snug">
+                            <div className="text-base text-zinc-100 mb-6 leading-snug">
                                 {pendingTodo.task}
                             </div>
 
                             {/* The Prompt */}
                             <div className="mb-4">
-                                <label className="text-xs font-bold tracking-widest uppercase text-zinc-400 mb-2 block">
+                                <label className="text-xs tracking-widest uppercase text-zinc-400 mb-2 block">
                                     Did anything unexpected happen?
                                 </label>
                                 <textarea
