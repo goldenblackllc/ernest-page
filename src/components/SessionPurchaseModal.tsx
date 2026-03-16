@@ -68,12 +68,13 @@ const stripeAppearance: Appearance = {
 };
 
 // ─── Types ─────────────────────────────────────────────────────────
-type SessionTier = 'session_single' | 'session_3pack' | 'archangel';
+type SessionTier = 'session_single' | 'session_3pack' | 'session_gift' | 'archangel';
 
 interface SessionPurchaseModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPurchased: () => void; // Called after successful purchase → opens MirrorChat
+    onPurchased: (paymentIntentId?: string) => void;
+    defaultTier?: SessionTier;
 }
 
 // ─── Inner Checkout Form (needs Stripe context) ────────────────────
@@ -83,7 +84,7 @@ function SessionCheckoutForm({
     onError,
 }: {
     tier: SessionTier;
-    onSuccess: () => void;
+    onSuccess: (paymentIntentId?: string) => void;
     onError: (msg: string) => void;
 }) {
     const stripe = useStripe();
@@ -120,14 +121,12 @@ function SessionCheckoutForm({
 
         if (paymentIntent?.status === 'succeeded') {
             // Webhook will handle credit increment.
-            // But also call our own API to ensure credits are ready immediately.
             try {
-                const idToken = await authUser?.getIdToken();
                 // Small delay to let webhook process
                 await new Promise(resolve => setTimeout(resolve, 1500));
-                onSuccess();
+                onSuccess(paymentIntent.id);
             } catch {
-                onSuccess(); // Still succeed — webhook will catch up
+                onSuccess(paymentIntent.id); // Still succeed — webhook will catch up
             }
         } else {
             onError('Payment was not completed.');
@@ -138,7 +137,8 @@ function SessionCheckoutForm({
     const labels: Record<SessionTier, string> = {
         session_single: 'Pay $20 — Start Session',
         session_3pack: 'Pay $50 — Get 3 Sessions',
-        archangel: 'Pay $499 — Unlock Unlimited',
+        session_gift: 'Pay $20 — Send Gift',
+        archangel: 'Pay $499 — Go All-In',
     };
     const label = labels[tier];
 
@@ -189,9 +189,9 @@ function SessionCheckoutForm({
 }
 
 // ─── Main Modal ────────────────────────────────────────────────────
-export function SessionPurchaseModal({ isOpen, onClose, onPurchased }: SessionPurchaseModalProps) {
+export function SessionPurchaseModal({ isOpen, onClose, onPurchased, defaultTier }: SessionPurchaseModalProps) {
     const { user } = useAuth();
-    const [selectedTier, setSelectedTier] = useState<SessionTier | null>(null);
+    const [selectedTier, setSelectedTier] = useState<SessionTier | null>(defaultTier || null);
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [loadingIntent, setLoadingIntent] = useState(false);
     const [error, setError] = useState<string | null>(null);

@@ -174,8 +174,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                                     value={unexpectedText}
                                     onChange={(e) => setUnexpectedText(e.target.value)}
                                     placeholder="Something shifted, someone said something, a door opened..."
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none resize-none min-h-[100px] transition-colors"
-                                    autoFocus
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-base text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none resize-none min-h-[100px] transition-colors"
                                 />
                                 <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
                                     If something surprising happened, it'll be shared as a Reality Shift in the feed.

@@ -60,6 +60,12 @@ export async function POST(req: Request) {
                 return Response.json({ received: true });
             }
 
+            // Gift sessions: credit is held in the gift code, not granted to the buyer
+            if (plan === 'session_gift') {
+                console.log(`Webhook: Gift payment received for user ${uid} — credit held for gift code.`);
+                return Response.json({ received: true });
+            }
+
             // Check idempotency against session_purchases
             const existingPurchases = existing?.session_purchases || [];
             if (existingPurchases.some((p: any) => p.id === paymentIntent.id)) {

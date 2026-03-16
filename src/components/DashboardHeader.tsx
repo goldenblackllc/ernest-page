@@ -9,7 +9,7 @@ import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell, Shield, CreditCard, LogOut, Users, HelpCircle, Mail } from "lucide-react";
+import { Bell, Shield, CreditCard, LogOut, Users, HelpCircle, Mail, Gift } from "lucide-react";
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";
 import { RolodexModal } from "@/components/RolodexModal";
@@ -110,6 +110,18 @@ export function DashboardHeader() {
                                         >
                                             <Users className="w-4 h-4 text-zinc-500" />
                                             Rolodex
+                                        </button>
+
+                                        {/* Gift a Session */}
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                router.push('/gift');
+                                            }}
+                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <Gift className="w-4 h-4 text-zinc-500" />
+                                            Gift a Session
                                         </button>
 
                                         {/* Subscription */}

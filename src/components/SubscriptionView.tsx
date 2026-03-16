@@ -165,7 +165,7 @@ export function SubscriptionView() {
                 <h1 className="text-2xl font-bold text-white tracking-tight">
                     Billing & Sessions
                 </h1>
-                <p className="text-sm text-zinc-500 mt-1">
+                <p className="text-sm text-zinc-400 mt-1">
                     Manage your session credits, view payment history, and request refunds.
                 </p>
             </div>
@@ -182,7 +182,9 @@ export function SubscriptionView() {
                                 Session Credits
                             </p>
                             <p className="text-2xl font-black text-white">
-                                {isActive ? '∞' : credits}
+                                {isActive ? (
+                                    <>∞{credits > 0 && <span className="text-sm font-semibold text-zinc-500 ml-1.5">(+{credits} stored)</span>}</>
+                                ) : credits}
                             </p>
                         </div>
                     </div>
@@ -193,11 +195,11 @@ export function SubscriptionView() {
                         Buy More
                     </button>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-zinc-600">
+                <div className="flex items-center gap-4 text-xs text-zinc-400">
                     <span>
                         Each credit = one conversation (up to 2 hours / 30 exchanges).
                     </span>
-                    <span className="text-zinc-700">|</span>
+                    <span className="text-zinc-600">|</span>
                     <span className={dailyRemaining <= 1 ? 'text-amber-500' : ''}>
                         {dailyRemaining} of {MAX_SESSIONS_PER_DAY} sessions remaining today
                     </span>
@@ -321,7 +323,7 @@ export function SubscriptionView() {
                                                 {record.description}
                                                 {isRefunded && <span className="ml-2 text-[10px] uppercase tracking-wider text-red-500/70 font-bold no-underline">Refunded</span>}
                                             </p>
-                                            <p className="text-xs text-zinc-600">
+                                            <p className="text-xs text-zinc-400">
                                                 {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </p>
                                         </div>
