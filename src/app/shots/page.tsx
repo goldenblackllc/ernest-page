@@ -1,63 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithCustomToken } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, MessageCircle, Clock, Shield, Zap, Gift, ArrowRight, Crown, Lock, BarChart3, Target, Award } from 'lucide-react';
+import { ChevronDown, MessageCircle, Clock, Shield, Zap, Gift, ArrowRight, Crown } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
-
-// ─── Timezone → Dial Code Detection ────────────────────────────────
-function getDefaultDialCode(): string {
-    try {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-        const region = tz.split('/')[0];
-        const city = tz.split('/')[1] || '';
-
-        const tzToDialCode: Record<string, string> = {
-            'America': '+1', 'US': '+1',
-            'America/Mexico_City': '+52', 'America/Cancun': '+52', 'America/Tijuana': '+52',
-            'America/Sao_Paulo': '+55', 'America/Fortaleza': '+55', 'America/Manaus': '+55',
-            'America/Argentina': '+54', 'America/Buenos_Aires': '+54',
-            'America/Bogota': '+57', 'America/Lima': '+51', 'America/Santiago': '+56',
-            'Europe/London': '+44', 'Europe/Dublin': '+353',
-            'Europe/Berlin': '+49', 'Europe/Munich': '+49',
-            'Europe/Paris': '+33', 'Europe/Madrid': '+34', 'Europe/Rome': '+39',
-            'Europe/Amsterdam': '+31', 'Europe/Brussels': '+32',
-            'Europe/Stockholm': '+46', 'Europe/Oslo': '+47', 'Europe/Helsinki': '+358',
-            'Europe/Warsaw': '+48', 'Europe/Prague': '+420', 'Europe/Vienna': '+43',
-            'Europe/Zurich': '+41', 'Europe/Lisbon': '+351',
-            'Europe/Moscow': '+7', 'Europe/Kiev': '+380',
-            'Asia/Tokyo': '+81', 'Asia/Seoul': '+82',
-            'Asia/Shanghai': '+86', 'Asia/Hong_Kong': '+852', 'Asia/Taipei': '+886',
-            'Asia/Kolkata': '+91', 'Asia/Calcutta': '+91', 'Asia/Mumbai': '+91',
-            'Asia/Singapore': '+65', 'Asia/Bangkok': '+66',
-            'Asia/Dubai': '+971', 'Asia/Riyadh': '+966',
-            'Asia/Jakarta': '+62', 'Asia/Manila': '+63',
-            'Asia/Karachi': '+92', 'Asia/Dhaka': '+880',
-            'Australia/Sydney': '+61', 'Australia/Melbourne': '+61', 'Australia/Perth': '+61',
-            'Pacific/Auckland': '+64',
-            'Africa/Lagos': '+234', 'Africa/Johannesburg': '+27', 'Africa/Cairo': '+20',
-            'Africa/Nairobi': '+254', 'Africa/Casablanca': '+212',
-        };
-
-        if (tzToDialCode[tz]) return tzToDialCode[tz];
-        if (tzToDialCode[`${region}/${city}`]) return tzToDialCode[`${region}/${city}`];
-        if (tzToDialCode[region]) return tzToDialCode[region];
-
-        return '+1';
-    } catch {
-        return '+1';
-    }
-}
-
-function normalizePhoneNumber(input: string): string {
-    const stripped = input.replace(/[\s\-\(\)\.]/g, '');
-    if (stripped.startsWith('+')) return stripped;
-    return `${getDefaultDialCode()}${stripped}`;
-}
 
 // ─── Animation Variants ────────────────────────────────────────────
 const fadeUp = {
@@ -116,94 +62,32 @@ const ENTRY_POINTS = [
     },
 ];
 
-// ─── What You Walk Into ────────────────────────────────────────────
-const PLATFORM_PILLARS = [
+// ─── How It Works Steps ────────────────────────────────────────────
+const STEPS = [
     {
-        icon: Lock,
-        title: 'The Blueprint',
-        text: 'Define your highest standard — your Character Bible. The immutable baseline you answer to every day.',
+        icon: Zap,
+        title: 'Choose your entry point',
+        text: 'Pick the thing that\'s on your mind. No intake forms. No waiting rooms. No small talk.',
     },
     {
         icon: MessageCircle,
-        title: 'The Mirror',
-        text: 'Consult your Ideal Self. Not a chatbot. Someone built from real psychology who challenges you to see clearly.',
+        title: 'Have the conversation',
+        text: 'You\'ll speak with someone who doesn\'t give you the easy answer. They sit in the mess with you until you can see it clearly.',
     },
     {
-        icon: BarChart3,
-        title: 'The Ledger',
-        text: 'A silent, data-driven vault of your execution. When doubt sets in, the system proves you\'ve won before.',
+        icon: Clock,
+        title: 'Walk away with clarity',
+        text: 'Not a prescription. Not a to-do list. A shift in how you see the problem — which changes everything.',
     },
 ];
 
 // ─── Component ─────────────────────────────────────────────────────
-export function LandingPage() {
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [verificationCode, setVerificationCode] = useState('');
+export default function TherapyShotsPage() {
     const [hoveredEntry, setHoveredEntry] = useState<number | null>(null);
     const [isComparisonOpen, setIsComparisonOpen] = useState(false);
-    const [step, setStep] = useState<'WELCOME' | 'INPUT_CODE'>('WELCOME');
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [detectedDialCode] = useState(() => getDefaultDialCode());
-    const router = useRouter();
 
-    const handleSendCode = async () => {
-        setError(null);
-        if (!phoneNumber) {
-            setError('Please enter a phone number.');
-            return;
-        }
-        const normalized = normalizePhoneNumber(phoneNumber);
-        setLoading(true);
-        try {
-            const res = await fetch('/api/auth/send-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: normalized }),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                setError(data.error || 'Failed to send code.');
-                return;
-            }
-            setStep('INPUT_CODE');
-        } catch (err: any) {
-            console.error('Error sending code:', err);
-            setError('Failed to send code. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyCode = async () => {
-        setError(null);
-        if (!verificationCode) return;
-        const normalized = normalizePhoneNumber(phoneNumber);
-        setLoading(true);
-        try {
-            const res = await fetch('/api/auth/verify-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: normalized, code: verificationCode }),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                setError(data.error || 'Invalid code. Please try again.');
-                return;
-            }
-            await signInWithCustomToken(auth, data.token);
-            router.push('/');
-        } catch {
-            setError('Invalid code. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber) : '';
-
-    const scrollToAuth = () => {
-        document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToCTA = () => {
+        document.getElementById('start-section')?.scrollIntoView({ behavior: 'smooth' });
     };
 
     return (
@@ -212,12 +96,15 @@ export function LandingPage() {
             {/* ── STICKY TOP NAV ── */}
             <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
-                    <span className="font-bold text-lg text-zinc-100 tracking-tight">Earnest Page</span>
+                    <div className="flex items-center gap-3">
+                        <span className="font-bold text-lg text-zinc-100 tracking-tight">Earnest Page</span>
+                        <span className="text-zinc-600 text-sm font-medium">/ Clarity Sessions</span>
+                    </div>
                     <button
-                        onClick={scrollToAuth}
+                        onClick={scrollToCTA}
                         className="rounded-full bg-white text-black px-5 py-2 text-sm font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
                     >
-                        Log In
+                        $20 — Start Now
                     </button>
                 </div>
             </nav>
@@ -250,7 +137,7 @@ export function LandingPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        No subscription. No commitment. Just a conversation.
+                        No account. No commitment. Just a conversation.
                     </motion.p>
 
                     <motion.h1
@@ -296,13 +183,13 @@ export function LandingPage() {
                         className="flex flex-col sm:flex-row items-center justify-center gap-4"
                     >
                         <button
-                            onClick={scrollToAuth}
+                            onClick={scrollToCTA}
                             className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
                         >
                             Start a Session
                         </button>
                         <button
-                            onClick={scrollToAuth}
+                            onClick={scrollToCTA}
                             className="rounded-full border border-white/20 bg-transparent text-white px-8 py-4 font-semibold text-base hover:bg-white/10 active:scale-[0.97] transition-all duration-150 flex items-center gap-2"
                         >
                             <Gift className="w-4 h-4" />
@@ -359,8 +246,9 @@ export function LandingPage() {
                                 viewport={{ once: true, margin: '-40px' }}
                                 onMouseEnter={() => setHoveredEntry(i)}
                                 onMouseLeave={() => setHoveredEntry(null)}
-                                onClick={scrollToAuth}
+                                onClick={scrollToCTA}
                             >
+                                {/* Subtle color glow on hover */}
                                 <div
                                     className={`absolute inset-0 bg-gradient-to-r ${entry.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
                                 />
@@ -383,6 +271,7 @@ export function LandingPage() {
                 </motion.div>
             </section>
 
+            {/* Thin divider */}
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
@@ -450,7 +339,7 @@ export function LandingPage() {
                                         <span></span>
                                         <span className="text-center">Traditional Therapy</span>
                                         <span className="text-center">AI Chatbots</span>
-                                        <span className="text-center text-white font-semibold">Earnest Page</span>
+                                        <span className="text-center text-white font-semibold">Clarity Session</span>
                                     </div>
                                     {[
                                         ['Cost', '$150–300', 'Free–$20/mo', '$20'],
@@ -473,10 +362,11 @@ export function LandingPage() {
                 </motion.div>
             </section>
 
+            {/* Thin divider */}
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
-                THE SYSTEM — What you're walking into
+                HOW IT WORKS — 3 Steps
                ═══════════════════════════════════════════════════════════ */}
             <section className="relative px-6 py-24 md:py-36">
                 <motion.div
@@ -487,22 +377,18 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        The System
+                        How It Works
                     </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
-                        More than a conversation.
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-16">
+                        Three steps. Twenty dollars.
                         <br />
-                        <span className="text-zinc-500">A daily operating system for your mind.</span>
+                        <span className="text-zinc-500">Zero small talk.</span>
                     </h2>
-                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mb-16">
-                        A single session can shift your perspective. But Earnest Page is built for those
-                        who want to go further — defining their highest standard and executing on it daily.
-                    </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {PLATFORM_PILLARS.map((item, i) => (
+                        {STEPS.map((step, i) => (
                             <motion.div
-                                key={item.title}
+                                key={step.title}
                                 className="group relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 transition-colors duration-200 hover:border-white/20 hover:bg-zinc-900/60"
                                 custom={i}
                                 variants={cardReveal}
@@ -510,14 +396,19 @@ export function LandingPage() {
                                 whileInView="visible"
                                 viewport={{ once: true, margin: '-60px' }}
                             >
-                                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center mb-6">
-                                    <item.icon className="w-5 h-5 text-zinc-300" />
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center">
+                                        <step.icon className="w-5 h-5 text-zinc-300" />
+                                    </div>
+                                    <span className="text-[11px] uppercase tracking-[0.25em] text-zinc-600 font-semibold">
+                                        Step {i + 1}
+                                    </span>
                                 </div>
                                 <h3 className="text-lg font-bold tracking-tight text-white mb-3">
-                                    {item.title}
+                                    {step.title}
                                 </h3>
                                 <p className="text-sm text-zinc-500 leading-relaxed">
-                                    {item.text}
+                                    {step.text}
                                 </p>
                             </motion.div>
                         ))}
@@ -525,101 +416,11 @@ export function LandingPage() {
                 </motion.div>
             </section>
 
+            {/* Thin divider */}
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
-                THE ARCHITECT — Founder credibility (condensed)
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
-                {/* Woodcut portrait */}
-                <motion.div
-                    className="relative w-full max-w-sm mx-auto mb-16"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                    viewport={{ once: true, margin: '-40px' }}
-                >
-                    <Image
-                        src="/woodcutman.jpeg"
-                        alt="Earnest Page"
-                        width={800}
-                        height={500}
-                        className="w-full h-auto"
-                        style={{
-                            mixBlendMode: 'luminosity',
-                            opacity: 0.6,
-                            maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
-                            WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
-                            filter: 'invert(1)',
-                        }}
-                    />
-                </motion.div>
-
-                <motion.div
-                    className="max-w-3xl mx-auto"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        The Architect
-                    </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
-                        I Built This Because
-                        <br />
-                        <span className="text-zinc-500">Nothing Else Was Honest Enough.</span>
-                    </h2>
-
-                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed mb-6">
-                        I almost became a doctor. Instead, I became an engineer with a doctor&rsquo;s
-                        instinct&mdash;someone who builds technology but thinks about people first.
-                        I spent decades pressure-testing every major framework for the human mind,
-                        from CBT to Buddhist practice to McLean Hospital&rsquo;s most intensive program.
-                    </p>
-                    <p className="text-base sm:text-lg text-zinc-300 font-semibold mb-10">
-                        Earnest Page is not my first product. It may be my most important.
-                    </p>
-
-                    {/* Credential badges */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                        {[
-                            { label: 'Harvard', detail: 'Patent Holder' },
-                            { label: 'RSA', detail: 'Security Architect' },
-                            { label: 'JSA Financial', detail: '$10M / yr Founder' },
-                        ].map((cred, i) => (
-                            <motion.div
-                                key={cred.label}
-                                className="rounded-xl border border-white/[0.08] bg-zinc-950 px-5 py-4 text-center"
-                                custom={i}
-                                variants={cardReveal}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: '-40px' }}
-                            >
-                                <div className="flex items-center justify-center gap-2 mb-1">
-                                    <Award className="w-3.5 h-3.5 text-zinc-500" />
-                                    <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-semibold">
-                                        {cred.label}
-                                    </span>
-                                </div>
-                                <span className="text-sm text-zinc-300 font-semibold">
-                                    {cred.detail}
-                                </span>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    <p className="text-[11px] text-zinc-600 font-mono tracking-wide">
-                        David Johnson&ensp;·&ensp;Founder&ensp;·&ensp;Patent Holder&ensp;·&ensp;26 Years Building Systems That Work
-                    </p>
-                </motion.div>
-            </section>
-
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
-
-            {/* ═══════════════════════════════════════════════════════════
-                PRIVACY — The trust section
+                TRUST — The privacy promise
                ═══════════════════════════════════════════════════════════ */}
             <section className="relative px-6 py-24 md:py-36">
                 <motion.div
@@ -636,21 +437,22 @@ export function LandingPage() {
                         What you say stays here.
                     </h2>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-4">
-                        Your conversations are encrypted and private. Your identity is protected by a
-                        Contact Firewall and proximity shield. Nothing is sold. Nothing is shared.
+                        No account required. No email. No data sold. Your conversation exists for you,
+                        during your session, and nowhere else. When it ends, it ends.
                     </p>
                     <p className="text-sm text-zinc-600">
-                        Built by the maker of enterprise security systems &mdash; where privacy is the foundation, not the feature.
+                        Built by the maker of Earnest Page &mdash; a platform where privacy is the foundation, not the feature.
                     </p>
                 </motion.div>
             </section>
 
+            {/* Thin divider */}
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
-                PRICING — Pay-per-session + Archangel
+                PRICING — The CTA
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
+            <section id="start-section" className="relative px-6 py-24 md:py-36">
                 <motion.div
                     className="max-w-4xl mx-auto"
                     variants={sectionFade}
@@ -660,7 +462,7 @@ export function LandingPage() {
                 >
                     <div className="text-center mb-16">
                         <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                            Get Started
+                            Start Now
                         </p>
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
                             One conversation.
@@ -697,7 +499,6 @@ export function LandingPage() {
                                 One full conversation. Up to 2 hours. No commitment.
                             </p>
                             <button
-                                onClick={scrollToAuth}
                                 className="w-full rounded-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
                             >
                                 Start Now
@@ -725,7 +526,6 @@ export function LandingPage() {
                                 Three sessions. Use anytime. They remember where you left off.
                             </p>
                             <button
-                                onClick={scrollToAuth}
                                 className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
                             >
                                 Get 3 Sessions
@@ -753,7 +553,6 @@ export function LandingPage() {
                                 For the person who needs this but would never seek it out themselves.
                             </p>
                             <button
-                                onClick={scrollToAuth}
                                 className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
                             >
                                 <Gift className="w-4 h-4" />
@@ -762,7 +561,7 @@ export function LandingPage() {
                         </motion.div>
                     </div>
 
-                    {/* Archangel — Price anchor */}
+                    {/* Archangel — Price anchor / premium tier */}
                     <motion.div
                         className="mt-5 max-w-4xl mx-auto rounded-2xl border border-amber-800/30 bg-gradient-to-br from-zinc-950 via-zinc-950 to-amber-950/10 p-8 sm:p-10 transition-colors duration-200 hover:border-amber-700/50"
                         custom={3}
@@ -788,8 +587,7 @@ export function LandingPage() {
                                 </div>
                                 <p className="text-sm text-zinc-500 leading-relaxed max-w-lg">
                                     All sessions included for 30 days. Up to 5 per day.
-                                    No per-session fees, no counting credits. For the person who
-                                    doesn&rsquo;t want to think about whether it&rsquo;s
+                                    No per-session fees, no counting credits. For the person who doesn&rsquo;t want to think about whether it&rsquo;s
                                     &ldquo;worth another $20.&rdquo; It always is.
                                 </p>
                             </div>
@@ -801,7 +599,6 @@ export function LandingPage() {
                                     <span className="text-sm text-zinc-600 ml-1">/month</span>
                                 </div>
                                 <button
-                                    onClick={scrollToAuth}
                                     className="rounded-full border border-amber-800/40 text-white px-6 py-3 text-sm font-bold tracking-wide hover:bg-amber-900/20 hover:border-amber-700/50 active:scale-[0.98] transition-all duration-150"
                                 >
                                     Go All-In
@@ -810,7 +607,7 @@ export function LandingPage() {
                         </div>
                     </motion.div>
 
-                    {/* Satisfaction guarantee */}
+                    {/* Bottom reassurance */}
                     <motion.p
                         className="text-center text-sm text-zinc-600 mt-10"
                         custom={4}
@@ -819,132 +616,53 @@ export function LandingPage() {
                         whileInView="visible"
                         viewport={{ once: true }}
                     >
-                        Not satisfied? Refund instantly. No forms, no emails, one click.
+                        Secure payment via Stripe. No account required. No subscription. No data stored after your session.
                     </motion.p>
                 </motion.div>
             </section>
 
+            {/* Thin divider */}
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
-                AUTH CARD — Phone login
+                FINAL CTA — The close
                ═══════════════════════════════════════════════════════════ */}
-            <section id="auth-section" className="relative px-6 py-24 md:py-32">
+            <section className="relative px-6 py-24 md:py-36">
                 <motion.div
-                    className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10"
-                    variants={cardReveal}
-                    custom={0}
+                    className="max-w-3xl mx-auto text-center"
+                    variants={sectionFade}
                     initial="hidden"
                     whileInView="visible"
-                    viewport={{ once: true, margin: '-40px' }}
+                    viewport={{ once: true, margin: '-80px' }}
                 >
-                    <div className="text-center mb-8">
-                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-                            Earnest Page
-                        </h2>
-                        <p className="text-sm text-zinc-500">
-                            Free to sign up. Pay only when you&rsquo;re ready to talk.
-                        </p>
-                    </div>
-
-                    {error && (
-                        <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
-                            {error}
-                        </div>
-                    )}
-
-                    {step === 'WELCOME' && (
-                        <div className="flex flex-col gap-3">
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-medium pointer-events-none select-none">
-                                    {detectedDialCode}
-                                </span>
-                                <input
-                                    type="tel"
-                                    placeholder="555 555 5555"
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    className="w-full bg-zinc-900/80 border border-white/10 pl-12 pr-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                />
-                            </div>
-                            <button
-                                onClick={handleSendCode}
-                                disabled={loading}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                            >
-                                {loading ? 'Sending...' : 'Continue'}
-                            </button>
-
-                            <p className="text-[10px] text-zinc-600 text-center mt-3 leading-relaxed">
-                                By continuing, you agree to our{' '}
-                                <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
-                                    Terms of Service
-                                </Link>{' '}
-                                and{' '}
-                                <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
-                                    Privacy Policy
-                                </Link>.
-                            </p>
-                        </div>
-                    )}
-
-                    {step === 'INPUT_CODE' && (
-                        <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
-                            <p className="text-xs text-zinc-400 text-center mb-2">
-                                Enter the 6-digit code sent to{' '}
-                                <span className="text-white font-semibold">{displayNumber}</span>
-                            </p>
-                            <input
-                                id="otp-code"
-                                name="otp-code"
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                autoComplete="one-time-code"
-                                placeholder="000000"
-                                value={verificationCode}
-                                onChange={(e) => setVerificationCode(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                maxLength={6}
-                                autoFocus
-                            />
-                            <button
-                                type="submit"
-                                disabled={loading || verificationCode.length < 6}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                            >
-                                {loading ? 'Verifying...' : 'Verify'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setStep('WELCOME');
-                                    setVerificationCode('');
-                                    setError(null);
-                                }}
-                                className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
-                            >
-                                ← Change number
-                            </button>
-                        </form>
-                    )}
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-[1.1] mb-6">
+                        The thing you keep carrying
+                        <br />
+                        <span className="text-zinc-500">doesn&rsquo;t have to stay invisible.</span>
+                    </h2>
+                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-xl mx-auto mb-10">
+                        Twenty dollars. One conversation. No one has to know.
+                    </p>
+                    <button
+                        onClick={() => document.getElementById('start-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
+                    >
+                        Start a Session
+                    </button>
                 </motion.div>
             </section>
 
-            {/* ── FOOTER ── */}
-            <footer className="border-t border-white/[0.06] px-6 py-10">
-                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-zinc-600">
-                    <span>© {new Date().getFullYear()} Earnest Page. All rights reserved.</span>
-                    <div className="flex items-center gap-4">
-                        <Link href="/terms" className="hover:text-zinc-400 transition-colors">Terms</Link>
-                        <Link href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy</Link>
-                        <Link href="/acceptable-use" className="hover:text-zinc-400 transition-colors">Acceptable Use</Link>
-                    </div>
+            {/* Footer */}
+            <footer className="border-t border-white/[0.06] px-6 py-8">
+                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-xs text-zinc-700">
+                        &copy; {new Date().getFullYear()} Earnest Page. All rights reserved.
+                    </p>
+                    <p className="text-[10px] text-zinc-700 text-center sm:text-right max-w-sm">
+                        Clarity Sessions are not a substitute for licensed therapy or psychiatric care.
+                        If you are in crisis, please contact the 988 Suicide &amp; Crisis Lifeline.
+                    </p>
                 </div>
-                <p className="max-w-5xl mx-auto text-[10px] text-zinc-700 text-center sm:text-left mt-4">
-                    Clarity Sessions are not a substitute for licensed therapy or psychiatric care.
-                    If you are in crisis, please contact the 988 Suicide &amp; Crisis Lifeline.
-                </p>
             </footer>
         </main>
     );

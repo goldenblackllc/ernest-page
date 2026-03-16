@@ -121,7 +121,7 @@ export function DashboardHeader() {
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                                         >
                                             <CreditCard className="w-4 h-4 text-zinc-500" />
-                                            {hasActivePlan ? 'Manage Access' : 'Enroll'}
+                                            Billing & Sessions
                                         </button>
 
                                         {/* Log Out */}

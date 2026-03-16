@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { db } from '@/lib/firebase/admin';
+import { db, FieldValue } from '@/lib/firebase/admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2026-02-25.clover',
@@ -7,9 +7,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
 
-const PLAN_AMOUNTS: Record<string, number> = {
-    proving_ground: 12000,
-    long_game: 120000,
+// Session tier → number of credits granted
+const SESSION_CREDITS: Record<string, number> = {
+    session_single: 1,
+    session_3pack: 3,
+    session_gift: 1,
+};
+
+// Session tier → amount in cents (for purchase record)
+const SESSION_AMOUNTS: Record<string, number> = {
+    session_single: 2000,
+    session_3pack: 5000,
+    session_gift: 2000,
 };
 
 export async function POST(req: Request) {
@@ -39,10 +48,46 @@ export async function POST(req: Request) {
             return Response.json({ received: true });
         }
 
-        // Check if subscription already exists (idempotent)
+        // Check if already processed (idempotent)
         const userDoc = await db.collection('users').doc(uid).get();
-        const existing = userDoc.data()?.subscription;
-        if (existing?.paymentIntentId === paymentIntent.id) {
+        const existing = userDoc.data();
+
+        // ─── SESSION PURCHASE ──────────────────────────────────
+        if (plan.startsWith('session_')) {
+            const credits = SESSION_CREDITS[plan];
+            if (!credits) {
+                console.warn(`Webhook: Unknown session plan "${plan}", skipping.`);
+                return Response.json({ received: true });
+            }
+
+            // Check idempotency against session_purchases
+            const existingPurchases = existing?.session_purchases || [];
+            if (existingPurchases.some((p: any) => p.id === paymentIntent.id)) {
+                return Response.json({ received: true, note: 'Already processed.' });
+            }
+
+            // Increment credits and log purchase
+            await db.collection('users').doc(uid).set(
+                {
+                    session_credits: FieldValue.increment(credits),
+                    total_sessions_purchased: FieldValue.increment(credits),
+                    session_purchases: FieldValue.arrayUnion({
+                        id: paymentIntent.id,
+                        type: plan,
+                        amount: SESSION_AMOUNTS[plan] || paymentIntent.amount,
+                        credits,
+                        purchasedAt: new Date().toISOString(),
+                    }),
+                },
+                { merge: true }
+            );
+
+            console.log(`Webhook: Added ${credits} session credit(s) for user ${uid} (${plan})`);
+            return Response.json({ received: true });
+        }
+
+        // ─── SUBSCRIPTION PURCHASE (legacy) ────────────────────
+        if (existing?.subscription?.paymentIntentId === paymentIntent.id) {
             return Response.json({ received: true, note: 'Already processed.' });
         }
 
@@ -50,7 +95,7 @@ export async function POST(req: Request) {
         const now = new Date();
         const expiry = new Date(now);
 
-        if (plan === 'proving_ground') {
+        if (plan === 'proving_ground' || plan === 'archangel') {
             expiry.setDate(expiry.getDate() + 30);
         } else {
             // long_game: 1 year

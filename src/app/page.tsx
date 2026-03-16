@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { LandingPage } from "@/components/LandingPage";
-import { Tollbooth } from "@/components/Tollbooth";
 import { Onboarding } from "@/components/Onboarding";
 import { ContactFirewall } from "@/components/ContactFirewall";
 import { TriagePanel } from "@/components/TriagePanel";
@@ -13,14 +12,6 @@ import { DashboardFooter } from "@/components/DashboardFooter";
 import { SupportChat } from "@/components/SupportChat";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-
-const BYPASS_PAYWALL = process.env.NEXT_PUBLIC_BYPASS_PAYWALL === 'true';
-
-function isSubscriptionActive(sub?: CharacterProfile['subscription']): boolean {
-    if (!sub || sub.status !== 'active') return false;
-    if (!sub.subscribedUntil) return false;
-    return new Date(sub.subscribedUntil) > new Date();
-}
 
 export default function Home() {
     const { user, loading } = useAuth();
@@ -44,7 +35,6 @@ export default function Home() {
 
     // Derived state
     const needsOnboarding = profileLoaded && !profile?.identity?.title;
-    const hasSubscription = BYPASS_PAYWALL || isSubscriptionActive(profile?.subscription);
 
     // Show nothing while checking auth state
     if (loading) {
@@ -74,12 +64,7 @@ export default function Home() {
         );
     }
 
-    // Authenticated + no subscription → Tollbooth
-    if (!hasSubscription) {
-        return <Tollbooth onComplete={() => setProfileLoaded(false)} />;
-    }
-
-    // Authenticated + subscribed + no profile → Onboarding
+    // Authenticated + no profile → Onboarding
     if (needsOnboarding) {
         return <Onboarding onComplete={() => setProfileLoaded(false)} />;
     }
@@ -89,7 +74,8 @@ export default function Home() {
         return <ContactFirewall onComplete={() => setProfileLoaded(false)} />;
     }
 
-    // Authenticated & subscribed & onboarded & firewall done → Dashboard
+    // Authenticated & onboarded & firewall done → Dashboard
+    // No subscription gate — session credits are checked at the chat FAB level
     return (
         <main className="min-h-screen text-zinc-300 font-sans">
             <DashboardHeader />

@@ -37,11 +37,13 @@ export async function POST(req: Request) {
 
         const userData = userDoc.data();
 
-        // ─── Subscription enforcement ───────────────────────────
+        // ─── Access enforcement (subscription OR session credits) ───
         const sub = userData?.subscription;
-        const isActive = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
-        if (!isActive) {
-            return Response.json({ error: 'Subscription expired or inactive.' }, { status: 403 });
+        const hasActiveSub = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
+        const hasCredits = (userData?.session_credits || 0) > 0;
+
+        if (!hasActiveSub && !hasCredits) {
+            return Response.json({ error: 'No active subscription or session credits.' }, { status: 403 });
         }
 
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];

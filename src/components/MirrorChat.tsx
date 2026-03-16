@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CharacterBible } from "@/types/character";
-import { User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock, Flame, Loader2 } from "lucide-react";
+import { User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock, Flame, Loader2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,6 +14,10 @@ import { useAuth } from "@/lib/auth/AuthContext";
 
 type SessionRouting = 'public' | 'private' | 'burn';
 
+const MAX_EXCHANGES = 30;
+const MAX_SESSION_HOURS = 2;
+const MAX_SESSION_MS = MAX_SESSION_HOURS * 60 * 60 * 1000;
+
 interface MirrorChatProps {
     isOpen: boolean;
     onClose: () => void;
@@ -21,9 +25,10 @@ interface MirrorChatProps {
     uid: string;
     initialContext?: string | null;
     defaultPostRouting?: 'public' | 'private';
+    isUnlimited?: boolean; // Active subscription (e.g. Archangel) — skip session limits
 }
 
-export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
+export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting, isUnlimited }: MirrorChatProps) {
     const { user: authUser } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
@@ -39,12 +44,41 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
 
+    // Session limits
+    const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
+    const [isSessionExpired, setIsSessionExpired] = useState(false);
+
     // Sync sessionRouting when defaultPostRouting prop changes (unless user manually overrode)
     useEffect(() => {
         if (!hasManuallySetRouting.current && defaultPostRouting) {
             setSessionRouting(defaultPostRouting === 'private' ? 'private' : 'public');
         }
     }, [defaultPostRouting]);
+
+    // Derive exchange count from messages
+    const exchangeCount = messages.filter(m => m.role === 'user').length;
+    const isAtExchangeLimit = exchangeCount >= MAX_EXCHANGES;
+    const isSessionLimited = !isUnlimited && (isAtExchangeLimit || isSessionExpired);
+
+    // Session timer — check expiry every 30 seconds
+    useEffect(() => {
+        if (!sessionStartedAt || !isOpen) return;
+        const check = () => {
+            if (Date.now() - sessionStartedAt >= MAX_SESSION_MS) {
+                setIsSessionExpired(true);
+            }
+        };
+        check();
+        const interval = setInterval(check, 30000);
+        return () => clearInterval(interval);
+    }, [sessionStartedAt, isOpen]);
+
+    // Set session start time on first message
+    useEffect(() => {
+        if (messages.length > 0 && !sessionStartedAt) {
+            setSessionStartedAt(Date.now());
+        }
+    }, [messages, sessionStartedAt]);
 
 
     // Initialize or Resume Session
@@ -186,7 +220,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
-        if (!input.trim() || isLoading) return;
+        if (!input.trim() || isLoading || isSessionLimited) return;
 
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -362,6 +396,17 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                 <p className="text-xs text-zinc-500 font-medium">Consulting The Mirror</p>
                             </div>
                         </div>
+                        {/* Exchange counter */}
+                        {messages.length > 0 && (
+                            <div className="flex items-center gap-3">
+                                <span className={cn(
+                                    "text-[10px] uppercase tracking-widest font-bold",
+                                    exchangeCount >= MAX_EXCHANGES - 5 ? "text-amber-500" : "text-zinc-600"
+                                )}>
+                                    {exchangeCount} / {MAX_EXCHANGES}
+                                </span>
+                            </div>
+                        )}
                         <button
                             onClick={handleClose}
                             className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 transition-colors"
@@ -618,18 +663,42 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                 )}
                             </AnimatePresence>
 
+                            {/* Session limit reached */}
+                            {isSessionLimited && (
+                                <div className="bg-zinc-900/60 border border-amber-900/30 rounded-xl p-4 mb-3 flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-white mb-1">
+                                            {isAtExchangeLimit ? 'Session Complete' : 'Session Time Expired'}
+                                        </p>
+                                        <p className="text-xs text-zinc-400">
+                                            {isAtExchangeLimit
+                                                ? `You've reached ${MAX_EXCHANGES} exchanges. Extract your directives and close to start a new session.`
+                                                : `Your ${MAX_SESSION_HOURS}-hour session window has ended. Extract your directives and close to start a new session.`
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Textarea */}
-                            <div className="bg-zinc-900/50 border border-white/10 rounded-xl p-3 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500 transition-all">
+                            <div className={cn(
+                                "bg-zinc-900/50 border border-white/10 rounded-xl p-3 transition-all",
+                                isSessionLimited
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500"
+                            )}>
                                 <textarea
                                     ref={textareaRef}
                                     className="w-full bg-transparent text-white px-1 min-h-[44px] max-h-[200px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar text-base leading-relaxed"
                                     value={input}
                                     onChange={handleInputChange}
-                                    placeholder="State your friction..."
+                                    placeholder={isSessionLimited ? 'Session ended. Close to start a new one.' : 'State your friction...'}
+                                    disabled={isSessionLimited}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {
                                             e.preventDefault();
-                                            if (input.trim() && !isLoading) {
+                                            if (input.trim() && !isLoading && !isSessionLimited) {
                                                 handleSubmit();
                                             }
                                         }

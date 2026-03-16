@@ -69,7 +69,7 @@ export interface CharacterProfile {
     last_thirty_day_checkin?: string; // ISO date of last 30-day check-in session
     subscription?: {
         status: 'active' | 'canceled' | 'expired';
-        plan: 'proving_ground' | 'long_game';
+        plan: 'proving_ground' | 'long_game' | 'archangel';
         subscribedAt: string;
         subscribedUntil?: string;
         paymentIntentId?: string;
@@ -77,6 +77,20 @@ export interface CharacterProfile {
         canceledAt?: string;
         refunded?: boolean;
     };
+    session_credits?: number; // Available chat sessions (default 0)
+    sessions_today?: number;   // Sessions consumed today (resets daily)
+    sessions_today_date?: string; // ISO date string (YYYY-MM-DD) — used to detect day rollover
+    session_purchases?: Array<{
+        id: string;               // paymentIntentId
+        type: 'session_single' | 'session_3pack' | 'session_gift';
+        amount: number;           // cents
+        credits: number;          // how many sessions this purchase granted
+        purchasedAt: string;      // ISO date
+        refunded?: boolean;       // Whether this purchase was refunded
+        refundedAt?: string;      // ISO date of refund
+    }>;
+    refund_count?: number;          // Total lifetime refunds issued
+    total_sessions_purchased?: number; // Total lifetime sessions purchased (for trust tier)
     daily_digest?: {
         title: string;
         content: string;

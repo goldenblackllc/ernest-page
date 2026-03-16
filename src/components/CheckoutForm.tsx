@@ -34,6 +34,12 @@ export function CheckoutForm({ plan, uid, onSuccess, onError }: CheckoutFormProp
             elements,
             confirmParams: {
                 return_url: window.location.origin,
+                payment_method_data: {
+                    billing_details: {
+                        email: '',
+                        phone: '',
+                    },
+                },
             },
             redirect: 'if_required',
         });
@@ -94,6 +100,10 @@ export function CheckoutForm({ plan, uid, onSuccess, onError }: CheckoutFormProp
                                 email: 'never',
                                 phone: 'never',
                             },
+                        },
+                        wallets: {
+                            applePay: 'never',
+                            googlePay: 'never',
                         },
                     }}
                 />
