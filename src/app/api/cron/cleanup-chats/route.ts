@@ -97,6 +97,20 @@ async function processUserChats(
     const identity = userData?.identity;
     const preferredLocale = userData?.preferred_locale || 'en';
 
+    // Build demographic hint for image generation so human figures match the user
+    const gender = identity?.gender || '';
+    const ethnicity = identity?.ethnicity || '';
+    const birthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
+    const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+    const demographicParts = [
+        computedAge ? `approximately ${computedAge} years old` : '',
+        ethnicity,
+        gender,
+    ].filter(Boolean);
+    const demographicHint = demographicParts.length > 0
+        ? `\nDEMOGRAPHIC CONTEXT (use ONLY when the "human" scale is chosen and a person appears in the image): The user is ${demographicParts.join(', ')}. Any human figure, silhouette, or body shown must plausibly match this description — skin tone, build, and age-appropriate appearance. Do NOT default to any other demographic. Remember: NEVER show faces.`
+        : '';
+
     for (const chatDoc of chatDocs) {
         const chatData = chatDoc.data();
 
@@ -176,6 +190,11 @@ If the transcript is valuable, populate the post fields:
 STEP 3: THE ART DIRECTOR (Image Generation)
 You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
 
+CHARACTER IDENTITY CONTEXT — use this to inform the world, environment, and energy of the image:
+- Archetype: "${archetype}"
+- Identity roles: "${identity?.title || 'Unknown'}"
+These roles should influence the setting, objects, and atmosphere. A "Monk" evokes stillness and sacred spaces. An "Athlete" evokes motion and discipline. A "Mother" evokes warmth and domestic beauty. A "Businessman" evokes sharp suits and city skylines. Let the archetype shape the visual world — do NOT ignore it.
+
 First, read the emotional tone of the post and choose a VIBE — the feeling that should emanate from the image. Examples: luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration.
 
 Then choose a SCALE — the type of shot:
@@ -183,7 +202,7 @@ Then choose a SCALE — the type of shot:
 - "lifestyle": A composed scene or environment that tells a story. Tabletop, room, workspace.
 - "wide": An aspirational landscape, cityscape, or architectural shot. Expansive, atmospheric.
 - "human": Faceless human presence — silhouettes, hands doing something, over-the-shoulder, person walking away. NEVER show faces.
-${recentScaleHint}
+${recentScaleHint}${demographicHint}
 
 - photo_vibe: One word capturing the emotional tone.
 - photo_scale: One of macro, lifestyle, wide, or human.

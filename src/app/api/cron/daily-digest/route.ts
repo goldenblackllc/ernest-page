@@ -27,7 +27,7 @@ export async function GET(req: Request) {
         let cardsGenerated = 0;
 
         // Build list of eligible users with their digest data
-        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference }[] = [];
+        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference; demographicHint: string; archetype: string; identityTitle: string }[] = [];
 
         for (const userDoc of usersSnapshot.docs) {
             const uid = userDoc.id;
@@ -92,7 +92,26 @@ export async function GET(req: Request) {
 
             // Pick a random subsection
             const pick = allSubsections[Math.floor(Math.random() * allSubsections.length)];
-            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref });
+
+            // Build demographic hint for image generation
+            const identity = userData?.identity;
+            const uGender = identity?.gender || '';
+            const uEthnicity = identity?.ethnicity || '';
+            const uBirthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
+            const uAge = !isNaN(uBirthYear) ? Math.max(0, new Date().getFullYear() - uBirthYear) : null;
+            const demoParts = [
+                uAge ? `approximately ${uAge} years old` : '',
+                uEthnicity,
+                uGender,
+            ].filter(Boolean);
+            const demographicHint = demoParts.length > 0
+                ? ` If any human figure, silhouette, or body is shown, they must plausibly be ${demoParts.join(', ')} (skin tone, build, age-appropriate). Do NOT default to any other demographic.`
+                : '';
+
+            const archetype = userData?.character_bible?.source_code?.archetype || '';
+            const identityTitle = identity?.title || '';
+
+            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle });
         }
 
         // ─── BATCH PROCESSING: generate images in parallel groups of 5 ───
@@ -126,12 +145,18 @@ async function generateDigestCard(user: {
     title: string;
     content: string;
     ref: FirebaseFirestore.DocumentReference;
+    demographicHint: string;
+    archetype: string;
+    identityTitle: string;
 }): Promise<boolean> {
     let imageUrl: string | null = null;
 
     try {
         const contentSnippet = user.content.substring(0, 200).replace(/[*#_]/g, '');
-        const imagenPrompt = `Create an image inspired by this passage: "${contentSnippet}". Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.`;
+        const identityContext = (user.archetype || user.identityTitle)
+            ? ` The user's identity: archetype "${user.archetype}", roles "${user.identityTitle}". Let this inform the visual world — setting, objects, and atmosphere should reflect who this person is.`
+            : '';
+        const imagenPrompt = `Create an image inspired by this passage: "${contentSnippet}". Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text.${identityContext}${user.demographicHint} ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.`;
 
         const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
             method: 'POST',
