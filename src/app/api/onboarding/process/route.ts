@@ -4,6 +4,8 @@ import { generateWithFallback, SONNET_MODEL } from "@/lib/ai/models";
 import { FieldValue } from "firebase-admin/firestore";
 import { waitUntil } from "@vercel/functions";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
+import { getTranslations } from 'next-intl/server';
+import { cookies } from 'next/headers';
 
 export const maxDuration = 120;
 
@@ -20,6 +22,8 @@ A user has written a "dream rant" — a raw, unstructured description of who the
 2. DREAM SELF: Write a present-tense identity paragraph (3-5 sentences) describing this person AS IF THEY ALREADY ARE who they described. CRITICAL: The user may express desires as wishes ("I want to be rich", "I wish I was fit"). You MUST transform ALL wish-language into present-tense identity. "I wish I was rich" → "I am financially abundant." "I want to be a better father" → "I am a present, engaged father." The output must read as a confident, realized identity — never aspirational. Use pronouns/gendered language consistent with the rant.
 
 3. INITIAL DOSSIER: Extract any concrete facts mentioned (location, family, occupation, preferences, gender). Format as a structured document. If facts are sparse, that's fine — the dossier will grow over time through conversations.
+
+ALL output sections must be strictly written in the target language requested at the bottom of these instructions.
 
 The dream rant:
 "{RANT}"`;
@@ -55,10 +59,13 @@ export async function POST(req: Request) {
         const important_people = (rawBody.important_people || '').substring(0, 3000);
         const things_i_enjoy = (rawBody.things_i_enjoy || '').substring(0, 3000);
         const character_name = (rawBody.character_name || '').substring(0, 100);
+        const cookieStore = await cookies();
+        const preferredLocale = rawBody.locale || cookieStore.get('NEXT_LOCALE')?.value || 'en';
+        const t = await getTranslations('apiErrors');
 
         if (!rant) {
             return Response.json(
-                { error: "Rant is required." },
+                { error: t('rantRequired') },
                 { status: 400 }
             );
         }
@@ -76,7 +83,19 @@ export async function POST(req: Request) {
             ? `${contextPrefix}\n\n${rant}`
             : rant;
 
-        const prompt = PROCESS_PROMPT.replace("{RANT}", rantWithContext);
+        // Language instruction
+        let languageInstruction = "The output must be in English.";
+        if (preferredLocale === "es") {
+            languageInstruction = "The output MUST be entirely in SPANISH (Español).";
+        } else if (preferredLocale === "fr") {
+            languageInstruction = "The output MUST be entirely in FRENCH (Français).";
+        } else if (preferredLocale === "de") {
+            languageInstruction = "The output MUST be entirely in GERMAN (Deutsch).";
+        } else if (preferredLocale === "pt") {
+            languageInstruction = "The output MUST be entirely in PORTUGUESE (Português).";
+        }
+
+        const prompt = PROCESS_PROMPT.replace("{RANT}", rantWithContext) + `\n\nCRITICAL: ${languageInstruction}`;
 
         const result = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
@@ -222,6 +241,7 @@ export async function POST(req: Request) {
         });
     } catch (error: any) {
         console.error("Onboarding Process API Error:", error);
+        const t = await getTranslations('apiErrors');
 
         if (
             error.name === "AbortError" ||
@@ -231,14 +251,14 @@ export async function POST(req: Request) {
                 {
                     success: false,
                     errorType: "TIMEOUT",
-                    message: "The algorithm is taking longer than expected. Please try again.",
+                    message: t('onboardingTimeout'),
                 },
                 { status: 504 }
             );
         }
 
         return Response.json(
-            { error: error.message || "An unexpected error occurred." },
+            { error: error.message || t('unexpected') },
             { status: 500 }
         );
     }

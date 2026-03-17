@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CharacterIdentity } from '@/types/character';
 import { FileText, Calendar, Hash, ChevronDown, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface DossierViewProps {
     identity: CharacterIdentity;
@@ -27,6 +28,7 @@ function toTitleCase(str: string): string {
 
 export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
     const [openSections, setOpenSections] = useState<Set<number>>(new Set([0]));
+    const t = useTranslations('dossier');
 
     if (!isOpen) return null;
 
@@ -56,24 +58,24 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-zinc-500" />
-                            <h2 className="text-sm font-bold text-zinc-200">Dossier</h2>
+                            <h2 className="text-sm font-bold text-zinc-200">{t('title')}</h2>
                         </div>
                         <button
                             onClick={onClose}
                             className="text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest min-h-[44px] flex items-center"
                         >
-                            Close
+                            {t('close')}
                         </button>
                     </div>
                     <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
                             <Hash className="w-3 h-3" />
-                            <span>{identity.session_count || 0} sessions</span>
+                            <span>{t('sessionsCount', { count: identity.session_count || 0 })}</span>
                         </div>
                         {identity.dossier_updated_at && (
                             <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
                                 <Calendar className="w-3 h-3" />
-                                <span>Last updated {formatDate(identity.dossier_updated_at)}</span>
+                                <span>{t('lastUpdated', { date: formatDate(identity.dossier_updated_at) })}</span>
                             </div>
                         )}
                     </div>
@@ -139,7 +141,7 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
                                         <div className="flex items-center gap-2">
                                             <Activity className="w-4 h-4 text-zinc-500" />
                                             <h3 className="text-base font-semibold text-zinc-100 tracking-wide">
-                                                Belief Patterns
+                                                {t('beliefPatterns')}
                                             </h3>
                                         </div>
                                         <ChevronDown
@@ -170,7 +172,7 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
                         <div className="text-center py-12">
                             <FileText className="w-8 h-8 text-zinc-800 mx-auto mb-3" />
                             <p className="text-sm text-zinc-600">
-                                Your dossier will build over time as you use the app.
+                                {t('empty')}
                             </p>
                         </div>
                     )}

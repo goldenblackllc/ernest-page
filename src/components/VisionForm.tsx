@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/Button";
 import { Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function VisionForm() {
     const router = useRouter();
     const { user } = useAuth();
+    const t = useTranslations('vision');
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -65,12 +67,12 @@ export function VisionForm() {
 
     const handlePublish = async () => {
         if (!user) {
-            alert("You must be logged in to publish.");
+            alert(t('errorLogin'));
             return;
         }
 
         if (!title.trim()) {
-            alert("Please enter a title.");
+            alert(t('errorTitle'));
             return;
         }
 
@@ -140,7 +142,7 @@ export function VisionForm() {
 
         } catch (error: any) {
             console.error("Error publishing vision:", error);
-            alert(`Error: ${error.message}`);
+            alert(`${t('errorPrefix')}${error.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -175,23 +177,23 @@ export function VisionForm() {
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                 <span className="text-white text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1">
-                                    Change Image
+                                    {t('changeImage')}
                                 </span>
                             </div>
                         </>
                     ) : (
                         <p className="text-gray-400 group-hover:text-black font-medium uppercase tracking-widest text-sm transition-colors">
-                            Upload Inspiration (Optional)
+                            {t('uploadInspiration')}
                         </p>
                     )}
                 </div>
 
                 <div className="text-center space-y-4 max-w-2xl mx-auto">
                     <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-black uppercase">
-                        What Do You Want?
+                        {t('heading')}
                     </h2>
                     <p className="text-lg md:text-xl text-gray-700 leading-relaxed">
-                        "The distance between where you are and what you want is determined by your frequency. Define the target. Generate the frequency."
+                        {t('subtext')}
                     </p>
                 </div>
             </div>
@@ -203,25 +205,25 @@ export function VisionForm() {
                 <div className="space-y-6">
                     <div>
                         <label className="block text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] text-gray-900 mb-2">
-                            TITLE
+                            {t('titleLabel')}
                         </label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g., A new car, $10k/month, a healthy relationship..."
+                            placeholder={t('titlePlaceholder')}
                             className="w-full border border-gray-300 bg-transparent px-4 py-3 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-0 rounded-none transition-colors"
                         />
                     </div>
 
                     <div>
                         <label className="block text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] text-gray-900 mb-2">
-                            DESCRIPTION
+                            {t('descLabel')}
                         </label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Describe the details of what you want..."
+                            placeholder={t('descPlaceholder')}
                             className="w-full h-32 border border-gray-300 bg-transparent px-4 py-3 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-0 rounded-none transition-colors resize-y"
                         />
                     </div>
@@ -231,7 +233,7 @@ export function VisionForm() {
                 <section className="space-y-6">
                     <div className="border-b-2 border-black pb-2">
                         <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-black uppercase">
-                            The Stream
+                            {t('streamHeading')}
                         </h2>
                     </div>
 
@@ -256,7 +258,7 @@ export function VisionForm() {
                         {isSubmitting ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                            "PUBLISH"
+                            t('publish')
                         )}
                     </Button>
                 </div>

@@ -1,0 +1,728 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "signOut": "Sign out",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "submit": "Submit",
+    "brand": "Earnest Page",
+    "error": "Something went wrong. Please try again."
+  },
+  "landing": {
+    "nav": {
+      "login": "Log In"
+    },
+    "hero": {
+      "tagline": "No subscription. No commitment. Just a conversation.",
+      "headline1": "You know that thing",
+      "headline2": "you keep thinking about",
+      "headline3": "at 2am?",
+      "subtext": "Talk to someone who won't judge, won't forget what you said ten minutes ago, and won't charge you $200.",
+      "price": "$20. Start right now.",
+      "cta": "Start a Session",
+      "giftCta": "Gift One to Someone"
+    },
+    "entryPoints": {
+      "label": "Sound Familiar?",
+      "heading1": "Pick the one that",
+      "heading2": "won't leave you alone.",
+      "stuck": "I'm stuck and I don't know why",
+      "stuckSub": "Career paralysis, life transitions, feeling frozen",
+      "secret": "I can't say this out loud to anyone",
+      "secretSub": "The thing you carry alone",
+      "pattern": "I keep making the same mistake",
+      "patternSub": "Patterns you can see but can't stop",
+      "gap": "I know what I should do but I can't do it",
+      "gapSub": "The gap between intention and action",
+      "mask": "Everyone thinks I'm fine",
+      "maskSub": "The high-functioning mask"
+    },
+    "difference": {
+      "label": "The Difference",
+      "heading1": "This is not a chatbot.",
+      "heading2": "This is not therapy.",
+      "body1": "Chatbots validate you. Therapists analyze you. Neither of them will sit in front of you, look at the mess of your life, and tell you the thing you already know but haven't been able to say out loud.",
+      "body2": "This is a conversation with someone who sees the pattern you can't see from the inside.",
+      "body3": "You choose someone you admire — an archetype built from real psychology, real philosophy, and real lived experience. They don't tell you what to do. They help you see clearly enough to know for yourself.",
+      "toggleShow": "See how this compares",
+      "toggleHide": "Hide comparison",
+      "compCost": "Cost",
+      "compAvailable": "Available",
+      "compCommitment": "Commitment",
+      "compRemembers": "Remembers you",
+      "compChallenges": "Challenges you",
+      "compTherapy": "Traditional Therapy",
+      "compChatbots": "AI Chatbots",
+      "compEarnest": "Earnest Page"
+    },
+    "system": {
+      "label": "The System",
+      "heading1": "More than a conversation.",
+      "heading2": "A daily operating system for your mind.",
+      "body": "A single session can shift your perspective. But Earnest Page is built for those who want to go further — defining their highest standard and executing on it daily.",
+      "blueprintTitle": "The Blueprint",
+      "blueprintText": "Define your highest standard — your Character Bible. The immutable baseline you answer to every day.",
+      "mirrorTitle": "The Mirror",
+      "mirrorText": "Consult your Ideal Self. Not a chatbot. Someone built from real psychology who challenges you to see clearly.",
+      "ledgerTitle": "The Ledger",
+      "ledgerText": "A silent, data-driven vault of your execution. When doubt sets in, the system proves you've won before."
+    },
+    "architect": {
+      "label": "The Architect",
+      "heading1": "I Built This Because",
+      "heading2": "Nothing Else Was Honest Enough.",
+      "body1": "I almost became a doctor. Instead, I became an engineer with a doctor's instinct — someone who builds technology but thinks about people first. I spent decades pressure-testing every major framework for the human mind, from CBT to Buddhist practice to McLean Hospital's most intensive program.",
+      "body2": "Earnest Page is not my first product. It may be my most important.",
+      "credHarvard": "Harvard",
+      "credHarvardDetail": "Patent Holder",
+      "credRSA": "RSA",
+      "credRSADetail": "Security Architect",
+      "credJSA": "JSA Financial",
+      "credJSADetail": "$10M / yr Founder",
+      "founderLine": "David Johnson · Founder · Patent Holder · 26 Years Building Systems That Work"
+    },
+    "privacy": {
+      "heading": "What you say stays here.",
+      "body": "Your conversations are encrypted and private. Your identity is protected by a Contact Firewall and proximity shield. Nothing is sold. Nothing is shared.",
+      "subtext": "Built by the maker of enterprise security systems — where privacy is the foundation, not the feature."
+    },
+    "pricing": {
+      "label": "Get Started",
+      "heading1": "One conversation.",
+      "heading2": "No strings attached.",
+      "mostPopular": "Most Popular",
+      "singleLabel": "Single Session",
+      "singlePrice": "$20",
+      "singleDesc": "One full conversation. Up to 2 hours. No commitment.",
+      "singleCta": "Start Now",
+      "threePackLabel": "3-Pack",
+      "threePackPrice": "$50",
+      "threePackDesc": "Three sessions. Use anytime. They remember where you left off.",
+      "threePackCta": "Get 3 Sessions",
+      "giftLabel": "Gift a Session",
+      "giftPrice": "$20",
+      "giftDesc": "For the person who needs this but would never seek it out themselves.",
+      "giftCta": "Send a Gift",
+      "archangelSubLabel": "For the Architect of Their Day",
+      "archangelTitle": "The Archangel Program",
+      "archangelDesc": "All sessions included for 30 days. Up to 5 per day. No per-session fees, no counting credits. For the person who doesn't want to think about whether it's \"worth another $20.\" It always is.",
+      "archangelPrice": "$499",
+      "archangelPeriod": "/ 30 days",
+      "archangelCta": "Enroll Now"
+    },
+    "auth": {
+      "heading1": "Start right now.",
+      "heading2": "No accounts. No emails. Just your phone.",
+      "phonePlaceholder": "Phone number",
+      "sendCode": "Send Code",
+      "sending": "Sending...",
+      "codeSent": "Code sent to",
+      "codePlaceholder": "Enter 6-digit code",
+      "verify": "Verify & Enter",
+      "verifying": "Verifying...",
+      "wrongNumber": "Wrong number?",
+      "errorNoPhone": "Please enter a phone number.",
+      "errorSendFailed": "Failed to send code. Please try again.",
+      "errorVerifyFailed": "Invalid code. Please try again.",
+      "byContinuing": "By continuing, you agree to our",
+      "and": "and"
+    },
+    "footer": {
+      "copyright": "© {year} Earnest Page. All rights reserved.",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "acceptableUse": "Acceptable Use"
+    }
+  },
+  "dashboard": {
+    "header": {
+      "securityVault": "Security Vault",
+      "rolodex": "Rolodex",
+      "giftSession": "Gift a Session",
+      "billing": "Billing & Sessions",
+      "logOut": "Log Out",
+      "support": "Support"
+    }
+  },
+  "onboarding": {
+    "processing": "Building your character...",
+    "processingSubtext": "This takes a moment. Hang tight.",
+    "submitLabel": "Create My Character",
+    "errorDefault": "Something went wrong. Please try again.",
+    "identityForm": {
+      "visionTitle": "Who Do You Want to Be?",
+      "visionSub": "Don't think about it too hard. Just write.",
+      "nameLabel": "Name your character",
+      "nameOptional": "(optional — we'll create one if blank)",
+      "namePlaceholder": "Leave blank to auto-generate",
+      "genderLabel": "I am a",
+      "genderPlaceholder": "Man, Woman, etc.",
+      "bornLabel": "Born",
+      "bornPlaceholder": "1989",
+      "ethnicityLabel": "Ethnicity",
+      "ethnicityOptional": "(optional)",
+      "ethnicityPlaceholder": "e.g., Black, East Asian, Hispanic, Caucasian, Mixed...",
+      "rantLabel": "The Rant",
+      "rantSub": "Describe your ideal life — the person, the lifestyle, all of it. Raw is better than polished. We'll build your character from this.",
+      "rantPlaceholder": "I want to be the kind of man who wakes up with a plan. Financially free. A father my kids actually look up to. In the best shape of my life. Running something that matters...",
+      "next": "Next",
+      "realityTitle": "Your Reality",
+      "realitySub": "Tell us about your life so your character fits your world.",
+      "peopleLabel": "Your People",
+      "peopleSub": "Who makes you feel something — good or bad? Family, friends, rivals, pets. Don't just list names — say what's real. We'll sort it out.",
+      "peoplePlaceholder": "My wife — we're solid but she thinks I work too much. My son (4) — my whole world. My dog Rex. My business partner — brilliant but I don't fully trust him yet...",
+      "enjoymentsLabel": "What Lights You Up",
+      "enjoymentsSub": "What excites you? The things that make you happy stay — your character should love what you love.",
+      "enjoymentsPlaceholder": "Cooking for people, 90s hip-hop, horror movies, long drives with no plan, my morning coffee ritual, pickup basketball...",
+      "skip": "Skip for now"
+    }
+  },
+  "vision": {
+    "errorLogin": "You must be logged in to publish.",
+    "errorTitle": "Please enter a title.",
+    "errorPrefix": "Error: ",
+    "changeImage": "Change Image",
+    "uploadInspiration": "Upload Inspiration (Optional)",
+    "heading": "What Do You Want?",
+    "subtext": "\"The distance between where you are and what you want is determined by your frequency. Define the target. Generate the frequency.\"",
+    "titleLabel": "TITLE",
+    "titlePlaceholder": "e.g., A new car, $10k/month, a healthy relationship...",
+    "descLabel": "DESCRIPTION",
+    "descPlaceholder": "Describe the details of what you want...",
+    "streamHeading": "The Stream",
+    "publish": "PUBLISH",
+    "streamInput": {
+      "placeholder": "Type a feeling, thought, or action...",
+      "feeling": "+ FEELING",
+      "thought": "+ THOUGHT",
+      "action": "+ ACTION"
+    },
+    "streamList": {
+      "selectTopFeelings": "Select your top 3 feelings.",
+      "empty": "The stream is empty",
+      "ariaUnselect": "Unselect feeling",
+      "ariaSelect": "Select feeling",
+      "ariaDelete": "Delete item"
+    }
+  },
+  "mirrorChat": {
+    "consultingMirror": "Consulting The Mirror",
+    "connectionSecured": "Connection secured.",
+    "promptFriction": "\"Detail your current friction.\"",
+    "extractingDirectives": "Extracting directives...",
+    "extractDirectives": "Extract 24-Hour Directives",
+    "directivesSaved": "✓ Directives saved",
+    "directivesFailed": "Failed to extract directives. Try again.",
+    "sessionRouting": "Session Routing:",
+    "publicFeed": "Public Feed",
+    "privateLedger": "Private Ledger",
+    "burnOnClose": "Burn on Close",
+    "burnMicrocopy": "Zero retention. Erased immediately upon exit.",
+    "sessionComplete": "Session Complete",
+    "sessionExpired": "Session Time Expired",
+    "sessionCompleteDesc": "You've reached {max} exchanges. Extract your directives and close to start a new session.",
+    "sessionExpiredDesc": "Your {hours}-hour session window has ended. Extract your directives and close to start a new session.",
+    "placeholderDefault": "State your friction...",
+    "placeholderEnded": "Session ended. Close to start a new one.",
+    "encryptedPrivate": "Encrypted & Private",
+    "stop": "Stop",
+    "commit": "Commit",
+    "regenerate": "Regenerate Response",
+    "mode": "Mode"
+  },
+  "tollbooth": {
+    "secureEnrollment": "Secure Enrollment",
+    "heading": "Demand a Better Life.",
+    "body": "Earnest Page is not another app you forget about. It is an intentional investment for someone who refuses to compromise. At $4 a day, securing your standard costs less than the coffee you drink while making excuses.",
+    "thirtyDays": "30 Days",
+    "provingGround": "The Proving Ground",
+    "provingPrice": "$120",
+    "provingPeriod": "/ 30 days",
+    "provingDesc": "30 days to prove you mean it. No extensions.",
+    "oneYear": "1 Year",
+    "longGame": "The Long Game",
+    "longPrice": "$1,200",
+    "longPeriod": "/ 1 year",
+    "longDesc": "You already proved it. Now build the compound effect.",
+    "selectPlan": "Select your commitment above to proceed."
+  },
+  "triagePanel": {
+    "buildingCharacter": "Building your character...",
+    "openChat": "Open chat",
+    "purchaseSession": "Purchase a session",
+    "dailyLimit": "Daily limit reached — go do the work."
+  },
+  "feed": {
+    "bibleCompilingTitle": "Building your character...",
+    "bibleCompilingSub": "Crafting your Ideal Self and generating your portrait. This can take a few minutes.",
+    "bibleReadyTitle": "Build Finished ✓",
+    "idealSelfDefault": "Your Ideal Self",
+    "bibleReadySub": "Tap to view your Ideal Self →",
+    "writingPending": "Writing to Dear Earnest...",
+    "emptyFeed": "No posts yet. Start a conversation to create your first post.",
+    "caughtUp": "You're all caught up.",
+    "commentSaved": "Saved. Your character also left a note on another post ✨",
+    "authorMe": "Me",
+    "authorAnonymous": "Anonymous",
+    "followAuthor": "+ Follow Author",
+    "privacyEveryone": "Everyone",
+    "privacyOnlyMe": "Only Me",
+    "justNow": "just now",
+    "realityShiftTitle": "Something Unexpected",
+    "showLess": "Show Less ⌃",
+    "readMore": "Read More ⌄",
+    "readCounsel": "Read the Counsel ⌄",
+    "theCounsel": "THE COUNSEL:",
+    "rawConversation": "Raw Conversation",
+    "rawInputCounsel": "Raw Input & Counsel",
+    "roleYou": "You",
+    "roleCharacter": "Character",
+    "rawInputTitle": "My Raw Input",
+    "rawCounselTitle": "Raw AI Counsel",
+    "deletePost": "Delete Post",
+    "likeTooltip": "Send love to the universe",
+    "commentTooltip": "Comment",
+    "viewPublic": "View Public",
+    "viewPrivate": "View Private",
+    "commentPlaceholder": "Leave a reflection...",
+    "deleteComment": "Delete comment",
+    "translatedFrom": "Translated from {language}",
+    "translate": "Translate",
+    "translatePost": "Translate post",
+    "adPartner": "Partner",
+    "adSponsored": "Sponsored",
+    "checkinContext": "I am here for my 30 day check-in.",
+    "checkinTitle": "30 Day Check-in ✓",
+    "checkinSub": "Tap to start →"
+  },
+  "profile": {
+    "unknownCharacter": "Unknown Character",
+    "profileTab": "Profile",
+    "edit": "Edit",
+    "identityTitle": "Identity",
+    "editIdentityModalTitle": "Edit Identity",
+    "close": "Close",
+    "rebuildingCharacter": "Rebuilding your character...",
+    "rebuildCharacterBtn": "Rebuild Character"
+  },
+  "identityModal": {
+    "title": "Define Your Identity",
+    "subtitle": "Who are you? How do you want to show up in the world right now?",
+    "placeholder": "I am a person who...",
+    "cancel": "Cancel",
+    "updating": "Updating...",
+    "updateBtn": "UPDATE DEFINITION",
+    "errorUpdate": "Failed to update. Please try again."
+  },
+  "identityAnchor": {
+    "loading": "Loading Reality...",
+    "undefined": "IDENTITY UNDEFINED.",
+    "defineReality": "DEFINE REALITY",
+    "placeholder": "I AM...",
+    "committing": "COMMITTING...",
+    "commitBtn": "COMMIT NEW IDENTITY",
+    "errorUpdate": "Failed to update identity."
+  },
+  "dossier": {
+    "title": "Dossier",
+    "close": "Close",
+    "sessionsCount": "{count} sessions",
+    "lastUpdated": "Last updated {date}",
+    "beliefPatterns": "Belief Patterns",
+    "empty": "Your dossier will build over time as you use the app."
+  },
+  "characterReview": {
+    "letterFrom": "A Letter from {name}",
+    "close": "Close"
+  },
+  "securityVault": {
+    "title": "Security & Routing",
+    "statusLocked": "Status: Locked.",
+    "statusOpen": "Status: Open.",
+    "identitiesSecured": "{count} Identities Secured.",
+    "identitySecured": "{count} Identity Secured.",
+    "manageFirewall": "Manage Firewall",
+    "purge": "Purge",
+    "confirmPurge": "Confirm Purge",
+    "proximityTitle": "Proximity Blind Spot",
+    "proximityDesc": "Posts within a 200-mile radius of your location are mathematically filtered from your feed. If browser GPS is disabled, anchor your radius manually.",
+    "enterZipCode": "Enter Zip Code (e.g., 01741)",
+    "anchorRadius": "Anchor Radius",
+    "currentAnchor": "Current Anchor:",
+    "liveGps": "Live GPS",
+    "defaultRoutingTitle": "Default Post Routing",
+    "defaultRoutingDesc": "Determine where your friction is logged by default.",
+    "publicRouting": "Public (Dear Earnest Feed)",
+    "publicRoutingDesc": "Anonymized friction routed to the network.",
+    "privateRouting": "Private (Personal Ledger)",
+    "privateRoutingDesc": "Strict historical logging. No external visibility.",
+    "dataDestructionTitle": "Data Destruction",
+    "dataDestructionDesc": "Permanently and irrevocably delete your entire history of friction and tactical plans. We hold nothing back.",
+    "burnLedger": "Burn the Ledger",
+    "burnWarning": "This action is irreversible. All posts will be destroyed.",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "accountDeletionTitle": "Account Deletion",
+    "accountDeletionDesc": "Permanently delete your entire account, including all posts, conversations, character data, and authentication. This action is immediate and irreversible.",
+    "deleteMyAccount": "Delete My Account",
+    "deleteWarning": "Type DELETE to confirm. All data will be destroyed.",
+    "typeDelete": "Type DELETE",
+    "deleteForever": "Delete Forever",
+    "vaultSecured": "Vault Secured"
+  },
+  "contactFirewall": {
+    "protocolTitle": "Network Isolation Protocol",
+    "title": "The Contact Firewall",
+    "desc": "Your execution requires total isolation. Block specific threats or upload your entire contact book to establish a permanent, cryptographic blind spot.",
+    "trustDesc": "We do not store your contacts. Everything is hashed locally on this device before it ever reaches our servers. You are mathematically invisible to your immediate orbit.",
+    "precisionTargeting": "Precision Targeting",
+    "bulkIsolation": "Bulk Isolation",
+    "precisionTitle": "Identify Specific Threats",
+    "precisionDesc": "Enter the specific phone numbers of individuals whose presence would compromise your honesty on the platform.",
+    "phoneNumber": "Phone Number",
+    "addAnotherTarget": "Add another target",
+    "lockPerimeter": "Lock Perimeter",
+    "bulkTitle": "Establish a Total Blind Spot",
+    "bulkDesc": "Upload your device's raw contact export (.vcf or .csv). Hashing occurs entirely within your browser; the file never touches our servers.",
+    "exportApple": "How to export from Apple",
+    "exportGoogle": "How to export from Google",
+    "dropToAnalyze": "Drop to analyze",
+    "dragAndDrop": "Drag and drop your contact file here",
+    "fileTypes": ".vcf or .csv — processed locally, never uploaded",
+    "selectFile": "Select .vcf or .csv File",
+    "skipForNow": "Skip for now. I accept the risk of exposure.",
+    "hashing": "Hashing",
+    "identities": "identities...",
+    "hashingDesc": "SHA-256 · Client-side only · Zero transmission of raw data",
+    "firewallActive": "Firewall Active.",
+    "identitiesSecured": "{count} identities secured. Your perimeter is locked.",
+    "identitySecured": "{count} identity secured. Your perimeter is locked.",
+    "enterCommandCenter": "Enter the Command Center ➡️",
+    "tryAgain": "Try Again",
+    "skipShort": "Skip for now"
+  },
+  "supportChat": {
+    "title": "Support",
+    "placeholder": "Ask a question...",
+    "emptyState": "Questions about subscriptions, features, privacy, or how the app works? Ask away.",
+    "errorTooMany": "You've sent too many messages. Please wait a moment and try again.",
+    "errorWrong": "Something went wrong. Please try again.",
+    "errorReach": "Unable to reach support. Please try again later."
+  },
+  "directivesMenu": {
+    "title": "My Daily Plan",
+    "completing": "Completing",
+    "question": "Did anything unexpected happen?",
+    "placeholder": "Something shifted, someone said something, a door opened...",
+    "description": "If something surprising happened, it'll be shared as a Reality Shift in the feed.",
+    "logging": "Logging Shift...",
+    "completeAndLog": "Complete & Log Shift",
+    "markComplete": "Mark Complete",
+    "cancel": "Cancel",
+    "noDirectives": "No Active Directives",
+    "footer": "Follow excitement with integrity"
+  },
+  "rolodexModal": {
+    "title": "Rolodex",
+    "emptyState": "No followed authors yet.",
+    "emptyStateSub": "Tap \"Follow Author\" on any post to add someone here.",
+    "remove": "Remove from Rolodex",
+    "authorsFollowed": "{count} {count, plural, =1 {author} other {authors}} followed"
+  },
+  "lockedScreen": {
+    "title": "Current Assignment",
+    "description": "\"The only way out is through. Report back when this action is complete.\"",
+    "filingReport": "Filing Report...",
+    "reportCompletion": "REPORT COMPLETION"
+  },
+  "followAuthorModal": {
+    "title": "Add to Rolodex",
+    "description": "Assign a private name to this author. Only you will see this name next to their future posts in your feed.",
+    "placeholder": "e.g., 'Stoic Boston Dad' or 'Sarah'",
+    "errorEmpty": "Please enter a name for this author.",
+    "errorSave": "Failed to save alias.",
+    "cancel": "Cancel",
+    "saveAlias": "Save Alias"
+  },
+  "controlDeck": {
+    "identity": "Identity",
+    "takeAction": "Take Action",
+    "iWant": "I Want"
+  },
+  "press": {
+    "title": "THE PRESS ROLLS",
+    "subtitle": "Select one action. The others will be discarded.",
+    "excitementIndex": "Excitement Index: {score}/10",
+    "initialize": "INITIALIZE"
+  },
+  "apiErrors": {
+    "unauthorized": "Unauthorized access.",
+    "missingSession": "Missing session ID.",
+    "userNotFound": "User not found.",
+    "noActiveSub": "No active subscription or session credits.",
+    "mirrorTimeout": "The algorithm is currently taking longer than expected. Please try submitting again.",
+    "unexpected": "An unexpected error occurred.",
+    "rantRequired": "Rant is required.",
+    "onboardingTimeout": "The algorithm is taking longer than expected. Please try again."
+  },
+  "locale": {
+    "en": "English",
+    "es": "Español",
+    "pt": "Português",
+    "fr": "Français",
+    "switchLanguage": "Language"
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "subtitle": "Terms of Service for the Earnest Page platform.",
+    "lastUpdated": "Last updated: March 11, 2026",
+    "navBrand": "Earnest Page",
+    "legal": "Legal",
+    "s1": {
+      "title": "1. Agreement to Terms",
+      "p1": "By accessing or using Earnest Page (“the Service”), you agree to be bound by these Terms of Service (“Terms”). If you do not agree, do not use the Service. The Service is operated by Golden Black LLC (“we,” “us,” or “our”)."
+    },
+    "s2": {
+      "title": "2. Eligibility",
+      "p1": "You must be at least ",
+      "strong": "13 years of age",
+      "p2": " to use the Service. By creating an account, you represent and warrant that you meet this minimum age requirement. If you are under 18, you affirm that you have the consent of a parent or legal guardian."
+    },
+    "s3": {
+      "title": "3. Account & Authentication",
+      "p1": "Accounts are created via phone number verification. Your phone number is used solely for authentication and is never stored in our database. A cryptographic hash of your phone number is used for contact-exclusion features. You are responsible for maintaining the security of your device and account access."
+    },
+    "s4": {
+      "title": "4. Description of Service",
+      "p1": "Earnest Page is a self-actualization platform that provides:",
+      "l1": "An AI-powered conversational interface (“Mirror Chat”) that simulates dialogue with your defined Ideal Self",
+      "l2": "An AI-maintained personal dossier based on your conversations",
+      "l3": "Anonymous publishing of AI-synthesized posts to a social feed (“Dear Earnest”)",
+      "l4": "Action planning and directive tracking",
+      "l5": "Character profile building and avatar generation"
+    },
+    "s5": {
+      "title": "5. AI Processing & Content Generation",
+      "p1": "By using the Service, you acknowledge and consent to the following:",
+      "l1": "Your conversations with Mirror Chat are processed by third-party AI models (Anthropic Claude) to generate responses, action plans, and personal insights.",
+      "l2": "Conversations may be synthesized into anonymous, AI-ghostwritten posts that are published to the public feed. All personally identifiable information is removed before publication.",
+      "l3": "AI-generated content is not professional advice. The Service is not a substitute for therapy, counseling, medical care, or any professional service."
+    },
+    "s6": {
+      "title": "6. User Content & Conduct",
+      "p1": "You retain ownership of the content you provide (your identity information, conversations, and inputs). By using the Service, you grant us a limited license to process, anonymize, and publish derivative content as described in Section 5.",
+      "p2": "You agree not to use the Service in any manner described in our "
+    },
+    "s7": {
+      "title": "7. Payment & Subscription",
+      "p1": "Access to the Service requires a paid subscription. Payments are processed securely through Stripe. By subscribing, you authorize the applicable charge.",
+      "strong1": "Cancellation.",
+      "p2": " You may cancel your membership at any time from the Security & Routing panel in your profile. If you cancel within 7 days of your subscription date, your payment will be refunded in full. After 7 days, your access continues until the end of your paid period, and no refund is issued.",
+      "strong2": "Expired Subscriptions.",
+      "p3": " When your subscription period ends, you retain read-only access to your profile, dossier, and monthly reviews. The Mirror Chat and character editing features are disabled until you resubscribe."
+    },
+    "s8": {
+      "title": "8. Privacy",
+      "p1": "Your use of the Service is also governed by our "
+    },
+    "s8_2": {
+      "p2": ", which describes how we collect, use, and protect your information."
+    },
+    "s9": {
+      "title": "9. Disclaimers",
+      "p1": "THE SERVICE IS PROVIDED “AS IS” AND “AS AVAILABLE” WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED. We do not warrant that the Service will be uninterrupted, error-free, or secure.",
+      "strong1": "The Service is not a mental health service.",
+      "p2": " AI-generated responses do not constitute therapy, medical advice, or professional counseling. If you are in crisis, please contact emergency services or the ",
+      "strong2": "988 Suicide & Crisis Lifeline",
+      "p3": " (call or text 988 in the US)."
+    },
+    "s10": {
+      "title": "10. Limitation of Liability",
+      "p1": "To the maximum extent permitted by law, Golden Black LLC shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, arising from your use of the Service."
+    },
+    "s11": {
+      "title": "11. Termination",
+      "p1": "We reserve the right to suspend or terminate your account at any time for violation of these Terms, the Acceptable Use Policy, or for any other reason at our sole discretion. Upon termination, your right to use the Service ceases immediately."
+    },
+    "s12": {
+      "title": "12. Changes to Terms",
+      "p1": "We may update these Terms from time to time. If we make material changes, we will notify you through the Service or by other means. Continued use of the Service after changes constitutes acceptance of the updated Terms."
+    },
+    "s13": {
+      "title": "13. Governing Law",
+      "p1": "These Terms shall be governed by the laws of the Commonwealth of Massachusetts, without regard to conflict of law provisions."
+    },
+    "s14": {
+      "title": "14. Contact",
+      "p1": "For questions about these Terms, contact us at "
+    },
+    "footer": {
+      "copyright": "© {year} Earnest Page. All rights reserved.",
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "aup": "Acceptable Use"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "Privacy Policy for the Earnest Page platform.",
+    "lastUpdated": "Last updated: March 11, 2026",
+    "s1": {
+      "title": "1. Introduction",
+      "p1": "Golden Black LLC (“we,” “us,” or “our”) operates Earnest Page. This Privacy Policy describes how we collect, use, store, and protect your personal information when you use our platform. We are committed to transparency and to protecting your privacy."
+    },
+    "s2": {
+      "title": "2. Information We Collect",
+      "t1": "2.1 Authentication Data",
+      "p1": "We use phone-based authentication via Twilio Verify. Your phone number is used solely to send a one-time verification code during login. ",
+      "strong1": "We do not store your phone number in our database.",
+      "p2": " A one-way cryptographic hash (SHA-256) of your phone number is stored for the Contact Firewall feature, which allows you to exclude people you know from your anonymous feed.",
+      "t2": "2.2 Profile & Identity Data",
+      "p3": "Information you voluntarily provide during onboarding and profile editing: gender, age, ethnicity (optional), life vision, important people in your life, and personal interests. This data is used exclusively to build your Character Bible and personalize your AI interactions.",
+      "t3": "2.3 Conversation Data",
+      "p4": "Your conversations with Mirror Chat are temporarily stored in Firebase Firestore during the active session. After a session closes, the conversation is processed to update your dossier and (if you have chosen public routing) generate an anonymous post. The raw conversation transcript is stored as ",
+      "code": "content_raw",
+      "p5": " and is ",
+      "strong2": "never visible to any user other than you",
+      "p6": ". “Burn on Close” sessions are deleted immediately with zero data retention.",
+      "t4": "2.4 Location Data",
+      "p7": "If you grant browser geolocation permission, your approximate coordinates (latitude and longitude) are used for the Proximity Blind Spot feature, which filters posts from within a 200-mile radius to protect your anonymity. You may also manually set a location anchor via zip code. Your precise coordinates are never displayed to other users or included in API responses.",
+      "t5": "2.5 Payment Data",
+      "p8": "Payment processing is handled entirely by Stripe. We do not store credit card numbers, bank account details, or other payment credentials on our servers. We store only your subscription status, plan type, and Stripe payment intent identifiers."
+    },
+    "s3": {
+      "title": "3. How We Use Your Information",
+      "l1": "To authenticate your identity and manage your account",
+      "l2": "To power the AI-driven Mirror Chat, dossier updates, and character compilation",
+      "l3": "To generate anonymous, AI-ghostwritten posts for the public feed (with your consent via routing settings)",
+      "l4": "To generate AI-powered hero images for posts",
+      "l5": "To provide proximity-based anonymity filtering",
+      "l6": "To process payments and manage subscriptions",
+      "l7": "To improve the Service and fix technical issues"
+    },
+    "s4": {
+      "title": "4. Third-Party Services",
+      "p1": "We use the following third-party services to operate the platform:",
+      "th1": "Service",
+      "th2": "Purpose",
+      "th3": "Data Shared",
+      "td1_1": "Firebase",
+      "td1_2": "Authentication, database, storage",
+      "td1_3": "Account data, profile, posts",
+      "td2_1": "Anthropic (Claude)",
+      "td2_2": "AI conversation, content synthesis",
+      "td2_3": "Conversation content, character data",
+      "td3_1": "Google (Imagen)",
+      "td3_2": "Image generation for posts",
+      "td3_3": "AI-generated text prompts only",
+      "td4_1": "Stripe",
+      "td4_2": "Payment processing",
+      "td4_3": "Payment details (handled by Stripe)",
+      "td5_1": "Twilio",
+      "td5_2": "SMS verification codes",
+      "td5_3": "Phone number (for OTP delivery only)",
+      "td6_1": "Vercel",
+      "td6_2": "Hosting and deployment",
+      "td6_3": "Server logs, request metadata"
+    },
+    "s5": {
+      "title": "5. Anonymity & Public Content",
+      "p1": "When a conversation is published to the Dear Earnest feed, it is processed by AI to create a fully anonymized, ghostwritten version. All personally identifiable information — including names, locations, employers, and specific details — is scrubbed and replaced with pseudonyms before publication.",
+      "p2": "The raw conversation transcript is ",
+      "strong1": "never accessible to any user other than the author",
+      "p3": ". We do not display like counts, follower counts, or engagement metrics to other users."
+    },
+    "s6": {
+      "title": "6. Data Retention",
+      "l1": "Active chat sessions are deleted within 15 minutes of closing.",
+      "l2": "“Burn on Close” sessions are purged immediately with no data retained.",
+      "l3": "Published posts are retained until you delete them or delete your account.",
+      "l4": "Your dossier and character profile are retained for the duration of your account."
+    },
+    "s7": {
+      "title": "7. Your Rights",
+      "p1": "Depending on your jurisdiction, you may have the right to:",
+      "strong1": "Access",
+      "l1": " the personal data we hold about you",
+      "strong2": "Delete",
+      "l2": " your account and all associated data",
+      "strong3": "Export",
+      "l3": " your data in a portable format",
+      "strong4": "Opt out",
+      "l4": " of public publishing by setting your default routing to Private",
+      "strong5": "Restrict",
+      "l5": " location data collection by denying browser geolocation",
+      "p2": "To exercise any of these rights, contact us at "
+    },
+    "s8": {
+      "title": "8. Children's Privacy",
+      "p1": "The Service is available to users aged 13 and older. We do not knowingly collect personal information from children under 13. If we learn that we have collected data from a child under 13, we will promptly delete that information."
+    },
+    "s9": {
+      "title": "9. Security",
+      "p1": "We employ industry-standard security measures including encrypted data transmission (TLS), cryptographic hashing (SHA-256) for sensitive identifiers, Firebase security rules, and Stripe's PCI-compliant payment infrastructure. However, no method of electronic storage or transmission is 100% secure."
+    },
+    "s10": {
+      "title": "10. Changes to This Policy",
+      "p1": "We may update this Privacy Policy from time to time. If we make material changes, we will provide notice through the Service. Continued use of the Service after changes constitutes acceptance of the updated policy."
+    },
+    "s11": {
+      "title": "11. Contact",
+      "p1": "For privacy-related questions or requests, contact us at "
+    }
+  },
+  "acceptableUse": {
+    "title": "Acceptable Use Policy",
+    "subtitle": "Acceptable Use Policy for the Earnest Page platform.",
+    "lastUpdated": "Last updated: March 11, 2026",
+    "intro": "This Acceptable Use Policy (“AUP”) governs your use of Earnest Page. By using the Service, you agree to comply with this policy. Violation may result in suspension or termination of your account.",
+    "s1": {
+      "title": "1. Prohibited Content",
+      "p1": "You may not use the Service to create, transmit, or store content that:",
+      "l1": "Is illegal under applicable law",
+      "l2": "Promotes or incites violence against any person or group",
+      "l3": "Contains sexually explicit material involving minors",
+      "l4": "Constitutes harassment, bullying, or targeted abuse",
+      "l5": "Contains discriminatory content based on race, ethnicity, gender, sexual orientation, religion, disability, or national origin",
+      "l6": "Glorifies or promotes self-harm or suicide",
+      "l7": "Contains malware, phishing attempts, or other malicious code"
+    },
+    "s2": {
+      "title": "2. Prohibited Conduct",
+      "p1": "You may not:",
+      "l1": "Share or expose another person's private information",
+      "l2": "Use the platform to plan, coordinate, or carry out harm against any person",
+      "l3": "Attempt to circumvent the Contact Firewall, Proximity Blind Spot, or other privacy features",
+      "l4": "Attempt to de-anonymize other users or identify post authors",
+      "l5": "Use automated scripts, bots, or scrapers to access the Service",
+      "l6": "Attempt to reverse-engineer, exploit, or compromise the AI models or platform infrastructure",
+      "l7": "Create multiple accounts to circumvent bans or restrictions",
+      "l8": "Impersonate another person or entity"
+    },
+    "s3": {
+      "title": "3. Safety & Crisis",
+      "p1": "Earnest Page is a self-actualization tool, not a mental health service. If the AI detects language indicating suicidal ideation, self-harm, or intent to harm others, it will pause the conversation and provide crisis resources.",
+      "strong": "If you or someone you know is in immediate danger, call 911 or your local emergency services. For mental health crises, contact the 988 Suicide & Crisis Lifeline (call or text 988)."
+    },
+    "s4": {
+      "title": "4. Content Moderation",
+      "p1": "AI-generated posts are reviewed by automated content filters before publication to the public feed. Posts that violate this policy may be withheld from the feed, flagged for review, or removed. We reserve the right to take action against accounts that repeatedly produce flagged content."
+    },
+    "s5": {
+      "title": "5. Reporting",
+      "p1": "If you encounter content or behavior that violates this policy, please report it to "
+    },
+    "s5_2": {
+      "p2": ". We will review reports promptly and take appropriate action."
+    },
+    "s6": {
+      "title": "6. Enforcement",
+      "p1": "Violations of this policy may result in: content removal, temporary suspension, permanent account termination, or reporting to law enforcement when legally required (e.g., credible threats of violence or child exploitation)."
+    }
+  },
+  "legalDisclaimer": "This legal document is translated for your convenience. In case of any discrepancies, the English version prevails."
+}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface CharacterReviewProps {
     review: {
@@ -29,6 +30,8 @@ function formatMonth(monthStr: string): string {
 }
 
 export function CharacterReview({ review, characterTitle, avatarUrl, isOpen, onClose }: CharacterReviewProps) {
+    const t = useTranslations('characterReview');
+
     if (!isOpen) return null;
 
     return (
@@ -54,7 +57,7 @@ export function CharacterReview({ review, characterTitle, avatarUrl, isOpen, onC
                         )}
                         <div>
                             <div className="text-xs font-bold tracking-widest uppercase text-zinc-400">
-                                A Letter from {characterTitle}
+                                {t('letterFrom', { name: characterTitle })}
                             </div>
                             <div className="text-[10px] text-zinc-600 tracking-wider uppercase">
                                 {formatMonth(review.month)}
@@ -82,7 +85,7 @@ export function CharacterReview({ review, characterTitle, avatarUrl, isOpen, onC
                         onClick={onClose}
                         className="w-full py-3 text-xs font-bold tracking-widest uppercase text-zinc-500 hover:text-white transition-colors"
                     >
-                        Close
+                        {t('close')}
                     </button>
                 </div>
             </div>

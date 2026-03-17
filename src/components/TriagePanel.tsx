@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { MessageCircle, Home, User as UserIcon, BookOpen, Heart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from 'next-intl';
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
@@ -16,6 +17,7 @@ const MAX_SESSIONS_PER_DAY = 5;
 export function TriagePanel() {
     const { user } = useAuth();
     const pathname = usePathname();
+    const t = useTranslations();
 
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
     const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
@@ -166,8 +168,8 @@ export function TriagePanel() {
                     )}
                     title={
                         bible?.status === 'compiling'
-                            ? 'Building your character...'
-                            : canChat ? 'Open chat' : 'Purchase a session'
+                            ? t('triagePanel.buildingCharacter')
+                            : canChat ? t('triagePanel.openChat') : t('triagePanel.purchaseSession')
                     }
                 >
                     <MessageCircle className={cn("w-7 h-7", bible?.status === 'compiling' && "animate-pulse")} />
@@ -178,7 +180,7 @@ export function TriagePanel() {
                 {/* Daily cap toast */}
                 {isDailyCapHit && (
                     <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-zinc-900 border border-amber-900/30 text-amber-400 text-xs font-semibold px-4 py-2.5 rounded-xl whitespace-nowrap shadow-lg animate-in fade-in slide-in-from-bottom-2">
-                        Daily limit reached — go do the work.
+                        {t('triagePanel.dailyLimit')}
                     </div>
                 )}
             </div>

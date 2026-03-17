@@ -1,0 +1,728 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "signOut": "Déconnexion",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "close": "Fermer",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "submit": "Soumettre",
+    "brand": "Earnest Page",
+    "error": "Une erreur s'est produite. Veuillez réessayer."
+  },
+  "landing": {
+    "nav": {
+      "login": "Connexion"
+    },
+    "hero": {
+      "tagline": "Sans abonnement. Sans engagement. Juste une conversation.",
+      "headline1": "Vous connaissez cette chose",
+      "headline2": "à laquelle vous continuez de penser",
+      "headline3": "à 2h du matin ?",
+      "subtext": "Parlez à quelqu'un qui ne vous jugera pas, n'oubliera pas ce que vous avez dit il y a dix minutes, et ne vous facturera pas 200 $.",
+      "price": "20 $. Commencez dès maintenant.",
+      "cta": "Démarrer une session",
+      "giftCta": "Offrir une session à quelqu'un"
+    },
+    "entryPoints": {
+      "label": "Ça vous semble familier ?",
+      "heading1": "Choisissez celle qui",
+      "heading2": "ne vous laisse pas en paix.",
+      "stuck": "Je suis bloqué et je ne sais pas pourquoi",
+      "stuckSub": "Paralysie professionnelle, transitions de vie, se sentir figé",
+      "secret": "Je ne peux le dire à voix haute à personne",
+      "secretSub": "La chose que vous portez seul",
+      "pattern": "Je continue de faire la même erreur",
+      "patternSub": "Des schémas que vous voyez mais que vous ne pouvez arrêter",
+      "gap": "Je sais ce que je dois faire mais je n'y arrive pas",
+      "gapSub": "L'écart entre l'intention et l'action",
+      "mask": "Tout le monde pense que je vais bien",
+      "maskSub": "Le masque de haut niveau de fonctionnement"
+    },
+    "difference": {
+      "label": "La Différence",
+      "heading1": "Ce n'est pas un chatbot.",
+      "heading2": "Ce n'est pas une thérapie.",
+      "body1": "Les chatbots vous valident. Les thérapeutes vous analysent. Aucun d'eux ne s'assiéra face à vous, ne regardera le désordre de votre vie et ne vous dira ce que vous savez déjà mais que vous n'avez pas pu dire à voix haute.",
+      "body2": "Il s'agit d'une conversation avec quelqu'un qui voit le schéma que vous ne pouvez pas voir de l'intérieur.",
+      "body3": "Vous choisissez quelqu'un que vous admirez : un archétype construit à partir de vraie psychologie, de vraie philosophie et d'expérience vécue. Ils ne vous disent pas quoi faire. Ils vous aident à voir assez clairement pour le savoir par vous-même.",
+      "toggleShow": "Voir la comparaison",
+      "toggleHide": "Masquer la comparaison",
+      "compCost": "Coût",
+      "compAvailable": "Disponibilité",
+      "compCommitment": "Engagement",
+      "compRemembers": "Se souvient de vous",
+      "compChallenges": "Vous met au défi",
+      "compTherapy": "Thérapie traditionnelle",
+      "compChatbots": "Chatbots IA",
+      "compEarnest": "Earnest Page"
+    },
+    "system": {
+      "label": "Le Système",
+      "heading1": "Plus qu'une conversation.",
+      "heading2": "Un système d'exploitation quotidien pour votre esprit.",
+      "body": "Une seule session peut changer votre perspective. Mais Earnest Page est conçu pour ceux qui veulent aller plus loin : définir leur norme la plus élevée et l'exécuter quotidiennement.",
+      "blueprintTitle": "Le Projet",
+      "blueprintText": "Définissez votre norme la plus élevée — votre Bible de Personnage. La base immuable à laquelle vous répondez tous les jours.",
+      "mirrorTitle": "Le Miroir",
+      "mirrorText": "Consultez votre Moi Idéal. Pas un chatbot. Quelqu'un construit à partir de psychologie réelle qui vous met au défi de voir clairement.",
+      "ledgerTitle": "Le Registre",
+      "ledgerText": "Un coffre-fort silencieux et basé sur les données de votre exécution. Lorsque le doute s'installe, le système prouve que vous avez déjà gagné."
+    },
+    "architect": {
+      "label": "L'Architecte",
+      "heading1": "J'ai construit ça parce que",
+      "heading2": "Rien d'autre n'était assez honnête.",
+      "body1": "J'ai failli devenir médecin. Au lieu de cela, je suis devenu ingénieur avec l'instinct d'un médecin — quelqu'un qui construit de la technologie mais pense d'abord aux gens. J'ai passé des décennies à tester tous les grands systèmes pour l'esprit humain, de la TCC à la pratique bouddhiste au programme le plus intensif de l'hôpital McLean.",
+      "body2": "Earnest Page n'est pas mon premier produit. C'est peut-être le plus important.",
+      "credHarvard": "Harvard",
+      "credHarvardDetail": "Titulaire de brevet",
+      "credRSA": "RSA",
+      "credRSADetail": "Architecte de sécurité",
+      "credJSA": "JSA Financial",
+      "credJSADetail": "Fondateur (10 M$ / an)",
+      "founderLine": "David Johnson · Fondateur · Titulaire de brevet · 26 Ans à Construire Des Systèmes Qui Fonctionnent"
+    },
+    "privacy": {
+      "heading": "Ce que vous dites reste ici.",
+      "body": "Vos conversations sont cryptées et privées. Votre identité est protégée par un pare-feu de contact et un bouclier de proximité. Rien n'est vendu. Rien n'est partagé.",
+      "subtext": "Construit par le créateur de systèmes de sécurité d'entreprise — où la confidentialité est la base, pas une fonctionnalité."
+    },
+    "pricing": {
+      "label": "Commencer",
+      "heading1": "Une conversation.",
+      "heading2": "Sans attaches.",
+      "mostPopular": "Le plus populaire",
+      "singleLabel": "Session Unique",
+      "singlePrice": "20 $",
+      "singleDesc": "Une conversation complète. Jusqu'à 2 heures. Sans engagement.",
+      "singleCta": "Commencer maintenant",
+      "threePackLabel": "Pack de 3",
+      "threePackPrice": "50 $",
+      "threePackDesc": "Trois sessions. Utilisez-les n'importe quand. Ils se souviendront d'où vous vous étiez arrêté.",
+      "threePackCta": "Obtenir 3 sessions",
+      "giftLabel": "Offrir une Session",
+      "giftPrice": "20 $",
+      "giftDesc": "Pour la personne qui en a besoin mais ne le chercherait jamais par elle-même.",
+      "giftCta": "Envoyer un cadeau",
+      "archangelSubLabel": "Pour l'architecte de sa journée",
+      "archangelTitle": "Le Programme Archange",
+      "archangelDesc": "Toutes les sessions incluses pendant 30 jours. Jusqu'à 5 par jour. Pas de frais par session, pas de comptage de crédits. Pour celui qui ne veut pas se demander si \"ça vaut encore 20 $\". Ça les vaut toujours.",
+      "archangelPrice": "499 $",
+      "archangelPeriod": "/ 30 jours",
+      "archangelCta": "S'inscrire maintenant"
+    },
+    "auth": {
+      "heading1": "Commencez dès maintenant.",
+      "heading2": "Pas de compte. Pas d'e-mail. Juste votre téléphone.",
+      "phonePlaceholder": "Numéro de téléphone",
+      "sendCode": "Envoyer le code",
+      "sending": "Envoi...",
+      "codeSent": "Code envoyé à",
+      "codePlaceholder": "Entrez le code à 6 chiffres",
+      "verify": "Vérifier et Entrer",
+      "verifying": "Vérification...",
+      "wrongNumber": "Mauvais numéro ?",
+      "errorNoPhone": "Veuillez entrer un numéro de téléphone.",
+      "errorSendFailed": "Échec de l'envoi du code. Veuillez réessayer.",
+      "errorVerifyFailed": "Code invalide. Veuillez réessayer.",
+      "byContinuing": "En continuant, vous acceptez nos",
+      "and": "et"
+    },
+    "footer": {
+      "copyright": "© {year} Earnest Page. Tous droits réservés.",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "acceptableUse": "Utilisation acceptable"
+    }
+  },
+  "dashboard": {
+    "header": {
+      "securityVault": "Coffre de sécurité",
+      "rolodex": "Rolodex",
+      "giftSession": "Offrir une session",
+      "billing": "Facturation et Sessions",
+      "logOut": "Déconnexion",
+      "support": "Assistance"
+    }
+  },
+  "onboarding": {
+    "processing": "Création de votre personnage...",
+    "processingSubtext": "Cela prend un instant. Veuillez patienter.",
+    "submitLabel": "Créer Mon Personnage",
+    "errorDefault": "Une erreur s'est produite. Veuillez réessayer.",
+    "identityForm": {
+      "visionTitle": "Qui Voulez-Vous Être ?",
+      "visionSub": "N'y réfléchissez pas trop. Écrivez, tout simplement.",
+      "nameLabel": "Nommez votre personnage",
+      "nameOptional": "(facultatif — nous en créerons un si laissé vide)",
+      "namePlaceholder": "Laissez vide pour générer automatiquement",
+      "genderLabel": "Je suis",
+      "genderPlaceholder": "Homme, Femme, etc.",
+      "bornLabel": "Né(e)",
+      "bornPlaceholder": "1989",
+      "ethnicityLabel": "Origine ethnique",
+      "ethnicityOptional": "(facultatif)",
+      "ethnicityPlaceholder": "ex., Noir, Asiatique, Hispanique, Caucasien, Métis...",
+      "rantLabel": "Le Défoulement",
+      "rantSub": "Décrivez votre vie idéale — la personne, le style de vie, tout. Le brut est mieux que le poli. Nous construirons votre personnage à partir de ça.",
+      "rantPlaceholder": "Je veux être le genre d'homme qui se réveille avec un plan. Financièrement libre. Un père que mes enfants admirent vraiment. En meilleure forme que jamais. Diriger quelque chose qui compte...",
+      "next": "Suivant",
+      "realityTitle": "Votre Réalité",
+      "realitySub": "Parlez-nous de votre vie pour que votre personnage s'adapte à votre monde.",
+      "peopleLabel": "Vos Proches",
+      "peopleSub": "Qui vous fait ressentir quelque chose — en bien ou en mal ? Famille, amis, rivaux, animaux. Ne listez pas juste des noms — dites ce qui est vrai. On s'occupe du reste.",
+      "peoplePlaceholder": "Ma femme — on est solides mais elle pense que je travaille trop. Mon fils (4 ans) — tout mon monde. Mon chien Rex. Mon associé — brillant mais je ne lui fais pas encore totalement confiance...",
+      "enjoymentsLabel": "Ce Qui Vous Anime",
+      "enjoymentsSub": "Qu'est-ce qui vous passionne ? Les choses qui vous rendent heureux restent — votre personnage devrait aimer ce que vous aimez.",
+      "enjoymentsPlaceholder": "Cuisiner pour les autres, le hip-hop des années 90, les films d'horreur, conduire sans destination, mon rituel café du matin, le basket de rue...",
+      "skip": "Passer pour l'instant"
+    }
+  },
+  "vision": {
+    "errorLogin": "Vous devez être connecté pour publier.",
+    "errorTitle": "Veuillez entrer un titre.",
+    "errorPrefix": "Erreur : ",
+    "changeImage": "Changer l'Image",
+    "uploadInspiration": "Télécharger une Inspiration (Facultatif)",
+    "heading": "Que Voulez-Vous ?",
+    "subtext": "\"La distance entre là où vous êtes et ce que vous voulez est déterminée par votre fréquence. Définissez la cible. Générez la fréquence.\"",
+    "titleLabel": "TITRE",
+    "titlePlaceholder": "ex., Une nouvelle voiture, 10 000 $/mois, une relation épanouissante...",
+    "descLabel": "DESCRIPTION",
+    "descPlaceholder": "Décrivez les détails de ce que vous voulez...",
+    "streamHeading": "Le Flux",
+    "publish": "PUBLIER",
+    "streamInput": {
+      "placeholder": "Tapez un sentiment, une pensée ou une action...",
+      "feeling": "+ SENTIMENT",
+      "thought": "+ PENSÉE",
+      "action": "+ ACTION"
+    },
+    "streamList": {
+      "selectTopFeelings": "Sélectionnez vos 3 sentiments principaux.",
+      "empty": "Le flux est vide",
+      "ariaUnselect": "Désélectionner le sentiment",
+      "ariaSelect": "Sélectionner le sentiment",
+      "ariaDelete": "Supprimer l'élément"
+    }
+  },
+  "mirrorChat": {
+    "consultingMirror": "Consultation Du Miroir",
+    "connectionSecured": "Connexion sécurisée.",
+    "promptFriction": "\"Détaillez votre friction actuelle.\"",
+    "extractingDirectives": "Extraction des directives...",
+    "extractDirectives": "Extraire les Directives (24H)",
+    "directivesSaved": "✓ Directives enregistrées",
+    "directivesFailed": "Échec de l'extraction. Réessayez.",
+    "sessionRouting": "Routage de la session :",
+    "publicFeed": "Flux Public",
+    "privateLedger": "Registre Privé",
+    "burnOnClose": "Brûler à la fermeture",
+    "burnMicrocopy": "Zéro rétention. Effacé immédiatement à la sortie.",
+    "sessionComplete": "Session Terminée",
+    "sessionExpired": "Temps de session expiré",
+    "sessionCompleteDesc": "Vous avez atteint {max} échanges. Extrayez vos directives et fermez pour commencer une nouvelle session.",
+    "sessionExpiredDesc": "Votre fenêtre de session de {hours} heures est terminée. Extrayez vos directives et fermez.",
+    "placeholderDefault": "Exprimez votre friction...",
+    "placeholderEnded": "Session terminée. Fermez pour en démarrer une autre.",
+    "encryptedPrivate": "Crypté et privé",
+    "stop": "Arrêt",
+    "commit": "S'engager",
+    "regenerate": "Régénérer la Réponse",
+    "mode": "Mode"
+  },
+  "tollbooth": {
+    "secureEnrollment": "Inscription sécurisée",
+    "heading": "Exigez une vie meilleure.",
+    "body": "Earnest Page n'est pas une énième application que vous oubliez. C'est un investissement intentionnel pour quelqu'un qui refuse les compromis. À 4 $ par jour, garantir vos standards coûte moins cher que le café que vous buvez pendant que vous trouvez des excuses.",
+    "thirtyDays": "30 Jours",
+    "provingGround": "Le Terrain d'Essai",
+    "provingPrice": "120 $",
+    "provingPeriod": "/ 30 jours",
+    "provingDesc": "30 jours pour prouver que vous êtes sérieux. Pas de prolongations.",
+    "oneYear": "1 An",
+    "longGame": "Le Jeu à Long Terme",
+    "longPrice": "1 200 $",
+    "longPeriod": "/ 1 an",
+    "longDesc": "Vous l'avez déjà prouvé. Maintenant, construisez l'effet composé.",
+    "selectPlan": "Sélectionnez votre engagement ci-dessus pour continuer."
+  },
+  "triagePanel": {
+    "buildingCharacter": "Construction de votre personnage...",
+    "openChat": "Ouvrir le chat",
+    "purchaseSession": "Acheter une session",
+    "dailyLimit": "Limite quotidienne atteinte — allez faire le travail."
+  },
+  "feed": {
+    "bibleCompilingTitle": "Construction de votre personnage...",
+    "bibleCompilingSub": "Création de votre Moi Idéal et génération de votre portrait. Cela peut prendre quelques minutes.",
+    "bibleReadyTitle": "Construction Terminée ✓",
+    "idealSelfDefault": "Votre Moi Idéal",
+    "bibleReadySub": "Appuyez pour voir votre Moi Idéal →",
+    "writingPending": "Écriture à Cher Earnest...",
+    "emptyFeed": "Pas encore de publications. Démarrez une conversation pour créer votre première publication.",
+    "caughtUp": "Vous êtes à jour.",
+    "commentSaved": "Enregistré. Votre personnage a aussi laissé une note sur une autre publication ✨",
+    "authorMe": "Moi",
+    "authorAnonymous": "Anonyme",
+    "followAuthor": "+ Suivre l'Auteur",
+    "privacyEveryone": "Tout le monde",
+    "privacyOnlyMe": "Moi uniquement",
+    "justNow": "à l'instant",
+    "realityShiftTitle": "Quelque Chose d'Inattendu",
+    "showLess": "Voir Moins ⌃",
+    "readMore": "Lire la Suite ⌄",
+    "readCounsel": "Lire le Conseil ⌄",
+    "theCounsel": "LE CONSEIL :",
+    "rawConversation": "Conversation Originale",
+    "rawInputCounsel": "Saisie Originale et Conseil",
+    "roleYou": "Vous",
+    "roleCharacter": "Personnage",
+    "rawInputTitle": "Ma Saisie Originale",
+    "rawCounselTitle": "Conseil Original de l'IA",
+    "deletePost": "Supprimer la Publication",
+    "likeTooltip": "Envoyer de l'amour à l'univers",
+    "commentTooltip": "Commenter",
+    "viewPublic": "Voir Public",
+    "viewPrivate": "Voir Privé",
+    "commentPlaceholder": "Laissez une réflexion...",
+    "deleteComment": "Supprimer le commentaire",
+    "translatedFrom": "Traduit de {language}",
+    "translate": "Traduire",
+    "translatePost": "Traduire la publication",
+    "adPartner": "Partenaire",
+    "adSponsored": "Sponsorisé",
+    "checkinContext": "Je suis là pour mon bilan de 30 jours.",
+    "checkinTitle": "Bilan de 30 Jours ✓",
+    "checkinSub": "Appuyez pour commencer →"
+  },
+  "profile": {
+    "unknownCharacter": "Personnage Inconnu",
+    "profileTab": "Profil",
+    "edit": "Modifier",
+    "identityTitle": "Identité",
+    "editIdentityModalTitle": "Modifier l'Identité",
+    "close": "Fermer",
+    "rebuildingCharacter": "Reconstruction de votre personnage...",
+    "rebuildCharacterBtn": "Reconstruire le Personnage"
+  },
+  "identityModal": {
+    "title": "Définissez Votre Identité",
+    "subtitle": "Qui êtes-vous ? Comment voulez-vous vous présenter au monde en ce moment ?",
+    "placeholder": "Je suis une personne qui...",
+    "cancel": "Annuler",
+    "updating": "Mise à jour...",
+    "updateBtn": "METTRE À JOUR LA DÉFINITION",
+    "errorUpdate": "Échec de la mise à jour. Veuillez réessayer."
+  },
+  "identityAnchor": {
+    "loading": "Chargement de la Réalité...",
+    "undefined": "IDENTITÉ NON DÉFINIE.",
+    "defineReality": "DÉFINIR LA RÉALITÉ",
+    "placeholder": "JE SUIS...",
+    "committing": "ENGAGEMENT...",
+    "commitBtn": "ENGAGER UNE NOUVELLE IDENTITÉ",
+    "errorUpdate": "Échec de la mise à jour de l'identité."
+  },
+  "dossier": {
+    "title": "Dossier",
+    "close": "Fermer",
+    "sessionsCount": "{count} sessions",
+    "lastUpdated": "Dernière mise à jour {date}",
+    "beliefPatterns": "Schémas de Croyances",
+    "empty": "Votre dossier se construira au fil du temps à mesure que vous utilisez l'application."
+  },
+  "characterReview": {
+    "letterFrom": "Une Lettre de {name}",
+    "close": "Fermer"
+  },
+  "securityVault": {
+    "title": "Sécurité et Routage",
+    "statusLocked": "Statut : Verrouillé.",
+    "statusOpen": "Statut : Ouvert.",
+    "identitiesSecured": "{count} Identités Sécurisées.",
+    "identitySecured": "{count} Identité Sécurisée.",
+    "manageFirewall": "Gérer le Pare-feu",
+    "purge": "Purger",
+    "confirmPurge": "Confirmer la Purge",
+    "proximityTitle": "Zone Aveugle de Proximité",
+    "proximityDesc": "Les publications dans un rayon de 320 km de votre position sont mathématiquement filtrées de votre flux. Si le GPS du navigateur est désactivé, ancrez votre rayon manuellement.",
+    "enterZipCode": "Entrez le code postal (ex., 75001)",
+    "anchorRadius": "Ancrer le Rayon",
+    "currentAnchor": "Ancre Actuelle :",
+    "liveGps": "GPS en Direct",
+    "defaultRoutingTitle": "Routage Par Défaut des Publications",
+    "defaultRoutingDesc": "Déterminez où votre friction est enregistrée par défaut.",
+    "publicRouting": "Public (Flux Cher Earnest)",
+    "publicRoutingDesc": "Friction anonymisée transmise au réseau.",
+    "privateRouting": "Privé (Registre Personnel)",
+    "privateRoutingDesc": "Enregistrement historique strict. Aucune visibilité externe.",
+    "dataDestructionTitle": "Destruction des Données",
+    "dataDestructionDesc": "Supprimez de manière permanente et irrévocable tout votre historique de friction et vos plans tactiques. Nous ne retenons rien.",
+    "burnLedger": "Brûler le Registre",
+    "burnWarning": "Cette action est irréversible. Toutes les publications seront détruites.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "accountDeletionTitle": "Suppression du Compte",
+    "accountDeletionDesc": "Supprimez définitivement l'intégralité de votre compte, y compris toutes les publications, conversations, données de personnage et authentification. Cette action est immédiate et irréversible.",
+    "deleteMyAccount": "Supprimer Mon Compte",
+    "deleteWarning": "Tapez SUPPRIMER pour confirmer. Toutes les données seront détruites.",
+    "typeDelete": "Tapez SUPPRIMER",
+    "deleteForever": "Supprimer Définitivement",
+    "vaultSecured": "Coffre Sécurisé"
+  },
+  "contactFirewall": {
+    "protocolTitle": "Protocole d'Isolation du Réseau",
+    "title": "Le Pare-feu de Contact",
+    "desc": "Votre exécution nécessite un isolement total. Bloquez des menaces spécifiques ou téléchargez l'intégralité de votre carnet de contacts pour établir une zone aveugle cryptographique permanente.",
+    "trustDesc": "Nous ne stockons pas vos contacts. Tout est haché localement sur cet appareil avant d'atteindre nos serveurs. Vous êtes mathématiquement invisible pour votre entourage immédiat.",
+    "precisionTargeting": "Ciblage de Précision",
+    "bulkIsolation": "Isolation en Masse",
+    "precisionTitle": "Identifier des Menaces Spécifiques",
+    "precisionDesc": "Entrez les numéros de téléphone spécifiques des personnes dont la présence compromettrait votre honnêteté sur la plateforme.",
+    "phoneNumber": "Numéro de Téléphone",
+    "addAnotherTarget": "Ajouter une autre cible",
+    "lockPerimeter": "Verrouiller le Périmètre",
+    "bulkTitle": "Établir une Zone Aveugle Totale",
+    "bulkDesc": "Téléchargez l'exportation brute des contacts de votre appareil (.vcf ou .csv). Le hachage s'effectue entièrement dans votre navigateur ; le fichier ne touche jamais nos serveurs.",
+    "exportApple": "Comment exporter depuis Apple",
+    "exportGoogle": "Comment exporter depuis Google",
+    "dropToAnalyze": "Déposez pour analyser",
+    "dragAndDrop": "Glissez et déposez votre fichier de contacts ici",
+    "fileTypes": ".vcf ou .csv — traité localement, jamais téléchargé",
+    "selectFile": "Sélectionner un fichier .vcf ou .csv",
+    "skipForNow": "Passer pour l'instant. J'accepte le risque d'exposition.",
+    "hashing": "Hachage en cours",
+    "identities": "identités...",
+    "hashingDesc": "SHA-256 · Côté client uniquement · Zéro transmission de données brutes",
+    "firewallActive": "Pare-feu Actif.",
+    "identitiesSecured": "{count} identités sécurisées. Votre périmètre est verrouillé.",
+    "identitySecured": "{count} identité sécurisée. Votre périmètre est verrouillé.",
+    "enterCommandCenter": "Entrer dans le Centre de Commandes ➡️",
+    "tryAgain": "Réessayer",
+    "skipShort": "Passer pour l'instant"
+  },
+  "supportChat": {
+    "title": "Assistance",
+    "placeholder": "Posez une question...",
+    "emptyState": "Des questions sur les abonnements, les fonctionnalités, la confidentialité ou le fonctionnement de l'appli ? Demandez tout ce que vous voulez.",
+    "errorTooMany": "Vous avez envoyé trop de messages. Veuillez patienter un moment et réessayer.",
+    "errorWrong": "Une erreur s'est produite. Veuillez réessayer.",
+    "errorReach": "Impossible de joindre l'assistance. Veuillez réessayer plus tard."
+  },
+  "directivesMenu": {
+    "title": "Mon Plan Quotidien",
+    "completing": "Finalisation",
+    "question": "S'est-il passé quelque chose d'inattendu ?",
+    "placeholder": "Quelque chose a changé, quelqu'un a dit quelque chose, une porte s'est ouverte...",
+    "description": "Si quelque chose de surprenant s'est produit, ce sera partagé comme un Changement de Réalité dans le flux.",
+    "logging": "Enregistrement du Changement...",
+    "completeAndLog": "Terminer et Enregistrer le Changement",
+    "markComplete": "Marquer comme Terminé",
+    "cancel": "Annuler",
+    "noDirectives": "Aucune Directive Active",
+    "footer": "Suivez l'enthousiasme avec intégrité"
+  },
+  "rolodexModal": {
+    "title": "Rolodex",
+    "emptyState": "Aucun auteur suivi pour l'instant.",
+    "emptyStateSub": "Appuyez sur \"Suivre l'Auteur\" sur n'importe quelle publication pour ajouter quelqu'un ici.",
+    "remove": "Retirer du Rolodex",
+    "authorsFollowed": "{count} {count, plural, =1 {auteur suivi} other {auteurs suivis}}"
+  },
+  "lockedScreen": {
+    "title": "Mission Actuelle",
+    "description": "\"La seule issue est d'aller de l'avant. Faites votre rapport lorsque cette action est terminée.\"",
+    "filingReport": "Envoi du Rapport...",
+    "reportCompletion": "SIGNALER LA COMPLÉTION"
+  },
+  "followAuthorModal": {
+    "title": "Ajouter au Rolodex",
+    "description": "Attribuez un nom privé à cet auteur. Vous seul verrez ce nom à côté de ses futures publications dans votre flux.",
+    "placeholder": "ex., 'Papa Stoïque de Boston' ou 'Sarah'",
+    "errorEmpty": "Veuillez entrer un nom pour cet auteur.",
+    "errorSave": "Échec de l'enregistrement de l'alias.",
+    "cancel": "Annuler",
+    "saveAlias": "Enregistrer l'Alias"
+  },
+  "controlDeck": {
+    "identity": "Identité",
+    "takeAction": "Agir",
+    "iWant": "Je Veux"
+  },
+  "press": {
+    "title": "LES DÉS ROULENT",
+    "subtitle": "Sélectionnez une action. Les autres seront écartées.",
+    "excitementIndex": "Indice d'Excitation : {score}/10",
+    "initialize": "INITIALISER"
+  },
+  "apiErrors": {
+    "unauthorized": "Accès non autorisé.",
+    "missingSession": "ID de session manquant.",
+    "userNotFound": "Utilisateur non trouvé.",
+    "noActiveSub": "Aucun abonnement actif ou crédits de session.",
+    "mirrorTimeout": "L'algorithme prend plus de temps que prévu. Veuillez réessayer.",
+    "unexpected": "Une erreur inattendue s'est produite.",
+    "rantRequired": "Le défoulement est obligatoire.",
+    "onboardingTimeout": "L'algorithme prend plus de temps que prévu. Veuillez réessayer."
+  },
+  "locale": {
+    "en": "English",
+    "es": "Español",
+    "pt": "Português",
+    "fr": "Français",
+    "switchLanguage": "Langue"
+  },
+  "terms": {
+    "title": "Conditions d'Utilisation",
+    "subtitle": "Conditions d'Utilisation pour la plateforme Earnest Page.",
+    "lastUpdated": "Dernière mise à jour : 11 mars 2026",
+    "navBrand": "Earnest Page",
+    "legal": "Juridique",
+    "s1": {
+      "title": "1. Acceptation des Conditions",
+      "p1": "En accédant ou en utilisant Earnest Page (\"le Service\"), vous acceptez d'être lié par ces Conditions d'Utilisation (\"Conditions\"). Si vous n'êtes pas d'accord, n'utilisez pas le Service. Le Service est exploité par Golden Black LLC (\"nous\" ou \"notre\")."
+    },
+    "s2": {
+      "title": "2. Éligibilité",
+      "p1": "Vous devez avoir au moins ",
+      "strong": "13 ans",
+      "p2": " pour utiliser le Service. En créant un compte, vous déclarez et garantissez que vous remplissez cette condition d'âge minimum. Si vous avez moins de 18 ans, vous affirmez avoir le consentement d'un parent ou tuteur légal."
+    },
+    "s3": {
+      "title": "3. Compte et Authentification",
+      "p1": "Les comptes sont créés par vérification du numéro de téléphone. Votre numéro de téléphone est utilisé uniquement pour l'authentification et n'est jamais stocké dans notre base de données. Un hachage cryptographique de votre numéro de téléphone est utilisé pour les fonctions d'exclusion de contacts. Vous êtes responsable de maintenir la sécurité de votre appareil et de l'accès à votre compte."
+    },
+    "s4": {
+      "title": "4. Description du Service",
+      "p1": "Earnest Page est une plateforme d'actualisation de soi qui fournit :",
+      "l1": "Une interface conversationnelle alimentée par IA (\"Chat du Miroir\") qui simule le dialogue avec votre Moi Idéal défini",
+      "l2": "Un dossier personnel maintenu par IA basé sur vos conversations",
+      "l3": "Publication anonyme de posts synthétisés par IA dans un flux social (\"Cher Earnest\")",
+      "l4": "Planification d'actions et suivi de directives",
+      "l5": "Création de profil de personnage et génération d'avatar"
+    },
+    "s5": {
+      "title": "5. Traitement IA et Génération de Contenu",
+      "p1": "En utilisant le Service, vous reconnaissez et consentez à ce qui suit :",
+      "l1": "Vos conversations avec le Chat du Miroir sont traitées par des modèles d'IA tiers (Anthropic Claude) pour générer des réponses, des plans d'action et des insights personnels.",
+      "l2": "Les conversations peuvent être synthétisées en publications anonymes écrites par IA qui sont publiées dans le flux public. Toute information personnellement identifiable est supprimée avant publication.",
+      "l3": "Le contenu généré par IA ne constitue pas un conseil professionnel. Le Service ne remplace pas la thérapie, le conseil, les soins médicaux ou tout autre service professionnel."
+    },
+    "s6": {
+      "title": "6. Contenu et Conduite de l'Utilisateur",
+      "p1": "Vous conservez la propriété du contenu que vous fournissez (vos informations d'identité, conversations et saisies). En utilisant le Service, vous nous accordez une licence limitée pour traiter, anonymiser et publier du contenu dérivé comme décrit dans la Section 5.",
+      "p2": "Vous acceptez de ne pas utiliser le Service de quelque manière que ce soit décrite dans notre "
+    },
+    "s7": {
+      "title": "7. Paiement et Abonnement",
+      "p1": "L'accès au Service nécessite un abonnement payant. Les paiements sont traités de manière sécurisée via Stripe. En vous abonnant, vous autorisez le prélèvement applicable.",
+      "strong1": "Annulation.",
+      "p2": " Vous pouvez annuler votre abonnement à tout moment depuis le panneau Sécurité et Routage de votre profil. Si vous annulez dans les 7 jours suivant votre date d'abonnement, votre paiement sera intégralement remboursé. Après 7 jours, votre accès continue jusqu'à la fin de la période payée et aucun remboursement n'est effectué.",
+      "strong2": "Abonnements Expirés.",
+      "p3": " Lorsque votre période d'abonnement se termine, vous conservez un accès en lecture seule à votre profil, dossier et bilans mensuels. Le Chat du Miroir et les fonctions d'édition de personnage sont désactivés jusqu'à ce que vous vous réabonniez."
+    },
+    "s8": {
+      "title": "8. Confidentialité",
+      "p1": "Votre utilisation du Service est également régie par notre "
+    },
+    "s8_2": {
+      "p2": ", qui décrit comment nous collectons, utilisons et protégeons vos informations."
+    },
+    "s9": {
+      "title": "9. Avertissements",
+      "p1": "LE SERVICE EST FOURNI « TEL QUEL » ET « SELON DISPONIBILITÉ » SANS GARANTIE D'AUCUNE SORTE, EXPRESSE OU IMPLICITE. Nous ne garantissons pas que le Service sera ininterrompu, sans erreur ou sécurisé.",
+      "strong1": "Le Service n'est pas un service de santé mentale.",
+      "p2": " Les réponses générées par IA ne constituent pas une thérapie, un avis médical ou un conseil professionnel. Si vous êtes en crise, contactez les services d'urgence ou le ",
+      "strong2": "Numéro national de prévention du suicide 3114",
+      "p3": " (appelez le 3114 en France)."
+    },
+    "s10": {
+      "title": "10. Limitation de Responsabilité",
+      "p1": "Dans la mesure maximale autorisée par la loi, Golden Black LLC ne sera pas responsable de tout dommage indirect, accessoire, spécial, consécutif ou punitif, ni de toute perte de profits ou de revenus, qu'elle soit directe ou indirecte, résultant de votre utilisation du Service."
+    },
+    "s11": {
+      "title": "11. Résiliation",
+      "p1": "Nous nous réservons le droit de suspendre ou de résilier votre compte à tout moment pour violation de ces Conditions, de la Politique d'Utilisation Acceptable, ou pour toute autre raison à notre seule discrétion. En cas de résiliation, votre droit d'utiliser le Service cesse immédiatement."
+    },
+    "s12": {
+      "title": "12. Modifications des Conditions",
+      "p1": "Nous pouvons mettre à jour ces Conditions de temps à autre. Si nous apportons des modifications importantes, nous vous en informerons via le Service ou par d'autres moyens. L'utilisation continue du Service après les modifications constitue l'acceptation des Conditions mises à jour."
+    },
+    "s13": {
+      "title": "13. Droit Applicable",
+      "p1": "Ces Conditions seront régies par les lois de l'État du Massachusetts, sans tenir compte des dispositions relatives aux conflits de lois."
+    },
+    "s14": {
+      "title": "14. Contact",
+      "p1": "Pour toute question concernant ces Conditions, contactez-nous à "
+    },
+    "footer": {
+      "copyright": "© {year} Earnest Page. Tous droits réservés.",
+      "terms": "Conditions",
+      "privacy": "Confidentialité",
+      "aup": "Utilisation Acceptable"
+    }
+  },
+  "privacy": {
+    "title": "Politique de Confidentialité",
+    "subtitle": "Politique de Confidentialité pour la plateforme Earnest Page.",
+    "lastUpdated": "Dernière mise à jour : 11 mars 2026",
+    "s1": {
+      "title": "1. Introduction",
+      "p1": "Golden Black LLC (\"nous\" ou \"notre\") exploite Earnest Page. Cette Politique de Confidentialité décrit comment nous collectons, utilisons, stockons et protégeons vos informations personnelles lorsque vous utilisez notre plateforme. Nous nous engageons à la transparence et à la protection de votre vie privée."
+    },
+    "s2": {
+      "title": "2. Informations que Nous Collectons",
+      "t1": "2.1 Données d'Authentification",
+      "p1": "Nous utilisons l'authentification par téléphone via Twilio Verify. Votre numéro de téléphone est utilisé uniquement pour envoyer un code de vérification à usage unique lors de la connexion. ",
+      "strong1": "Nous ne stockons pas votre numéro de téléphone dans notre base de données.",
+      "p2": " Un hachage cryptographique unidirectionnel (SHA-256) de votre numéro de téléphone est stocké pour la fonction Pare-feu de Contact, qui vous permet d'exclure les personnes que vous connaissez de votre flux anonyme.",
+      "t2": "2.2 Données de Profil et d'Identité",
+      "p3": "Informations que vous fournissez volontairement lors de l'intégration et de l'édition du profil : genre, âge, ethnicité (facultatif), vision de vie, personnes importantes dans votre vie et intérêts personnels. Ces données sont utilisées exclusivement pour construire votre Bible de Personnage et personnaliser vos interactions avec l'IA.",
+      "t3": "2.3 Données de Conversation",
+      "p4": "Vos conversations avec le Chat du Miroir sont stockées temporairement dans Firebase Firestore pendant la session active. Après la fermeture d'une session, la conversation est traitée pour mettre à jour votre dossier et (si vous avez choisi le routage public) générer une publication anonyme. La transcription originale de la conversation est stockée sous ",
+      "code": "content_raw",
+      "p5": " et n'est ",
+      "strong2": "jamais visible par aucun utilisateur autre que vous",
+      "p6": ". Les sessions « Brûler à la fermeture » sont supprimées immédiatement avec zéro rétention de données.",
+      "t4": "2.4 Données de Localisation",
+      "p7": "Si vous accordez l'autorisation de géolocalisation du navigateur, vos coordonnées approximatives (latitude et longitude) sont utilisées pour la fonction Zone Aveugle de Proximité, qui filtre les publications dans un rayon de 320 km pour protéger votre anonymat. Vous pouvez également définir manuellement un ancrage de localisation via code postal. Vos coordonnées précises ne sont jamais affichées aux autres utilisateurs ni incluses dans les réponses de l'API.",
+      "t5": "2.5 Données de Paiement",
+      "p8": "Le traitement des paiements est entièrement géré par Stripe. Nous ne stockons pas les numéros de carte de crédit, les données de compte bancaire ou d'autres identifiants de paiement sur nos serveurs. Nous ne stockons que votre statut d'abonnement, votre type de plan et les identifiants d'intention de paiement Stripe."
+    },
+    "s3": {
+      "title": "3. Comment Nous Utilisons Vos Informations",
+      "l1": "Pour authentifier votre identité et gérer votre compte",
+      "l2": "Pour alimenter le Chat du Miroir par IA, les mises à jour de dossier et la compilation de personnage",
+      "l3": "Pour générer des publications anonymes écrites par IA pour le flux public (avec votre consentement via les paramètres de routage)",
+      "l4": "Pour générer des images hero par IA pour les publications",
+      "l5": "Pour fournir un filtrage d'anonymat basé sur la proximité",
+      "l6": "Pour traiter les paiements et gérer les abonnements",
+      "l7": "Pour améliorer le Service et résoudre les problèmes techniques"
+    },
+    "s4": {
+      "title": "4. Services Tiers",
+      "p1": "Nous utilisons les services tiers suivants pour exploiter la plateforme :",
+      "th1": "Service",
+      "th2": "Objectif",
+      "th3": "Données Partagées",
+      "td1_1": "Firebase",
+      "td1_2": "Authentification, base de données, stockage",
+      "td1_3": "Données de compte, profil, publications",
+      "td2_1": "Anthropic (Claude)",
+      "td2_2": "Conversation IA, synthèse de contenu",
+      "td2_3": "Contenu des conversations, données de personnage",
+      "td3_1": "Google (Imagen)",
+      "td3_2": "Génération d'images pour les publications",
+      "td3_3": "Uniquement des prompts texte générés par IA",
+      "td4_1": "Stripe",
+      "td4_2": "Traitement des paiements",
+      "td4_3": "Détails de paiement (gérés par Stripe)",
+      "td5_1": "Twilio",
+      "td5_2": "Codes de vérification SMS",
+      "td5_3": "Numéro de téléphone (pour l'envoi de OTP uniquement)",
+      "td6_1": "Vercel",
+      "td6_2": "Hébergement et déploiement",
+      "td6_3": "Journaux serveur, métadonnées des requêtes"
+    },
+    "s5": {
+      "title": "5. Anonymat et Contenu Public",
+      "p1": "Lorsqu'une conversation est publiée dans le flux Cher Earnest, elle est traitée par IA pour créer une version entièrement anonymisée et réécrite. Toute information d'identification personnelle — y compris les noms, lieux, employeurs et détails spécifiques — est supprimée et remplacée par des pseudonymes avant publication.",
+      "p2": "La transcription originale de la conversation n'est ",
+      "strong1": "jamais accessible à aucun utilisateur autre que l'auteur",
+      "p3": ". Nous n'affichons pas les compteurs de « j'aime », les compteurs d'abonnés ni les métriques d'engagement aux autres utilisateurs."
+    },
+    "s6": {
+      "title": "6. Conservation des Données",
+      "l1": "Les sessions de chat actives sont supprimées dans les 15 minutes suivant la fermeture.",
+      "l2": "Les sessions « Brûler à la fermeture » sont purgées immédiatement sans rétention de données.",
+      "l3": "Les publications sont conservées jusqu'à ce que vous les supprimiez ou supprimiez votre compte.",
+      "l4": "Votre dossier et profil de personnage sont conservés pendant la durée de votre compte."
+    },
+    "s7": {
+      "title": "7. Vos Droits",
+      "p1": "Selon votre juridiction, vous pouvez avoir le droit de :",
+      "strong1": "Accéder",
+      "l1": " aux données personnelles que nous détenons à votre sujet",
+      "strong2": "Supprimer",
+      "l2": " votre compte et toutes les données associées",
+      "strong3": "Exporter",
+      "l3": " vos données dans un format portable",
+      "strong4": "Refuser",
+      "l4": " la publication publique en configurant votre routage par défaut sur Privé",
+      "strong5": "Restreindre",
+      "l5": " la collecte de données de localisation en refusant la géolocalisation du navigateur",
+      "p2": "Pour exercer l'un de ces droits, contactez-nous à "
+    },
+    "s8": {
+      "title": "8. Confidentialité des Enfants",
+      "p1": "Le Service est accessible aux utilisateurs âgés de 13 ans et plus. Nous ne collectons pas sciemment d'informations personnelles auprès d'enfants de moins de 13 ans. Si nous découvrons que nous avons collecté des données d'un enfant de moins de 13 ans, nous supprimerons ces informations rapidement."
+    },
+    "s9": {
+      "title": "9. Sécurité",
+      "p1": "Nous employons des mesures de sécurité conformes aux standards de l'industrie, notamment la transmission de données chiffrée (TLS), le hachage cryptographique (SHA-256) pour les identifiants sensibles, les règles de sécurité Firebase et l'infrastructure de paiement conforme PCI de Stripe. Cependant, aucune méthode de stockage ou de transmission électronique n'est sûre à 100 %."
+    },
+    "s10": {
+      "title": "10. Modifications de cette Politique",
+      "p1": "Nous pouvons mettre à jour cette Politique de Confidentialité de temps à autre. Si nous apportons des modifications importantes, nous en informerons via le Service. L'utilisation continue du Service après les modifications constitue l'acceptation de la politique mise à jour."
+    },
+    "s11": {
+      "title": "11. Contact",
+      "p1": "Pour toute question ou demande relative à la confidentialité, contactez-nous à "
+    }
+  },
+  "acceptableUse": {
+    "title": "Politique d'Utilisation Acceptable",
+    "subtitle": "Politique d'Utilisation Acceptable pour la plateforme Earnest Page.",
+    "lastUpdated": "Dernière mise à jour : 11 mars 2026",
+    "intro": "Cette Politique d'Utilisation Acceptable (« PUA ») régit votre utilisation d'Earnest Page. En utilisant le Service, vous acceptez de respecter cette politique. Toute violation peut entraîner la suspension ou la résiliation de votre compte.",
+    "s1": {
+      "title": "1. Contenu Interdit",
+      "p1": "Vous ne pouvez pas utiliser le Service pour créer, transmettre ou stocker du contenu qui :",
+      "l1": "Est illégal en vertu du droit applicable",
+      "l2": "Promeut ou incite à la violence contre toute personne ou groupe",
+      "l3": "Contient du matériel sexuellement explicite impliquant des mineurs",
+      "l4": "Constitue du harcèlement, de l'intimidation ou un abus ciblé",
+      "l5": "Contient du contenu discriminatoire fondé sur la race, l'ethnicité, le genre, l'orientation sexuelle, la religion, le handicap ou l'origine nationale",
+      "l6": "Glorifie ou promeut l'automutilation ou le suicide",
+      "l7": "Contient des logiciels malveillants, des tentatives de phishing ou autre code malveillant"
+    },
+    "s2": {
+      "title": "2. Conduite Interdite",
+      "p1": "Vous ne pouvez pas :",
+      "l1": "Partager ou exposer les informations privées d'une autre personne",
+      "l2": "Utiliser la plateforme pour planifier, coordonner ou perpétrer des actes nuisibles contre qui que ce soit",
+      "l3": "Tenter de contourner le Pare-feu de Contact, la Zone Aveugle de Proximité ou d'autres fonctions de confidentialité",
+      "l4": "Tenter de désanonymiser d'autres utilisateurs ou d'identifier les auteurs de publications",
+      "l5": "Utiliser des scripts automatisés, des bots ou des scrapers pour accéder au Service",
+      "l6": "Tenter de faire de l'ingénierie inverse, d'exploiter ou de compromettre les modèles d'IA ou l'infrastructure de la plateforme",
+      "l7": "Créer plusieurs comptes pour contourner des interdictions ou restrictions",
+      "l8": "Se faire passer pour une autre personne ou entité"
+    },
+    "s3": {
+      "title": "3. Sécurité et Crise",
+      "p1": "Earnest Page est un outil d'actualisation de soi, pas un service de santé mentale. Si l'IA détecte un langage indiquant des idées suicidaires, d'automutilation ou une intention de nuire à autrui, elle mettra la conversation en pause et fournira des ressources de crise.",
+      "strong": "Si vous ou quelqu'un que vous connaissez êtes en danger immédiat, appelez les services d'urgence. Pour les crises de santé mentale, contactez le numéro national de prévention du suicide 3114 (appelez le 3114 en France)."
+    },
+    "s4": {
+      "title": "4. Modération du Contenu",
+      "p1": "Les publications générées par IA sont examinées par des filtres de contenu automatisés avant publication dans le flux public. Les publications violant cette politique peuvent être retenues du flux, signalées pour examen ou supprimées. Nous nous réservons le droit de prendre des mesures contre les comptes qui produisent de manière répétée du contenu signalé."
+    },
+    "s5": {
+      "title": "5. Signalement",
+      "p1": "Si vous rencontrez du contenu ou un comportement qui viole cette politique, veuillez le signaler à "
+    },
+    "s5_2": {
+      "p2": ". Nous examinerons les signalements rapidement et prendrons les mesures appropriées."
+    },
+    "s6": {
+      "title": "6. Application",
+      "p1": "Les violations de cette politique peuvent entraîner : la suppression de contenu, la suspension temporaire, la résiliation permanente du compte ou le signalement aux autorités lorsque la loi l'exige (ex., menaces crédibles de violence ou exploitation d'enfants)."
+    }
+  },
+  "legalDisclaimer": "Ce document juridique a été traduit pour votre commodité. En cas de divergences, la version anglaise prévaut."
+}

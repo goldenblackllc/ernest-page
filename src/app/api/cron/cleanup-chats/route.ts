@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { z } from 'zod';
-import { generateWithFallback, generateTextWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
@@ -19,68 +19,147 @@ export async function GET(req: Request) {
     }
 
     try {
-        const usersSnapshot = await db.collection('users').get();
         const now = Date.now();
         const timeoutMs = 15 * 60 * 1000; // 15 mins
         let processedCount = 0;
 
-        for (const userDoc of usersSnapshot.docs) {
-            const uid = userDoc.id;
-            const activeChatsRef = userDoc.ref.collection('active_chats');
-            const chatsSnap = await activeChatsRef.get();
+        // ─── COLLECTION GROUP QUERIES: fetch only chats that need processing ───
+        const [expiredSnap, closedSnap] = await Promise.all([
+            db.collectionGroup('active_chats')
+                .where('updatedAt', '<=', now - timeoutMs)
+                .get(),
+            db.collectionGroup('active_chats')
+                .where('isClosed', '==', true)
+                .get(),
+        ]);
 
-            if (!chatsSnap.empty) {
-                const userData = userDoc.data();
-                const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
-                const archetype = userData?.character_bible?.source_code?.archetype || "Mirror Reflection";
+        // De-duplicate (a chat could be both expired AND closed)
+        const chatMap = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+        for (const doc of expiredSnap.docs) chatMap.set(doc.ref.path, doc);
+        for (const doc of closedSnap.docs) chatMap.set(doc.ref.path, doc);
 
-                for (const chatDoc of chatsSnap.docs) {
-                    const chatData = chatDoc.data();
+        const chatsToProcess = Array.from(chatMap.values());
 
-                    const isExpired = chatData?.updatedAt && (now - chatData.updatedAt > timeoutMs);
-                    const isClosedByUser = chatData?.isClosed === true;
+        if (chatsToProcess.length === 0) {
+            return NextResponse.json({ success: true, processedCount: 0, note: 'No chats to process.' });
+        }
 
-                    // Process if abandoned via timeout or explicitly closed by user
-                    if (isExpired || isClosedByUser) {
-                        // BURN PROTOCOL: If session was marked for burn, skip ALL processing and delete immediately
-                        if (chatData.sessionRouting === 'burn' || chatData.burnOnClose === true) {
-                            console.log(`[Cron] Burn protocol — purging session for user ${uid}`);
-                            await chatDoc.ref.delete();
-                            continue;
-                        }
+        // Group chats by user for efficient user data fetching
+        const chatsByUser = new Map<string, FirebaseFirestore.QueryDocumentSnapshot[]>();
+        for (const chatDoc of chatsToProcess) {
+            // ref.parent = active_chats collection, ref.parent.parent = user document
+            const uid = chatDoc.ref.parent.parent?.id;
+            if (!uid) continue;
+            if (!chatsByUser.has(uid)) chatsByUser.set(uid, []);
+            chatsByUser.get(uid)!.push(chatDoc);
+        }
 
-                        const messages = chatData.messages || [];
-                        // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback
-                        const isPublic = chatData.sessionRouting
-                            ? chatData.sessionRouting === 'public'
-                            : chatData.autoPublish !== false;
+        // Process users in parallel batches of 5
+        const BATCH_SIZE = 5;
+        const userEntries = Array.from(chatsByUser.entries());
 
-                        // Generate a post for both public and private sessions (private = is_public: false, visible only to author)
-                        if (messages.length > 0) {
-                            const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+        for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
+            const batch = userEntries.slice(i, i + BATCH_SIZE);
+            const results = await Promise.allSettled(
+                batch.map(([uid, chatDocs]) => processUserChats(uid, chatDocs))
+            );
+            for (const result of results) {
+                if (result.status === 'fulfilled') processedCount += result.value;
+                else console.error('[Cron] User batch error:', result.reason);
+            }
+        }
 
-                            // Fetch recent posts to avoid repeating the same photo scale
-                            let recentScales: string[] = [];
-                            try {
-                                const recentSnap = await db.collection("posts")
-                                    .where("authorId", "==", uid)
-                                    .orderBy("created_at", "desc")
-                                    .limit(3)
-                                    .get();
-                                recentScales = recentSnap.docs
-                                    .map(d => d.data().photo_scale)
-                                    .filter(Boolean);
-                            } catch { /* ignore — index may not exist yet */ }
+        return NextResponse.json({ success: true, processedCount });
+    } catch (error: any) {
+        console.error("Cron Cleanup Error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
 
-                            const recentScaleHint = recentScales.length > 0
-                                ? `\nThe user's last ${recentScales.length} post(s) used these photo scales: [${recentScales.join(', ')}]. Do NOT repeat the same scale. Choose a DIFFERENT scale for variety.`
-                                : '';
+// ─── Process all chats for a single user ─────────────────────────────────────
+async function processUserChats(
+    uid: string,
+    chatDocs: FirebaseFirestore.QueryDocumentSnapshot[]
+): Promise<number> {
+    let processed = 0;
 
-                            const prompt = `Character A is defined by the following Character Bible:
+    // Fetch user data once for all their chats
+    const userDoc = await db.collection('users').doc(uid).get();
+    const userData = userDoc.data();
+    if (!userData) {
+        // User deleted — just clean up the chats
+        for (const chatDoc of chatDocs) await chatDoc.ref.delete();
+        return chatDocs.length;
+    }
+
+    const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
+    const archetype = userData?.character_bible?.source_code?.archetype || "Mirror Reflection";
+    const identity = userData?.identity;
+    const preferredLocale = userData?.preferred_locale || 'en';
+
+    for (const chatDoc of chatDocs) {
+        const chatData = chatDoc.data();
+
+        // BURN PROTOCOL: If session was marked for burn, skip ALL processing and delete immediately
+        if (chatData.sessionRouting === 'burn' || chatData.burnOnClose === true) {
+            console.log(`[Cron] Burn protocol — purging session for user ${uid}`);
+            await chatDoc.ref.delete();
+            continue;
+        }
+
+        const messages = chatData.messages || [];
+        // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback
+        const isPublic = chatData.sessionRouting
+            ? chatData.sessionRouting === 'public'
+            : chatData.autoPublish !== false;
+
+        if (messages.length > 0) {
+            const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+
+            // Fetch recent posts to avoid repeating the same photo scale
+            let recentScales: string[] = [];
+            try {
+                const recentSnap = await db.collection("posts")
+                    .where("authorId", "==", uid)
+                    .orderBy("created_at", "desc")
+                    .limit(3)
+                    .get();
+                recentScales = recentSnap.docs
+                    .map(d => d.data().photo_scale)
+                    .filter(Boolean);
+            } catch { /* ignore — index may not exist yet */ }
+
+            const recentScaleHint = recentScales.length > 0
+                ? `\nThe user's last ${recentScales.length} post(s) used these photo scales: [${recentScales.join(', ')}]. Do NOT repeat the same scale. Choose a DIFFERENT scale for variety.`
+                : '';
+
+            const currentDossier = identity?.dossier || '';
+            const sessionCount = (identity?.session_count || 0) + 1;
+
+            // ─── COMBINED AI CALL: post synthesis + dossier update ───
+            let languageCommand = "The output must be in English.";
+            if (preferredLocale === "es") {
+                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in SPANISH (Español).";
+            } else if (preferredLocale === "fr") {
+                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in FRENCH (Français).";
+            } else if (preferredLocale === "de") {
+                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in GERMAN (Deutsch).";
+            } else if (preferredLocale === "pt") {
+                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in PORTUGUESE (Português).";
+            }
+
+            const combinedPrompt = `You have TWO tasks to complete from the same chat transcript. Complete both.
+${languageCommand}
+
+CHARACTER BIBLE:
 ${JSON.stringify(compiledBible)}
-You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received a raw chat transcript between a user (Character B) and Character A.
-Here is the raw chat transcript:
+
+CHAT TRANSCRIPT:
 ${transcript}
+
+═══ TASK 1: EDITORIAL POST SYNTHESIS ═══
+
+You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received this raw chat transcript between a user (Character B) and their Ideal Self (Character A).
 
 STEP 1: THE EDITORIAL JUDGMENT
 Determine if this transcript has "Editorial Value."
@@ -88,14 +167,11 @@ Determine if this transcript has "Editorial Value."
 * Valuable (is_publishable: true): Contains a psychological struggle, a request for advice, OR a specific lifestyle/aesthetic question (e.g., "What soap do you use?", "How do you structure your morning?"). Readers love specific lifestyle details and psychological breakthroughs.
 
 STEP 2: THE SYNTHESIS (If Publishable)
-If the transcript is valuable, synthesize it into a single anonymous post. Output a JSON object:
-{
-"is_publishable": true/false,
-"post": {
-"title": "A punchy, scroll-stopping social media hook (4-8 words). No academic phrasing. Create a curiosity gap.",
-"pseudonym": "A clever 2-3 word sign-off (e.g., 'Curious Creator').",
-"letter": "Ghostwrite Character B's side into a punchy social media submission. FORMATTING RULES: You MUST start exactly with: 'Dear ${archetype},' followed by a double line break (\\n\\n). Write the body of the letter. End with a double line break (\\n\\n) followed by the pseudonym (e.g., '- OVERWHELMED FATHER'). SCRUB ALL PII (names, locations).",
-"response": "Synthesize Character A's advice. Write strictly in Character A's exact voice. FORMATTING RULES: You MUST end the response with a double line break (\\n\\n) followed exactly by: '- ${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them.",
+If the transcript is valuable, populate the post fields:
+- title: A punchy, scroll-stopping social media hook (4-8 words). No academic phrasing. Create a curiosity gap.
+- pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
+- letter: Ghostwrite Character B's side into a punchy social media submission. FORMATTING RULES: You MUST start exactly with: 'Dear ${archetype},' followed by a double line break (\\n\\n). Write the body of the letter. End with a double line break (\\n\\n) followed by the pseudonym (e.g., '- OVERWHELMED FATHER'). SCRUB ALL PII (names, locations). The letter must be strictly in the requested language.
+- response: Synthesize Character A's advice. Write strictly in Character A's exact voice. FORMATTING RULES: You MUST end the response with a double line break (\\n\\n) followed exactly by: '- ${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them. The response must be strictly in the requested language.
 
 STEP 3: THE ART DIRECTOR (Image Generation)
 You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
@@ -109,144 +185,17 @@ Then choose a SCALE — the type of shot:
 - "human": Faceless human presence — silhouettes, hands doing something, over-the-shoulder, person walking away. NEVER show faces.
 ${recentScaleHint}
 
-"photo_vibe": "One word capturing the emotional tone.",
-"photo_scale": "One of macro, lifestyle, wide, or human.",
-"imagen_prompt": "Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.",
-"language": "Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français')."
-}
-}`;
+- photo_vibe: One word capturing the emotional tone.
+- photo_scale: One of macro, lifestyle, wide, or human.
+- imagen_prompt: Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.
+- language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').
 
-                            // Generate 'Dear Earnest' Post
-                            const result = await generateWithFallback({
-                                primaryModelId: SONNET_MODEL,
-                                schema: z.object({
-                                    is_publishable: z.boolean(),
-                                    post: z.object({
-                                        title: z.string(),
-                                        pseudonym: z.string(),
-                                        letter: z.string(),
-                                        response: z.string(),
-                                        photo_vibe: z.string(),
-                                        photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
-                                        imagen_prompt: z.string(),
-                                        language: z.string()
-                                    }).nullable().optional()
-                                }),
-                                prompt: prompt
-                            });
-                            const object = result.object as any;
+═══ TASK 2: DOSSIER UPDATE ═══
 
-                            if (object.is_publishable && object.post) {
-                                // 1. Generate URLs
-                                let imagen_url = null;
-
-                                // Fetch image from Imagen
-                                try {
-                                    const postDocRef = db.collection('posts').doc();
-                                    const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            instances: [{ prompt: object.post.imagen_prompt }],
-                                            parameters: { sampleCount: 1, aspectRatio: "16:9" }
-                                        })
-                                    });
-
-                                    if (imagenRes.ok) {
-                                        const data = await imagenRes.json();
-                                        if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
-                                            const base64Data = data.predictions[0].bytesBase64Encoded;
-                                            const buffer = Buffer.from(base64Data, 'base64');
-                                            const bucket = storage.bucket();
-                                            const fileName = `post-images/${postDocRef.id}_imagen.jpg`;
-                                            const file = bucket.file(fileName);
-
-                                            await file.save(buffer, {
-                                                metadata: { contentType: 'image/jpeg' },
-                                                public: true
-                                            });
-
-                                            imagen_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                                        }
-                                    } else {
-                                        console.error("Imagen API Error:", await imagenRes.text());
-                                    }
-
-                                    // Compute author hash for Contact Firewall filtering
-                                    let authorHash: string | null = null;
-                                    try {
-                                        const userRecord = await getAuth().getUser(uid);
-                                        if (userRecord.phoneNumber) {
-                                            const normalized = normalizePhoneNumberServer(userRecord.phoneNumber);
-                                            authorHash = hashPhoneNumberServer(normalized);
-                                        }
-                                    } catch { /* silent — hash is best-effort */ }
-
-                                    // Compute geolocation fields from stored user coords
-                                    const geoFields: { lat?: number; lng?: number; geohash?: string } = {};
-                                    if (userData?.home_lat != null && userData?.home_lng != null) {
-                                        geoFields.lat = userData.home_lat;
-                                        geoFields.lng = userData.home_lng;
-                                        geoFields.geohash = geohashForLocation([userData.home_lat, userData.home_lng]);
-                                    }
-
-                                    // Create Post in DB
-                                    await postDocRef.set({
-                                        id: postDocRef.id,
-                                        uid,
-                                        authorId: uid,
-                                        authorHash: authorHash,
-                                        region: userData?.region || null,
-                                        author: userData?.displayName || "Anonymous",
-                                        type: 'checkin',
-                                        public_post: {
-                                            title: object.post.title,
-                                            pseudonym: object.post.pseudonym,
-                                            letter: object.post.letter,
-                                            response: object.post.response,
-                                        },
-                                        imagen_prompt: object.post.imagen_prompt,
-                                        photo_vibe: object.post.photo_vibe,
-                                        photo_scale: object.post.photo_scale,
-                                        language: object.post.language || null,
-                                        imagen_url: imagen_url,
-                                        // Geolocation for proximity filtering
-                                        ...geoFields,
-                                        // Legacy fallbacks for uninterrupted rendering
-                                        title: object.post.title,
-                                        pseudonym: object.post.pseudonym,
-                                        letter: object.post.letter,
-                                        response: object.post.response,
-                                        content_raw: transcript,
-                                        status: "completed",
-                                        created_at: new Date(),
-                                        is_public: isPublic,
-                                        likes: 0,
-                                        comments: 0
-                                    });
-                                    processedCount++;
-                                } catch (e) {
-                                    console.error("Failed to insert generated post: ", e);
-                                }
-                            }
-                        }
-
-                        // Update dossier with conversation data (runs for ALL chats with messages)
-                        if (messages.length > 0) {
-                            try {
-                                const identity = userData?.identity;
-                                if (identity) {
-                                    const chatTranscript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
-                                    const currentDossier = identity.dossier || '';
-                                    const sessionCount = (identity.session_count || 0) + 1;
-
-                                    const dossierPrompt = `You are maintaining a personal consultant's client dossier. Your job is to produce an updated dossier that captures everything important about this person.
+You are maintaining a personal consultant's client dossier.
 
 CURRENT DOSSIER:
 ${currentDossier}
-
-NEW SESSION TRANSCRIPT:
-${chatTranscript}
 
 WHAT COUNTS AS A FACT:
 - Only extract things the USER explicitly said about their own life: people, places, jobs, living situation, preferences, hobbies, goals, and concrete events.
@@ -278,93 +227,159 @@ Important relationships with enough detail to reference naturally in conversatio
 What they are currently working toward — concrete projects, ambitions, and active pursuits
 
 ═══ PREFERENCES & STYLE ═══
-Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbies, sports teams, routines, and anything else they enjoy or favor. Do NOT include communication style or behavioral observations here.
+Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbies, sports teams, routines, and anything else they enjoy or favor. Do NOT include communication style or behavioral observations here.`;
 
-Output the complete updated dossier as plain text.`;
+            try {
+                const result = await generateWithFallback({
+                    primaryModelId: SONNET_MODEL,
+                    schema: z.object({
+                        post: z.object({
+                            is_publishable: z.boolean(),
+                            title: z.string().optional(),
+                            pseudonym: z.string().optional(),
+                            letter: z.string().optional(),
+                            response: z.string().optional(),
+                            photo_vibe: z.string().optional(),
+                            photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
+                            imagen_prompt: z.string().optional(),
+                            language: z.string().optional(),
+                        }),
+                        updated_dossier: z.string(),
+                    }),
+                    prompt: combinedPrompt,
+                });
 
-                                    const dossierResult = await generateTextWithFallback({
-                                        primaryModelId: SONNET_MODEL,
-                                        prompt: dossierPrompt,
-                                    });
+                const object = result.object as any;
 
-                                    await userDoc.ref.set({
-                                        identity: {
-                                            ...identity,
-                                            dossier: dossierResult.text,
-                                            dossier_updated_at: FieldValue.serverTimestamp(),
-                                            session_count: sessionCount,
-                                        },
-                                    }, { merge: true });
+                // ─── DOSSIER WRITE (runs in parallel with image gen below) ───
+                const dossierPromise = identity
+                    ? userDoc.ref.set({
+                        identity: {
+                            ...identity,
+                            dossier: object.updated_dossier,
+                            dossier_updated_at: FieldValue.serverTimestamp(),
+                            session_count: sessionCount,
+                        },
+                    }, { merge: true }).then(() => {
+                        console.log(`[Cron] Dossier updated for user ${uid} (session ${sessionCount})`);
+                    }).catch((err: any) => {
+                        console.error(`[Cron] Dossier update failed for user ${uid}:`, err.message);
+                    })
+                    : Promise.resolve();
 
-                                    console.log(`[Cron] Dossier updated for user ${uid} (session ${sessionCount})`);
-                                }
-                            } catch (dossierError: any) {
-                                console.error(`[Cron] Dossier update failed for user ${uid}:`, dossierError.message);
-                                // Don't block chat cleanup if dossier update fails
-                            }
+                // ─── POST CREATION (with parallel image gen) ───
+                if (object.post.is_publishable && object.post.title) {
+                    const postDocRef = db.collection('posts').doc();
 
-                            // --- BELIEF PATTERN TRACKING ---
-                            try {
-                                const identity = userData?.identity;
-                                if (identity) {
-                                    const chatTranscript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
-                                    const currentPatterns = identity.belief_patterns || '';
+                    // Start image generation and dossier write concurrently
+                    const [imageResult] = await Promise.allSettled([
+                        generatePostImage(object.post.imagen_prompt, postDocRef.id),
+                        dossierPromise,
+                    ]);
 
-                                    const beliefPrompt = `You are maintaining a longitudinal belief analysis for a personal growth platform. Your job is to track how this person's beliefs are evolving across sessions.
+                    const imagen_url = imageResult.status === 'fulfilled' ? imageResult.value : null;
 
-CURRENT BELIEF PATTERNS (from previous sessions):
-${currentPatterns || 'No previous patterns recorded.'}
-
-NEW SESSION TRANSCRIPT:
-${chatTranscript}
-
-Analyze this session and produce an updated belief patterns document. Track:
-
-1. RECURRING BELIEFS CREATING FRICTION — What beliefs keep showing up that create negative feelings? Name the belief specifically (e.g., "I don't have enough" or "I'm not good enough to charge more"). If a belief appeared in previous sessions, note how many times it has recurred.
-
-2. EXCITEMENT SIGNALS — Where was the person's energy highest? What topics, ideas, or possibilities lit them up? These point to alignment.
-
-3. SHIFTS — Did any previously-held belief change in this session compared to earlier sessions? If so, name what changed and when.
-
-4. UNEXPECTED RESULTS — Did the person mention anything surprising that happened after following their excitement? These connections between action and unexpected outcomes are important to track.
-
-RULES:
-- Produce a COMPLETE REWRITE, not an append. The output replaces the current document.
-- Keep it under 600 words. Prioritize: active friction beliefs > excitement signals > shifts > unexpected results.
-- Write from an analytical perspective — factual, pattern-focused, not judgmental.
-- Do not include advice or recommendations. Just observe and record.
-
-Output the updated belief patterns as plain text.`;
-
-                                    const beliefResult = await generateTextWithFallback({
-                                        primaryModelId: SONNET_MODEL,
-                                        prompt: beliefPrompt,
-                                    });
-
-                                    await userDoc.ref.set({
-                                        identity: {
-                                            belief_patterns: beliefResult.text,
-                                        },
-                                    }, { merge: true });
-
-                                    console.log(`[Cron] Belief patterns updated for user ${uid}`);
-                                }
-                            } catch (beliefError: any) {
-                                console.error(`[Cron] Belief pattern update failed for user ${uid}:`, beliefError.message);
-                                // Don't block chat cleanup if belief update fails
-                            }
+                    // Compute author hash for Contact Firewall filtering
+                    let authorHash: string | null = null;
+                    try {
+                        const userRecord = await getAuth().getUser(uid);
+                        if (userRecord.phoneNumber) {
+                            const normalized = normalizePhoneNumberServer(userRecord.phoneNumber);
+                            authorHash = hashPhoneNumberServer(normalized);
                         }
+                    } catch { /* silent — hash is best-effort */ }
 
-                        // Delete the processed or empty chat session
-                        await chatDoc.ref.delete();
+                    // Compute geolocation fields from stored user coords
+                    const geoFields: { lat?: number; lng?: number; geohash?: string } = {};
+                    if (userData?.home_lat != null && userData?.home_lng != null) {
+                        geoFields.lat = userData.home_lat;
+                        geoFields.lng = userData.home_lng;
+                        geoFields.geohash = geohashForLocation([userData.home_lat, userData.home_lng]);
                     }
+
+                    // Create Post in DB
+                    await postDocRef.set({
+                        id: postDocRef.id,
+                        uid,
+                        authorId: uid,
+                        authorHash: authorHash,
+                        region: userData?.region || null,
+                        author: userData?.displayName || "Anonymous",
+                        type: 'checkin',
+                        public_post: {
+                            title: object.post.title,
+                            pseudonym: object.post.pseudonym,
+                            letter: object.post.letter,
+                            response: object.post.response,
+                        },
+                        imagen_prompt: object.post.imagen_prompt,
+                        photo_vibe: object.post.photo_vibe,
+                        photo_scale: object.post.photo_scale,
+                        language: object.post.language || null,
+                        imagen_url: imagen_url,
+                        // Geolocation for proximity filtering
+                        ...geoFields,
+                        // Legacy fallbacks for uninterrupted rendering
+                        title: object.post.title,
+                        pseudonym: object.post.pseudonym,
+                        letter: object.post.letter,
+                        response: object.post.response,
+                        content_raw: transcript,
+                        status: "completed",
+                        created_at: new Date(),
+                        is_public: isPublic,
+                        likes: 0,
+                        comments: 0
+                    });
+                    processed++;
+                } else {
+                    // Not publishable — still need to await dossier write
+                    await dossierPromise;
                 }
+            } catch (e) {
+                console.error(`[Cron] Processing failed for user ${uid}:`, e);
             }
         }
 
-        return NextResponse.json({ success: true, processedCount });
-    } catch (error: any) {
-        console.error("Cron Cleanup Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        // Delete the processed or empty chat session
+        await chatDoc.ref.delete();
     }
+
+    return processed;
+}
+
+// ─── Image generation helper ─────────────────────────────────────────────────
+async function generatePostImage(prompt: string, postId: string): Promise<string | null> {
+    try {
+        const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                instances: [{ prompt }],
+                parameters: { sampleCount: 1, aspectRatio: "16:9" }
+            })
+        });
+
+        if (imagenRes.ok) {
+            const data = await imagenRes.json();
+            if (data.predictions?.[0]?.bytesBase64Encoded) {
+                const buffer = Buffer.from(data.predictions[0].bytesBase64Encoded, 'base64');
+                const bucket = storage.bucket();
+                const fileName = `post-images/${postId}_imagen.jpg`;
+                const file = bucket.file(fileName);
+
+                await file.save(buffer, {
+                    metadata: { contentType: 'image/jpeg' },
+                    public: true
+                });
+
+                return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+            }
+        } else {
+            console.error("Imagen API Error:", await imagenRes.text());
+        }
+    } catch (err) {
+        console.error("[Cron] Image generation failed:", err);
+    }
+    return null;
 }

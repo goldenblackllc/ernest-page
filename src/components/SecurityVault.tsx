@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { ContactFirewall } from "./ContactFirewall";
+import { useTranslations } from "next-intl";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface SecurityVaultProps {
@@ -46,6 +47,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+    const t = useTranslations('securityVault');
 
     // Fetch blocked hash count
     useEffect(() => {
@@ -220,7 +222,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     <div className="flex items-center gap-3">
                         <Shield className="w-5 h-5 text-zinc-400" />
                         <h2 className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-100">
-                            Security & Routing
+                            {t('title')}
                         </h2>
                     </div>
                     <button
@@ -260,13 +262,13 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                 )}
                             </div>
                             <p className="text-sm text-zinc-200 tracking-wide">
-                                Status: {firewallActive ? "Locked." : "Open."}{" "}
+                                {firewallActive ? t('statusLocked') : t('statusOpen')}{" "}
                                 {blockedCount !== null ? (
                                     <span className="font-mono text-white font-semibold">{blockedCount}</span>
                                 ) : (
                                     <Loader2 className="w-3 h-3 inline animate-spin" />
                                 )}{" "}
-                                {blockedCount === 1 ? "Identity" : "Identities"} Secured.
+                                {blockedCount === 1 ? t('identitySecured', { count: '' }) : t('identitiesSecured', { count: '' })}
                             </p>
                         </div>
 
@@ -277,7 +279,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                 className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/20 bg-white/5 text-white text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:border-white/30 transition-all"
                             >
                                 <Shield className="w-3.5 h-3.5" />
-                                Manage Firewall
+                                {t('manageFirewall')}
                             </button>
                             {!purgeConfirm ? (
                                 <button
@@ -286,7 +288,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                     className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-zinc-800 text-zinc-600 text-xs font-bold uppercase tracking-widest hover:text-red-400/70 hover:border-red-900/40 transition-all disabled:opacity-20"
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
-                                    Purge
+                                    {t('purge')}
                                 </button>
                             ) : (
                                 <button
@@ -297,7 +299,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                     {isPurging ? (
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : (
-                                        "Confirm Purge"
+                                        t('confirmPurge')
                                     )}
                                 </button>
                             )}
@@ -307,12 +309,10 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     {/* ═══ SECTION 2: PROXIMITY BLIND SPOT ═══ */}
                     <div className="px-6 py-8 border-b border-zinc-800/50">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
-                            Proximity Blind Spot
+                            {t('proximityTitle')}
                         </h3>
                         <p className="text-xs text-zinc-600 mb-6 leading-relaxed">
-                            Posts within a 200-mile radius of your location are mathematically
-                            filtered from your feed. If browser GPS is disabled, anchor your
-                            radius manually.
+                            {t('proximityDesc')}
                         </p>
 
                         {/* Input + Button */}
@@ -322,7 +322,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                 value={anchorInput}
                                 onChange={(e) => setAnchorInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleAnchorRadius()}
-                                placeholder="Enter Zip Code (e.g., 01741)"
+                                placeholder={t('enterZipCode')}
                                 className="flex-1 px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-900 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
                             />
                             <button
@@ -335,7 +335,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                 ) : (
                                     <Crosshair className="w-3.5 h-3.5" />
                                 )}
-                                Anchor Radius
+                                {t('anchorRadius')}
                             </button>
                         </div>
 
@@ -343,12 +343,12 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                         <div className="flex items-center gap-3">
                             <MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                             <p className="text-sm text-zinc-200 tracking-wide">
-                                Current Anchor:{" "}
+                                {t('currentAnchor')}{" "}
                                 <span className={cn(
                                     "text-white font-semibold",
                                     currentAnchor && "font-mono"
                                 )}>
-                                    {currentAnchor || "Live GPS"}
+                                    {currentAnchor || t('liveGps')}
                                 </span>
                             </p>
                         </div>
@@ -357,10 +357,10 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     {/* ═══ SECTION 4: DEFAULT POST ROUTING ═══ */}
                     <div className="px-6 py-8 border-b border-zinc-800/50">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
-                            Default Post Routing
+                            {t('defaultRoutingTitle')}
                         </h3>
                         <p className="text-xs text-zinc-600 mb-6">
-                            Determine where your friction is logged by default.
+                            {t('defaultRoutingDesc')}
                         </p>
 
                         {/* Custom Radio Group */}
@@ -390,10 +390,10 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         "text-sm font-bold block mb-1 transition-colors",
                                         routing === 'public' ? "text-white" : "text-zinc-400"
                                     )}>
-                                        Public (Dear Earnest Feed)
+                                        {t('publicRouting')}
                                     </span>
                                     <span className="text-xs text-zinc-600 leading-relaxed block">
-                                        Anonymized friction routed to the network.
+                                        {t('publicRoutingDesc')}
                                     </span>
                                 </div>
                             </button>
@@ -422,10 +422,10 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         "text-sm font-bold block mb-1 transition-colors",
                                         routing === 'private' ? "text-white" : "text-zinc-400"
                                     )}>
-                                        Private (Personal Ledger)
+                                        {t('privateRouting')}
                                     </span>
                                     <span className="text-xs text-zinc-600 leading-relaxed block">
-                                        Strict historical logging. No external visibility.
+                                        {t('privateRoutingDesc')}
                                     </span>
                                 </div>
                             </button>
@@ -435,11 +435,10 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     {/* ═══ SECTION 4: DATA DESTRUCTION ═══ */}
                     <div className="px-6 py-8">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
-                            Data Destruction
+                            {t('dataDestructionTitle')}
                         </h3>
                         <p className="text-xs text-zinc-600 mb-6 leading-relaxed">
-                            Permanently and irrevocably delete your entire history of friction
-                            and tactical plans. We hold nothing back.
+                            {t('dataDestructionDesc')}
                         </p>
 
                         {!burnConfirm ? (
@@ -449,19 +448,19 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                 className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl border border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-[0.15em] hover:text-red-400/60 hover:border-red-900/30 transition-all duration-200 disabled:opacity-30"
                             >
                                 <Flame className="w-4 h-4" />
-                                Burn the Ledger
+                                {t('burnLedger')}
                             </button>
                         ) : (
                             <div className="space-y-3">
                                 <p className="text-xs text-red-400/70 text-center">
-                                    This action is irreversible. All posts will be destroyed.
+                                    {t('burnWarning')}
                                 </p>
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => setBurnConfirm(false)}
                                         className="flex-1 py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-widest hover:text-white hover:border-zinc-600 transition-all"
                                     >
-                                        Cancel
+                                        {t('cancel')}
                                     </button>
                                     <button
                                         onClick={handleBurnLedger}
@@ -473,7 +472,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         ) : (
                                             <>
                                                 <Flame className="w-3.5 h-3.5" />
-                                                Confirm
+                                                {t('confirm')}
                                             </>
                                         )}
                                     </button>
@@ -485,12 +484,10 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     {/* ═══ SECTION 5: ACCOUNT DELETION ═══ */}
                     <div className="px-6 py-8 border-t border-zinc-800/50">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
-                            Account Deletion
+                            {t('accountDeletionTitle')}
                         </h3>
                         <p className="text-xs text-zinc-600 mb-6 leading-relaxed">
-                            Permanently delete your entire account, including all posts,
-                            conversations, character data, and authentication. This action
-                            is immediate and irreversible.
+                            {t('accountDeletionDesc')}
                         </p>
 
                         {!deleteConfirm ? (
@@ -500,20 +497,19 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                 className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl border border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-[0.15em] hover:text-red-400/60 hover:border-red-900/30 transition-all duration-200 disabled:opacity-30"
                             >
                                 <AlertTriangle className="w-4 h-4" />
-                                Delete My Account
+                                {t('deleteMyAccount')}
                             </button>
                         ) : (
                             <div className="space-y-3">
                                 <div className="p-3 rounded-xl border border-red-900/30 bg-red-950/20">
                                     <p className="text-xs text-red-400/80 text-center mb-3">
-                                        Type <span className="font-mono font-bold text-red-300">DELETE</span> to confirm.
-                                        All data will be destroyed.
+                                        {t('deleteWarning')}
                                     </p>
                                     <input
                                         type="text"
                                         value={deleteInput}
                                         onChange={(e) => setDeleteInput(e.target.value)}
-                                        placeholder="Type DELETE"
+                                        placeholder={t('typeDelete')}
                                         className="w-full bg-black/50 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white font-mono text-center placeholder:text-zinc-700 focus:outline-none focus:border-red-800/50"
                                     />
                                 </div>
@@ -522,7 +518,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
                                         className="flex-1 py-3 px-4 rounded-xl border border-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-widest hover:text-white hover:border-zinc-600 transition-all"
                                     >
-                                        Cancel
+                                        {t('cancel')}
                                     </button>
                                     <button
                                         onClick={async () => {
@@ -564,7 +560,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         ) : (
                                             <>
                                                 <AlertTriangle className="w-3.5 h-3.5" />
-                                                Delete Forever
+                                                {t('deleteForever')}
                                             </>
                                         )}
                                     </button>
@@ -579,7 +575,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                     <div className="flex items-center justify-center gap-2">
                         <ShieldCheck className="w-3.5 h-3.5 text-zinc-700" />
                         <span className="text-[10px] text-zinc-700 uppercase tracking-[0.2em] font-semibold">
-                            Vault Secured
+                            {t('vaultSecured')}
                         </span>
                     </div>
                 </div>

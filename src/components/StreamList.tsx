@@ -1,5 +1,6 @@
 import { X, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export interface StreamItem {
     id: string;
@@ -15,6 +16,7 @@ interface StreamListProps {
 }
 
 export function StreamList({ items, top3Feelings, onDelete, onToggleFeeling }: StreamListProps) {
+    const t = useTranslations('vision.streamList');
     // Only show helper text if there are items and feelings present
     const hasFeelings = items.some(item => item.category === "FEELING");
 
@@ -22,7 +24,7 @@ export function StreamList({ items, top3Feelings, onDelete, onToggleFeeling }: S
         <div className="space-y-4">
             {hasFeelings && (
                 <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] text-gray-500 mb-2">
-                    Select your top 3 feelings.
+                    {t('selectTopFeelings')}
                 </p>
             )}
 
@@ -30,7 +32,7 @@ export function StreamList({ items, top3Feelings, onDelete, onToggleFeeling }: S
                 {items.length === 0 ? (
                     <div className="text-center py-8">
                         <p className="text-xs text-gray-400 uppercase tracking-widest">
-                            The stream is empty
+                            {t('empty')}
                         </p>
                     </div>
                 ) : (
@@ -53,7 +55,7 @@ export function StreamList({ items, top3Feelings, onDelete, onToggleFeeling }: S
                                                 type="button"
                                                 onClick={() => onToggleFeeling(item.id)}
                                                 className="mt-0.5 flex-shrink-0 focus:outline-none"
-                                                aria-label={isSelected ? "Unselect feeling" : "Select feeling"}
+                                                aria-label={isSelected ? t('ariaUnselect') : t('ariaSelect')}
                                             >
                                                 <Star
                                                     className={cn(
@@ -92,7 +94,7 @@ export function StreamList({ items, top3Feelings, onDelete, onToggleFeeling }: S
                                         type="button"
                                         onClick={() => onDelete(item.id)}
                                         className="text-gray-300 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                                        aria-label="Delete item"
+                                        aria-label={t('ariaDelete')}
                                     >
                                         <X className="w-3 h-3" />
                                     </button>

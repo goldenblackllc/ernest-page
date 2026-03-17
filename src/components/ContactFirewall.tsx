@@ -12,6 +12,7 @@ import {
     syncFirewallHashes,
     parseContactFile,
 } from '@/lib/security/contactFirewall';
+import { useTranslations } from 'next-intl';
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface ContactFirewallProps {
@@ -44,6 +45,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
     const [finalCount, setFinalCount] = useState(0);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const counterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const t = useTranslations('contactFirewall');
 
     // Precision Targeting State
     const [targets, setTargets] = useState<TargetRow[]>([
@@ -207,15 +209,14 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                     <div className="flex items-center gap-2 mb-6">
                         <Shield className="w-4 h-4 text-zinc-600" />
                         <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-semibold">
-                            Network Isolation Protocol
+                            {t('protocolTitle')}
                         </span>
                     </div>
                     <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.08] mb-6">
-                        The Contact Firewall
+                        {t('title')}
                     </h1>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-xl">
-                        Your execution requires total isolation. Block specific threats or upload your
-                        entire contact book to establish a permanent, cryptographic blind spot.
+                        {t('desc')}
                     </p>
                 </motion.div>
 
@@ -230,9 +231,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                     <div className="flex items-start gap-4">
                         <Lock className="w-5 h-5 text-zinc-600 mt-0.5 shrink-0" />
                         <p className="text-sm sm:text-[15px] text-zinc-400 leading-relaxed">
-                            We do not store your contacts. Everything is hashed locally on this device
-                            before it ever reaches our servers. You are mathematically invisible to your
-                            immediate orbit.
+                            {t('trustDesc')}
                         </p>
                     </div>
                 </motion.div>
@@ -267,7 +266,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                 : "text-zinc-500 hover:text-zinc-300"
                                         )}
                                     >
-                                        Precision Targeting
+                                        {t('precisionTargeting')}
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('bulk')}
@@ -278,7 +277,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                 : "text-zinc-500 hover:text-zinc-300"
                                         )}
                                     >
-                                        Bulk Isolation
+                                        {t('bulkIsolation')}
                                     </button>
                                 </div>
 
@@ -294,11 +293,10 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                             transition={{ duration: 0.2 }}
                                         >
                                             <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
-                                                Identify Specific Threats
+                                                {t('precisionTitle')}
                                             </h2>
                                             <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
-                                                Enter the specific phone numbers of individuals whose presence
-                                                would compromise your honesty on the platform.
+                                                {t('precisionDesc')}
                                             </p>
 
                                             {/* Input Rows */}
@@ -307,7 +305,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                     <div key={i} className="flex items-center gap-2">
                                                         <input
                                                             type="tel"
-                                                            placeholder="Phone Number"
+                                                            placeholder={t('phoneNumber')}
                                                             value={target.phone}
                                                             onChange={e => handleUpdateTarget(i, e.target.value)}
                                                             className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors font-mono"
@@ -330,7 +328,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                 className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-300 transition-colors mb-10 font-medium"
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
-                                                Add another target
+                                                {t('addAnotherTarget')}
                                             </button>
 
                                             {/* Primary Action */}
@@ -339,7 +337,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                 className="w-full py-4 px-8 rounded-full bg-white text-black font-bold text-base tracking-tight
                                                            hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
                                             >
-                                                Lock Perimeter
+                                                {t('lockPerimeter')}
                                             </button>
                                         </motion.div>
                                     )}
@@ -354,18 +352,17 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                             transition={{ duration: 0.2 }}
                                         >
                                             <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
-                                                Establish a Total Blind Spot
+                                                {t('bulkTitle')}
                                             </h2>
                                             <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
-                                                Upload your device&apos;s raw contact export (.vcf or .csv). Hashing
-                                                occurs entirely within your browser; the file never touches our servers.
+                                                {t('bulkDesc')}
                                             </p>
 
                                             {/* Export Instructions */}
                                             <div className="space-y-2 mb-8">
                                                 <details className="group rounded-xl border border-zinc-800 overflow-hidden">
                                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors">
-                                                        <span>How to export from Apple</span>
+                                                        <span>{t('exportApple')}</span>
                                                         <span className="text-zinc-600 group-open:rotate-45 transition-transform duration-200 text-lg leading-none">+</span>
                                                     </summary>
                                                     <div className="px-4 pb-4 text-sm text-zinc-500 space-y-2 border-t border-zinc-800/50 pt-3">
@@ -377,7 +374,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
 
                                                 <details className="group rounded-xl border border-zinc-800 overflow-hidden">
                                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors">
-                                                        <span>How to export from Google</span>
+                                                        <span>{t('exportGoogle')}</span>
                                                         <span className="text-zinc-600 group-open:rotate-45 transition-transform duration-200 text-lg leading-none">+</span>
                                                     </summary>
                                                     <div className="px-4 pb-4 text-sm text-zinc-500 space-y-2 border-t border-zinc-800/50 pt-3">
@@ -407,13 +404,13 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                 )} />
                                                 <p className="text-sm text-zinc-400 text-center mb-1">
                                                     {isDragging ? (
-                                                        <span className="text-white font-medium">Drop to analyze</span>
+                                                        <span className="text-white font-medium">{t('dropToAnalyze')}</span>
                                                     ) : (
-                                                        <>Drag and drop your contact file here</>
+                                                        <>{t('dragAndDrop')}</>
                                                     )}
                                                 </p>
                                                 <p className="text-xs text-zinc-600">
-                                                    .vcf or .csv — processed locally, never uploaded
+                                                    {t('fileTypes')}
                                                 </p>
 
                                                 <input
@@ -432,7 +429,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                                            hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
                                             >
                                                 <FileText className="w-4 h-4" />
-                                                Select .vcf or .csv File
+                                                {t('selectFile')}
                                             </button>
                                         </motion.div>
                                     )}
@@ -444,7 +441,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                     onClick={handleSkip}
                                     className="w-full mt-5 text-zinc-600 text-sm hover:text-zinc-400 transition-colors py-3 text-center"
                                 >
-                                    Skip for now. I accept the risk of exposure.
+                                    {t('skipForNow')}
                                 </button>
                             </motion.div>
                         )}
@@ -461,7 +458,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                             >
                                 <div className="w-full max-w-md py-4 px-8 rounded-full border border-zinc-800 bg-zinc-950 text-center">
                                     <span className="font-mono text-base text-white tabular-nums tracking-wider">
-                                        Hashing{' '}
+                                        {t('hashing')}{' '}
                                         <motion.span
                                             key={hashCount}
                                             initial={{ opacity: 0.4, y: 4 }}
@@ -471,11 +468,11 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                         >
                                             {hashCount}
                                         </motion.span>
-                                        {' '}identities...
+                                        {' '}{t('identities')}
                                     </span>
                                 </div>
                                 <p className="mt-5 text-zinc-600 text-xs tracking-wide">
-                                    SHA-256 · Client-side only · Zero transmission of raw data
+                                    {t('hashingDesc')}
                                 </p>
                             </motion.div>
                         )}
@@ -501,11 +498,10 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                 </motion.div>
 
                                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2 text-center">
-                                    Firewall Active.
+                                    {t('firewallActive')}
                                 </h2>
                                 <p className="text-sm text-zinc-400 text-center mb-10">
-                                    <span className="text-white font-semibold">{finalCount}</span>{' '}
-                                    {finalCount === 1 ? 'identity' : 'identities'} secured. Your perimeter is locked.
+                                    {finalCount === 1 ? t('identitySecured', { count: finalCount }) : t('identitiesSecured', { count: finalCount })}
                                 </p>
 
                                 <button
@@ -513,7 +509,7 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                     className="w-full max-w-md py-4 px-8 rounded-full bg-white text-black font-bold text-base tracking-tight
                                                hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
                                 >
-                                    Enter the Command Center ➡️
+                                    {t('enterCommandCenter')}
                                 </button>
                             </motion.div>
                         )}
@@ -536,13 +532,13 @@ export function ContactFirewall({ onComplete }: ContactFirewallProps) {
                                     className="w-full max-w-md py-4 px-8 rounded-full bg-white text-black font-bold text-base tracking-tight
                                                hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 mb-3"
                                 >
-                                    Try Again
+                                    {t('tryAgain')}
                                 </button>
                                 <button
                                     onClick={handleSkip}
                                     className="text-zinc-600 text-sm hover:text-zinc-400 transition-colors py-3"
                                 >
-                                    Skip for now
+                                    {t('skipShort')}
                                 </button>
                             </motion.div>
                         )}

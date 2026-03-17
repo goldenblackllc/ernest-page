@@ -14,6 +14,7 @@ import { DossierView } from "./DossierView";
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
 import { SecurityVault } from "./SecurityVault";
+import { useTranslations } from "next-intl";
 
 export function ProfileView() {
     const { user } = useAuth();
@@ -27,6 +28,7 @@ export function ProfileView() {
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
 
     const [isVaultOpen, setIsVaultOpen] = useState(false);
+    const t = useTranslations('profile');
 
     useEffect(() => {
         if (!user) return;
@@ -60,7 +62,7 @@ export function ProfileView() {
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!bible && !identity) return null;
 
-    const displayTitle = identity?.title || bible?.source_code?.archetype || "Unknown Character";
+    const displayTitle = identity?.title || bible?.source_code?.archetype || t('unknownCharacter');
     const displaySections = bible?.compiled_output?.ideal;
 
     return (
@@ -84,7 +86,7 @@ export function ProfileView() {
                                 {displayTitle}
                             </h2>
                             <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-bold mt-1">
-                                Profile
+                                {t('profileTab')}
                             </p>
                         </div>
                     </div>
@@ -97,7 +99,7 @@ export function ProfileView() {
                             className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold px-4 py-2.5 rounded-full transition-all shadow-sm"
                         >
                             <Pencil className="w-3.5 h-3.5" />
-                            Edit
+                            {t('edit')}
                         </button>
                     </div>
                 </div>
@@ -105,7 +107,7 @@ export function ProfileView() {
                 {/* IDENTITY VISION (shown when no compiled bible yet) */}
                 {identity?.dream_self && (!displaySections || displaySections.length === 0) && (
                     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-3">Identity</p>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-3">{t('identityTitle')}</p>
                         <p className="text-sm text-zinc-300 leading-relaxed">{identity.dream_self}</p>
                     </div>
                 )}
@@ -195,6 +197,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
     const { user } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const t = useTranslations('profile');
 
     // Reset when modal opens
     const wasOpen = React.useRef(false);
@@ -250,9 +253,9 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
 
             <div className="relative w-full max-w-lg max-h-[85vh] bg-zinc-950 border border-white/10 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-white">Edit Identity</h2>
+                    <h2 className="text-sm font-bold text-white">{t('editIdentityModalTitle')}</h2>
                     <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3">
-                        Close
+                        {t('close')}
                     </button>
                 </div>
 
@@ -260,7 +263,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     {isProcessing ? (
                         <div className="flex flex-col items-center gap-6 py-12">
                             <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
-                            <p className="text-base text-zinc-400">Rebuilding your character...</p>
+                            <p className="text-base text-zinc-400">{t('rebuildingCharacter')}</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-5">
@@ -279,7 +282,7 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                 }}
                                 onSubmit={handleSubmit}
                                 isSubmitting={isProcessing}
-                                submitLabel="Rebuild Character"
+                                submitLabel={t('rebuildCharacterBtn')}
                             />
                         </div>
                     )}

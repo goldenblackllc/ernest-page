@@ -1,12 +1,14 @@
 import { useState, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface StreamInputProps {
     onAdd: (text: string, category: "FEELING" | "THOUGHT" | "ACTION") => void;
 }
 
 export function StreamInput({ onAdd }: StreamInputProps) {
+    const t = useTranslations('vision.streamInput');
     const [text, setText] = useState("");
 
     const handleAdd = (category: "FEELING" | "THOUGHT" | "ACTION") => {
@@ -29,7 +31,7 @@ export function StreamInput({ onAdd }: StreamInputProps) {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Type a feeling, thought, or action..."
+                    placeholder={t('placeholder')}
                     className="w-full border border-gray-300 bg-transparent px-4 py-3 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-0 rounded-none transition-colors pr-32" // Added padding-right if buttons overlay, or just kept simple
                     maxLength={140}
                 />
@@ -41,21 +43,21 @@ export function StreamInput({ onAdd }: StreamInputProps) {
                     onClick={() => handleAdd("FEELING")}
                     className="text-xs font-bold uppercase tracking-wider px-3 py-1 border border-gray-300 hover:border-black hover:bg-black hover:text-white transition-colors bg-white text-gray-600"
                 >
-                    + FEELING
+                    {t('feeling')}
                 </button>
                 <button
                     type="button"
                     onClick={() => handleAdd("THOUGHT")}
                     className="text-xs font-bold uppercase tracking-wider px-3 py-1 border border-gray-300 hover:border-black hover:bg-black hover:text-white transition-colors bg-white text-gray-600"
                 >
-                    + THOUGHT
+                    {t('thought')}
                 </button>
                 <button
                     type="button"
                     onClick={() => handleAdd("ACTION")}
                     className="text-xs font-bold uppercase tracking-wider px-3 py-1 border border-gray-300 hover:border-black hover:bg-black hover:text-white transition-colors bg-white text-gray-600"
                 >
-                    + ACTION
+                    {t('action')}
                 </button>
             </div>
         </div>

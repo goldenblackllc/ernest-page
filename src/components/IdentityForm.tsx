@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Users, Shield, ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface IdentityFormData {
     character_name: string;
@@ -30,6 +31,7 @@ export function IdentityForm({
     submitLabel = 'Create My Character',
     showHeadings = true,
 }: IdentityFormProps) {
+    const t = useTranslations();
     const [step, setStep] = useState<FormStep>('VISION');
     const [characterName, setCharacterName] = useState(initialValues.character_name || '');
     const [gender, setGender] = useState(initialValues.gender || '');
@@ -51,22 +53,22 @@ export function IdentityForm({
                 {showHeadings && (
                     <div className="text-center mb-2">
                         <h1 className="text-3xl font-black tracking-tight mb-3">
-                            Who Do You Want to Be?
+                            {t('onboarding.identityForm.visionTitle')}
                         </h1>
                         <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                            Don&apos;t think about it too hard. Just write.
+                            {t('onboarding.identityForm.visionSub')}
                         </p>
                     </div>
                 )}
 
                 {/* Character Name (optional) */}
                 <div>
-                    <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Name your character <span className="text-zinc-600">(optional — we'll create one if blank)</span></label>
+                    <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.nameLabel')} <span className="text-zinc-600">{t('onboarding.identityForm.nameOptional')}</span></label>
                     <input
                         type="text"
                         value={characterName}
                         onChange={(e) => setCharacterName(e.target.value)}
-                        placeholder="Leave blank to auto-generate"
+                        placeholder={t('onboarding.identityForm.namePlaceholder')}
                         maxLength={100}
                         className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                     />
@@ -75,23 +77,23 @@ export function IdentityForm({
                 {/* Row 1: Gender + Age */}
                 <div className="flex gap-3">
                     <div className="flex-1">
-                        <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">I am a</label>
+                        <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.genderLabel')}</label>
                         <input
                             type="text"
                             value={gender}
                             onChange={(e) => setGender(e.target.value)}
-                            placeholder="Man, Woman, etc."
+                            placeholder={t('onboarding.identityForm.genderPlaceholder')}
                             maxLength={50}
                             className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                         />
                     </div>
                     <div className="w-24">
-                        <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Born</label>
+                        <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.bornLabel')}</label>
                         <input
                             type="text"
                             value={age}
                             onChange={(e) => setAge(e.target.value)}
-                            placeholder="1989"
+                            placeholder={t('onboarding.identityForm.bornPlaceholder')}
                             maxLength={4}
                             inputMode="numeric"
                             className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
@@ -101,12 +103,12 @@ export function IdentityForm({
 
                 {/* Ethnicity (optional) */}
                 <div>
-                    <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">Ethnicity <span className="text-zinc-600">(optional)</span></label>
+                    <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.ethnicityLabel')} <span className="text-zinc-600">{t('onboarding.identityForm.ethnicityOptional')}</span></label>
                     <input
                         type="text"
                         value={ethnicity}
                         onChange={(e) => setEthnicity(e.target.value)}
-                        placeholder="e.g., Black, East Asian, Hispanic, Caucasian, Mixed..."
+                        placeholder={t('onboarding.identityForm.ethnicityPlaceholder')}
                         maxLength={100}
                         className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                     />
@@ -114,12 +116,12 @@ export function IdentityForm({
 
                 {/* The Rant */}
                 <div>
-                    <label className="text-xs text-white font-semibold mb-1 block">The Rant</label>
-                    <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">Describe your ideal life — the person, the lifestyle, all of it. Raw is better than polished. We&apos;ll build your character from this.</p>
+                    <label className="text-xs text-white font-semibold mb-1 block">{t('onboarding.identityForm.rantLabel')}</label>
+                    <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">{t('onboarding.identityForm.rantSub')}</p>
                     <textarea
                         value={rant}
                         onChange={(e) => setRant(e.target.value)}
-                        placeholder="I want to be the kind of man who wakes up with a plan. Financially free. A father my kids actually look up to. In the best shape of my life. Running something that matters..."
+                        placeholder={t('onboarding.identityForm.rantPlaceholder')}
                         maxLength={5000}
                         className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[180px] resize-none leading-relaxed"
                         autoFocus
@@ -132,7 +134,7 @@ export function IdentityForm({
                     disabled={!rant.trim() || !gender.trim()}
                     className="w-full bg-white text-black py-3.5 text-base font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                    Next
+                    {t('onboarding.identityForm.next')}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -145,10 +147,10 @@ export function IdentityForm({
             {showHeadings && (
                 <div className="text-center mb-2">
                     <h1 className="text-3xl font-black tracking-tight mb-3">
-                        Your Reality
+                        {t('onboarding.identityForm.realityTitle')}
                     </h1>
                     <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                        Tell us about your life so your character fits your world.
+                        {t('onboarding.identityForm.realitySub')}
                     </p>
                 </div>
             )}
@@ -156,13 +158,13 @@ export function IdentityForm({
             <div>
                 <label className="text-sm text-white font-semibold mb-1 flex items-center gap-1.5">
                     <Users className="w-4 h-4" />
-                    Your People
+                    {t('onboarding.identityForm.peopleLabel')}
                 </label>
-                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">Who makes you feel something — good or bad? Family, friends, rivals, pets. Don&apos;t just list names — say what&apos;s real. We&apos;ll sort it out.</p>
+                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">{t('onboarding.identityForm.peopleSub')}</p>
                 <textarea
                     value={people}
                     onChange={(e) => setPeople(e.target.value)}
-                    placeholder="My wife — we're solid but she thinks I work too much. My son (4) — my whole world. My dog Rex. My business partner — brilliant but I don't fully trust him yet..."
+                    placeholder={t('onboarding.identityForm.peoplePlaceholder')}
                     maxLength={3000}
                     className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[140px] resize-none leading-relaxed"
                     autoFocus
@@ -173,13 +175,13 @@ export function IdentityForm({
             <div>
                 <label className="text-sm text-white font-semibold mb-1 flex items-center gap-1.5">
                     <Shield className="w-4 h-4" />
-                    What Lights You Up
+                    {t('onboarding.identityForm.enjoymentsLabel')}
                 </label>
-                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">What excites you? The things that make you happy stay — your character should love what you love.</p>
+                <p className="text-xs text-zinc-500 mb-2 leading-relaxed">{t('onboarding.identityForm.enjoymentsSub')}</p>
                 <textarea
                     value={enjoyments}
                     onChange={(e) => setEnjoyments(e.target.value)}
-                    placeholder="Cooking for people, 90s hip-hop, horror movies, long drives with no plan, my morning coffee ritual, pickup basketball..."
+                    placeholder={t('onboarding.identityForm.enjoymentsPlaceholder')}
                     maxLength={3000}
                     className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[140px] resize-none leading-relaxed"
                 />
@@ -201,14 +203,14 @@ export function IdentityForm({
                     onClick={() => setStep('VISION')}
                     className="text-zinc-500 text-sm hover:text-white transition-colors flex items-center gap-1 py-3 px-4"
                 >
-                    ← Back
+                    ← {t('common.back')}
                 </button>
                 <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
                     className="text-zinc-500 text-sm hover:text-white transition-colors py-3 px-4"
                 >
-                    Skip for now
+                    {t('onboarding.identityForm.skip')}
                 </button>
             </div>
         </div>

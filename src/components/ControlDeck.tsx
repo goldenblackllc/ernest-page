@@ -3,6 +3,7 @@
 import { Fingerprint, Zap, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface ControlButtonProps {
     icon: React.ReactNode;
@@ -31,23 +32,24 @@ interface ControlDeckProps {
 
 export function ControlDeck({ onIdentityClick, onTakeActionClick }: ControlDeckProps) {
     const router = useRouter();
+    const t = useTranslations('controlDeck');
 
     return (
         <div className="grid grid-cols-4 gap-2 md:gap-4 mt-6">
 
             <ControlButton
                 icon={<Fingerprint className="w-4 h-4 md:w-6 md:h-6" />}
-                label="Identity"
+                label={t('identity')}
                 onClick={onIdentityClick}
             />
             <ControlButton
                 icon={<Zap className="w-4 h-4 md:w-6 md:h-6" />}
-                label="Take Action"
+                label={t('takeAction')}
                 onClick={onTakeActionClick}
             />
             <ControlButton
                 icon={<Star className="w-4 h-4 md:w-6 md:h-6" />}
-                label="I Want"
+                label={t('iWant')}
                 onClick={() => router.push('/vision')}
             />
         </div>

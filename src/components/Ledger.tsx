@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
+import { useTranslations } from "next-intl";
 
 import { Timestamp } from "firebase/firestore";
 import { getFeedCache, setFeedCache } from "@/lib/feedCache";
@@ -22,6 +23,7 @@ const CHECKIN_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export function Ledger() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
+    const t = useTranslations('feed');
 
     // Restore from module-level cache so returning to this tab is instant
     const cache = getFeedCache();
@@ -275,7 +277,7 @@ export function Ledger() {
     if (entries.length === 0 && !pendingPostId) {
         return (
             <div className="p-12 text-center border border-zinc-800 border-dashed rounded-xl bg-transparent">
-                <p className="text-sm text-zinc-500">No posts yet. Start a conversation to create your first post.</p>
+                <p className="text-sm text-zinc-500">{t('emptyFeed')}</p>
             </div>
         );
     }
@@ -290,8 +292,8 @@ export function Ledger() {
                     <div className="flex items-center gap-4 p-5 relative">
                         <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
                         <div>
-                            <p className="text-sm font-bold text-white mb-0.5">Building your character...</p>
-                            <p className="text-xs text-zinc-500">Crafting your Ideal Self and generating your portrait. This can take a few minutes.</p>
+                            <p className="text-sm font-bold text-white mb-0.5">{t('bibleCompilingTitle')}</p>
+                            <p className="text-xs text-zinc-500">{t('bibleCompilingSub')}</p>
                         </div>
                     </div>
                 </div>
@@ -316,9 +318,9 @@ export function Ledger() {
                             )}
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-white mb-0.5">Build Finished ✓</p>
-                            <p className="text-base font-bold text-white">{profile?.identity?.title || 'Your Ideal Self'}</p>
-                            <p className="text-xs text-zinc-500 mt-0.5">Tap to view your Ideal Self →</p>
+                            <p className="text-sm font-bold text-white mb-0.5">{t('bibleReadyTitle')}</p>
+                            <p className="text-base font-bold text-white">{profile?.identity?.title || t('idealSelfDefault')}</p>
+                            <p className="text-xs text-zinc-500 mt-0.5">{t('bibleReadySub')}</p>
                         </div>
                     </div>
                 </button>
@@ -332,7 +334,7 @@ export function Ledger() {
                 if (elapsed < CHECKIN_INTERVAL_MS) return null;
                 return (
                     <CheckInCard
-                        characterTitle={profile?.identity?.title || 'Your Ideal Self'}
+                        characterTitle={profile?.identity?.title || t('idealSelfDefault')}
                         avatarUrl={profile?.character_bible?.compiled_output?.avatar_url}
                     />
                 );
@@ -343,7 +345,7 @@ export function Ledger() {
                     <div className="flex flex-col items-center gap-3">
                         <div className="w-6 h-6 rounded-full border-2 border-zinc-700 border-t-zinc-300 animate-spin" />
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest inline-block text-center mt-2">
-                            Writing to Dear Earnest...
+                            {t('writingPending')}
                         </span>
                     </div>
                 </div>
@@ -371,7 +373,7 @@ export function Ledger() {
             {/* End of feed */}
             {entries.length > 0 && (
                 <div className="text-center py-8">
-                    <p className="text-xs text-zinc-600">You're all caught up.</p>
+                    <p className="text-xs text-zinc-600">{t('caughtUp')}</p>
                 </div>
             )}
 

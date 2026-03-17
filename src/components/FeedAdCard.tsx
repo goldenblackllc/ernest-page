@@ -3,12 +3,14 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { EcosystemAd } from '@/config/ecosystem';
+import { useTranslations } from 'next-intl';
 
 interface FeedAdCardProps {
     ad: EcosystemAd;
 }
 
 export function FeedAdCard({ ad }: FeedAdCardProps) {
+    const t = useTranslations('feed');
     const hasRichContent = ad.headline && ad.body && ad.imageUrl;
 
     return (
@@ -24,10 +26,10 @@ export function FeedAdCard({ ad }: FeedAdCardProps) {
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
                     <span className="text-sm font-semibold text-zinc-100 truncate">
-                        {ad.brand || 'Partner'}
+                        {ad.brand || t('adPartner')}
                     </span>
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mt-0.5">
-                        {ad.meta || 'Sponsored'}
+                        {ad.meta || t('adSponsored')}
                     </span>
                 </div>
             </div>

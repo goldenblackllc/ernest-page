@@ -10,10 +10,12 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { Bell, Shield, CreditCard, LogOut, Users, HelpCircle, Mail, Gift } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";
 import { RolodexModal } from "@/components/RolodexModal";
 import { SupportChat } from "@/components/SupportChat";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 
 export function DashboardHeader() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,6 +25,7 @@ export function DashboardHeader() {
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const { user } = useAuth();
     const router = useRouter();
+    const t = useTranslations();
 
     useEffect(() => {
         if (!user) return;
@@ -53,11 +56,13 @@ export function DashboardHeader() {
                     <div className="container mx-auto flex justify-between items-center w-full px-4 py-3">
                         {/* Brand */}
                         <Link href="/" className="pointer-events-auto text-sm font-bold tracking-widest uppercase flex items-center gap-1 hover:opacity-80 transition-opacity text-white">
-                            Earnest Page
+                            {t('common.brand')}
                         </Link>
 
                         {/* Right Side Actions */}
                         <div className="relative flex items-center gap-2 pointer-events-auto">
+                            <LocaleSwitcher className="w-20 hidden sm:flex mr-1" />
+                            
                             {/* Directives Toggle */}
                             <button
                                 onClick={() => setIsDirectivesOpen(true)}
@@ -97,7 +102,7 @@ export function DashboardHeader() {
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                                         >
                                             <Shield className="w-4 h-4 text-zinc-500" />
-                                            Security Vault
+                                            {t('dashboard.header.securityVault')}
                                         </button>
 
                                         {/* Rolodex */}
@@ -109,7 +114,7 @@ export function DashboardHeader() {
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                                         >
                                             <Users className="w-4 h-4 text-zinc-500" />
-                                            Rolodex
+                                            {t('dashboard.header.rolodex')}
                                         </button>
 
                                         {/* Gift a Session */}
@@ -121,7 +126,7 @@ export function DashboardHeader() {
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                                         >
                                             <Gift className="w-4 h-4 text-zinc-500" />
-                                            Gift a Session
+                                            {t('dashboard.header.giftSession')}
                                         </button>
 
                                         {/* Subscription */}
@@ -133,7 +138,7 @@ export function DashboardHeader() {
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                                         >
                                             <CreditCard className="w-4 h-4 text-zinc-500" />
-                                            Billing & Sessions
+                                            {t('dashboard.header.billing')}
                                         </button>
 
                                         {/* Log Out */}
@@ -142,7 +147,7 @@ export function DashboardHeader() {
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-red-500/80 hover:bg-zinc-800/50 transition-colors"
                                         >
                                             <LogOut className="w-4 h-4" />
-                                            Log Out
+                                            {t('dashboard.header.logOut')}
                                         </button>
 
                                         {/* Divider */}
@@ -157,8 +162,14 @@ export function DashboardHeader() {
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-400 hover:bg-zinc-800/50 transition-colors"
                                         >
                                             <HelpCircle className="w-4 h-4 text-zinc-500" />
-                                            Support
+                                            {t('dashboard.header.support')}
                                         </button>
+                                        
+                                        {/* Mobile Locale Switcher inside menu */}
+                                        <div className="sm:hidden border-t border-zinc-800/50 my-1" />
+                                        <div className="sm:hidden px-4 py-2">
+                                            <LocaleSwitcher className="w-full bg-transparent border-none" />
+                                        </div>
                                     </div>
                                 )}
                             </div>

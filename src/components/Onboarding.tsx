@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { IdentityForm, IdentityFormData } from './IdentityForm';
 
 interface OnboardingProps {
@@ -13,6 +14,7 @@ interface OnboardingProps {
 
 export function Onboarding({ onComplete }: OnboardingProps) {
     const { user } = useAuth();
+    const t = useTranslations();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +54,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             onComplete();
         } catch (err: any) {
             console.error('Onboarding error:', err);
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError(err.message || t('onboarding.errorDefault'));
             setIsProcessing(false);
         }
     };
@@ -63,8 +65,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 <div className="flex flex-col items-center gap-6 animate-in fade-in duration-300">
                     <div className="w-16 h-16 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
                     <div className="text-center">
-                        <h2 className="text-lg font-bold mb-2">Building your character...</h2>
-                        <p className="text-base text-zinc-400">This takes a moment. Hang tight.</p>
+                        <h2 className="text-lg font-bold mb-2">{t('onboarding.processing')}</h2>
+                        <p className="text-base text-zinc-400">{t('onboarding.processingSubtext')}</p>
                     </div>
                 </div>
             </main>
@@ -84,7 +86,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <IdentityForm
                         onSubmit={handleSubmit}
                         isSubmitting={isProcessing}
-                        submitLabel="Create My Character"
+                        submitLabel={t('onboarding.submitLabel')}
                         showHeadings={true}
                     />
 
@@ -92,7 +94,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         onClick={() => signOut(auth)}
                         className="text-zinc-500 text-sm text-center hover:text-zinc-300 transition-colors mt-1 py-3"
                     >
-                        Sign out
+                        {t('common.signOut')}
                     </button>
                 </div>
             </div>

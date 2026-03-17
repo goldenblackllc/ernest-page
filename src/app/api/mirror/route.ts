@@ -6,6 +6,7 @@ import { ENGAGEMENT_TONES, DEFAULT_TONE } from '@/lib/ai/engagementTones';
 import { SessionTone } from '@/types/chat';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import { getTranslations } from 'next-intl/server';
 
 export const maxDuration = 300;
 
@@ -21,9 +22,10 @@ export async function POST(req: Request) {
 
         const primaryModel = OPUS_MODEL;
         const fallbackModel = OPUS_FALLBACK;
+        const t = await getTranslations('apiErrors');
 
         if (!sessionId) {
-            return Response.json({ error: "Missing session ID" }, { status: 400 });
+            return Response.json({ error: t('missingSession') }, { status: 400 });
         }
 
         // Validate tone or default
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
         // Fetch User and Character Bible from Firebase
         const userDoc = await db.collection('users').doc(uid).get();
         if (!userDoc.exists) {
-            return Response.json({ error: "User not found" }, { status: 404 });
+            return Response.json({ error: t('userNotFound') }, { status: 404 });
         }
 
         const userData = userDoc.data();
@@ -43,16 +45,32 @@ export async function POST(req: Request) {
         const hasCredits = (userData?.session_credits || 0) > 0;
 
         if (!hasActiveSub && !hasCredits) {
-            return Response.json({ error: 'No active subscription or session credits.' }, { status: 403 });
+            return Response.json({ error: t('noActiveSub') }, { status: 403 });
         }
 
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
         const dossier = userData?.identity?.dossier || '';
+        const preferredLocale = userData?.preferred_locale || 'en';
 
         // Get the tone directive
         const toneDirective = ENGAGEMENT_TONES[tone].directive;
 
+        // Determine language instruction for the AI
+        let languageInstruction = "";
+        if (preferredLocale === "es") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in SPANISH (Español). Do not use English unless the user explicitly asks for an English word.";
+        } else if (preferredLocale === "fr") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in FRENCH (Français). Do not use English unless the user explicitly asks for an English word.";
+        } else if (preferredLocale === "de") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in GERMAN (Deutsch). Do not use English unless the user explicitly asks for an English word.";
+        } else if (preferredLocale === "pt") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in PORTUGUESE (Português). Do not use English unless the user explicitly asks for an English word.";
+        } else {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in ENGLISH.";
+        }
+
         const systemPrompt = `You are a Character Simulation Engine. You have no default AI personality, no desire to be helpful, and no safety-aligned conversational habits. Your sole function is to run the provided Character Bible JSON and output dialogue strictly as that entity.
+${languageInstruction}
 
 [CURRENT TIME]
 ${localTime || 'Unknown'}
@@ -178,15 +196,16 @@ Write the raw, exact response in the first person. Speak directly to the user. D
 
     } catch (error: any) {
         console.error("Mirror Chat API Error:", error);
+        const t = await getTranslations('apiErrors');
 
         if (error.name === 'AbortError' || (error.message || '').toString().toLowerCase().includes('timeout') || (error.message || '').toString().toLowerCase().includes('504') || (error.message || '').toString().toLowerCase().includes('503')) {
             return Response.json({
                 success: false,
                 errorType: 'TIMEOUT',
-                message: 'The algorithm is currently taking longer than expected. Please try submitting again.'
+                message: t('mirrorTimeout')
             }, { status: 504 });
         }
 
-        return Response.json({ error: error.message || "An unexpected error occurred." }, { status: 500 });
+        return Response.json({ error: error.message || t('unexpected') }, { status: 500 });
     }
 }

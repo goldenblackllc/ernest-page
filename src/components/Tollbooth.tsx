@@ -6,6 +6,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutForm } from './CheckoutForm';
@@ -99,6 +100,7 @@ type Plan = 'proving_ground' | 'long_game';
 
 export function Tollbooth({ onComplete }: TollboothProps) {
     const { user } = useAuth();
+    const t = useTranslations();
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [loadingIntent, setLoadingIntent] = useState(false);
@@ -163,16 +165,14 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                     <div className="flex items-center gap-2 mb-6">
                         <Lock className="w-4 h-4 text-zinc-600" />
                         <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-semibold">
-                            Secure Enrollment
+                            {t('tollbooth.secureEnrollment')}
                         </span>
                     </div>
                     <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.08] mb-6">
-                        Demand a Better Life.
+                        {t('tollbooth.heading')}
                     </h1>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-xl">
-                        Earnest Page is not another app you forget about. It is an intentional
-                        investment for someone who refuses to compromise. At $4 a day, securing
-                        your standard costs less than the coffee you drink while making excuses.
+                        {t('tollbooth.body')}
                     </p>
                 </motion.div>
 
@@ -192,19 +192,19 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                         animate="visible"
                     >
                         <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                            30 Days
+                            {t('tollbooth.thirtyDays')}
                         </p>
                         <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2">
-                            The Proving Ground
+                            {t('tollbooth.provingGround')}
                         </h3>
                         <div className="flex items-baseline gap-2 mb-5">
                             <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                                $120
+                                {t('tollbooth.provingPrice')}
                             </span>
-                            <span className="text-sm text-zinc-600">/ 30 days</span>
+                            <span className="text-sm text-zinc-600">{t('tollbooth.provingPeriod')}</span>
                         </div>
                         <p className="text-sm text-zinc-500 leading-relaxed">
-                            30 days to prove you mean it. No extensions.
+                            {t('tollbooth.provingDesc')}
                         </p>
                     </motion.button>
 
@@ -221,19 +221,19 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                         animate="visible"
                     >
                         <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                            1 Year
+                            {t('tollbooth.oneYear')}
                         </p>
                         <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2">
-                            The Long Game
+                            {t('tollbooth.longGame')}
                         </h3>
                         <div className="flex items-baseline gap-2 mb-5">
                             <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                                $1,200
+                                {t('tollbooth.longPrice')}
                             </span>
-                            <span className="text-sm text-zinc-600">/ 1 year</span>
+                            <span className="text-sm text-zinc-600">{t('tollbooth.longPeriod')}</span>
                         </div>
                         <p className="text-sm text-zinc-500 leading-relaxed">
-                            You already proved it. Now build the compound effect.
+                            {t('tollbooth.longDesc')}
                         </p>
                     </motion.button>
                 </div>
@@ -282,7 +282,7 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                         initial="hidden"
                         animate="visible"
                     >
-                        Select your commitment above to proceed.
+                        {t('tollbooth.selectPlan')}
                     </motion.p>
                 )}
 
@@ -299,7 +299,7 @@ export function Tollbooth({ onComplete }: TollboothProps) {
                         onClick={() => signOut(auth)}
                         className="text-zinc-600 text-sm hover:text-zinc-400 transition-colors py-3"
                     >
-                        Sign out
+                        {t('common.signOut')}
                     </button>
                 </div>
             </div>

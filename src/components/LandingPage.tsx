@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MessageCircle, Clock, Shield, Zap, Gift, ArrowRight, Crown, Lock, BarChart3, Target, Award } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 
 // ─── Timezone → Dial Code Detection ────────────────────────────────
 function getDefaultDialCode(): string {
@@ -90,28 +92,28 @@ const sectionFade = {
 // ─── Entry Points (The Problem Stack) ──────────────────────────────
 const ENTRY_POINTS = [
     {
-        label: "I'm stuck and I don't know why",
-        subtext: 'Career paralysis, life transitions, feeling frozen',
+        labelKey: "landing.entryPoints.stuck",
+        subtextKey: 'landing.entryPoints.stuckSub',
         color: 'from-blue-500/20 to-transparent',
     },
     {
-        label: "I can't say this out loud to anyone",
-        subtext: 'The thing you carry alone',
+        labelKey: "landing.entryPoints.secret",
+        subtextKey: 'landing.entryPoints.secretSub',
         color: 'from-purple-500/20 to-transparent',
     },
     {
-        label: 'I keep making the same mistake',
-        subtext: 'Patterns you can see but can\'t stop',
+        labelKey: 'landing.entryPoints.pattern',
+        subtextKey: 'landing.entryPoints.patternSub',
         color: 'from-amber-500/20 to-transparent',
     },
     {
-        label: 'I know what I should do but I can\'t do it',
-        subtext: 'The gap between intention and action',
+        labelKey: 'landing.entryPoints.gap',
+        subtextKey: 'landing.entryPoints.gapSub',
         color: 'from-emerald-500/20 to-transparent',
     },
     {
-        label: 'Everyone thinks I\'m fine',
-        subtext: 'The high-functioning mask',
+        labelKey: 'landing.entryPoints.mask',
+        subtextKey: 'landing.entryPoints.maskSub',
         color: 'from-rose-500/20 to-transparent',
     },
 ];
@@ -120,23 +122,24 @@ const ENTRY_POINTS = [
 const PLATFORM_PILLARS = [
     {
         icon: Lock,
-        title: 'The Blueprint',
-        text: 'Define your highest standard — your Character Bible. The immutable baseline you answer to every day.',
+        titleKey: 'landing.system.blueprintTitle',
+        textKey: 'landing.system.blueprintText',
     },
     {
         icon: MessageCircle,
-        title: 'The Mirror',
-        text: 'Consult your Ideal Self. Not a chatbot. Someone built from real psychology who challenges you to see clearly.',
+        titleKey: 'landing.system.mirrorTitle',
+        textKey: 'landing.system.mirrorText',
     },
     {
         icon: BarChart3,
-        title: 'The Ledger',
-        text: 'A silent, data-driven vault of your execution. When doubt sets in, the system proves you\'ve won before.',
+        titleKey: 'landing.system.ledgerTitle',
+        textKey: 'landing.system.ledgerText',
     },
 ];
 
 // ─── Component ─────────────────────────────────────────────────────
 export function LandingPage() {
+    const t = useTranslations();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [hoveredEntry, setHoveredEntry] = useState<number | null>(null);
@@ -150,7 +153,7 @@ export function LandingPage() {
     const handleSendCode = async () => {
         setError(null);
         if (!phoneNumber) {
-            setError('Please enter a phone number.');
+            setError(t('landing.auth.errorNoPhone'));
             return;
         }
         const normalized = normalizePhoneNumber(phoneNumber);
@@ -163,13 +166,13 @@ export function LandingPage() {
             });
             const data = await res.json();
             if (!res.ok) {
-                setError(data.error || 'Failed to send code.');
+                setError(data.error || t('landing.auth.errorSendFailed'));
                 return;
             }
             setStep('INPUT_CODE');
         } catch (err: any) {
             console.error('Error sending code:', err);
-            setError('Failed to send code. Please try again.');
+            setError(t('landing.auth.errorSendFailed'));
         } finally {
             setLoading(false);
         }
@@ -188,13 +191,13 @@ export function LandingPage() {
             });
             const data = await res.json();
             if (!res.ok) {
-                setError(data.error || 'Invalid code. Please try again.');
+                setError(data.error || t('landing.auth.errorVerifyFailed'));
                 return;
             }
             await signInWithCustomToken(auth, data.token);
             router.push('/');
         } catch {
-            setError('Invalid code. Please try again.');
+            setError(t('landing.auth.errorVerifyFailed'));
         } finally {
             setLoading(false);
         }
@@ -212,13 +215,16 @@ export function LandingPage() {
             {/* ── STICKY TOP NAV ── */}
             <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
-                    <span className="font-bold text-lg text-zinc-100 tracking-tight">Earnest Page</span>
-                    <button
-                        onClick={scrollToAuth}
-                        className="rounded-full bg-white text-black px-5 py-2 text-sm font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
-                    >
-                        Log In
-                    </button>
+                    <span className="font-bold text-lg text-zinc-100 tracking-tight">{t('common.brand')}</span>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <LocaleSwitcher className="w-20 sm:w-24 border-none bg-transparent hover:bg-white/5" />
+                        <button
+                            onClick={scrollToAuth}
+                            className="rounded-full bg-white text-black px-5 py-2 text-sm font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
+                        >
+                            {t('landing.nav.login')}
+                        </button>
+                    </div>
                 </div>
             </nav>
 
@@ -250,7 +256,7 @@ export function LandingPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        No subscription. No commitment. Just a conversation.
+                        {t('landing.hero.tagline')}
                     </motion.p>
 
                     <motion.h1
@@ -260,11 +266,11 @@ export function LandingPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        You know that thing
+                        {t('landing.hero.headline1')}
                         <br />
-                        <span className="text-zinc-500">you keep thinking about</span>
+                        <span className="text-zinc-500">{t('landing.hero.headline2')}</span>
                         <br />
-                        at 2am?
+                        {t('landing.hero.headline3')}
                     </motion.h1>
 
                     <motion.p
@@ -274,8 +280,7 @@ export function LandingPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        Talk to someone who won&rsquo;t judge, won&rsquo;t forget what you said
-                        ten minutes ago, and won&rsquo;t charge you $200.
+                        {t('landing.hero.subtext')}
                     </motion.p>
 
                     <motion.p
@@ -285,7 +290,7 @@ export function LandingPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        $20. Start right now.
+                        {t('landing.hero.price')}
                     </motion.p>
 
                     <motion.div
@@ -299,14 +304,14 @@ export function LandingPage() {
                             onClick={scrollToAuth}
                             className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
                         >
-                            Start a Session
+                            {t('landing.hero.cta')}
                         </button>
                         <button
                             onClick={scrollToAuth}
                             className="rounded-full border border-white/20 bg-transparent text-white px-8 py-4 font-semibold text-base hover:bg-white/10 active:scale-[0.97] transition-all duration-150 flex items-center gap-2"
                         >
                             <Gift className="w-4 h-4" />
-                            Gift One to Someone
+                            {t('landing.hero.giftCta')}
                         </button>
                     </motion.div>
                 </div>
@@ -339,12 +344,12 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        Sound Familiar?
+                        {t('landing.entryPoints.label')}
                     </p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-16">
-                        Pick the one that
+                        {t('landing.entryPoints.heading1')}
                         <br />
-                        <span className="text-zinc-500">won&rsquo;t leave you alone.</span>
+                        <span className="text-zinc-500">{t('landing.entryPoints.heading2')}</span>
                     </h2>
 
                     <div className="space-y-3">
@@ -367,10 +372,10 @@ export function LandingPage() {
                                 <div className="relative z-10 flex items-center justify-between">
                                     <div>
                                         <p className="text-lg sm:text-xl font-bold text-white mb-1">
-                                            &ldquo;{entry.label}&rdquo;
+                                            &ldquo;{t(entry.labelKey as any)}&rdquo;
                                         </p>
                                         <p className="text-sm text-zinc-500">
-                                            {entry.subtext}
+                                            {t(entry.subtextKey as any)}
                                         </p>
                                     </div>
                                     <ArrowRight
@@ -397,28 +402,19 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        The Difference
+                        {t('landing.difference.label')}
                     </p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
-                        This is not a chatbot.
+                        {t('landing.difference.heading1')}
                         <br />
-                        <span className="text-zinc-500">This is not therapy.</span>
+                        <span className="text-zinc-500">{t('landing.difference.heading2')}</span>
                     </h2>
                     <div className="space-y-6 text-base sm:text-lg text-zinc-400 leading-relaxed">
-                        <p>
-                            Chatbots validate you. Therapists analyze you. Neither of them will sit in front
-                            of you, look at the mess of your life, and tell you the thing you already know
-                            but haven&rsquo;t been able to say out loud.
-                        </p>
+                        <p>{t('landing.difference.body1')}</p>
                         <p className="text-zinc-300 font-semibold">
-                            This is a conversation with someone who sees the pattern you can&rsquo;t see
-                            from the inside.
+                            {t('landing.difference.body2')}
                         </p>
-                        <p>
-                            You choose someone you admire &mdash; an archetype built from real psychology,
-                            real philosophy, and real lived experience. They don&rsquo;t tell you what to do.
-                            They help you see clearly enough to know for yourself.
-                        </p>
+                        <p>{t('landing.difference.body3')}</p>
                     </div>
 
                     {/* Expandable comparison */}
@@ -426,7 +422,7 @@ export function LandingPage() {
                         onClick={() => setIsComparisonOpen(!isComparisonOpen)}
                         className="mt-10 flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
                     >
-                        <span>{isComparisonOpen ? 'Hide comparison' : 'See how this compares'}</span>
+                        <span>{isComparisonOpen ? t('landing.difference.toggleHide') : t('landing.difference.toggleShow')}</span>
                         <motion.span
                             animate={{ rotate: isComparisonOpen ? 180 : 0 }}
                             transition={{ duration: 0.3 }}
@@ -448,16 +444,16 @@ export function LandingPage() {
                                 <div className="mt-8 rounded-2xl border border-white/[0.08] bg-zinc-950 overflow-hidden">
                                     <div className="grid grid-cols-4 text-[11px] uppercase tracking-[0.15em] text-zinc-600 border-b border-white/[0.06] px-6 py-4">
                                         <span></span>
-                                        <span className="text-center">Traditional Therapy</span>
-                                        <span className="text-center">AI Chatbots</span>
-                                        <span className="text-center text-white font-semibold">Earnest Page</span>
+                                        <span className="text-center">{t('landing.difference.compTherapy')}</span>
+                                        <span className="text-center">{t('landing.difference.compChatbots')}</span>
+                                        <span className="text-center text-white font-semibold">{t('landing.difference.compEarnest')}</span>
                                     </div>
                                     {[
-                                        ['Cost', '$150–300', 'Free–$20/mo', '$20'],
-                                        ['Available', 'Days/weeks', 'Anytime', 'Right now'],
-                                        ['Commitment', 'Weekly', 'None', 'None'],
-                                        ['Remembers you', 'Session notes', 'Mostly no', 'Yes'],
-                                        ['Challenges you', 'Sometimes', 'Never', 'Always'],
+                                        [t('landing.difference.compCost'), '$150–300', 'Free–$20/mo', '$20'],
+                                        [t('landing.difference.compAvailable'), 'Days/weeks', 'Anytime', 'Right now'],
+                                        [t('landing.difference.compCommitment'), 'Weekly', 'None', 'None'],
+                                        [t('landing.difference.compRemembers'), 'Session notes', 'Mostly no', 'Yes'],
+                                        [t('landing.difference.compChallenges'), 'Sometimes', 'Never', 'Always'],
                                     ].map(([label, trad, ai, us], i) => (
                                         <div key={i} className="grid grid-cols-4 text-sm border-b border-white/[0.04] px-6 py-3.5">
                                             <span className="text-zinc-400 font-medium">{label}</span>
@@ -487,22 +483,21 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        The System
+                        {t('landing.system.label')}
                     </p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
-                        More than a conversation.
+                        {t('landing.system.heading1')}
                         <br />
-                        <span className="text-zinc-500">A daily operating system for your mind.</span>
+                        <span className="text-zinc-500">{t('landing.system.heading2')}</span>
                     </h2>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mb-16">
-                        A single session can shift your perspective. But Earnest Page is built for those
-                        who want to go further — defining their highest standard and executing on it daily.
+                        {t('landing.system.body')}
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {PLATFORM_PILLARS.map((item, i) => (
                             <motion.div
-                                key={item.title}
+                                key={item.titleKey}
                                 className="group relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 transition-colors duration-200 hover:border-white/20 hover:bg-zinc-900/60"
                                 custom={i}
                                 variants={cardReveal}
@@ -514,10 +509,10 @@ export function LandingPage() {
                                     <item.icon className="w-5 h-5 text-zinc-300" />
                                 </div>
                                 <h3 className="text-lg font-bold tracking-tight text-white mb-3">
-                                    {item.title}
+                                    {t(item.titleKey as any)}
                                 </h3>
                                 <p className="text-sm text-zinc-500 leading-relaxed">
-                                    {item.text}
+                                    {t(item.textKey as any)}
                                 </p>
                             </motion.div>
                         ))}
@@ -563,30 +558,27 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        The Architect
+                        {t('landing.architect.label')}
                     </p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
-                        I Built This Because
+                        {t('landing.architect.heading1')}
                         <br />
-                        <span className="text-zinc-500">Nothing Else Was Honest Enough.</span>
+                        <span className="text-zinc-500">{t('landing.architect.heading2')}</span>
                     </h2>
 
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed mb-6">
-                        I almost became a doctor. Instead, I became an engineer with a doctor&rsquo;s
-                        instinct&mdash;someone who builds technology but thinks about people first.
-                        I spent decades pressure-testing every major framework for the human mind,
-                        from CBT to Buddhist practice to McLean Hospital&rsquo;s most intensive program.
+                        {t('landing.architect.body1')}
                     </p>
                     <p className="text-base sm:text-lg text-zinc-300 font-semibold mb-10">
-                        Earnest Page is not my first product. It may be my most important.
+                        {t('landing.architect.body2')}
                     </p>
 
                     {/* Credential badges */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                         {[
-                            { label: 'Harvard', detail: 'Patent Holder' },
-                            { label: 'RSA', detail: 'Security Architect' },
-                            { label: 'JSA Financial', detail: '$10M / yr Founder' },
+                            { label: t('landing.architect.credHarvard'), detail: t('landing.architect.credHarvardDetail') },
+                            { label: t('landing.architect.credRSA'), detail: t('landing.architect.credRSADetail') },
+                            { label: t('landing.architect.credJSA'), detail: t('landing.architect.credJSADetail') },
                         ].map((cred, i) => (
                             <motion.div
                                 key={cred.label}
@@ -611,7 +603,7 @@ export function LandingPage() {
                     </div>
 
                     <p className="text-[11px] text-zinc-600 font-mono tracking-wide">
-                        David Johnson&ensp;·&ensp;Founder&ensp;·&ensp;Patent Holder&ensp;·&ensp;26 Years Building Systems That Work
+                        {t('landing.architect.founderLine')}
                     </p>
                 </motion.div>
             </section>
@@ -633,14 +625,13 @@ export function LandingPage() {
                         <Shield className="w-7 h-7 text-zinc-400" />
                     </div>
                     <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] mb-6">
-                        What you say stays here.
+                        {t('landing.privacy.heading')}
                     </h2>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-4">
-                        Your conversations are encrypted and private. Your identity is protected by a
-                        Contact Firewall and proximity shield. Nothing is sold. Nothing is shared.
+                        {t('landing.privacy.body')}
                     </p>
                     <p className="text-sm text-zinc-600">
-                        Built by the maker of enterprise security systems &mdash; where privacy is the foundation, not the feature.
+                        {t('landing.privacy.subtext')}
                     </p>
                 </motion.div>
             </section>
@@ -660,12 +651,12 @@ export function LandingPage() {
                 >
                     <div className="text-center mb-16">
                         <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                            Get Started
+                            {t('landing.pricing.label')}
                         </p>
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
-                            One conversation.
+                            {t('landing.pricing.heading1')}
                             <br />
-                            <span className="text-zinc-500">No strings attached.</span>
+                            <span className="text-zinc-500">{t('landing.pricing.heading2')}</span>
                         </h2>
                     </div>
 
@@ -682,25 +673,25 @@ export function LandingPage() {
                         >
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                                 <span className="text-[10px] uppercase tracking-[0.2em] bg-white text-black px-3 py-1 rounded-full font-bold">
-                                    Most Popular
+                                    {t('landing.pricing.mostPopular')}
                                 </span>
                             </div>
                             <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                Single Session
+                                {t('landing.pricing.singleLabel')}
                             </p>
                             <div className="flex items-baseline gap-2 mb-2">
                                 <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                    $20
+                                    {t('landing.pricing.singlePrice')}
                                 </span>
                             </div>
                             <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                One full conversation. Up to 2 hours. No commitment.
+                                {t('landing.pricing.singleDesc')}
                             </p>
                             <button
                                 onClick={scrollToAuth}
                                 className="w-full rounded-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
                             >
-                                Start Now
+                                {t('landing.pricing.singleCta')}
                             </button>
                         </motion.div>
 
@@ -714,21 +705,21 @@ export function LandingPage() {
                             viewport={{ once: true, margin: '-60px' }}
                         >
                             <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                3-Pack
+                                {t('landing.pricing.threePackLabel')}
                             </p>
                             <div className="flex items-baseline gap-2 mb-2">
                                 <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                    $50
+                                    {t('landing.pricing.threePackPrice')}
                                 </span>
                             </div>
                             <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                Three sessions. Use anytime. They remember where you left off.
+                                {t('landing.pricing.threePackDesc')}
                             </p>
                             <button
                                 onClick={scrollToAuth}
                                 className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
                             >
-                                Get 3 Sessions
+                                {t('landing.pricing.threePackCta')}
                             </button>
                         </motion.div>
 
@@ -742,22 +733,22 @@ export function LandingPage() {
                             viewport={{ once: true, margin: '-60px' }}
                         >
                             <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                Gift a Session
+                                {t('landing.pricing.giftLabel')}
                             </p>
                             <div className="flex items-baseline gap-2 mb-2">
                                 <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                    $20
+                                    {t('landing.pricing.giftPrice')}
                                 </span>
                             </div>
                             <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                For the person who needs this but would never seek it out themselves.
+                                {t('landing.pricing.giftDesc')}
                             </p>
                             <button
                                 onClick={scrollToAuth}
                                 className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
                             >
                                 <Gift className="w-4 h-4" />
-                                Send a Gift
+                                {t('landing.pricing.giftCta')}
                             </button>
                         </motion.div>
                     </div>
@@ -779,32 +770,29 @@ export function LandingPage() {
                                     </div>
                                     <div>
                                         <p className="text-[10px] uppercase tracking-[0.25em] text-amber-600/80 font-bold">
-                                            For the Architect of Their Day
+                                            {t('landing.pricing.archangelSubLabel')}
                                         </p>
                                         <h3 className="text-lg font-bold tracking-tight text-white">
-                                            The Archangel Program
+                                            {t('landing.pricing.archangelTitle')}
                                         </h3>
                                     </div>
                                 </div>
                                 <p className="text-sm text-zinc-500 leading-relaxed max-w-lg">
-                                    All sessions included for 30 days. Up to 5 per day.
-                                    No per-session fees, no counting credits. For the person who
-                                    doesn&rsquo;t want to think about whether it&rsquo;s
-                                    &ldquo;worth another $20.&rdquo; It always is.
+                                    {t('landing.pricing.archangelDesc')}
                                 </p>
                             </div>
                             <div className="flex flex-col items-end gap-3 shrink-0">
                                 <div>
                                     <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
-                                        $499
+                                        {t('landing.pricing.archangelPrice')}
                                     </span>
-                                    <span className="text-sm text-zinc-600 ml-1">/month</span>
+                                    <span className="text-sm text-zinc-600 ml-1">{t('landing.pricing.archangelPeriod')}</span>
                                 </div>
                                 <button
                                     onClick={scrollToAuth}
                                     className="rounded-full border border-amber-800/40 text-white px-6 py-3 text-sm font-bold tracking-wide hover:bg-amber-900/20 hover:border-amber-700/50 active:scale-[0.98] transition-all duration-150"
                                 >
-                                    Go All-In
+                                    {t('landing.pricing.archangelCta')}
                                 </button>
                             </div>
                         </div>
@@ -840,10 +828,10 @@ export function LandingPage() {
                 >
                     <div className="text-center mb-8">
                         <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-                            Earnest Page
+                            {t('landing.auth.heading1')}
                         </h2>
                         <p className="text-sm text-zinc-500">
-                            Free to sign up. Pay only when you&rsquo;re ready to talk.
+                            {t('landing.auth.heading2')}
                         </p>
                     </div>
 
@@ -861,7 +849,7 @@ export function LandingPage() {
                                 </span>
                                 <input
                                     type="tel"
-                                    placeholder="555 555 5555"
+                                    placeholder={t('landing.auth.phonePlaceholder')}
                                     value={phoneNumber}
                                     onChange={(e) => setPhoneNumber(e.target.value)}
                                     className="w-full bg-zinc-900/80 border border-white/10 pl-12 pr-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
@@ -872,17 +860,18 @@ export function LandingPage() {
                                 disabled={loading}
                                 className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
                             >
-                                {loading ? 'Sending...' : 'Continue'}
+                                {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
                             </button>
 
                             <p className="text-[10px] text-zinc-600 text-center mt-3 leading-relaxed">
-                                By continuing, you agree to our{' '}
+                                {t('landing.auth.byContinuing')}{' '}
                                 <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
-                                    Terms of Service
+                                    {t('landing.footer.terms')}
                                 </Link>{' '}
-                                and{' '}
+                                {t('landing.auth.and')}{' '}
                                 <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
-                                    Privacy Policy
+                                    {t('landing.footer.privacy')}
+
                                 </Link>.
                             </p>
                         </div>
@@ -891,8 +880,7 @@ export function LandingPage() {
                     {step === 'INPUT_CODE' && (
                         <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
                             <p className="text-xs text-zinc-400 text-center mb-2">
-                                Enter the 6-digit code sent to{' '}
-                                <span className="text-white font-semibold">{displayNumber}</span>
+                                {t('landing.auth.codeSent')} <span className="text-white font-semibold">{displayNumber}</span>
                             </p>
                             <input
                                 id="otp-code"
@@ -901,7 +889,7 @@ export function LandingPage() {
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 autoComplete="one-time-code"
-                                placeholder="000000"
+                                placeholder={t('landing.auth.codePlaceholder')}
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value)}
                                 className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
@@ -913,7 +901,7 @@ export function LandingPage() {
                                 disabled={loading || verificationCode.length < 6}
                                 className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
                             >
-                                {loading ? 'Verifying...' : 'Verify'}
+                                {loading ? t('landing.auth.verifying') : t('landing.auth.verify')}
                             </button>
                             <button
                                 type="button"
@@ -924,7 +912,7 @@ export function LandingPage() {
                                 }}
                                 className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
                             >
-                                ← Change number
+                                ← {t('landing.auth.wrongNumber')}
                             </button>
                         </form>
                     )}
@@ -934,11 +922,11 @@ export function LandingPage() {
             {/* ── FOOTER ── */}
             <footer className="border-t border-white/[0.06] px-6 py-10">
                 <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-zinc-600">
-                    <span>© {new Date().getFullYear()} Earnest Page. All rights reserved.</span>
+                    <span>{t('landing.footer.copyright', { year: new Date().getFullYear() })}</span>
                     <div className="flex items-center gap-4">
-                        <Link href="/terms" className="hover:text-zinc-400 transition-colors">Terms</Link>
-                        <Link href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy</Link>
-                        <Link href="/acceptable-use" className="hover:text-zinc-400 transition-colors">Acceptable Use</Link>
+                        <Link href="/terms" className="hover:text-zinc-400 transition-colors">{t('landing.footer.terms')}</Link>
+                        <Link href="/privacy" className="hover:text-zinc-400 transition-colors">{t('landing.footer.privacy')}</Link>
+                        <Link href="/acceptable-use" className="hover:text-zinc-400 transition-colors">{t('landing.footer.acceptableUse')}</Link>
                     </div>
                 </div>
                 <p className="max-w-5xl mx-auto text-[10px] text-zinc-700 text-center sm:text-left mt-4">

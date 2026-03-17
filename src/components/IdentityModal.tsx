@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
+import { useTranslations } from "next-intl";
 
 interface IdentityModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface IdentityModalProps {
 export function IdentityModal({ isOpen, onClose, initialText, onUpdate }: IdentityModalProps) {
     const [text, setText] = useState(initialText);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const t = useTranslations("identityModal");
 
     const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +39,7 @@ export function IdentityModal({ isOpen, onClose, initialText, onUpdate }: Identi
             onClose();
         } catch (err: any) {
             console.error("Failed to update identity:", err);
-            setError(err.message || "Failed to update. Please try again.");
+            setError(err.message || t('errorUpdate'));
         } finally {
             setIsSubmitting(false);
         }
@@ -47,7 +49,7 @@ export function IdentityModal({ isOpen, onClose, initialText, onUpdate }: Identi
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold uppercase tracking-widest text-gray-900">Define Your Identity</h2>
+                    <h2 className="text-xl font-bold uppercase tracking-widest text-gray-900">{t('title')}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-900 transition-colors">
                         <X size={24} />
                     </button>
@@ -55,7 +57,7 @@ export function IdentityModal({ isOpen, onClose, initialText, onUpdate }: Identi
 
                 <div className="p-6">
                     <p className="text-sm text-gray-500 mb-4">
-                        Who are you? How do you want to show up in the world right now?
+                        {t('subtitle')}
                     </p>
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100">
@@ -65,7 +67,7 @@ export function IdentityModal({ isOpen, onClose, initialText, onUpdate }: Identi
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder="I am a person who..."
+                        placeholder={t('placeholder')}
                         className="w-full h-48 p-4 border border-gray-200 rounded-md bg-gray-50 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent outline-none resize-none transition-all text-lg font-light leading-relaxed scrollbar-hide"
                         autoFocus
                     />
@@ -77,14 +79,14 @@ export function IdentityModal({ isOpen, onClose, initialText, onUpdate }: Identi
                         onClick={onClose}
                         disabled={isSubmitting}
                     >
-                        Cancel
+                        {t('cancel')}
                     </Button>
                     <Button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !text.trim()}
                         className="bg-black text-white hover:bg-gray-800"
                     >
-                        {isSubmitting ? "Updating..." : "UPDATE DEFINITION"}
+                        {isSubmitting ? t('updating') : t('updateBtn')}
                     </Button>
                 </div>
             </div>

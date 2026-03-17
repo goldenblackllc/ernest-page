@@ -5,6 +5,7 @@ import { Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { useTranslations } from "next-intl";
 
 interface CheckInCardProps {
     characterTitle: string;
@@ -13,6 +14,7 @@ interface CheckInCardProps {
 
 export function CheckInCard({ characterTitle, avatarUrl }: CheckInCardProps) {
     const { user } = useAuth();
+    const t = useTranslations('feed');
 
     const handleClick = async () => {
         // Mark check-in as done (resets the 30-day clock)
@@ -29,7 +31,7 @@ export function CheckInCard({ characterTitle, avatarUrl }: CheckInCardProps) {
         // Open MirrorChat with check-in context
         window.dispatchEvent(new CustomEvent('open-mirror-checkin', {
             detail: {
-                context: "I am here for my 30 day check-in.",
+                context: t('checkinContext'),
             },
         }));
     };
@@ -50,9 +52,9 @@ export function CheckInCard({ characterTitle, avatarUrl }: CheckInCardProps) {
                     )}
                 </div>
                 <div>
-                    <p className="text-sm font-bold text-white mb-0.5">30 Day Check-in ✓</p>
+                    <p className="text-sm font-bold text-white mb-0.5">{t('checkinTitle')}</p>
                     <p className="text-base font-bold text-white">{characterTitle}</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">Tap to start →</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{t('checkinSub')}</p>
                 </div>
             </div>
         </button>

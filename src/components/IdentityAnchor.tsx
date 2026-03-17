@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { collection, query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useTranslations } from "next-intl";
 
 export function IdentityAnchor() {
     const { user } = useAuth();
@@ -12,6 +13,7 @@ export function IdentityAnchor() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newIdentity, setNewIdentity] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const t = useTranslations("identityAnchor");
 
     useEffect(() => {
         if (!user) {
@@ -59,14 +61,14 @@ export function IdentityAnchor() {
             setIsModalOpen(false);
         } catch (error) {
             console.error("Error updating identity:", error);
-            alert("Failed to update identity.");
+            alert(t('errorUpdate'));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     if (loading) {
-        return <div className="w-full py-12 bg-white flex justify-center"><span className="animate-pulse text-xs uppercase tracking-widest">Loading Reality...</span></div>;
+        return <div className="w-full py-12 bg-white flex justify-center"><span className="animate-pulse text-xs uppercase tracking-widest">{t('loading')}</span></div>;
     }
 
     return (
@@ -77,7 +79,7 @@ export function IdentityAnchor() {
                     onClick={handleOpenModal}
                     className="pointer-events-auto text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-600 hover:text-zinc-300 transition-colors backdrop-blur-sm bg-zinc-950/30 px-4 py-1 rounded-full border border-white/5"
                 >
-                    {identity || "IDENTITY UNDEFINED."}
+                    {identity || t('undefined')}
                 </button>
             </div>
 
@@ -95,13 +97,13 @@ export function IdentityAnchor() {
                             </button>
 
                             <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-6 border-b border-zinc-800 pb-2">
-                                DEFINE REALITY
+                                {t('defineReality')}
                             </div>
 
                             <textarea
                                 value={newIdentity}
                                 onChange={(e) => setNewIdentity(e.target.value)}
-                                placeholder="I AM..."
+                                placeholder={t('placeholder')}
                                 className="w-full text-3xl md:text-4xl font-black uppercase border-none focus:ring-0 resize-y min-h-[200px] bg-transparent text-white placeholder:text-zinc-700 p-0 leading-tight mb-8"
                                 autoFocus
                             />
@@ -112,7 +114,7 @@ export function IdentityAnchor() {
                                     disabled={isSubmitting}
                                     className="bg-zinc-950 text-white px-8 py-4 text-xs font-bold uppercase tracking-[0.2em] hover:bg-zinc-800 transition-colors disabled:opacity-50 border border-zinc-800 rounded-lg"
                                 >
-                                    {isSubmitting ? "COMMITTING..." : "COMMIT NEW IDENTITY"}
+                                    {isSubmitting ? t('committing') : t('commitBtn')}
                                 </button>
                             </div>
                         </div>

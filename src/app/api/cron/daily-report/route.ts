@@ -57,15 +57,17 @@ export async function GET(req: Request) {
             .get();
         const postsCreated = postsSnapshot.size;
 
-        // Active sessions in last 24h
+        // Active sessions in last 24h (from already-fetched user data)
         let activeSessions = 0;
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const todayStr = now.toISOString().split('T')[0];
         for (const userDoc of allUsers) {
-            const chatsSnap = await db.collection('users').doc(userDoc.id)
-                .collection('active_chats')
-                .where('updatedAt', '>=', yesterday.getTime())
-                .limit(1)
-                .get();
-            if (!chatsSnap.empty) activeSessions++;
+            const data = userDoc.data();
+            const sessionDate = data?.sessions_today_date;
+            if ((sessionDate === yesterdayStr || sessionDate === todayStr)
+                && (data?.sessions_today || 0) > 0) {
+                activeSessions++;
+            }
         }
 
         // ── Format Report ─────────────────────────────────────────

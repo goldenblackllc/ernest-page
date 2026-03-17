@@ -7,6 +7,7 @@ import { updateDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { CharacterProfile } from "@/types/character";
+import { useTranslations } from "next-intl";
 
 interface DirectivesMenuProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
     const [pendingCompleteId, setPendingCompleteId] = useState<string | null>(null);
     const [unexpectedText, setUnexpectedText] = useState("");
     const [isSubmittingShift, setIsSubmittingShift] = useState(false);
+    const t = useTranslations('directivesMenu');
 
     // Close on escape key
     useEffect(() => {
@@ -141,7 +143,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                 <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-900">
                     <div className="flex items-center gap-2">
                         <Bell className="w-5 h-5 text-zinc-300" />
-                        <h2 className="text-sm font-bold tracking-widest uppercase text-zinc-100">My Daily Plan</h2>
+                        <h2 className="text-sm font-bold tracking-widest uppercase text-zinc-100">{t('title')}</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -159,7 +161,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                             {/* What's being completed */}
                             <div className="flex items-center gap-2 mb-4">
                                 <CheckCircle2 className="w-4 h-4 text-zinc-100" />
-                                <span className="text-[10px] tracking-[0.2em] uppercase text-zinc-100">Completing</span>
+                                <span className="text-[10px] tracking-[0.2em] uppercase text-zinc-100">{t('completing')}</span>
                             </div>
                             <div className="text-base text-zinc-100 mb-6 leading-snug">
                                 {pendingTodo.task}
@@ -168,16 +170,16 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                             {/* The Prompt */}
                             <div className="mb-4">
                                 <label className="text-xs tracking-widest uppercase text-zinc-400 mb-2 block">
-                                    Did anything unexpected happen?
+                                    {t('question')}
                                 </label>
                                 <textarea
                                     value={unexpectedText}
                                     onChange={(e) => setUnexpectedText(e.target.value)}
-                                    placeholder="Something shifted, someone said something, a door opened..."
+                                    placeholder={t('placeholder')}
                                     className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-base text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none resize-none min-h-[100px] transition-colors"
                                 />
                                 <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
-                                    If something surprising happened, it'll be shared as a Reality Shift in the feed.
+                                    {t('description')}
                                 </p>
                             </div>
 
@@ -191,15 +193,15 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                                     {isSubmittingShift ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Logging Shift...
+                                            {t('logging')}
                                         </>
                                     ) : unexpectedText.trim() ? (
                                         <>
                                             <Sparkles className="w-4 h-4" />
-                                            Complete & Log Shift
+                                            {t('completeAndLog')}
                                         </>
                                     ) : (
-                                        "Mark Complete"
+                                        t('markComplete')
                                     )}
                                 </button>
                                 <button
@@ -209,13 +211,13 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                                     }}
                                     className="w-full text-xs text-zinc-500 hover:text-zinc-300 py-2 transition-colors"
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                             </div>
                         </div>
                     ) : activeTodos.length === 0 ? (
                         <div className="text-center py-12 text-zinc-600 text-xs font-mono uppercase tracking-widest border border-dashed border-zinc-800 rounded-xl">
-                            No Active Directives
+                            {t('noDirectives')}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -253,7 +255,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                 {/* Footer */}
                 <div className="p-6 border-t border-zinc-900 bg-black/20">
                     <div className="text-[10px] text-zinc-500 uppercase tracking-widest text-center">
-                        Follow excitement with integrity
+                        {t('footer')}
                     </div>
                 </div>
             </div>

@@ -12,6 +12,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import Image from 'next/image';
+import { useTranslations, useLocale } from 'next-intl';
+import { Languages, Loader2 } from 'lucide-react';
 
 interface ConversationMessage {
     role: 'user' | 'assistant';
@@ -53,6 +55,7 @@ interface FeedPostProps {
         like_count?: number;
         author_avatar_url?: string;
         comments?: number;
+        translations?: Record<string, any>;
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
@@ -64,6 +67,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [localIsPublic, setLocalIsPublic] = useState(post.is_public ?? false);
+    const t = useTranslations('feed');
+    const locale = useLocale();
+
+    const [translatedData, setTranslatedData] = useState<any>(post.translations?.[locale] || null);
+    const [isTranslating, setIsTranslating] = useState(false);
 
     const { user } = useAuth();
 
@@ -126,12 +134,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     content: commentText.trim(),
                     type: 'personal',
                     is_mine: true,
-                    author_title: 'You',
+                    author_title: t('roleYou'),
                     author_avatar_url: data.author_avatar_url || null,
                     created_at: null,
                 }, ...prev]);
                 setCommentText('');
-                setCommentToast('Saved. Your character also left a note on another post ✨');
+                setCommentToast(t('commentSaved'));
                 setTimeout(() => setCommentToast(null), 4000);
             }
         } catch (err) {
@@ -169,9 +177,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const publicLetter = post.public_post?.letter || post.letter || post.tension;
     const publicResponse = post.public_post?.response || post.response || post.counsel;
     const publicPseudonym = post.public_post?.pseudonym || post.pseudonym || "Anonymous";
-    const publicTitle = post.public_post?.title || post.title;
+    const publicTitle = translatedData?.title || post.public_post?.title || post.title;
 
-    const timeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : "just now";
+    const timeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : t('justNow');
 
     const handleDelete = () => onRequestDelete?.(post.id);
 
@@ -205,12 +213,41 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         }
     };
 
+    const handleTranslate = async () => {
+        if (translatedData) {
+            setTranslatedData(null); // Toggle off
+            return;
+        }
 
+        if (!user || isTranslating) return;
+        setIsTranslating(true);
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch('/api/posts/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ postId: post.id, targetLocale: locale }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setTranslatedData(data.translation);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to translate post:', err);
+        } finally {
+            setIsTranslating(false);
+        }
+    };
 
     // Reality Shift posts (must check BEFORE the letter/response null guard)
     if (post.post_type === 'reality_shift') {
-        const shiftTimeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : "just now";
-        const yieldText = post.unexpected_yield || '';
+        const shiftTimeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : t('justNow');
+        const yieldText = translatedData?.unexpected_yield || post.unexpected_yield || '';
         const isLongYield = yieldText.length > 280;
 
         return (
@@ -232,7 +269,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex flex-row items-center gap-2 w-full">
                             <span className="text-sm font-semibold text-white truncate">
-                                {isAuthor ? "Me" : customAlias || publicPseudonym || "Anonymous"}
+                                {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
                             </span>
                             <div className="shrink-0 flex items-center gap-2">
                                 {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
@@ -240,7 +277,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         onClick={() => onFollowClick(postAuthorId)}
                                         className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide"
                                     >
-                                        + Follow Author
+                                        {t('followAuthor')}
                                     </button>
                                 )}
                                 {user?.uid === post.uid && (
@@ -251,12 +288,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         {localIsPublic ? (
                                             <>
                                                 <Globe className="w-3 h-3 text-blue-400" />
-                                                <span className="text-blue-400">Everyone</span>
+                                                <span className="text-blue-400">{t('privacyEveryone')}</span>
                                             </>
                                         ) : (
                                             <>
                                                 <Lock className="w-3 h-3 text-zinc-500" />
-                                                <span className="text-zinc-500">Only Me</span>
+                                                <span className="text-zinc-500">{t('privacyOnlyMe')}</span>
                                             </>
                                         )}
                                         <ChevronDown className="w-3 h-3 text-zinc-600 group-hover/privacy:text-zinc-400" />
@@ -281,7 +318,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 <div className="p-0 flex flex-col">
                     <div className="px-3 sm:px-4 pt-4 pb-3 sm:pb-4">
                         <h2 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2 leading-tight">
-                            Something Unexpected
+                            {t('realityShiftTitle')}
                         </h2>
 
                         <p className={cn(
@@ -296,7 +333,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 onClick={() => setIsExpanded(!isExpanded)}
                                 className="text-sm font-semibold text-zinc-400 hover:text-white mt-2 transition-colors duration-200"
                             >
-                                {isExpanded ? "Show Less ⌃" : "Read More ⌄"}
+                                {isExpanded ? t('showLess') : t('readMore')}
                             </button>
                         )}
                     </div>
@@ -304,20 +341,31 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                 {/* ═══ Footer ═══ */}
                 <div className="px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
-                    <button
-                        onClick={toggleLike}
-                        className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
-                            totalLikes >= 1 ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
-                        )}
-                    >
-                        <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
-                        {totalLikes > 1 && <span className="text-xs font-medium">{totalLikes}</span>}
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={toggleLike}
+                            className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
+                                totalLikes >= 1 ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
+                            )}
+                        >
+                            <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
+                            {totalLikes > 1 && <span className="text-xs font-medium">{totalLikes}</span>}
+                        </button>
+                        
+                        <button
+                            onClick={handleTranslate}
+                            disabled={isTranslating}
+                            className={cn("flex items-center gap-1 transition-colors group", translatedData ? "text-blue-400" : "text-zinc-500 hover:text-white")}
+                            title={t('translatePost')}
+                        >
+                            {isTranslating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5" />}
+                        </button>
+                    </div>
                     {user?.uid === post.uid && (
                         <button
                             onClick={handleDelete}
                             className="text-zinc-400 hover:text-red-500 transition-colors duration-200 p-1"
-                            title="Delete Post"
+                            title={t('deletePost')}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -353,7 +401,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 <div className="flex flex-col flex-1 min-w-0">
                     <div className="flex flex-row items-center gap-2 w-full">
                         <span className="text-sm font-semibold text-white truncate">
-                            {isAuthor ? "Me" : customAlias || publicPseudonym || "Anonymous"}
+                            {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
                         </span>
                         <div className="shrink-0 flex items-center gap-2">
                             {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
@@ -361,7 +409,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     onClick={() => onFollowClick(postAuthorId)}
                                     className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide"
                                 >
-                                    + Follow Author
+                                    {t('followAuthor')}
                                 </button>
                             )}
                             {user?.uid === post.uid && (
@@ -464,7 +512,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             <div className={cn("px-3 sm:px-4 pb-3 sm:pb-4 mt-1", !isExpanded && "mb-2")}>
                                 {/* Letter Block (The User's Tension) */}
                                 {(() => {
-                                    const lines = (publicLetter || '').split('\n');
+                                    const sourceLetter = translatedData?.letter || publicLetter || '';
+                                    const lines = sourceLetter.split('\n');
                                     const firstLine = lines[0]?.trim() || '';
                                     const hasGreeting = /^dear\s/i.test(firstLine);
                                     const greeting = hasGreeting ? firstLine : null;
@@ -491,25 +540,25 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         onClick={() => setIsExpanded(true)}
                                         className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors duration-200"
                                     >
-                                        Read the Counsel ⌄
+                                        {t('readCounsel')}
                                     </button>
                                 ) : (
                                     <>
                                         {/* Counsel Divider */}
                                         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 block">
-                                            THE COUNSEL:
+                                            {t('theCounsel')}
                                         </span>
 
                                         {/* Response Block (The Ideal Self's Advice) */}
                                         <div className="text-zinc-100 not-italic text-sm sm:text-[15px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{publicResponse}</ReactMarkdown>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{translatedData?.response || publicResponse}</ReactMarkdown>
                                         </div>
 
                                         <button
                                             onClick={() => setIsExpanded(false)}
                                             className="text-sm font-semibold text-zinc-400 hover:text-white mt-3 transition-colors duration-200"
                                         >
-                                            Show Less ⌃
+                                            {t('showLess')}
                                         </button>
                                     </>
                                 )}
@@ -526,7 +575,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     <div className="flex items-center gap-2 mb-4 border-b border-emerald-900/30 pb-3">
                                         <Lock className="w-4 h-4 text-emerald-500" />
                                         <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest">
-                                            {post.conversation_messages ? 'Raw Conversation' : 'Raw Input & Counsel'}
+                                            {post.conversation_messages ? t('rawConversation') : t('rawInputCounsel')}
                                         </h3>
                                     </div>
 
@@ -544,7 +593,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                                     )}
                                                 >
                                                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 block mb-1">
-                                                        {msg.role === 'user' ? 'You' : 'Character'}
+                                                        {msg.role === 'user' ? t('roleYou') : t('roleCharacter')}
                                                     </span>
                                                     <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                                                         {msg.content}
@@ -569,7 +618,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                                         )}
                                                     >
                                                         <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 block mb-1">
-                                                            {isUser ? 'You' : 'Character'}
+                                                            {isUser ? t('roleYou') : t('roleCharacter')}
                                                         </span>
                                                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                                                             {content}
@@ -583,7 +632,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                             {/* Legacy: Raw Rant + Counsel */}
                                             {post.rant && (
                                                 <div className="mb-6">
-                                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">My Raw Input</h4>
+                                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">{t('rawInputTitle')}</h4>
                                                     <p className="text-sm italic text-zinc-400 whitespace-pre-wrap leading-snug p-3 bg-black/40 rounded-lg border border-white/5">
                                                         {post.rant}
                                                     </p>
@@ -591,7 +640,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                             )}
                                             {post.counsel && (
                                                 <div>
-                                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Raw AI Counsel</h4>
+                                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">{t('rawCounselTitle')}</h4>
                                                     <div className="text-zinc-200 whitespace-pre-wrap text-sm sm:text-[15px] leading-snug [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-3 [&>p:last-child]:mb-0">
                                                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{displayedPrivateCounsel || ""}</ReactMarkdown>
                                                     </div>
@@ -601,9 +650,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                                             className="mt-4 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
                                                         >
                                                             {isResponseExpanded ? (
-                                                                <>Read Less <ChevronUp className="w-3 h-3" /></>
+                                                                <>{t('showLess')} <ChevronUp className="w-3 h-3" /></>
                                                             ) : (
-                                                                <>Read More <ChevronDown className="w-3 h-3" /></>
+                                                                <>{t('readMore')} <ChevronDown className="w-3 h-3" /></>
                                                             )}
                                                         </button>
                                                     )}
@@ -626,7 +675,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
                                 totalLikes >= 1 ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
                             )}
-                            title="Send love to the universe"
+                            title={t('likeTooltip')}
                         >
                             <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
                             {totalLikes > 1 && (
@@ -639,7 +688,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         <button
                             onClick={handleToggleComments}
                             className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors active:scale-75 hover:scale-110"
-                            title="Comment"
+                            title={t('commentTooltip')}
                         >
                             <MessageCircle className={cn("w-5 h-5", commentCount >= 1 && "fill-zinc-400")} />
                             {commentCount > 1 && (
@@ -660,19 +709,28 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     "flex items-center gap-1.5 transition-colors duration-200 group ml-2",
                                     isFlipped ? "text-white" : "text-zinc-400 hover:text-white"
                                 )}
-                                title={isFlipped ? "View Public" : "View Private"}
+                                title={isFlipped ? t('viewPublic') : t('viewPrivate')}
                             >
                                 <RefreshCw className={cn("w-4 h-4 transition-transform duration-500", isFlipped && "rotate-180")} />
-                                <span className="text-zinc-400 text-sm">{isFlipped ? "View Public" : "View Private"}</span>
+                                <span className="text-zinc-400 text-sm hidden sm:inline">{isFlipped ? t('viewPublic') : t('viewPrivate')}</span>
                             </button>
                         )}
+                        
+                        <button
+                            onClick={handleTranslate}
+                            disabled={isTranslating}
+                            className={cn("flex items-center gap-1 transition-colors group ml-2", translatedData ? "text-blue-400" : "text-zinc-400 hover:text-white")}
+                            title={t('translatePost')}
+                        >
+                            {isTranslating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5" />}
+                        </button>
                     </div>
 
                     {user?.uid === post.uid && (
                         <button
                             onClick={handleDelete}
                             className="text-zinc-400 hover:text-white transition-colors duration-200 p-1"
-                            title="Delete Post"
+                            title={t('deletePost')}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -696,7 +754,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && submitComment()}
-                                placeholder="Leave a reflection..."
+                                placeholder={t('commentPlaceholder')}
                                 className="bg-transparent border-none focus:ring-0 focus:outline-none text-white placeholder-zinc-500 w-full pr-10 text-sm"
                                 disabled={isSubmittingComment}
                             />
@@ -730,7 +788,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <span className="text-xs font-semibold text-zinc-400">
-                                                {c.is_mine ? 'You' : c.author_title}
+                                                {c.is_mine ? t('roleYou') : c.author_title}
                                             </span>
                                             <p className="text-sm text-zinc-300 leading-relaxed mt-0.5">{c.content}</p>
                                         </div>
@@ -754,7 +812,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                                     }
                                                 }}
                                                 className="shrink-0 p-1 text-zinc-600 hover:text-red-500 transition-colors mt-0.5"
-                                                title="Delete comment"
+                                                title={t('deleteComment')}
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </button>

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { HelpCircle, X, ArrowUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useTranslations } from "next-intl";
 
 interface Message {
     role: 'user' | 'assistant';
@@ -25,6 +26,7 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const { user } = useAuth();
+    const t = useTranslations('supportChat');
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -69,12 +71,12 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
                 const data = await res.json();
                 setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
             } else if (res.status === 429) {
-                setMessages(prev => [...prev, { role: 'assistant', content: 'You\'ve sent too many messages. Please wait a moment and try again.' }]);
+                setMessages(prev => [...prev, { role: 'assistant', content: t('errorTooMany') }]);
             } else {
-                setMessages(prev => [...prev, { role: 'assistant', content: 'Something went wrong. Please try again.' }]);
+                setMessages(prev => [...prev, { role: 'assistant', content: t('errorWrong') }]);
             }
         } catch {
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Unable to reach support. Please try again later.' }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: t('errorReach') }]);
         } finally {
             setIsLoading(false);
         }
@@ -101,7 +103,7 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             <span className="text-xs font-bold uppercase tracking-[0.15em] text-zinc-400">
-                                Support
+                                {t('title')}
                             </span>
                         </div>
                         <button
@@ -118,7 +120,7 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
                             <div className="flex flex-col items-center justify-center h-full text-center px-4">
                                 <HelpCircle className="w-8 h-8 text-zinc-700 mb-3" />
                                 <p className="text-xs text-zinc-500 leading-relaxed">
-                                    Questions about subscriptions, features, privacy, or how the app works? Ask away.
+                                    {t('emptyState')}
                                 </p>
                             </div>
                         )}
@@ -152,7 +154,7 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                placeholder="Ask a question..."
+                                placeholder={t('placeholder')}
                                 className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
                                 disabled={isLoading}
                             />

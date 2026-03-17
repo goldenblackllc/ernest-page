@@ -11,6 +11,7 @@ import { Message } from "@ai-sdk/react";
 import { SessionTone } from "@/types/chat";
 import { ENGAGEMENT_TONES, DEFAULT_TONE } from "@/lib/ai/engagementTones";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useTranslations } from 'next-intl';
 
 type SessionRouting = 'public' | 'private' | 'burn';
 
@@ -30,6 +31,7 @@ interface MirrorChatProps {
 
 export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting, isUnlimited }: MirrorChatProps) {
     const { user: authUser } = useAuth();
+    const t = useTranslations();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -323,12 +325,12 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                 setPlanConfirmation('✓ Directives saved');
                 setTimeout(() => setPlanConfirmation(null), 3000);
             } else {
-                setPlanConfirmation('Failed to extract directives. Try again.');
+                setPlanConfirmation(t('mirrorChat.directivesFailed'));
                 setTimeout(() => setPlanConfirmation(null), 4000);
             }
         } catch (err) {
             console.error('Failed to extract directives:', err);
-            setPlanConfirmation('Failed to extract directives.');
+            setPlanConfirmation(t('mirrorChat.directivesFailed'));
             setTimeout(() => setPlanConfirmation(null), 4000);
         } finally {
             setIsGeneratingPlan(false);
@@ -396,7 +398,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     {idealName}
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 </h3>
-                                <p className="text-xs text-zinc-500 font-medium">Consulting The Mirror</p>
+                                <p className="text-xs text-zinc-500 font-medium">{t('mirrorChat.consultingMirror')}</p>
                             </div>
                         </div>
                         {/* Exchange counter */}
@@ -414,7 +416,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                             onClick={handleClose}
                             className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 transition-colors"
                         >
-                            Close
+                            {t('common.close')}
                         </button>
                     </div>
 
@@ -426,7 +428,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     onClick={() => setIsToneOpen(!isToneOpen)}
                                     className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors group"
                                 >
-                                    <span className="uppercase tracking-widest font-bold text-[10px] text-zinc-600">Mode</span>
+                                    <span className="uppercase tracking-widest font-bold text-[10px] text-zinc-600">{t('mirrorChat.mode')}</span>
                                     <span className="text-zinc-100 font-medium">{ENGAGEMENT_TONES[sessionTone].label}</span>
                                     <ChevronDown className={cn("w-3 h-3 transition-transform", isToneOpen && "rotate-180")} />
                                 </button>
@@ -483,9 +485,9 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         <Shield className="w-8 h-8 text-zinc-500" />
                                     </div>
                                     <div>
-                                        <p className="text-zinc-400 mb-2">Connection secured.</p>
+                                        <p className="text-zinc-400 mb-2">{t('mirrorChat.connectionSecured')}</p>
                                         <p className="text-sm font-medium text-zinc-300 max-w-xs mx-auto">
-                                            &quot;Detail your current friction.&quot;
+                                            {t('mirrorChat.promptFriction')}
                                         </p>
                                     </div>
                                 </div>
@@ -540,7 +542,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                                 {isGeneratingPlan ? (
                                                     <div className="flex items-center gap-2 text-xs text-zinc-500 font-medium uppercase tracking-wider px-5 py-2.5">
                                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        Extracting directives...
+                                                        {t('mirrorChat.extractingDirectives')}
                                                     </div>
                                                 ) : (
                                                     <button
@@ -548,7 +550,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                                         className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-5 py-2.5 transition-all border bg-white text-black border-transparent hover:bg-zinc-200 shadow-lg"
                                                     >
                                                         <Target className="w-3.5 h-3.5" />
-                                                        Extract 24-Hour Directives
+                                                        {t('mirrorChat.extractDirectives')}
                                                     </button>
                                                 )}
                                             </div>
@@ -588,7 +590,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-full flex items-center gap-2 hover:text-white hover:bg-zinc-700 transition-colors shadow-lg border border-zinc-700/50"
                                     >
                                         <RefreshCcw className="w-3 h-3" />
-                                        Regenerate Response
+                                        {t('mirrorChat.regenerate')}
                                     </button>
                                 </div>
                             )}
@@ -610,7 +612,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                             {/* ═══ SESSION ROUTING BAR ═══ */}
                             <div className="flex items-center gap-3 mb-3 flex-wrap">
                                 <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-600 shrink-0">
-                                    Session Routing:
+                                    {t('mirrorChat.sessionRouting')}
                                 </span>
                                 <div className="flex items-center gap-1.5">
                                     <button
@@ -623,7 +625,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         )}
                                     >
                                         <Globe className="w-3 h-3" />
-                                        Public Feed
+                                        {t('mirrorChat.publicFeed')}
                                     </button>
                                     <button
                                         onClick={() => { setSessionRouting('private'); hasManuallySetRouting.current = true; }}
@@ -635,7 +637,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         )}
                                     >
                                         <Lock className="w-3 h-3" />
-                                        Private Ledger
+                                        {t('mirrorChat.privateLedger')}
                                     </button>
                                     <button
                                         onClick={() => { setSessionRouting('burn'); hasManuallySetRouting.current = true; }}
@@ -647,7 +649,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         )}
                                     >
                                         <Flame className="w-3 h-3" />
-                                        Burn on Close
+                                        {t('mirrorChat.burnOnClose')}
                                     </button>
                                 </div>
                             </div>
@@ -661,7 +663,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         exit={{ opacity: 0, height: 0 }}
                                         className="text-[10px] text-red-500/70 font-medium tracking-wide mb-3 overflow-hidden"
                                     >
-                                        Zero retention. Erased immediately upon exit.
+                                        {t('mirrorChat.burnMicrocopy')}
                                     </motion.p>
                                 )}
                             </AnimatePresence>
@@ -672,12 +674,12 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-sm font-semibold text-white mb-1">
-                                            {isAtExchangeLimit ? 'Session Complete' : 'Session Time Expired'}
+                                            {isAtExchangeLimit ? t('mirrorChat.sessionComplete') : t('mirrorChat.sessionExpired')}
                                         </p>
                                         <p className="text-xs text-zinc-400">
                                             {isAtExchangeLimit
-                                                ? `You've reached ${MAX_EXCHANGES} exchanges. Extract your directives and close to start a new session.`
-                                                : `Your ${MAX_SESSION_HOURS}-hour session window has ended. Extract your directives and close to start a new session.`
+                                                ? t('mirrorChat.sessionCompleteDesc', { max: MAX_EXCHANGES })
+                                                : t('mirrorChat.sessionExpiredDesc', { hours: MAX_SESSION_HOURS })
                                             }
                                         </p>
                                     </div>
@@ -696,7 +698,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     className="w-full bg-transparent text-white px-1 min-h-[44px] max-h-[200px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar text-base leading-relaxed"
                                     value={input}
                                     onChange={handleInputChange}
-                                    placeholder={isSessionLimited ? 'Session ended. Close to start a new one.' : 'State your friction...'}
+                                    placeholder={isSessionLimited ? t('mirrorChat.placeholderEnded') : t('mirrorChat.placeholderDefault')}
                                     disabled={isSessionLimited}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {
@@ -713,7 +715,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                             {/* Commit / Stop — separated from textarea */}
                             <div className="flex items-center justify-between mt-3">
                                 <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-600">
-                                    Encrypted & Private
+                                    {t('mirrorChat.encryptedPrivate')}
                                 </span>
 
                                 {isLoading ? (
@@ -722,7 +724,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                         className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-5 py-2.5 bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-zinc-900 border border-zinc-700 transition-colors"
                                     >
                                         <Square className="w-3.5 h-3.5 fill-current" />
-                                        Stop
+                                        {t('mirrorChat.stop')}
                                     </button>
                                 ) : (
                                     <button
@@ -735,7 +737,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                                 : "bg-zinc-900 text-zinc-600 border-zinc-800 cursor-not-allowed"
                                         )}
                                     >
-                                        Commit
+                                        {t('mirrorChat.commit')}
                                     </button>
                                 )}
                             </div>
