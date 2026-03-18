@@ -1,7 +1,9 @@
 [
     {
         "origin": [
-            "*"
+            "https://earnestpage.com",
+            "https://www.earnestpage.com",
+            "http://localhost:3000"
         ],
         "method": [
             "GET",

@@ -1,11 +1,15 @@
 import Stripe from 'stripe';
 import { db, FieldValue } from '@/lib/firebase/admin';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2026-02-25.clover',
 });
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
+
+// 20 webhook calls per minute per IP
+const WEBHOOK_LIMIT = { maxRequests: 20, windowMs: 60_000 };
 
 // Session tier → number of credits granted
 const SESSION_CREDITS: Record<string, number> = {
@@ -22,6 +26,11 @@ const SESSION_AMOUNTS: Record<string, number> = {
 };
 
 export async function POST(req: Request) {
+    // Rate limit by IP to prevent replay flooding
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = checkRateLimit(`webhook-ip:${ip}`, WEBHOOK_LIMIT);
+    if (!rl.allowed) return rateLimitResponse(rl.resetMs);
+
     const body = await req.text();
     const signature = req.headers.get('stripe-signature');
 

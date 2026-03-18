@@ -1,4 +1,5 @@
 import twilio from "twilio";
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 const client = twilio(
     process.env.TWILIO_ACCOUNT_SID!,
@@ -7,8 +8,16 @@ const client = twilio(
 
 const VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID!;
 
+// 5 SMS requests per 15 minutes per IP
+const SEND_CODE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
+
 export async function POST(req: Request) {
     try {
+        // Rate limit by IP before doing anything
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        const rl = checkRateLimit(`send-code-ip:${ip}`, SEND_CODE_LIMIT);
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
+
         const { phone } = await req.json();
 
         if (!phone) {

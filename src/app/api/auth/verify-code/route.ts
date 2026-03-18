@@ -1,6 +1,7 @@
 import twilio from "twilio";
 import { getAuth } from "firebase-admin/auth";
 import "@/lib/firebase/admin"; // Ensure admin is initialized
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 const client = twilio(
     process.env.TWILIO_ACCOUNT_SID!,
@@ -9,8 +10,16 @@ const client = twilio(
 
 const VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID!;
 
+// 10 verification attempts per 15 minutes per IP
+const VERIFY_CODE_LIMIT = { maxRequests: 10, windowMs: 15 * 60 * 1000 };
+
 export async function POST(req: Request) {
     try {
+        // Rate limit by IP before doing anything
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        const rl = checkRateLimit(`verify-code-ip:${ip}`, VERIFY_CODE_LIMIT);
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
+
         const body = await req.json();
         // Strip to only + and digits — invisible Unicode chars were causing "Invalid format"
         const phone = (body.phone || '').replace(/[^\d+]/g, '');
