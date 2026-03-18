@@ -8,6 +8,7 @@ vi.mock('next-intl', () => ({
 
 describe('usePWAInstall', () => {
     let originalMatchMedia: typeof window.matchMedia;
+    let originalNavigator: PropertyDescriptor | undefined;
 
     beforeEach(() => {
         // Clear localStorage
@@ -25,11 +26,26 @@ describe('usePWAInstall', () => {
             removeListener: vi.fn(),
             dispatchEvent: vi.fn(),
         }));
+
+        // Save original navigator.userAgent descriptor
+        originalNavigator = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
     });
 
     afterEach(() => {
         window.matchMedia = originalMatchMedia;
+        // Restore original navigator.userAgent
+        if (originalNavigator) {
+            Object.defineProperty(navigator, 'userAgent', originalNavigator);
+        } else {
+            // Reset to default by deleting the override
+            Object.defineProperty(navigator, 'userAgent', {
+                value: navigator.userAgent,
+                writable: true,
+                configurable: true,
+            });
+        }
         vi.restoreAllMocks();
+        vi.resetModules();
     });
 
     it('returns canInstall: false initially when no beforeinstallprompt has fired', async () => {
@@ -38,6 +54,7 @@ describe('usePWAInstall', () => {
 
         expect(result.current.canInstall).toBe(false);
         expect(result.current.isInstalled).toBe(false);
+        expect(result.current.isIOSSafari).toBe(false);
     });
 
     it('captures the beforeinstallprompt event and sets canInstall to true', async () => {
@@ -145,5 +162,64 @@ describe('usePWAInstall', () => {
 
         expect(mockPrompt).toHaveBeenCalled();
         expect(result.current.isInstalled).toBe(true);
+    });
+
+    it('detects iOS Safari and sets isIOSSafari and canInstall to true', async () => {
+        // Mock iOS Safari user agent
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            writable: true,
+            configurable: true,
+        });
+
+        const { usePWAInstall } = await import('@/hooks/usePWAInstall');
+        const { result } = renderHook(() => usePWAInstall());
+
+        expect(result.current.isIOSSafari).toBe(true);
+        expect(result.current.canInstall).toBe(true);
+    });
+
+    it('detects iOS Chrome as iOS but not as iOS Safari', async () => {
+        // Mock iOS Chrome user agent (CriOS)
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1',
+            writable: true,
+            configurable: true,
+        });
+
+        const { usePWAInstall } = await import('@/hooks/usePWAInstall');
+        const { result } = renderHook(() => usePWAInstall());
+
+        expect(result.current.isIOS).toBe(true);
+        expect(result.current.isIOSSafari).toBe(false);
+        expect(result.current.canInstall).toBe(true);
+    });
+
+    it('does not show install banner on iOS Safari when already in standalone', async () => {
+        // Mock iOS Safari user agent
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            writable: true,
+            configurable: true,
+        });
+
+        // Mock standalone mode
+        window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+            matches: query === '(display-mode: standalone)',
+            media: query,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        }));
+
+        const { usePWAInstall } = await import('@/hooks/usePWAInstall');
+        const { result } = renderHook(() => usePWAInstall());
+
+        expect(result.current.isIOSSafari).toBe(true);
+        expect(result.current.isInstalled).toBe(true);
+        expect(result.current.canInstall).toBe(false);
     });
 });

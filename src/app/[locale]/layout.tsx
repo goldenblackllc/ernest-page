@@ -44,6 +44,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { LockedProvider } from "@/context/LockedContext";
 import { AuthProvider } from "@/lib/auth/AuthContext";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 
 type Props = {
   children: React.ReactNode;
@@ -61,6 +62,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body
         className={`${hkGrotesk.variable} antialiased font-sans bg-zinc-950 text-white`}
       >
+        <ServiceWorkerRegistration />
         <NextIntlClientProvider locale={locale}>
           <AuthProvider>
             <LockedProvider>

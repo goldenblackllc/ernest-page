@@ -729,6 +729,8 @@
   "pwa": {
     "installBanner": {
       "message": "Add Earnest Page to your home screen for a better experience.",
+      "iosMessage": "Tap the Share button, then \"Add to Home Screen\" to install.",
+      "iosNonSafariMessage": "Open this page in Safari, then tap Share → \"Add to Home Screen\" to install.",
       "install": "Install",
       "dismiss": "Dismiss"
     },

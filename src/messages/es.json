@@ -729,6 +729,8 @@
   "pwa": {
     "installBanner": {
       "message": "Agrega Earnest Page a tu pantalla de inicio para una mejor experiencia.",
+      "iosMessage": "Toca el botón Compartir y luego \"Agregar a pantalla de inicio\" para instalar.",
+      "iosNonSafariMessage": "Abre esta página en Safari, luego toca Compartir → \"Agregar a pantalla de inicio\" para instalar.",
       "install": "Instalar",
       "dismiss": "Cerrar"
     },
