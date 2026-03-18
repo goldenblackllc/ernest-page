@@ -19,12 +19,13 @@ REWRITE RULES:
 - Keep all existing life facts that are still relevant. Drop anything outdated or contradicted by new information.
 - DROP any behavioral observations, communication analysis, or session meta-commentary that may exist in the previous dossier. These do not belong in any section.
 - Items in WANTS & DESIRES are permanent unless the user explicitly says they no longer want something or the desire was fulfilled. Do not trim desires for space.
-- The dossier must be UNDER 1500 WORDS. If it grows beyond that, prioritize: wants & desires > key people > profile > backstory > routines > preferences. Cut the least actionable details.
+- Items in IMPORTANT DATES are permanent unless the user explicitly corrects or removes one. Always preserve dates from previous dossiers.
+- The dossier must be UNDER 1500 WORDS. If it grows beyond that, prioritize: wants & desires > important dates > key people > profile > backstory > routines > preferences. Cut the least actionable details.
 - Update session count to: ${sessionCount}
 - Update date to today
 - Write from the consultant's perspective — professional, structured, factual. Stick to what is known. Do not speculate.
 
-Use ONLY the following section format with ═══ headers. Do not invent, rename, merge, or add any sections beyond these six:
+Use ONLY the following section format with ═══ headers. Do not invent, rename, merge, or add any sections beyond these seven:
 
 DOSSIER — [Client Title]
 Updated: [Date] | Sessions: ${sessionCount}
@@ -40,6 +41,10 @@ Where they came from: childhood, formative events, career history, past relation
 
 ═══ WANTS & DESIRES ═══
 Everything the user has expressed wanting — big or small, near or far. Keep all desires unless the user explicitly says they no longer want something or it was fulfilled. Time and urgency are irrelevant here.
+
+═══ IMPORTANT DATES ═══
+Dates the user has attached significance to: birthdays, anniversaries, milestones, losses, sobriety dates, deadlines, or any date they mention as meaningful. Extract these from conversation — the user will not announce them as "important dates," they will mention them naturally.
+Format each entry as: YYYY-MM-DD | Label | Context (e.g. 2026-06-15 | Daughter's birthday | Turning 7). Use best judgment for year if not stated. If only a month/day is given, omit the year.
 
 ═══ ROUTINES & HABITS ═══
 How they spend their time: morning routine, work schedule, exercise habits, evening wind-down, weekend patterns, rituals, disciplines they maintain or are trying to build.
