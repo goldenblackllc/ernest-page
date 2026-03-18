@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { LandingPage } from "@/components/LandingPage";
 import { Onboarding } from "@/components/Onboarding";
@@ -10,6 +10,8 @@ import { Ledger } from "@/components/Ledger";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { DashboardFooter } from "@/components/DashboardFooter";
 import { SupportChat } from "@/components/SupportChat";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 
@@ -35,6 +37,13 @@ export default function Home() {
 
     // Derived state
     const needsOnboarding = profileLoaded && !profile?.identity?.title;
+
+    // All hooks must be called before any early returns
+    const handlePullRefresh = useCallback(async () => {
+        window.dispatchEvent(new CustomEvent('ledger-refresh'));
+        // Wait briefly for the feed to start loading
+        await new Promise((resolve) => setTimeout(resolve, 800));
+    }, []);
 
     // Show nothing while checking auth state
     if (loading) {
@@ -81,11 +90,15 @@ export default function Home() {
             <DashboardHeader />
 
             <div className="container mx-auto px-0 sm:px-4 pt-[calc(64px+env(safe-area-inset-top))] pb-32 max-w-3xl">
-                {/* Section 1: Triage Panel (The Intake Valve) */}
-                <TriagePanel />
+                <PWAInstallBanner />
 
-                {/* Section 2: The Ledger (The Feed) */}
-                <Ledger />
+                <PullToRefresh onRefresh={handlePullRefresh}>
+                    {/* Section 1: Triage Panel (The Intake Valve) */}
+                    <TriagePanel />
+
+                    {/* Section 2: The Ledger (The Feed) */}
+                    <Ledger />
+                </PullToRefresh>
             </div>
 
             <DashboardFooter />

@@ -74,8 +74,48 @@ export async function POST(req: Request) {
             return Response.json({ error: "Missing uid or source_code" }, { status: 400 });
         }
 
+        // In-memory burst guard (kept as first line of defense)
         const rl = checkRateLimit(`compile:${uid}`, RATE_LIMITS.compile);
         if (!rl.allowed) return rateLimitResponse(rl.resetMs);
+
+        // ─── FIRESTORE-PERSISTED LIMITS (authoritative) ──────────────────
+        const userDocRef = db.collection('users').doc(uid);
+        const userDoc = await userDocRef.get();
+        const data = userDoc.data();
+
+        // Determine tier: paid users get higher limits
+        const sub = data?.subscription;
+        const hasActiveSub = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
+        const isPaid = hasActiveSub;
+
+        const MAX_COMPILES_PER_DAY = isPaid ? 10 : 3;
+        const COOLDOWN_MS = isPaid ? 2 * 60_000 : 10 * 60_000; // 2 min paid, 10 min free
+
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const compilesToday = data?.compile_count_date === today ? (data?.compile_count || 0) : 0;
+        const lastCompileAt = data?.last_compile_at || 0;
+        const now = Date.now();
+
+        // Daily cap check
+        if (compilesToday >= MAX_COMPILES_PER_DAY) {
+            return Response.json({
+                error: `You've reached your daily limit of ${MAX_COMPILES_PER_DAY} character rebuilds. Come back tomorrow.`,
+                limitType: 'daily',
+                remaining: 0,
+                resetsAt: 'midnight',
+            }, { status: 429 });
+        }
+
+        // Cooldown check
+        const timeSinceLast = now - lastCompileAt;
+        if (lastCompileAt > 0 && timeSinceLast < COOLDOWN_MS) {
+            const waitSec = Math.ceil((COOLDOWN_MS - timeSinceLast) / 1000);
+            return Response.json({
+                error: `Please wait ${waitSec > 60 ? Math.ceil(waitSec / 60) + ' minutes' : waitSec + ' seconds'} before rebuilding your character.`,
+                limitType: 'cooldown',
+                retryAfter: waitSec,
+            }, { status: 429, headers: { 'Retry-After': String(waitSec) } });
+        }
 
         const providerOptions = {
             google: { safetySettings: SAFETY_SETTINGS },
@@ -139,10 +179,7 @@ export async function POST(req: Request) {
         // Generate Reality Bible was here - removed.
 
         // Save back to Firestore
-        const userDocRef = db.collection('users').doc(uid);
-        const userDoc = await userDocRef.get();
         if (userDoc.exists) {
-            const data = userDoc.data();
             const currentBible: CharacterBible = data?.character_bible || { source_code, compiled_bible: {}, compiled_output: { ideal: [] }, last_updated: Date.now() };
 
             // Resolve character name: use user-provided name, or generate one
@@ -177,7 +214,13 @@ export async function POST(req: Request) {
                 last_updated: Date.now()
             };
 
-            await userDocRef.set({ character_bible: updatedBible }, { merge: true });
+            // Save bible + increment compile counters atomically
+            await userDocRef.set({
+                character_bible: updatedBible,
+                compile_count: compilesToday + 1,
+                compile_count_date: today,
+                last_compile_at: Date.now(),
+            }, { merge: true });
         }
 
         // Generate avatar — awaited so the client knows everything is ready

@@ -37,10 +37,16 @@ Updated: {DATE} | Sessions: 0
 ═══ KEY PEOPLE ═══
 {PEOPLE}
 
-═══ ACTIVE GOALS ═══
-{GOALS}
+═══ BACKSTORY ═══
+{BACKSTORY}
 
-═══ PREFERENCES & STYLE ═══
+═══ WANTS & DESIRES ═══
+{WANTS}
+
+═══ ROUTINES & HABITS ═══
+{ROUTINES}
+
+═══ PREFERENCES & TASTES ═══
 {PREFERENCES}`;
 
 export async function POST(req: Request) {
@@ -106,8 +112,10 @@ export async function POST(req: Request) {
                 dossier: z.object({
                     profile_facts: z.string().describe("Location, occupation, family — or 'Not yet known' if sparse"),
                     people: z.string().describe("Key people mentioned with relationships — or 'Not yet known'"),
-                    goals: z.string().describe("Goals extracted from the rant"),
-                    preferences: z.string().describe("Personal tastes: music, movies, books, food, drinks, brands, hobbies, routines — or 'Not yet known'"),
+                    backstory: z.string().describe("Life history, formative events, career path, education — or 'Not yet known'"),
+                    wants: z.string().describe("Desires and aspirations expressed in the rant — or 'Not yet known'"),
+                    routines: z.string().describe("Daily habits, rituals, routines mentioned — or 'Not yet known'"),
+                    preferences: z.string().describe("Personal tastes: music, movies, books, food, drinks, brands, hobbies — or 'Not yet known'"),
                 }),
             }),
         });
@@ -118,7 +126,9 @@ export async function POST(req: Request) {
             dossier: {
                 profile_facts: string;
                 people: string;
-                goals: string;
+                backstory: string;
+                wants: string;
+                routines: string;
                 preferences: string;
             };
         };
@@ -134,7 +144,9 @@ export async function POST(req: Request) {
             .replace("{DATE}", today)
             .replace("{PROFILE_FACTS}", data.dossier.profile_facts)
             .replace("{PEOPLE}", data.dossier.people)
-            .replace("{GOALS}", data.dossier.goals)
+            .replace("{BACKSTORY}", data.dossier.backstory)
+            .replace("{WANTS}", data.dossier.wants)
+            .replace("{ROUTINES}", data.dossier.routines)
             .replace("{PREFERENCES}", data.dossier.preferences);
 
         // Check if user already has an existing dossier (re-edit vs first onboarding)
@@ -167,7 +179,6 @@ export async function POST(req: Request) {
         const legacySourceCode = {
             archetype: data.title,
             manifesto: data.dream_self,
-            core_beliefs: "",
             important_people: data.dossier.people,
             things_i_enjoy: data.dossier.preferences,
         };
@@ -203,7 +214,6 @@ export async function POST(req: Request) {
                         source_code: {
                             archetype: data.title,
                             manifesto: data.dream_self,
-                            core_beliefs: '',
                             important_people: important_people || '',
                             things_i_enjoy: things_i_enjoy || '',
                         },

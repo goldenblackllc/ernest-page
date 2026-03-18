@@ -6,7 +6,6 @@ export const DEFAULT_BIBLE: CharacterBible = {
     source_code: {
         archetype: "Good Successful Happy Human",
         manifesto: "I am a good person who is successful, unconditionally loved, and I enjoy my life.",
-        core_beliefs: "",
         important_people: "",
     },
     compiled_bible: {},

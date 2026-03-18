@@ -6,6 +6,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
 import { geohashForLocation } from 'geofire-common';
+import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 
 export const runtime = 'nodejs';
@@ -219,42 +220,13 @@ ${recentScaleHint}${demographicHint}
 
 ═══ TASK 2: DOSSIER UPDATE ═══
 
-You are maintaining a personal consultant's client dossier.
+${buildDossierPrompt(currentDossier, sessionCount)}
 
-CURRENT DOSSIER:
-${currentDossier}
+The transcript above is the new session data to incorporate.
 
-WHAT COUNTS AS A FACT:
-- Only extract things the USER explicitly said about their own life: people, places, jobs, living situation, preferences, hobbies, goals, and concrete events.
-- Do NOT extract the consultant's analysis, opinions, or observations about the user's behavior or communication style.
-- Do NOT include session dynamics, meta-commentary about the conversation itself, or editorial analysis of the user's honesty or motives.
-- If in doubt, ask: "Did the user tell me this about themselves?" If the answer is no, it does not belong in the dossier.
+═══ TASK 3: SESSION RECAP ═══
 
-REWRITE RULES:
-- Produce a COMPLETE REWRITE of the dossier — not an append. The output replaces the current dossier entirely.
-- Keep all existing life facts that are still relevant. Drop anything outdated or contradicted by new information.
-- DROP any behavioral observations, communication analysis, or session meta-commentary that may exist in the previous dossier. These do not belong in any section.
-- The dossier must be UNDER 1200 WORDS. If it grows beyond that, prioritize: active goals > key people > profile > preferences. Cut the least actionable details.
-- Update session count to: ${sessionCount}
-- Update date to today
-- Write from the consultant's perspective — professional, structured, factual. Stick to what is known. Do not speculate.
-
-Use ONLY the following section format with ═══ headers. Do not invent, rename, merge, or add any sections beyond these four:
-
-DOSSIER — [Client Title]
-Updated: [Date] | Sessions: ${sessionCount}
-
-═══ PROFILE ═══
-Hard facts: gender, age, location, living situation, occupation, employer, life stage, identity summary
-
-═══ KEY PEOPLE ═══
-Important relationships with enough detail to reference naturally in conversation
-
-═══ ACTIVE GOALS ═══
-What they are currently working toward — concrete projects, ambitions, and active pursuits
-
-═══ PREFERENCES & STYLE ═══
-Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbies, sports teams, routines, and anything else they enjoy or favor. Do NOT include communication style or behavioral observations here.`;
+Write a 2-3 sentence recap of this session for continuity. What was discussed? What was the emotional tone? What was the outcome or takeaway? Write from the consultant's perspective. Keep it concise — this will be shown to the character at the start of the next session for context.`;
 
             try {
                 const result = await generateWithFallback({
@@ -272,24 +244,35 @@ Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbi
                             language: z.string().optional(),
                         }),
                         updated_dossier: z.string(),
+                        session_recap: z.string().describe("2-3 sentence recap of this session for continuity"),
                     }),
                     prompt: combinedPrompt,
                 });
 
                 const object = result.object as any;
 
-                // ─── DOSSIER WRITE (runs in parallel with image gen below) ───
+                // ─── DOSSIER + RECAPS WRITE (runs in parallel with image gen below) ───
                 const dossierPromise = identity
-                    ? userDoc.ref.set({
-                        identity: {
-                            ...identity,
-                            dossier: object.updated_dossier,
-                            dossier_updated_at: FieldValue.serverTimestamp(),
-                            session_count: sessionCount,
-                        },
-                    }, { merge: true }).then(() => {
-                        console.log(`[Cron] Dossier updated for user ${uid} (session ${sessionCount})`);
-                    }).catch((err: any) => {
+                    ? (async () => {
+                        // Build the new session_recaps array (keep last 3)
+                        const existingRecaps = userData?.session_recaps || [];
+                        const newRecap = {
+                            date: new Date().toISOString().split('T')[0],
+                            recap: object.session_recap,
+                        };
+                        const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 3);
+
+                        await userDoc.ref.set({
+                            identity: {
+                                ...identity,
+                                dossier: object.updated_dossier,
+                                dossier_updated_at: FieldValue.serverTimestamp(),
+                                session_count: sessionCount,
+                            },
+                            session_recaps: updatedRecaps,
+                        }, { merge: true });
+                        console.log(`[Cron] Dossier + recap updated for user ${uid} (session ${sessionCount})`);
+                    })().catch((err: any) => {
                         console.error(`[Cron] Dossier update failed for user ${uid}:`, err.message);
                     })
                     : Promise.resolve();

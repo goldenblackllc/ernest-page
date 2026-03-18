@@ -11,21 +11,13 @@ export interface CharacterIdentity {
     dossier: string;            // AI-maintained structured case notes
     dossier_updated_at?: any;   // Firestore Timestamp
     session_count: number;      // Number of check-in/mirror sessions
-    belief_patterns?: string;   // AI-maintained summary of recurring beliefs, excitement signals, and shifts
-    monthly_reviews?: Array<{   // Monthly character review letters from the Ideal Self
-        id: string;
-        month: string;
-        content: string;
-        read?: boolean;
-        created_at: any;
-    }>;
+
 }
 
 export interface CharacterBible {
     source_code: {
         archetype: string;
         manifesto: string;
-        core_beliefs: string;
         important_people: string;
         things_i_enjoy?: string; // Preferences & Aesthetics
     };
@@ -66,7 +58,11 @@ export interface CharacterProfile {
     default_post_routing?: 'public' | 'private'; // Default routing for new Mirror Chat sessions
     firewall_synced?: boolean; // Whether user has completed the Contact Firewall step
     proximity_anchor?: string; // Zip code or city for Proximity Blind Spot radius
-    last_thirty_day_checkin?: string; // ISO date of last 30-day check-in session
+    last_thirty_day_checkin?: string; // ISO date of last 28-day check-in session
+    session_recaps?: Array<{     // Rolling window of last 3 session recaps
+        date: string;            // ISO date string
+        recap: string;           // 2-3 sentence summary
+    }>;
     subscription?: {
         status: 'active' | 'canceled' | 'expired';
         plan: 'proving_ground' | 'long_game' | 'archangel';
@@ -91,6 +87,9 @@ export interface CharacterProfile {
     }>;
     refund_count?: number;          // Total lifetime refunds issued
     total_sessions_purchased?: number; // Total lifetime sessions purchased (for trust tier)
+    compile_count?: number;         // Character bible compiles used today
+    compile_count_date?: string;    // ISO date (YYYY-MM-DD) for rollover detection
+    last_compile_at?: number;       // Unix timestamp of last compile (for cooldown)
     daily_digest?: {
         title: string;
         content: string;

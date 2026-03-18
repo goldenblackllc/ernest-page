@@ -25,7 +25,6 @@ async function testSave() {
         source_code: {
             archetype: "TEST TITLE " + Date.now(),
             manifesto: "",
-            core_beliefs: "",
             important_people: "",
         },
         compiled_bible: {

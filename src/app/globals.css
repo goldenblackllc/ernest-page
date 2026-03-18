@@ -7,7 +7,7 @@
 
 @layer base {
   html {
-    @apply bg-zinc-950 scroll-smooth;
+    @apply bg-zinc-950 scroll-smooth overscroll-y-contain;
   }
 
   body {

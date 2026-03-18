@@ -11,14 +11,15 @@ import { Loader2 } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import { Timestamp } from "firebase/firestore";
 import { getFeedCache, setFeedCache } from "@/lib/feedCache";
 import { getUserLocation, storeUserLocation } from "@/lib/geolocation";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-const CHECKIN_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const CHECKIN_INTERVAL_MS = 28 * 24 * 60 * 60 * 1000; // 28 days
+const CHECKIN_WINDOW_MS = 35 * 24 * 60 * 60 * 1000; // 35 days (7-day window to act)
 
 export function Ledger() {
     const { user } = useAuth();
@@ -68,13 +69,14 @@ export function Ledger() {
     }, [user]);
 
     // Fetch feed (full refresh, no pagination)
+    const locale = useLocale();
     const fetchFeed = useCallback(async () => {
         if (!user) return;
 
         try {
             const idToken = await user.getIdToken();
 
-            const res = await fetch(`/api/posts/feed`, {
+            const res = await fetch(`/api/posts/feed?locale=${locale}`, {
                 headers: { 'Authorization': `Bearer ${idToken}` },
             });
 
@@ -102,12 +104,37 @@ export function Ledger() {
                 : newestPostTimeRef.current;
             newestPostTimeRef.current = newNewest;
             setFeedCache(posts, data.following || {}, newNewest);
+
+            // Auto-translate posts that don't have a cached translation yet
+            const needsTranslation: string[] = data.needsTranslation || [];
+            if (needsTranslation.length > 0) {
+                fetch('/api/posts/translate/batch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`,
+                    },
+                    body: JSON.stringify({ postIds: needsTranslation, targetLocale: locale }),
+                })
+                    .then(r => r.json())
+                    .then(result => {
+                        if (result.translations && Object.keys(result.translations).length > 0) {
+                            setEntries(prev => prev.map(p => {
+                                if (result.translations[p.id]) {
+                                    return { ...p, _translated: result.translations[p.id] };
+                                }
+                                return p;
+                            }));
+                        }
+                    })
+                    .catch(err => console.error('Batch translation failed:', err));
+            }
         } catch (error) {
             console.error("Failed to fetch feed:", error);
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, locale]);
 
 
     // Initial load
@@ -180,6 +207,16 @@ export function Ledger() {
 
         window.addEventListener('checkin-publishing-start', handleStart);
         return () => window.removeEventListener('checkin-publishing-start', handleStart);
+    }, []);
+
+    // Listen for pull-to-refresh trigger
+    useEffect(() => {
+        const handleRefresh = () => {
+            setLoading(true);
+        };
+
+        window.addEventListener('ledger-refresh', handleRefresh);
+        return () => window.removeEventListener('ledger-refresh', handleRefresh);
     }, []);
 
     // Monitor background check-in post
@@ -326,12 +363,13 @@ export function Ledger() {
                 </button>
             )}
 
-            {/* 30-Day Check-in Card */}
+            {/* 28-Day Check-in Card */}
             {(() => {
-                const anchor = profile?.last_thirty_day_checkin || profile?.subscription?.subscribedAt;
+                const anchor = profile?.last_thirty_day_checkin || profile?.subscription?.subscribedAt || (profile?.updatedAt?.toDate?.()?.toISOString?.()) || null;
                 if (!anchor) return null;
                 const elapsed = Date.now() - new Date(anchor).getTime();
                 if (elapsed < CHECKIN_INTERVAL_MS) return null;
+                if (elapsed > CHECKIN_WINDOW_MS) return null; // Auto-hide after 7-day window
                 return (
                     <CheckInCard
                         characterTitle={profile?.identity?.title || t('idealSelfDefault')}
