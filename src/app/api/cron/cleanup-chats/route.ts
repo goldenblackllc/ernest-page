@@ -396,8 +396,10 @@ async function generatePostImage(prompt: string, postId: string): Promise<string
 
                 await file.save(buffer, {
                     metadata: { contentType: 'image/jpeg' },
-                    public: true
                 });
+
+                // Try to make public; skip silently if Uniform Bucket-Level Access is on
+                try { await file.makePublic(); } catch { /* UBLA enabled — bucket-level rules apply */ }
 
                 return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
             }
