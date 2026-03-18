@@ -27,6 +27,7 @@ export async function GET(req: Request) {
         const url = new URL(req.url);
         const newerThan = url.searchParams.get("newer_than"); // ISO timestamp
         const newerThanDate = newerThan ? new Date(newerThan) : null;
+        const localeParam = url.searchParams.get("locale"); // e.g. "es"
 
         // 3. Fetch user profile
         const userDoc = await db.collection("users").doc(uid).get();
@@ -37,6 +38,8 @@ export async function GET(req: Request) {
         const myLat: number | undefined = userData.home_lat;
         const myLng: number | undefined = userData.home_lng;
         const hasMyCoords = myLat != null && myLng != null;
+        const preferredLocale = localeParam || userData.preferred_locale || "en";
+        const shouldTranslate = preferredLocale !== "en";
 
         // 4a. Fetch user's Contact Firewall blocked hashes
         const blockedSnap = await db.collection("users").doc(uid).collection("blocked_hashes").get();
@@ -179,7 +182,8 @@ export async function GET(req: Request) {
             }
         }
 
-        // 10. Sanitize
+        // 10. Sanitize & inline cached translations
+        const needsTranslation: string[] = [];
         const sanitized = page.map((post) => {
             const likedPosts: string[] = userData.liked_posts || [];
             const isLikedByMe = likedPosts.includes(post.id);
@@ -199,6 +203,18 @@ export async function GET(req: Request) {
                 delete clean.counsel;
             }
 
+            // Auto-translation: for non-owner posts when locale != en
+            if (shouldTranslate && !isOwner) {
+                if (clean.translations && clean.translations[preferredLocale]) {
+                    clean._translated = clean.translations[preferredLocale];
+                } else {
+                    needsTranslation.push(clean.id);
+                }
+            }
+
+            // Strip full translations map — only send the user's locale
+            delete clean.translations;
+
             // Strip authorHash — never expose to client
             delete clean.authorHash;
 
@@ -206,6 +222,9 @@ export async function GET(req: Request) {
             delete clean.lat;
             delete clean.lng;
             delete clean.geohash;
+
+            // Strip imagen_prompt — implementation detail, sponsor info is in sponsored_by/sponsored_link
+            delete clean.imagen_prompt;
 
             if (clean.created_at && clean.created_at._seconds !== undefined) {
                 clean.created_at = {
@@ -220,6 +239,7 @@ export async function GET(req: Request) {
         return Response.json({
             posts: sanitized,
             following: followingMap,
+            needsTranslation: shouldTranslate ? needsTranslation : [],
         });
     } catch (error: any) {
         console.error("Feed API Error:", error);

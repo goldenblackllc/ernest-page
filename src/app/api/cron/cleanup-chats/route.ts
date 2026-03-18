@@ -6,6 +6,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
 import { geohashForLocation } from 'geofire-common';
+import { matchSponsor } from '@/config/ecosystem';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -305,6 +306,9 @@ Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbi
 
                     const imagen_url = imageResult.status === 'fulfilled' ? imageResult.value : null;
 
+                    // Match sponsor from imagen prompt
+                    const sponsor = matchSponsor(object.post.imagen_prompt);
+
                     // Compute author hash for Contact Firewall filtering
                     let authorHash: string | null = null;
                     try {
@@ -343,6 +347,8 @@ Personal tastes ONLY: favorite music, movies, books, food, drinks, brands, hobbi
                         photo_scale: object.post.photo_scale,
                         language: object.post.language || null,
                         imagen_url: imagen_url,
+                        sponsored_by: sponsor?.name || null,
+                        sponsored_link: sponsor?.link || null,
                         // Geolocation for proximity filtering
                         ...geoFields,
                         // Legacy fallbacks for uninterrupted rendering

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Bell, CheckCircle2, Circle, Sparkles, Loader2 } from "lucide-react";
+import { X, Bell, CheckCircle2, Circle, Sparkles, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -21,6 +21,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
     const [pendingCompleteId, setPendingCompleteId] = useState<string | null>(null);
     const [unexpectedText, setUnexpectedText] = useState("");
     const [isSubmittingShift, setIsSubmittingShift] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const t = useTranslations('directivesMenu');
 
     // Close on escape key
@@ -119,6 +120,21 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
             console.error("Error uncompleting directive:", error);
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const deleteDirective = async (todoId: string) => {
+        if (!profile?.uid || isUpdating) return;
+        setDeletingId(todoId);
+        try {
+            const updatedTodos = activeTodos.filter(todo => todo.id !== todoId);
+            await updateDoc(doc(db, "users", profile.uid), {
+                active_todos: updatedTodos
+            });
+        } catch (error) {
+            console.error("Error deleting directive:", error);
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -225,12 +241,13 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                                 <button
                                     key={todo.id}
                                     onClick={() => handleTodoClick(todo.id, todo.completed)}
-                                    disabled={isUpdating}
+                                    disabled={isUpdating || deletingId === todo.id}
                                     className={cn(
                                         "w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all duration-200 group",
                                         todo.completed
                                             ? "bg-zinc-900/40 border-zinc-800/50"
-                                            : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-600"
+                                            : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-600",
+                                        deletingId === todo.id && "opacity-50"
                                     )}
                                 >
                                     <div className="mt-0.5 shrink-0">
@@ -241,10 +258,32 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                                         )}
                                     </div>
                                     <div className={cn(
-                                        "text-sm leading-snug",
+                                        "text-sm leading-snug flex-1 min-w-0",
                                         todo.completed ? "text-zinc-600 line-through" : "text-zinc-300"
                                     )}>
                                         {todo.task}
+                                    </div>
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteDirective(todo.id);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.stopPropagation();
+                                                deleteDirective(todo.id);
+                                            }
+                                        }}
+                                        className="mt-0.5 shrink-0 p-1 text-zinc-700 active:text-red-500 sm:hover:text-red-500 transition-colors rounded-md"
+                                        title={t('deleteDirective')}
+                                    >
+                                        {deletingId === todo.id ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        )}
                                     </div>
                                 </button>
                             ))}

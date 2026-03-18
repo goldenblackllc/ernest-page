@@ -13,7 +13,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
-import { Languages, Loader2 } from 'lucide-react';
+
 
 interface ConversationMessage {
     role: 'user' | 'assistant';
@@ -47,6 +47,8 @@ interface FeedPostProps {
         };
         imageUrl?: string;
         imagen_url?: string;
+        sponsored_by?: string;
+        sponsored_link?: string;
         region?: string;
         language?: string;
         created_at: Timestamp;
@@ -56,6 +58,7 @@ interface FeedPostProps {
         author_avatar_url?: string;
         comments?: number;
         translations?: Record<string, any>;
+        _translated?: Record<string, any>;
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
@@ -70,8 +73,15 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const t = useTranslations('feed');
     const locale = useLocale();
 
-    const [translatedData, setTranslatedData] = useState<any>(post.translations?.[locale] || null);
-    const [isTranslating, setIsTranslating] = useState(false);
+    const [translatedData, setTranslatedData] = useState<any>(post._translated || post.translations?.[locale] || null);
+
+
+    // Sync auto-translation when batch translate results arrive via prop change
+    useEffect(() => {
+        if (post._translated) {
+            setTranslatedData(post._translated);
+        }
+    }, [post._translated]);
 
     const { user } = useAuth();
 
@@ -213,36 +223,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         }
     };
 
-    const handleTranslate = async () => {
-        if (translatedData) {
-            setTranslatedData(null); // Toggle off
-            return;
-        }
 
-        if (!user || isTranslating) return;
-        setIsTranslating(true);
-        try {
-            const idToken = await user.getIdToken();
-            const res = await fetch('/api/posts/translate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({ postId: post.id, targetLocale: locale }),
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    setTranslatedData(data.translation);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to translate post:', err);
-        } finally {
-            setIsTranslating(false);
-        }
-    };
 
     // Reality Shift posts (must check BEFORE the letter/response null guard)
     if (post.post_type === 'reality_shift') {
@@ -258,12 +239,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 {/* ═══ Header — matching regular feed cards ═══ */}
                 <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 w-full">
                     <div className="shrink-0">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 overflow-hidden">
+                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
                             {post.author_avatar_url ? (
-                                <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                <User className="w-5 h-5 text-emerald-500" />
-                            )}
+                                <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            ) : null}
+                            <User className={`w-5 h-5 text-zinc-400 ${post.author_avatar_url ? 'hidden' : ''}`} style={post.author_avatar_url ? { position: 'absolute' } : undefined} />
                         </div>
                     </div>
                     <div className="flex flex-col flex-1 min-w-0">
@@ -351,15 +331,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
                             {totalLikes > 1 && <span className="text-xs font-medium">{totalLikes}</span>}
                         </button>
-                        
-                        <button
-                            onClick={handleTranslate}
-                            disabled={isTranslating}
-                            className={cn("flex items-center gap-1 transition-colors group", translatedData ? "text-blue-400" : "text-zinc-500 hover:text-white")}
-                            title={t('translatePost')}
-                        >
-                            {isTranslating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5" />}
-                        </button>
+
                     </div>
                     {user?.uid === post.uid && (
                         <button
@@ -390,12 +362,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             {/* Header */}
             <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 mb-2 w-full">
                 <div className="shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden relative">
                         {post.author_avatar_url ? (
-                            <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                            <User className="w-5 h-5 text-emerald-500" />
-                        )}
+                            <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : null}
+                        <User className={`w-5 h-5 text-zinc-400 ${post.author_avatar_url ? 'hidden' : ''}`} style={post.author_avatar_url ? { position: 'absolute' } : undefined} />
                     </div>
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
@@ -475,6 +446,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                                 className="w-full h-full object-cover transition-all duration-500"
                                             />
                                         </div>
+                                        {post.sponsored_by && (
+                                            <a
+                                                href={post.sponsored_link || '#'}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block text-[10px] text-zinc-500 uppercase tracking-widest mt-1.5 hover:text-zinc-400 transition-colors"
+                                            >
+                                                Sponsored by {post.sponsored_by}
+                                            </a>
+                                        )}
                                     </div>
                                 );
                             })()}
@@ -716,14 +697,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             </button>
                         )}
                         
-                        <button
-                            onClick={handleTranslate}
-                            disabled={isTranslating}
-                            className={cn("flex items-center gap-1 transition-colors group ml-2", translatedData ? "text-blue-400" : "text-zinc-400 hover:text-white")}
-                            title={t('translatePost')}
-                        >
-                            {isTranslating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5" />}
-                        </button>
+
                     </div>
 
                     {user?.uid === post.uid && (

@@ -141,7 +141,7 @@
   "dashboard": {
     "header": {
       "securityVault": "Coffre de sécurité",
-      "rolodex": "Rolodex",
+      "rolodex": "Abonnements",
       "giftSession": "Offrir une session",
       "billing": "Facturation et Sessions",
       "logOut": "Déconnexion",
@@ -424,13 +424,14 @@
     "markComplete": "Marquer comme Terminé",
     "cancel": "Annuler",
     "noDirectives": "Aucune Directive Active",
-    "footer": "Suivez l'enthousiasme avec intégrité"
+    "footer": "Suivez l'enthousiasme avec intégrité",
+    "deleteDirective": "Supprimer la directive"
   },
   "rolodexModal": {
-    "title": "Rolodex",
+    "title": "Abonnements",
     "emptyState": "Aucun auteur suivi pour l'instant.",
     "emptyStateSub": "Appuyez sur \"Suivre l'Auteur\" sur n'importe quelle publication pour ajouter quelqu'un ici.",
-    "remove": "Retirer du Rolodex",
+    "remove": "Ne plus suivre",
     "authorsFollowed": "{count} {count, plural, =1 {auteur suivi} other {auteurs suivis}}"
   },
   "lockedScreen": {
@@ -440,7 +441,7 @@
     "reportCompletion": "SIGNALER LA COMPLÉTION"
   },
   "followAuthorModal": {
-    "title": "Ajouter au Rolodex",
+    "title": "Suivre l'auteur",
     "description": "Attribuez un nom privé à cet auteur. Vous seul verrez ce nom à côté de ses futures publications dans votre flux.",
     "placeholder": "ex., 'Papa Stoïque de Boston' ou 'Sarah'",
     "errorEmpty": "Veuillez entrer un nom pour cet auteur.",
@@ -724,5 +725,17 @@
       "p1": "Les violations de cette politique peuvent entraîner : la suppression de contenu, la suspension temporaire, la résiliation permanente du compte ou le signalement aux autorités lorsque la loi l'exige (ex., menaces crédibles de violence ou exploitation d'enfants)."
     }
   },
-  "legalDisclaimer": "Ce document juridique a été traduit pour votre commodité. En cas de divergences, la version anglaise prévaut."
+  "legalDisclaimer": "Ce document juridique a été traduit pour votre commodité. En cas de divergences, la version anglaise prévaut.",
+  "pwa": {
+    "installBanner": {
+      "message": "Ajoutez Earnest Page à votre écran d'accueil pour une meilleure expérience.",
+      "install": "Installer",
+      "dismiss": "Fermer"
+    },
+    "pullToRefresh": {
+      "pull": "Tirez pour actualiser",
+      "release": "Relâchez pour actualiser",
+      "refreshing": "Actualisation…"
+    }
+  }
 }

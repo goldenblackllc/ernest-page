@@ -141,7 +141,7 @@
   "dashboard": {
     "header": {
       "securityVault": "Cofre de Segurança",
-      "rolodex": "Rolodex",
+      "rolodex": "Seguindo",
       "giftSession": "Presentear uma Sessão",
       "billing": "Cobrança e Sessões",
       "logOut": "Sair",
@@ -424,13 +424,14 @@
     "markComplete": "Marcar como Concluído",
     "cancel": "Cancelar",
     "noDirectives": "Sem Diretrizes Ativas",
-    "footer": "Siga a empolgação com integridade"
+    "footer": "Siga a empolgação com integridade",
+    "deleteDirective": "Excluir diretriz"
   },
   "rolodexModal": {
-    "title": "Rolodex",
+    "title": "Seguindo",
     "emptyState": "Nenhum autor seguido ainda.",
     "emptyStateSub": "Toque em \"Seguir Autor\" em qualquer publicação para adicionar alguém aqui.",
-    "remove": "Remover do Rolodex",
+    "remove": "Deixar de seguir",
     "authorsFollowed": "{count} {count, plural, =1 {autor seguido} other {autores seguidos}}"
   },
   "lockedScreen": {
@@ -440,7 +441,7 @@
     "reportCompletion": "REPORTAR CONCLUSÃO"
   },
   "followAuthorModal": {
-    "title": "Adicionar ao Rolodex",
+    "title": "Seguir Autor",
     "description": "Atribua um nome privado a este autor. Somente você verá este nome ao lado das publicações futuras dele no seu feed.",
     "placeholder": "ex., 'Pai Estoico de Boston' ou 'Sara'",
     "errorEmpty": "Por favor, insira um nome para este autor.",
@@ -724,5 +725,17 @@
       "p1": "Violações desta política podem resultar em: remoção de conteúdo, suspensão temporária, encerramento permanente da conta ou denúncia às autoridades quando legalmente exigido (ex., ameaças credíveis de violência ou exploração infantil)."
     }
   },
-  "legalDisclaimer": "Este documento legal foi traduzido para sua conveniência. Em caso de discrepâncias, a versão em inglês prevalece."
+  "legalDisclaimer": "Este documento legal foi traduzido para sua conveniência. Em caso de discrepâncias, a versão em inglês prevalece.",
+  "pwa": {
+    "installBanner": {
+      "message": "Adicione Earnest Page à sua tela inicial para uma melhor experiência.",
+      "install": "Instalar",
+      "dismiss": "Fechar"
+    },
+    "pullToRefresh": {
+      "pull": "Puxe para atualizar",
+      "release": "Solte para atualizar",
+      "refreshing": "Atualizando…"
+    }
+  }
 }

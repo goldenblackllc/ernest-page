@@ -141,7 +141,7 @@
   "dashboard": {
     "header": {
       "securityVault": "Security Vault",
-      "rolodex": "Rolodex",
+      "rolodex": "Following",
       "giftSession": "Gift a Session",
       "billing": "Billing & Sessions",
       "logOut": "Log Out",
@@ -424,13 +424,14 @@
     "markComplete": "Mark Complete",
     "cancel": "Cancel",
     "noDirectives": "No Active Directives",
-    "footer": "Follow excitement with integrity"
+    "footer": "Follow excitement with integrity",
+    "deleteDirective": "Delete directive"
   },
   "rolodexModal": {
-    "title": "Rolodex",
+    "title": "Following",
     "emptyState": "No followed authors yet.",
     "emptyStateSub": "Tap \"Follow Author\" on any post to add someone here.",
-    "remove": "Remove from Rolodex",
+    "remove": "Unfollow",
     "authorsFollowed": "{count} {count, plural, =1 {author} other {authors}} followed"
   },
   "lockedScreen": {
@@ -440,7 +441,7 @@
     "reportCompletion": "REPORT COMPLETION"
   },
   "followAuthorModal": {
-    "title": "Add to Rolodex",
+    "title": "Follow Author",
     "description": "Assign a private name to this author. Only you will see this name next to their future posts in your feed.",
     "placeholder": "e.g., 'Stoic Boston Dad' or 'Sarah'",
     "errorEmpty": "Please enter a name for this author.",
@@ -724,5 +725,17 @@
       "p1": "Violations of this policy may result in: content removal, temporary suspension, permanent account termination, or reporting to law enforcement when legally required (e.g., credible threats of violence or child exploitation)."
     }
   },
-  "legalDisclaimer": "This legal document is translated for your convenience. In case of any discrepancies, the English version prevails."
+  "legalDisclaimer": "This legal document is translated for your convenience. In case of any discrepancies, the English version prevails.",
+  "pwa": {
+    "installBanner": {
+      "message": "Add Earnest Page to your home screen for a better experience.",
+      "install": "Install",
+      "dismiss": "Dismiss"
+    },
+    "pullToRefresh": {
+      "pull": "Pull to refresh",
+      "release": "Release to refresh",
+      "refreshing": "Refreshing…"
+    }
+  }
 }

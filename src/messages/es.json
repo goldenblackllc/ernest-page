@@ -141,7 +141,7 @@
   "dashboard": {
     "header": {
       "securityVault": "Bóveda de Seguridad",
-      "rolodex": "Rolodex",
+      "rolodex": "Siguiendo",
       "giftSession": "Regalar una Sesión",
       "billing": "Facturación y Sesiones",
       "logOut": "Cerrar Sesión",
@@ -424,13 +424,14 @@
     "markComplete": "Marcar Completo",
     "cancel": "Cancelar",
     "noDirectives": "Sin Directivas Activas",
-    "footer": "Sigue la emoción con integridad"
+    "footer": "Sigue la emoción con integridad",
+    "deleteDirective": "Eliminar directiva"
   },
   "rolodexModal": {
-    "title": "Rolodex",
+    "title": "Siguiendo",
     "emptyState": "Aún no sigues a ningún autor.",
     "emptyStateSub": "Toca \"Seguir Autor\" en cualquier publicación para agregar a alguien aquí.",
-    "remove": "Eliminar del Rolodex",
+    "remove": "Dejar de seguir",
     "authorsFollowed": "{count} {count, plural, =1 {autor seguido} other {autores seguidos}}"
   },
   "lockedScreen": {
@@ -440,7 +441,7 @@
     "reportCompletion": "REPORTAR COMPLETADO"
   },
   "followAuthorModal": {
-    "title": "Agregar al Rolodex",
+    "title": "Seguir Autor",
     "description": "Asigna un nombre privado a este autor. Solo tú verás este nombre junto a sus futuras publicaciones en tu muro.",
     "placeholder": "ej., 'Papá Estoico de Boston' o 'Sara'",
     "errorEmpty": "Por favor, ingresa un nombre para este autor.",
@@ -724,5 +725,17 @@
       "p1": "Las violaciones de esta política pueden resultar en: eliminación de contenido, suspensión temporal, terminación permanente de la cuenta o reporte a las autoridades cuando sea legalmente requerido (ej., amenazas creíbles de violencia o explotación infantil)."
     }
   },
-  "legalDisclaimer": "Este documento legal ha sido traducido para tu conveniencia. En caso de discrepancias, prevalece la versión en inglés."
+  "legalDisclaimer": "Este documento legal ha sido traducido para tu conveniencia. En caso de discrepancias, prevalece la versión en inglés.",
+  "pwa": {
+    "installBanner": {
+      "message": "Agrega Earnest Page a tu pantalla de inicio para una mejor experiencia.",
+      "install": "Instalar",
+      "dismiss": "Cerrar"
+    },
+    "pullToRefresh": {
+      "pull": "Tira para actualizar",
+      "release": "Suelta para actualizar",
+      "refreshing": "Actualizando…"
+    }
+  }
 }
