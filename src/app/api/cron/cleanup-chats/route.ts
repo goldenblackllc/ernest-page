@@ -23,35 +23,42 @@ export async function GET(req: Request) {
         const timeoutMs = 15 * 60 * 1000; // 15 mins
         let processedCount = 0;
 
-        // ─── COLLECTION GROUP QUERIES: fetch only chats that need processing ───
-        const [expiredSnap, closedSnap] = await Promise.all([
-            db.collectionGroup('active_chats')
-                .where('updatedAt', '<=', now - timeoutMs)
-                .get(),
-            db.collectionGroup('active_chats')
-                .where('isClosed', '==', true)
-                .get(),
-        ]);
+        // ─── PER-USER SUBCOLLECTION QUERIES ───
+        // Iterate all users and check their active_chats subcollections directly,
+        // avoiding collection group queries that require special indexing.
+        const usersSnap = await db.collection('users').get();
 
-        // De-duplicate (a chat could be both expired AND closed)
-        const chatMap = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
-        for (const doc of expiredSnap.docs) chatMap.set(doc.ref.path, doc);
-        for (const doc of closedSnap.docs) chatMap.set(doc.ref.path, doc);
+        const chatsByUser = new Map<string, FirebaseFirestore.QueryDocumentSnapshot[]>();
 
-        const chatsToProcess = Array.from(chatMap.values());
+        // Fetch active_chats for all users in parallel batches
+        const USER_FETCH_BATCH = 10;
+        const userDocs = usersSnap.docs;
 
-        if (chatsToProcess.length === 0) {
-            return NextResponse.json({ success: true, processedCount: 0, note: 'No chats to process.' });
+        for (let i = 0; i < userDocs.length; i += USER_FETCH_BATCH) {
+            const userBatch = userDocs.slice(i, i + USER_FETCH_BATCH);
+            await Promise.all(userBatch.map(async (userDoc) => {
+                const uid = userDoc.id;
+                const chatsSnap = await db.collection('users').doc(uid)
+                    .collection('active_chats').get();
+
+                if (chatsSnap.empty) return;
+
+                // Filter for expired or closed chats
+                const relevantChats = chatsSnap.docs.filter(chatDoc => {
+                    const data = chatDoc.data();
+                    const isExpired = data.updatedAt && data.updatedAt <= (now - timeoutMs);
+                    const isClosed = data.isClosed === true;
+                    return isExpired || isClosed;
+                });
+
+                if (relevantChats.length > 0) {
+                    chatsByUser.set(uid, relevantChats);
+                }
+            }));
         }
 
-        // Group chats by user for efficient user data fetching
-        const chatsByUser = new Map<string, FirebaseFirestore.QueryDocumentSnapshot[]>();
-        for (const chatDoc of chatsToProcess) {
-            // ref.parent = active_chats collection, ref.parent.parent = user document
-            const uid = chatDoc.ref.parent.parent?.id;
-            if (!uid) continue;
-            if (!chatsByUser.has(uid)) chatsByUser.set(uid, []);
-            chatsByUser.get(uid)!.push(chatDoc);
+        if (chatsByUser.size === 0) {
+            return NextResponse.json({ success: true, processedCount: 0, note: 'No chats to process.' });
         }
 
         // Process users in parallel batches of 5
