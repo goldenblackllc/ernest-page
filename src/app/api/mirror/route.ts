@@ -50,15 +50,14 @@ export async function POST(req: Request) {
         const hasActiveSub = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
         const hasCredits = (userData?.session_credits || 0) > 0;
 
-        // If user has no sub and no remaining credits, check if they have an active session
-        // (consume-session already validated and decremented their credit)
+        // If user has no sub and no remaining credits, check if they consumed a session today.
+        // consume-session increments sessions_today when it grants access, so this proves
+        // the user already paid and was authorized for today.
         if (!hasActiveSub && !hasCredits) {
-            const activeSession = sessionId
-                ? await db.collection('users').doc(uid).collection('active_chats').doc(sessionId).get()
-                : null;
-            const hasActiveSession = activeSession?.exists ?? false;
+            const today = new Date().toISOString().split('T')[0];
+            const consumedToday = userData?.sessions_today_date === today && (userData?.sessions_today || 0) > 0;
 
-            if (!hasActiveSession) {
+            if (!consumedToday) {
                 return Response.json({ error: t('noActiveSub') }, { status: 403 });
             }
         }
