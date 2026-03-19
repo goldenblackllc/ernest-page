@@ -120,13 +120,29 @@ function SessionCheckoutForm({
         }
 
         if (paymentIntent?.status === 'succeeded') {
-            // Webhook will handle credit increment.
+            // Verify payment and credit account directly — don't rely on webhook timing
             try {
-                // Small delay to let webhook process
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                const idToken = await authUser?.getIdToken();
+                const confirmRes = await fetch('/api/confirm-purchase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                    },
+                    body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
+                });
+
+                if (!confirmRes.ok) {
+                    const confirmData = await confirmRes.json();
+                    onError(confirmData.error || 'Failed to confirm purchase.');
+                    setProcessing(false);
+                    return;
+                }
+
                 onSuccess(paymentIntent.id);
             } catch {
-                onSuccess(paymentIntent.id); // Still succeed — webhook will catch up
+                // Network error — proceed anyway, webhook will catch up
+                onSuccess(paymentIntent.id);
             }
         } else {
             onError('Payment was not completed.');

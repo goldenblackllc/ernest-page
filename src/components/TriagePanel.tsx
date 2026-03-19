@@ -111,25 +111,43 @@ export function TriagePanel() {
     };
 
     const handlePurchaseComplete = async () => {
-        // After purchase, consume a credit and open the chat
-        try {
-            const idToken = await user?.getIdToken();
-            const res = await fetch('/api/consume-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                },
-            });
-            const data = await res.json();
-            if (data.dailyLimit) {
-                setIsDailyCapHit(true);
-                setTimeout(() => setIsDailyCapHit(false), 5000);
-                return;
+        // Credits are now confirmed in Firestore by /api/confirm-purchase.
+        // Consume a credit and open the chat. Retry briefly if Firestore is still propagating.
+        const idToken = await user?.getIdToken();
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const res = await fetch('/api/consume-session', {
+                    method: 'POST',
+                    headers,
+                });
+                const data = await res.json();
+
+                if (data.dailyLimit) {
+                    setIsDailyCapHit(true);
+                    setTimeout(() => setIsDailyCapHit(false), 5000);
+                    return;
+                }
+
+                if (data.granted) {
+                    setIsMirrorOpen(true);
+                    return;
+                }
+
+                // Credits not visible yet — wait and retry
+                if (attempt < 2) {
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            } catch {
+                if (attempt < 2) {
+                    await new Promise(r => setTimeout(r, 1000));
+                }
             }
-        } catch {
-            // Proceed — Firestore listener will update credits
         }
+
+        // All retries exhausted — open anyway, mirror route will re-check
         setIsMirrorOpen(true);
     };
 
