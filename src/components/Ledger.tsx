@@ -24,6 +24,7 @@ const CHECKIN_WINDOW_MS = 35 * 24 * 60 * 60 * 1000; // 35 days (7-day window to 
 export function Ledger() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
+    const [profileLoaded, setProfileLoaded] = useState(false);
     const t = useTranslations('feed');
 
     // Restore from module-level cache so returning to this tab is instant
@@ -53,7 +54,10 @@ export function Ledger() {
     // Subscribe to user profile
     useEffect(() => {
         if (!user) return;
-        const unsub = subscribeToCharacterProfile(user.uid, (p) => setProfile(p));
+        const unsub = subscribeToCharacterProfile(user.uid, (p) => {
+            setProfile(p);
+            setProfileLoaded(true);
+        });
         return () => unsub();
     }, [user]);
 
@@ -311,7 +315,7 @@ export function Ledger() {
         );
     }
 
-    if (entries.length === 0 && !pendingPostId) {
+    if (entries.length === 0 && !pendingPostId && !showBibleCompiling && !showBibleReady && profileLoaded) {
         return (
             <div className="p-12 text-center border border-zinc-800 border-dashed rounded-xl bg-transparent">
                 <p className="text-sm text-zinc-500">{t('emptyFeed')}</p>
