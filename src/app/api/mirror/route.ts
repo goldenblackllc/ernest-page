@@ -45,13 +45,22 @@ export async function POST(req: Request) {
 
         const userData = userDoc.data();
 
-        // ─── Access enforcement (subscription OR session credits) ───
+        // ─── Access enforcement (subscription OR session credits OR active session) ───
         const sub = userData?.subscription;
         const hasActiveSub = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
         const hasCredits = (userData?.session_credits || 0) > 0;
 
+        // If user has no sub and no remaining credits, check if they have an active session
+        // (consume-session already validated and decremented their credit)
         if (!hasActiveSub && !hasCredits) {
-            return Response.json({ error: t('noActiveSub') }, { status: 403 });
+            const activeSession = sessionId
+                ? await db.collection('users').doc(uid).collection('active_chats').doc(sessionId).get()
+                : null;
+            const hasActiveSession = activeSession?.exists ?? false;
+
+            if (!hasActiveSession) {
+                return Response.json({ error: t('noActiveSub') }, { status: 403 });
+            }
         }
 
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
