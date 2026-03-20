@@ -381,7 +381,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-50 w-screen h-screen bg-zinc-950 flex flex-col"
+                    className="fixed inset-0 z-50 w-screen h-[100dvh] bg-zinc-950 flex flex-col"
                 >
                     {/* ═══ PINNED HEADER ═══ */}
                     <div className="flex items-center justify-between px-5 sm:px-8 py-4 border-b border-zinc-800/50 bg-zinc-950 z-10 shrink-0">
@@ -700,6 +700,11 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     onChange={handleInputChange}
                                     placeholder={isSessionLimited ? t('mirrorChat.placeholderEnded') : t('mirrorChat.placeholderDefault')}
                                     disabled={isSessionLimited}
+                                    onFocus={() => {
+                                        setTimeout(() => {
+                                            textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }, 300);
+                                    }}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {
                                             e.preventDefault();
