@@ -100,7 +100,10 @@ export default async function TermsPage() {
                         <h2 className="text-base font-bold text-white mb-3">{t('s7.title')}</h2>
                         <p className="mb-3">{t('s7.p1')}</p>
                         <p className="mb-3">
-                            <strong className="text-zinc-200">{t('s7.strong1')}</strong>{t('s7.p2')}
+                            <strong className="text-zinc-200">{t('s7.strong1')}</strong>{t('s7.p1b')}
+                        </p>
+                        <p className="mb-3">
+                            <strong className="text-zinc-200">{t('s7.strong1b')}</strong>{t('s7.p2')}
                         </p>
                         <p>
                             <strong className="text-zinc-200">{t('s7.strong2')}</strong>{t('s7.p3')}

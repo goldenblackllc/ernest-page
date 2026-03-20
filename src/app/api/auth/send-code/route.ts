@@ -18,17 +18,20 @@ export async function POST(req: Request) {
         const rl = checkRateLimit(`send-code-ip:${ip}`, SEND_CODE_LIMIT);
         if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
-        const { phone } = await req.json();
+        const { phone, channel } = await req.json();
 
         if (!phone) {
             return Response.json({ error: "Phone number is required." }, { status: 400 });
         }
 
+        // Support SMS (default) and WhatsApp OTP channels
+        const verifyChannel = channel === 'whatsapp' ? 'whatsapp' : 'sms';
+
         await client.verify.v2
             .services(VERIFY_SERVICE_SID)
-            .verifications.create({ to: phone, channel: "sms" });
+            .verifications.create({ to: phone, channel: verifyChannel });
 
-        return Response.json({ success: true });
+        return Response.json({ success: true, channel: verifyChannel });
     } catch (error: any) {
         console.error("Send Code Error:", error);
 
@@ -42,6 +45,13 @@ export async function POST(req: Request) {
         if (error.code === 60200) {
             return Response.json(
                 { error: "Invalid phone number." },
+                { status: 400 }
+            );
+        }
+        // Channel not configured (e.g. WhatsApp not enabled in Twilio)
+        if (error.code === 60205 || error.code === 60207) {
+            return Response.json(
+                { error: "This verification method is not available. Please try SMS." },
                 { status: 400 }
             );
         }

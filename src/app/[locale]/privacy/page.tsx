@@ -156,38 +156,87 @@ export default async function PrivacyPage() {
                             <li>{t('s6.l2')}</li>
                             <li>{t('s6.l3')}</li>
                             <li>{t('s6.l4')}</li>
+                            <li>{t('s6.l5')}</li>
+                            <li>{t('s6.l6')}</li>
                         </ul>
                     </section>
 
-                    {/* 7 */}
+                    {/* 7 — Lawful Basis (GDPR) */}
                     <section>
                         <h2 className="text-base font-bold text-white mb-3">{t('s7.title')}</h2>
-                        <p className="mb-3">{t('s7.p1')}</p>
-                        <ul className="list-disc list-inside space-y-1 text-zinc-500">
-                            <li><strong className="text-zinc-300">{t('s7.strong1')}</strong>{t('s7.l1')}</li>
-                            <li><strong className="text-zinc-300">{t('s7.strong2')}</strong>{t('s7.l2')}</li>
-                            <li><strong className="text-zinc-300">{t('s7.strong3')}</strong>{t('s7.l3')}</li>
-                            <li><strong className="text-zinc-300">{t('s7.strong4')}</strong>{t('s7.l4')}</li>
-                            <li><strong className="text-zinc-300">{t('s7.strong5')}</strong>{t('s7.l5')}</li>
+                        <p className="mb-4">{t('s7.p1')}</p>
+                        <div className="space-y-4 ml-1">
+                            <div>
+                                <h3 className="text-sm font-bold text-zinc-300 mb-1">{t('s7.t1')}</h3>
+                                <p className="text-zinc-500">{t('s7.b1')}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-zinc-300 mb-1">{t('s7.t2')}</h3>
+                                <p className="text-zinc-500">{t('s7.b2')}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-zinc-300 mb-1">{t('s7.t3')}</h3>
+                                <p className="text-zinc-500">{t('s7.b3')}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-zinc-300 mb-1">{t('s7.t4')}</h3>
+                                <p className="text-zinc-500">{t('s7.b4')}</p>
+                            </div>
+                        </div>
+                        <p className="mt-4 text-zinc-500">{t('s7.p2')}</p>
+                    </section>
+
+                    {/* 8 — International Data Transfers */}
+                    <section>
+                        <h2 className="text-base font-bold text-white mb-3">{t('s8.title')}</h2>
+                        <p className="mb-3">{t('s8.p1')}</p>
+                        <p className="mb-3">{t('s8.p2')}</p>
+                        <ul className="list-disc list-inside space-y-1 text-zinc-500 mb-3">
+                            <li>{t('s8.l1')}</li>
+                            <li>{t('s8.l2')}</li>
+                            <li>{t('s8.l3')}</li>
                         </ul>
+                        <p>{t('s8.p3')}</p>
+                    </section>
+
+                    {/* 9 — Your Rights (expanded) */}
+                    <section>
+                        <h2 className="text-base font-bold text-white mb-3">{t('s9.title')}</h2>
+                        <p className="mb-3">{t('s9.p1')}</p>
+
+                        <h3 className="text-sm font-bold text-zinc-300 mb-2 mt-4">{t('s9.t1')}</h3>
+                        <ul className="list-disc list-inside space-y-1 text-zinc-500">
+                            <li><strong className="text-zinc-300">{t('s9.strong1')}</strong>{t('s9.l1')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong2')}</strong>{t('s9.l2')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong3')}</strong>{t('s9.l3')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong4')}</strong>{t('s9.l4')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong5')}</strong>{t('s9.l5')}</li>
+                        </ul>
+
+                        <h3 className="text-sm font-bold text-zinc-300 mb-2 mt-4">{t('s9.t2')}</h3>
+                        <ul className="list-disc list-inside space-y-1 text-zinc-500">
+                            <li><strong className="text-zinc-300">{t('s9.strong6')}</strong>{t('s9.l6')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong7')}</strong>{t('s9.l7')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong8')}</strong>{t('s9.l8')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong9')}</strong>{t('s9.l9')}</li>
+                            <li><strong className="text-zinc-300">{t('s9.strong10')}</strong>{t('s9.l10')}</li>
+                        </ul>
+
+                        <h3 className="text-sm font-bold text-zinc-300 mb-2 mt-4">{t('s9.t3')}</h3>
+                        <ul className="list-disc list-inside space-y-1 text-zinc-500">
+                            <li>{t('s9.l11')}</li>
+                            <li>{t('s9.l12')}</li>
+                            <li>{t('s9.l13')}</li>
+                            <li>{t('s9.l14')}</li>
+                        </ul>
+
                         <p className="mt-3">
-                            {t('s7.p2')}
+                            {t('s9.p2')}
                             <a href="mailto:privacy@earnestpage.com" className="text-zinc-200 underline hover:text-white transition-colors">
                                 privacy@earnestpage.com
                             </a>.
                         </p>
-                    </section>
-
-                    {/* 8 */}
-                    <section>
-                        <h2 className="text-base font-bold text-white mb-3">{t('s8.title')}</h2>
-                        <p>{t('s8.p1')}</p>
-                    </section>
-
-                    {/* 9 */}
-                    <section>
-                        <h2 className="text-base font-bold text-white mb-3">{t('s9.title')}</h2>
-                        <p>{t('s9.p1')}</p>
+                        <p className="mt-2 text-zinc-500">{t('s9.p3')}</p>
                     </section>
 
                     {/* 10 */}
@@ -199,8 +248,36 @@ export default async function PrivacyPage() {
                     {/* 11 */}
                     <section>
                         <h2 className="text-base font-bold text-white mb-3">{t('s11.title')}</h2>
+                        <p>{t('s11.p1')}</p>
+                    </section>
+
+                    {/* 12 */}
+                    <section>
+                        <h2 className="text-base font-bold text-white mb-3">{t('s12.title')}</h2>
+                        <p>{t('s12.p1')}</p>
+                    </section>
+
+                    {/* 13 — Data Protection Contact */}
+                    <section>
+                        <h2 className="text-base font-bold text-white mb-3">{t('s13.title')}</h2>
+                        <p className="mb-2">{t('s13.p1')}</p>
+                        <div className="ml-4 text-zinc-500">
+                            <p className="text-zinc-300 font-medium">{t('s13.p2')}</p>
+                            <p>{t('s13.p3')}</p>
+                            <p>
+                                {t('s13.p4')}
+                                <a href="mailto:privacy@earnestpage.com" className="text-zinc-200 underline hover:text-white transition-colors">
+                                    privacy@earnestpage.com
+                                </a>
+                            </p>
+                        </div>
+                    </section>
+
+                    {/* 14 */}
+                    <section>
+                        <h2 className="text-base font-bold text-white mb-3">{t('s14.title')}</h2>
                         <p>
-                            {t('s11.p1')}
+                            {t('s14.p1')}
                             <a href="mailto:privacy@earnestpage.com" className="text-zinc-200 underline hover:text-white transition-colors">
                                 privacy@earnestpage.com
                             </a>.

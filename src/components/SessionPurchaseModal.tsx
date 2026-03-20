@@ -151,10 +151,10 @@ function SessionCheckoutForm({
     };
 
     const labels: Record<SessionTier, string> = {
-        session_single: 'Pay $20 — Start Session',
-        session_3pack: 'Pay $50 — Get 3 Sessions',
-        session_gift: 'Pay $20 — Send Gift',
-        archangel: 'Pay $499 — Go All-In',
+        session_single: 'Pay $20 USD — Start Session',
+        session_3pack: 'Pay $50 USD — Get 3 Sessions',
+        session_gift: 'Pay $20 USD — Send Gift',
+        archangel: 'Subscribe — $499/month',
     };
     const label = labels[tier];
 
@@ -196,7 +196,7 @@ function SessionCheckoutForm({
 
             <p className="text-[10px] text-zinc-600 text-center tracking-wide mt-3">
                 {tier === 'archangel'
-                    ? 'Secure payment via Stripe. 30-day unlimited access.'
+                    ? 'Secure payment via Stripe. $499/month. Cancel anytime.'
                     : 'Secure payment via Stripe. No subscription. Cancel anytime.'
                 }
             </p>
@@ -224,7 +224,10 @@ export function SessionPurchaseModal({ isOpen, onClose, onPurchased, defaultTier
         (async () => {
             try {
                 const idToken = await user.getIdToken();
-                const res = await fetch('/api/create-payment-intent', {
+                const apiUrl = selectedTier === 'archangel'
+                    ? '/api/create-archangel-subscription'
+                    : '/api/create-payment-intent';
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -307,7 +310,7 @@ export function SessionPurchaseModal({ isOpen, onClose, onPurchased, defaultTier
                                                     One full conversation. Up to 2 hours. 30 exchanges.
                                                 </p>
                                             </div>
-                                            <span className="text-xl font-black text-white">$20</span>
+                                            <span className="text-xl font-black text-white">$20 <span className="text-xs font-medium text-zinc-500">USD</span></span>
                                         </div>
                                     </button>
 
@@ -329,7 +332,7 @@ export function SessionPurchaseModal({ isOpen, onClose, onPurchased, defaultTier
                                                     Three sessions. Use anytime. They remember where you left off.
                                                 </p>
                                             </div>
-                                            <span className="text-xl font-black text-white">$50</span>
+                                            <span className="text-xl font-black text-white">$50 <span className="text-xs font-medium text-zinc-500">USD</span></span>
                                         </div>
                                     </button>
 
@@ -352,11 +355,11 @@ export function SessionPurchaseModal({ isOpen, onClose, onPurchased, defaultTier
                                                     <span className="text-sm font-bold text-white">The Archangel Program</span>
                                                 </div>
                                                 <p className="text-xs text-zinc-500">
-                                                    All sessions included for 30 days. Up to 5 per day. No per-session fees.
+                                                    All sessions included. Up to 5 per day. Cancel anytime.
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-xl font-black text-white">$499</span>
+                                                <span className="text-xl font-black text-white">$499 <span className="text-xs font-medium text-zinc-500">USD</span></span>
                                                 <p className="text-[10px] text-zinc-600">/month</p>
                                             </div>
                                         </div>
@@ -376,9 +379,9 @@ export function SessionPurchaseModal({ isOpen, onClose, onPurchased, defaultTier
                                             ← Change selection
                                         </button>
                                         <span className="text-sm font-bold text-white">
-                                            {selectedTier === 'session_single' ? '$20 — 1 Session'
-                                                : selectedTier === 'session_3pack' ? '$50 — 3 Sessions'
-                                                : '$499 — Unlimited (30 Days)'}
+                                            {selectedTier === 'session_single' ? '$20 USD — 1 Session'
+                                                : selectedTier === 'session_3pack' ? '$50 USD — 3 Sessions'
+                                                : '$499/month — Unlimited Sessions'}
                                         </span>
                                     </div>
 

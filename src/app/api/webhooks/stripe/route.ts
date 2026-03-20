@@ -47,7 +47,7 @@ export async function POST(req: Request) {
         return Response.json({ error: 'Invalid signature.' }, { status: 400 });
     }
 
-    // ─── Handle payment_intent.succeeded ────────────────────────
+    // ─── Handle payment_intent.succeeded (session purchases) ───
     if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const { uid, plan } = paymentIntent.metadata;
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
             return Response.json({ received: true });
         }
 
-        // ─── SUBSCRIPTION PURCHASE (legacy) ────────────────────
+        // ─── LEGACY SUBSCRIPTION PURCHASE (proving_ground, long_game) ──
         if (existing?.subscription?.paymentIntentId === paymentIntent.id) {
             return Response.json({ received: true, note: 'Already processed.' });
         }
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         const now = new Date();
         const expiry = new Date(now);
 
-        if (plan === 'proving_ground' || plan === 'archangel') {
+        if (plan === 'proving_ground') {
             expiry.setDate(expiry.getDate() + 30);
         } else {
             // long_game: 1 year
@@ -135,6 +135,109 @@ export async function POST(req: Request) {
         );
 
         console.log(`Webhook: Activated ${plan} for user ${uid}`);
+    }
+
+    // ─── Handle invoice.payment_succeeded (Archangel subscription renewals) ──
+    if (event.type === 'invoice.payment_succeeded') {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscriptionId = (invoice as any).subscription as string | null;
+
+        if (!subscriptionId) {
+            return Response.json({ received: true });
+        }
+
+        // Retrieve the subscription to get metadata and period info
+        const stripeSub = await stripe.subscriptions.retrieve(subscriptionId);
+        const uid = stripeSub.metadata?.uid;
+
+        if (!uid) {
+            console.warn('Webhook: invoice.payment_succeeded — subscription missing uid metadata, skipping.');
+            return Response.json({ received: true });
+        }
+
+        const currentPeriodEnd = new Date(stripeSub.items.data[0]?.current_period_end
+            ? stripeSub.items.data[0].current_period_end * 1000
+            : (stripeSub as any).current_period_end * 1000
+        ).toISOString();
+
+        // Idempotency: check if we already processed this invoice
+        const userDoc = await db.collection('users').doc(uid).get();
+        const existingSub = userDoc.data()?.subscription;
+        if (existingSub?.lastInvoiceId === invoice.id) {
+            return Response.json({ received: true, note: 'Already processed.' });
+        }
+
+        await db.collection('users').doc(uid).set(
+            {
+                subscription: {
+                    status: 'active',
+                    plan: 'archangel',
+                    stripeSubscriptionId: subscriptionId,
+                    stripeCustomerId: invoice.customer as string,
+                    subscribedAt: existingSub?.subscribedAt || new Date().toISOString(),
+                    currentPeriodEnd,
+                    cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+                    grantedBy: 'stripe',
+                    lastInvoiceId: invoice.id,
+                },
+            },
+            { merge: true }
+        );
+
+        console.log(`Webhook: Archangel renewal succeeded for user ${uid}, next period ends ${currentPeriodEnd}`);
+    }
+
+    // ─── Handle invoice.payment_failed (card declined on renewal) ──
+    if (event.type === 'invoice.payment_failed') {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscriptionId = (invoice as any).subscription as string | null;
+
+        if (!subscriptionId) {
+            return Response.json({ received: true });
+        }
+
+        const stripeSub = await stripe.subscriptions.retrieve(subscriptionId);
+        const uid = stripeSub.metadata?.uid;
+
+        if (!uid) {
+            console.warn('Webhook: invoice.payment_failed — subscription missing uid metadata, skipping.');
+            return Response.json({ received: true });
+        }
+
+        await db.collection('users').doc(uid).set(
+            {
+                subscription: {
+                    status: 'past_due',
+                    paymentFailedAt: new Date().toISOString(),
+                },
+            },
+            { merge: true }
+        );
+
+        console.log(`Webhook: Payment failed for user ${uid} on subscription ${subscriptionId}`);
+    }
+
+    // ─── Handle customer.subscription.deleted (subscription fully expired) ──
+    if (event.type === 'customer.subscription.deleted') {
+        const stripeSub = event.data.object as Stripe.Subscription;
+        const uid = stripeSub.metadata?.uid;
+
+        if (!uid) {
+            console.warn('Webhook: customer.subscription.deleted — missing uid metadata, skipping.');
+            return Response.json({ received: true });
+        }
+
+        await db.collection('users').doc(uid).set(
+            {
+                subscription: {
+                    status: 'expired',
+                    expiredAt: new Date().toISOString(),
+                },
+            },
+            { merge: true }
+        );
+
+        console.log(`Webhook: Subscription expired for user ${uid}`);
     }
 
     return Response.json({ received: true });

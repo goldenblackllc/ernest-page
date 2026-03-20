@@ -27,9 +27,10 @@ interface MirrorChatProps {
     initialContext?: string | null;
     defaultPostRouting?: 'public' | 'private';
     isUnlimited?: boolean; // Active subscription (e.g. Archangel) — skip session limits
+    onNeedsPurchase?: () => void; // Called when credit consumption fails (no credits left)
 }
 
-export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting, isUnlimited }: MirrorChatProps) {
+export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting, isUnlimited, onNeedsPurchase }: MirrorChatProps) {
     const { user: authUser } = useAuth();
     const t = useTranslations();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -45,6 +46,9 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
     const hasManuallySetRouting = useRef(false);
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
+
+    // Layer 2: Track whether a credit has been consumed for this session
+    const [creditConsumed, setCreditConsumed] = useState(false);
 
     // Session limits
     const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
@@ -112,6 +116,34 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                 content: initialContext,
             };
             const newMessages = [userMessage];
+
+            // Layer 2: Consume credit on first message (if not a subscriber)
+            if (!isUnlimited && !creditConsumed) {
+                try {
+                    const idToken = await authUser?.getIdToken();
+                    const res = await fetch('/api/consume-session', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                        },
+                    });
+                    const data = await res.json();
+
+                    if (!data.granted) {
+                        onNeedsPurchase?.();
+                        return;
+                    }
+                    setCreditConsumed(true);
+                    // Mark session as credit-consumed in Firestore
+                    if (sessionId) {
+                        saveActiveChat(uid, { creditConsumed: true }, sessionId).catch(() => {});
+                    }
+                } catch {
+                    // Network error — proceed, mirror route will re-check
+                }
+            }
+
             setMessages(newMessages);
             setIsLoading(true);
 
@@ -231,6 +263,36 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         };
 
         const newMessages = [...messages, userMessage];
+        const isFirstMessage = messages.length === 0;
+
+        // Layer 2: Consume credit on first message (if not a subscriber)
+        if (isFirstMessage && !isUnlimited && !creditConsumed) {
+            try {
+                const idToken = await authUser?.getIdToken();
+                const res = await fetch('/api/consume-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                    },
+                });
+                const data = await res.json();
+
+                if (!data.granted) {
+                    // No credits — send to purchase modal
+                    onNeedsPurchase?.();
+                    return;
+                }
+
+                setCreditConsumed(true);
+                // Mark session as credit-consumed in Firestore
+                if (sessionId) {
+                    saveActiveChat(uid, { creditConsumed: true }, sessionId).catch(() => {});
+                }
+            } catch {
+                // Network error — proceed, mirror route will re-check access
+            }
+        }
 
         // Optimistic update
         setMessages(newMessages);
@@ -338,6 +400,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
     };
 
     const handleClose = async () => {
+        const userMessageCount = messages.filter(m => m.role === 'user').length;
+
         if (sessionId) {
             if (sessionRouting === 'burn') {
                 // BURN PROTOCOL: Purge immediately — zero retention
@@ -355,6 +419,23 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                     autoPublish: sessionRouting === 'public', // Legacy compat
                 }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
             }
+
+            // Layer 3: Grace period auto-refund if 0 user messages and credit was consumed
+            if (userMessageCount === 0 && creditConsumed) {
+                try {
+                    const idToken = await authUser?.getIdToken();
+                    await fetch('/api/refund-credit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                        },
+                        body: JSON.stringify({ sessionId }),
+                    });
+                } catch (err) {
+                    console.error('Failed to refund credit:', err);
+                }
+            }
         }
 
         // Wipe local state
@@ -367,6 +448,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         setSessionRouting(defaultPostRouting === 'private' ? 'private' : 'public');
         hasManuallySetRouting.current = false;
         setPlanConfirmation(null);
+        setCreditConsumed(false);
 
         onClose();
     };

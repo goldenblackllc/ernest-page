@@ -109,10 +109,10 @@
       "giftCta": "Envoyer un cadeau",
       "archangelSubLabel": "Pour l'architecte de sa journée",
       "archangelTitle": "Le Programme Archange",
-      "archangelDesc": "Toutes les sessions incluses pendant 30 jours. Jusqu'à 5 par jour. Pas de frais par session, pas de comptage de crédits. Pour celui qui ne veut pas se demander si \"ça vaut encore 20 $\". Ça les vaut toujours.",
+      "archangelDesc": "Toutes les sessions incluses, chaque mois. Jusqu'à 5 par jour. Pas de frais par session, pas de comptage de crédits. Renouvellement mensuel automatique. Annulation à tout moment.",
       "archangelPrice": "499 $",
-      "archangelPeriod": "/ 30 jours",
-      "archangelCta": "S'inscrire maintenant"
+      "archangelPeriod": "/ mois",
+      "archangelCta": "S'abonner maintenant"
     },
     "auth": {
       "heading1": "Commencez dès maintenant.",

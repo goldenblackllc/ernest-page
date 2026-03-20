@@ -47,7 +47,9 @@ export async function POST(req: Request) {
 
         // ─── Access enforcement (subscription OR session credits OR active session) ───
         const sub = userData?.subscription;
-        const hasActiveSub = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
+        const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
+        const isActiveSub = (sub?.status === 'active' || sub?.status === 'past_due') && subEndDate && new Date(subEndDate) > new Date();
+        const hasActiveSub = isActiveSub;
         const hasCredits = (userData?.session_credits || 0) > 0;
 
         // If user has no sub and no remaining credits, check if they consumed a session today.

@@ -64,14 +64,20 @@ export interface CharacterProfile {
         recap: string;           // 2-3 sentence summary
     }>;
     subscription?: {
-        status: 'active' | 'canceled' | 'expired';
+        status: 'active' | 'canceled' | 'expired' | 'past_due';
         plan: 'proving_ground' | 'long_game' | 'archangel';
         subscribedAt: string;
-        subscribedUntil?: string;
-        paymentIntentId?: string;
+        subscribedUntil?: string;           // Legacy — proving_ground / long_game
+        currentPeriodEnd?: string;          // Archangel — Stripe-managed billing cycle end
+        cancelAtPeriodEnd?: boolean;        // User requested cancel but access continues
+        paymentIntentId?: string;           // Legacy — one-time payment
+        stripeSubscriptionId?: string;      // Archangel — Stripe Subscription ID
+        stripeCustomerId?: string;          // Archangel — Stripe Customer ID
         grantedBy?: 'admin' | 'stripe';
         canceledAt?: string;
         refunded?: boolean;
+        lastInvoiceId?: string;             // Idempotency — last processed invoice
+        paymentFailedAt?: string;           // When payment last failed
     };
     session_credits?: number; // Available chat sessions (default 0)
     sessions_today?: number;   // Sessions consumed today (resets daily)

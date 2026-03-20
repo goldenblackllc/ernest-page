@@ -53,6 +53,7 @@ import { routing } from '@/i18n/routing';
 import { LockedProvider } from "@/context/LockedContext";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { CookieConsent } from "@/components/CookieConsent";
 
 type Props = {
   children: React.ReactNode;
@@ -75,6 +76,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           <AuthProvider>
             <LockedProvider>
               {children}
+              <CookieConsent />
             </LockedProvider>
           </AuthProvider>
         </NextIntlClientProvider>

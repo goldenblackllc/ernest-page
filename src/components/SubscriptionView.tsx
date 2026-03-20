@@ -4,11 +4,109 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Loader2, CheckCircle, Zap, Clock, CreditCard, RotateCcw, Shield } from "lucide-react";
+import { Loader2, CheckCircle, Zap, Clock, CreditCard, RotateCcw, Shield, AlertTriangle } from "lucide-react";
 import { SessionPurchaseModal } from "./SessionPurchaseModal";
+import { loadStripe, Appearance } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const MAX_SESSIONS_PER_DAY = 5;
 
+// ─── Stripe (for update payment method) ────────────────────────────
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+    : null;
+
+const stripeAppearance: Appearance = {
+    theme: 'night',
+    variables: {
+        colorPrimary: '#ffffff',
+        colorBackground: '#0a0a0a',
+        colorText: '#ffffff',
+        colorDanger: '#ef4444',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        borderRadius: '12px',
+        spacingUnit: '4px',
+        fontSizeBase: '14px',
+        colorTextPlaceholder: '#52525b',
+    },
+    rules: {
+        '.Input': {
+            border: '1px solid #27272a',
+            backgroundColor: 'rgba(24, 24, 27, 0.8)',
+            boxShadow: 'none',
+        },
+        '.Input:focus': { border: '1px solid #52525b', boxShadow: 'none' },
+        '.Label': {
+            fontSize: '10px', fontWeight: '600',
+            textTransform: 'uppercase' as const, letterSpacing: '0.2em', color: '#52525b',
+        },
+    },
+};
+
+// ─── Update Card Form ──────────────────────────────────────────────
+function UpdateCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [processing, setProcessing] = useState(false);
+    const [ready, setReady] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!stripe || !elements) return;
+        setProcessing(true);
+        setError(null);
+
+        const { error: confirmError } = await stripe.confirmSetup({
+            elements,
+            confirmParams: { return_url: window.location.origin },
+            redirect: 'if_required',
+        });
+
+        if (confirmError) {
+            setError(confirmError.message || 'Failed to update payment method.');
+            setProcessing(false);
+        } else {
+            onSuccess();
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <PaymentElement
+                onReady={() => setReady(true)}
+                options={{
+                    layout: 'tabs',
+                    fields: { billingDetails: { email: 'never', phone: 'never' } },
+                    wallets: { applePay: 'never', googlePay: 'never' },
+                }}
+            />
+            {error && (
+                <div className="text-red-400 text-xs p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                    {error}
+                </div>
+            )}
+            <div className="flex gap-3">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-zinc-700 text-sm font-semibold text-zinc-400 hover:text-white transition-all"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    disabled={!stripe || !elements || processing || !ready}
+                    className="flex-1 rounded-xl bg-white text-black py-2.5 text-sm font-bold hover:bg-zinc-200 active:scale-[0.97] transition-all disabled:opacity-40"
+                >
+                    {processing ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Update Card'}
+                </button>
+            </div>
+        </form>
+    );
+}
+
+// ─── Types ─────────────────────────────────────────────────────────
 interface BillingRecord {
     id: string;
     amount: number;
@@ -19,6 +117,7 @@ interface BillingRecord {
     status: string;
 }
 
+// ─── Main Component ────────────────────────────────────────────────
 export function SubscriptionView() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
@@ -31,6 +130,9 @@ export function SubscriptionView() {
     const [refundResult, setRefundResult] = useState<{ id: string; message: string; success: boolean } | null>(null);
     const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
     const [billingLoading, setBillingLoading] = useState(true);
+    const [isResubscribing, setIsResubscribing] = useState(false);
+    const [showUpdateCard, setShowUpdateCard] = useState(false);
+    const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -64,11 +166,15 @@ export function SubscriptionView() {
     }, [user]);
 
     const sub = profile?.subscription;
-    const isActive = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
+    const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
+    const isActive = (sub?.status === 'active' || sub?.status === 'past_due') && subEndDate && new Date(subEndDate) > new Date();
+    const isPastDue = sub?.status === 'past_due';
+    const isCancelingAtEnd = sub?.cancelAtPeriodEnd && sub?.status === 'active';
+    const isArchangel = !!sub?.stripeSubscriptionId;
     const credits = profile?.session_credits || 0;
-    const purchases = profile?.session_purchases || [];
-    const expiresAt = sub?.subscribedUntil ? new Date(sub.subscribedUntil) : null;
+    const expiresAt = subEndDate ? new Date(subEndDate) : null;
     const refundCount = profile?.refund_count || 0;
+    const purchases = profile?.session_purchases || [];
     const totalPurchased = profile?.total_sessions_purchased || purchases.length;
 
     // Daily sessions
@@ -105,7 +211,6 @@ export function SubscriptionView() {
                 setRefundResult({ id: paymentIntentId, message: data.error, success: false });
             } else {
                 setRefundResult({ id: paymentIntentId, message: data.message, success: true });
-                // Mark as refunded in the list
                 setBillingHistory(prev => prev.map(r => r.id === paymentIntentId ? { ...r, status: 'refunded' } : r));
             }
         } catch (err: any) {
@@ -115,7 +220,6 @@ export function SubscriptionView() {
         }
     };
 
-    // Can this payment be refunded? (within 7 days)
     const canRefundRecord = (record: BillingRecord) => {
         const daysSince = Math.floor((Date.now() - new Date(record.date).getTime()) / (1000 * 60 * 60 * 24));
         return daysSince <= 7;
@@ -134,10 +238,14 @@ export function SubscriptionView() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Cancellation failed.');
             setShowConfirm(false);
-            setCancelStatus(data.refunded
-                ? 'Access terminated. Your payment has been returned.'
-                : 'Access terminated. Your enrollment continues until the end of your billing cycle.'
-            );
+            if (data.refunded) {
+                setCancelStatus('Access terminated. Your payment has been returned.');
+            } else if (isArchangel) {
+                const until = data.accessUntil ? new Date(data.accessUntil).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+                setCancelStatus(`Your subscription will not renew. You have access until ${until}.`);
+            } else {
+                setCancelStatus('Access terminated. Your enrollment continues until the end of your billing cycle.');
+            }
         } catch (err: any) {
             setCancelStatus(err.message || 'Something went wrong.');
         } finally {
@@ -145,17 +253,45 @@ export function SubscriptionView() {
         }
     };
 
+    const handleResubscribe = async () => {
+        if (!user) return;
+        setIsResubscribing(true);
+        try {
+            const token = await user.getIdToken();
+            const res = await fetch('/api/archangel/resubscribe', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Resubscribe failed.');
+            setCancelStatus(null);
+        } catch (err: any) {
+            setCancelStatus(err.message || 'Something went wrong.');
+        } finally {
+            setIsResubscribing(false);
+        }
+    };
+
+    const handleUpdateCard = async () => {
+        if (!user) return;
+        try {
+            const token = await user.getIdToken();
+            const res = await fetch('/api/update-payment-method', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to initialize.');
+            setSetupClientSecret(data.clientSecret);
+            setShowUpdateCard(true);
+        } catch (err: any) {
+            console.error('Update card error:', err);
+        }
+    };
+
     if (loading) {
         return <div className="h-64 w-full animate-pulse bg-zinc-900/50 rounded-xl" />;
     }
-
-    // Helper: can this purchase be refunded?
-    const canRefund = (purchase: any) => {
-        if (purchase.refunded) return false;
-        if (refundsAvailable <= 0) return false;
-        const daysSince = Math.floor((Date.now() - new Date(purchase.purchasedAt).getTime()) / (1000 * 60 * 60 * 24));
-        return daysSince <= 7;
-    };
 
     return (
         <div className="space-y-10 py-6">
@@ -169,6 +305,25 @@ export function SubscriptionView() {
                     Manage your session credits, view payment history, and request refunds.
                 </p>
             </div>
+
+            {/* ── PAYMENT FAILED BANNER ── */}
+            {isPastDue && (
+                <div className="bg-red-950/30 border border-red-900/50 rounded-xl p-5 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                        <p className="text-sm font-semibold text-red-400 mb-1">Payment Failed</p>
+                        <p className="text-xs text-red-400/70 leading-relaxed">
+                            Your last payment didn&apos;t go through. Update your card to keep your Archangel access.
+                        </p>
+                        <button
+                            onClick={handleUpdateCard}
+                            className="mt-3 rounded-full bg-red-500 text-white px-5 py-2 text-xs font-bold hover:bg-red-400 active:scale-[0.97] transition-all"
+                        >
+                            Update Payment Method
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ── SESSION CREDITS + DAILY USAGE ── */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
@@ -226,13 +381,73 @@ export function SubscriptionView() {
                             </p>
                         </div>
                     </div>
+
+                    {/* Billing info */}
                     {expiresAt && (
                         <p className="text-sm text-zinc-500">
-                            Unlimited sessions (up to {MAX_SESSIONS_PER_DAY}/day) until{' '}
-                            <span className="text-zinc-300">
-                                {expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                            </span>
+                            {isArchangel ? (
+                                isCancelingAtEnd ? (
+                                    <>
+                                        Access until{' '}
+                                        <span className="text-zinc-300">
+                                            {expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                        <span className="text-amber-500 ml-1">· Will not renew</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        Unlimited sessions (up to {MAX_SESSIONS_PER_DAY}/day) · Next billing{' '}
+                                        <span className="text-zinc-300">
+                                            {expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                    </>
+                                )
+                            ) : (
+                                <>
+                                    Unlimited sessions (up to {MAX_SESSIONS_PER_DAY}/day) until{' '}
+                                    <span className="text-zinc-300">
+                                        {expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                </>
+                            )}
                         </p>
+                    )}
+
+                    {/* Resubscribe button (for canceled-at-period-end) */}
+                    {isCancelingAtEnd && (
+                        <button
+                            onClick={handleResubscribe}
+                            disabled={isResubscribing}
+                            className="flex items-center gap-2 py-2.5 px-5 rounded-xl bg-white text-black text-sm font-bold hover:bg-zinc-200 active:scale-[0.97] transition-all disabled:opacity-40"
+                        >
+                            {isResubscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Keep My Subscription'}
+                        </button>
+                    )}
+
+                    {/* Update card button (for Archangel subscribers) */}
+                    {isArchangel && !isCancelingAtEnd && !showUpdateCard && (
+                        <button
+                            onClick={handleUpdateCard}
+                            className="text-xs text-zinc-500 hover:text-white transition-colors underline underline-offset-2"
+                        >
+                            Update payment method
+                        </button>
+                    )}
+
+                    {/* Inline update card form */}
+                    {showUpdateCard && setupClientSecret && (
+                        <div className="mt-4 bg-zinc-950 border border-zinc-800 rounded-xl p-5">
+                            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-4">Update Payment Method</p>
+                            <Elements
+                                stripe={stripePromise}
+                                options={{ clientSecret: setupClientSecret, appearance: stripeAppearance }}
+                            >
+                                <UpdateCardForm
+                                    onSuccess={() => { setShowUpdateCard(false); setSetupClientSecret(null); }}
+                                    onCancel={() => { setShowUpdateCard(false); setSetupClientSecret(null); }}
+                                />
+                            </Elements>
+                        </div>
                     )}
 
                     {cancelStatus && (
@@ -242,7 +457,7 @@ export function SubscriptionView() {
                         </div>
                     )}
 
-                    {!cancelStatus && (
+                    {!cancelStatus && !isCancelingAtEnd && (
                         <div className="pt-4 border-t border-zinc-800">
                             {!showConfirm ? (
                                 <button
@@ -254,7 +469,9 @@ export function SubscriptionView() {
                             ) : (
                                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-3">
                                     <p className="text-sm text-zinc-300 font-medium">
-                                        Cancel your plan?
+                                        {isArchangel
+                                            ? 'Cancel your subscription? You\'ll keep access until the end of your current billing period.'
+                                            : 'Cancel your plan?'}
                                     </p>
                                     <div className="flex gap-3">
                                         <button

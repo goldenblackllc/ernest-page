@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
+import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
+import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
 
-function normalizePhoneNumber(input: string): string {
+function normalizePhoneNumber(input: string, dialCode: string): string {
     const stripped = input.replace(/[\s\-\(\)\.]/g, '');
     if (stripped.startsWith('+')) return stripped;
-    return `+1${stripped}`;
+    return `${dialCode}${stripped}`;
 }
 
 export default function OTPLogin() {
@@ -17,6 +19,8 @@ export default function OTPLogin() {
     const [step, setStep] = useState<'INPUT_PHONE' | 'INPUT_CODE'>('INPUT_PHONE');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState(() => detectCountryFromTimezone());
+    const dialCode = getDialCodeForCountry(selectedCountry);
     const router = useRouter();
 
     const handleSendCode = async () => {
@@ -25,7 +29,7 @@ export default function OTPLogin() {
             setError("Please enter a phone number.");
             return;
         }
-        const normalized = normalizePhoneNumber(phoneNumber);
+        const normalized = normalizePhoneNumber(phoneNumber, dialCode);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/send-code', {
@@ -50,7 +54,7 @@ export default function OTPLogin() {
     const handleVerifyCode = async () => {
         setError(null);
         if (!verificationCode) return;
-        const normalized = normalizePhoneNumber(phoneNumber);
+        const normalized = normalizePhoneNumber(phoneNumber, dialCode);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/verify-code', {
@@ -79,13 +83,19 @@ export default function OTPLogin() {
             {step === 'INPUT_PHONE' && (
                 <>
                     <h1 className="text-2xl font-bold uppercase tracking-widest text-center">Login</h1>
-                    <input
-                        type="tel"
-                        placeholder="+1 555 555 5555"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400"
-                    />
+                    <div className="flex gap-2">
+                        <CountryCodeSelect
+                            value={selectedCountry}
+                            onChange={setSelectedCountry}
+                        />
+                        <input
+                            type="tel"
+                            placeholder="Phone number"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            className="flex-1 border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400"
+                        />
+                    </div>
                     <button
                         onClick={handleSendCode}
                         disabled={loading}
@@ -94,7 +104,7 @@ export default function OTPLogin() {
                         {loading ? 'Sending...' : 'Send Code'}
                     </button>
                     <p className="text-xs text-gray-400 text-center mt-2">
-                        Format: Country code + number (e.g., +15551234567)
+                        Select your country above and enter your phone number.
                     </p>
                 </>
             )}
@@ -112,7 +122,7 @@ export default function OTPLogin() {
                         placeholder="123456"
                         value={verificationCode}
                         onChange={(e) => setVerificationCode(e.target.value)}
-                        className="border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400 text-center tracking-widest w-full mt-6"
+                        className="border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400 placeholder:tracking-normal text-center tracking-widest w-full mt-6"
                         maxLength={6}
                         autoFocus
                     />

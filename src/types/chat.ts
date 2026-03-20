@@ -14,4 +14,6 @@ export interface ActiveChat {
     autoPublish?: boolean; // Whether to generate a public post from this conversation
     sessionRouting?: 'public' | 'private' | 'burn'; // Tri-state routing: public feed, private ledger, or burn on close
     burnOnClose?: boolean; // Safety flag — cron skips ALL processing and deletes immediately
+    creditConsumed?: boolean; // Whether a session credit was consumed for this session
+    creditRefunded?: boolean; // Whether the credit was auto-refunded (0-message close)
 }

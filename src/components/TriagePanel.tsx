@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from 'next-intl';
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
+import { getMostRecentActiveChat } from "@/lib/firebase/chat";
 import { CharacterBible } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
 import { SessionPurchaseModal } from "./SessionPurchaseModal";
@@ -46,8 +47,9 @@ export function TriagePanel() {
 
             // Check subscription
             const sub = data.subscription;
-            if (sub?.status === 'active' && sub?.subscribedUntil) {
-                setHasActiveSubscription(new Date(sub.subscribedUntil) > new Date());
+            if (sub && (sub.status === 'active' || sub.status === 'past_due')) {
+                const endDate = sub.currentPeriodEnd || sub.subscribedUntil;
+                setHasActiveSubscription(endDate ? new Date(endDate) > new Date() : false);
             } else {
                 setHasActiveSubscription(false);
             }
@@ -80,10 +82,21 @@ export function TriagePanel() {
             return;
         }
 
-        // Call consume-session for EVERYONE — it enforces daily cap + credit decrement
+        // Layer 1: Resume existing session without re-charging
+        try {
+            const existingSession = await getMostRecentActiveChat(user!.uid);
+            if (existingSession) {
+                setIsMirrorOpen(true);
+                return;
+            }
+        } catch {
+            // If lookup fails, continue with normal flow
+        }
+
+        // Layer 2: Check access without consuming credit (deferred to first message)
         try {
             const idToken = await user?.getIdToken();
-            const res = await fetch('/api/consume-session', {
+            const res = await fetch('/api/check-session-access', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -92,13 +105,13 @@ export function TriagePanel() {
             });
             const data = await res.json();
 
-            if (data.dailyLimit) {
+            if (data.reason === 'daily_limit') {
                 setIsDailyCapHit(true);
                 setTimeout(() => setIsDailyCapHit(false), 5000);
                 return;
             }
 
-            if (!data.granted) {
+            if (!data.canStart) {
                 setIsPurchaseOpen(true);
                 return;
             }
@@ -112,26 +125,26 @@ export function TriagePanel() {
 
     const handlePurchaseComplete = async () => {
         // Credits are now confirmed in Firestore by /api/confirm-purchase.
-        // Consume a credit and open the chat. Retry briefly if Firestore is still propagating.
+        // With deferred consumption, we just need to verify access and open the chat.
         const idToken = await user?.getIdToken();
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
 
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                const res = await fetch('/api/consume-session', {
+                const res = await fetch('/api/check-session-access', {
                     method: 'POST',
                     headers,
                 });
                 const data = await res.json();
 
-                if (data.dailyLimit) {
+                if (data.reason === 'daily_limit') {
                     setIsDailyCapHit(true);
                     setTimeout(() => setIsDailyCapHit(false), 5000);
                     return;
                 }
 
-                if (data.granted) {
+                if (data.canStart) {
                     setIsMirrorOpen(true);
                     return;
                 }
@@ -212,6 +225,7 @@ export function TriagePanel() {
                 initialContext={initialContext}
                 defaultPostRouting={defaultPostRouting}
                 isUnlimited={hasActiveSubscription}
+                onNeedsPurchase={() => { setIsMirrorOpen(false); setIsPurchaseOpen(true); }}
             />
 
             {/* Session Purchase Modal */}

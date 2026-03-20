@@ -109,10 +109,10 @@
       "giftCta": "Enviar un Regalo",
       "archangelSubLabel": "Para el arquitecto de su día",
       "archangelTitle": "El Programa Arcángel",
-      "archangelDesc": "Todas las sesiones incluidas por 30 días. Hasta 5 por día. Sin tarifas por sesión, sin contar créditos. Para la persona que no quiere pensar si \"vale otros $20\". Siempre lo vale.",
+      "archangelDesc": "Todas las sesiones incluidas, cada mes. Hasta 5 por día. Sin tarifas por sesión, sin contar créditos. Renovación mensual automática. Cancela en cualquier momento.",
       "archangelPrice": "$499",
-      "archangelPeriod": "/ 30 días",
-      "archangelCta": "Inscribirse Ahora"
+      "archangelPeriod": "/ mes",
+      "archangelCta": "Suscribirse Ahora"
     },
     "auth": {
       "heading1": "Empieza ahora mismo.",

@@ -522,11 +522,9 @@
     },
     "s7": {
       "title": "7. Payment & Subscription",
-      "p1": "Access to the Service is available through individual session purchases or a recurring monthly subscription (The Archangel Program). Payments are processed securely through Stripe. By purchasing sessions or subscribing, you authorize the applicable charge.",
-      "strong1": "Auto-Renewal.",
-      "p1b": " The Archangel Program is a recurring monthly subscription billed at $499/month. Your subscription will automatically renew each month until you cancel. You will be charged on the same date each month. By subscribing, you authorize recurring charges to your payment method.",
-      "strong1b": "Cancellation.",
-      "p2": " You may cancel your subscription at any time from the Billing & Sessions page in your profile. If you cancel within 7 days of your initial subscription date, your payment will be refunded in full and access will end immediately. After 7 days, your cancellation takes effect at the end of your current billing period — you retain access until then, and no further charges will be made.",
+      "p1": "Access to the Service requires a paid subscription. Payments are processed securely through Stripe. By subscribing, you authorize the applicable charge.",
+      "strong1": "Cancellation.",
+      "p2": " You may cancel your membership at any time from the Security & Routing panel in your profile. If you cancel within 7 days of your subscription date, your payment will be refunded in full. After 7 days, your access continues until the end of your paid period, and no refund is issued.",
       "strong2": "Expired Subscriptions.",
       "p3": " When your subscription period ends, you retain read-only access to your profile, dossier, and monthly reviews. The Mirror Chat and character editing features are disabled until you resubscribe."
     },
@@ -575,7 +573,7 @@
   "privacy": {
     "title": "Privacy Policy",
     "subtitle": "Privacy Policy for the Earnest Page platform.",
-    "lastUpdated": "Last updated: March 20, 2026",
+    "lastUpdated": "Last updated: March 11, 2026",
     "s1": {
       "title": "1. Introduction",
       "p1": "Golden Black LLC (“we,” “us,” or “our”) operates Earnest Page. This Privacy Policy describes how we collect, use, store, and protect your personal information when you use our platform. We are committed to transparency and to protecting your privacy."
@@ -646,87 +644,38 @@
       "l1": "Active chat sessions are deleted within 15 minutes of closing.",
       "l2": "“Burn on Close” sessions are purged immediately with no data retained.",
       "l3": "Published posts are retained until you delete them or delete your account.",
-      "l4": "Your dossier and character profile are retained for the duration of your account.",
-      "l5": "Payment records are retained for 7 years as required for tax and accounting compliance.",
-      "l6": "Upon account deletion, all personal data is permanently erased within 30 days, except where retention is required by law."
+      "l4": "Your dossier and character profile are retained for the duration of your account."
     },
     "s7": {
-      "title": "7. Lawful Basis for Processing (GDPR)",
-      "p1": "If you are located in the European Economic Area (EEA), the United Kingdom, or Switzerland, we process your personal data under the following lawful bases as defined by the General Data Protection Regulation (GDPR):",
-      "t1": "Contractual Necessity (Article 6(1)(b))",
-      "b1": "Processing your account data, managing subscriptions, delivering the Mirror Chat service, and generating your Character Bible — these are necessary to provide the service you signed up for.",
-      "t2": "Consent (Article 6(1)(a))",
-      "b2": "Publishing anonymous posts to the public feed (you control this via your routing settings), collecting location data for the Proximity Blind Spot feature (you can deny GPS access), and processing your conversations via third-party AI models.",
-      "t3": "Legitimate Interest (Article 6(1)(f))",
-      "b3": "Maintaining platform security, preventing fraud and abuse, improving the service, and generating aggregate analytics. We balance our interests against your rights and do not use your data for profiling, advertising, or sale to third parties.",
-      "t4": "Legal Obligation (Article 6(1)(c))",
-      "b4": "Retaining financial records as required by tax law, and responding to valid legal process.",
-      "p2": "You may withdraw consent at any time by adjusting your routing settings to Private, denying browser geolocation, or contacting us. Withdrawing consent does not affect the lawfulness of processing performed before the withdrawal."
-    },
-    "s8": {
-      "title": "8. International Data Transfers",
-      "p1": "Golden Black LLC is based in the United States. If you access Earnest Page from outside the United States, your personal data will be transferred to and processed in the United States, where data protection laws may differ from those in your jurisdiction.",
-      "p2": "For users in the EEA, UK, and Switzerland, we rely on the following safeguards for international data transfers:",
-      "l1": "Standard Contractual Clauses (SCCs) approved by the European Commission, incorporated into our agreements with sub-processors where applicable.",
-      "l2": "Our third-party service providers (Firebase/Google, Stripe, Anthropic, Twilio, Vercel) maintain their own data processing agreements and transfer mechanisms compliant with applicable regulations.",
-      "l3": "We implement supplementary technical measures including encryption in transit (TLS 1.2+), encryption at rest, and access controls to protect transferred data.",
-      "p3": "By using the Service, you acknowledge and consent to the transfer and processing of your data in the United States. You may request a copy of the safeguards we use by contacting us."
-    },
-    "s9": {
-      "title": "9. Your Rights",
-      "p1": "Depending on your jurisdiction, you may have the following rights regarding your personal data:",
-      "t1": "For All Users",
+      "title": "7. Your Rights",
+      "p1": "Depending on your jurisdiction, you may have the right to:",
       "strong1": "Access",
       "l1": " the personal data we hold about you",
       "strong2": "Delete",
-      "l2": " your account and all associated data (via Security & Routing in-app or by contacting us)",
+      "l2": " your account and all associated data",
       "strong3": "Export",
-      "l3": " your data in a portable, machine-readable format (via the data export feature in-app)",
+      "l3": " your data in a portable format",
       "strong4": "Opt out",
       "l4": " of public publishing by setting your default routing to Private",
       "strong5": "Restrict",
       "l5": " location data collection by denying browser geolocation",
-      "t2": "Additional Rights for EEA, UK, and Swiss Users (GDPR)",
-      "strong6": "Rectification",
-      "l6": " — request correction of inaccurate or incomplete personal data",
-      "strong7": "Restriction",
-      "l7": " — request that we limit the processing of your data in certain circumstances",
-      "strong8": "Object",
-      "l8": " — object to processing based on legitimate interests",
-      "strong9": "Withdraw consent",
-      "l9": " — where processing is based on consent, withdraw it at any time",
-      "strong10": "Lodge a complaint",
-      "l10": " — with your local Data Protection Authority if you believe your rights have been violated",
-      "t3": "Additional Rights for California Residents (CCPA)",
-      "l11": "Right to know what personal information we collect, use, and disclose",
-      "l12": "Right to delete your personal information",
-      "l13": "Right to opt out of the sale of personal information — we do not sell personal information",
-      "l14": "Right to non-discrimination for exercising your privacy rights",
-      "p2": "To exercise any of these rights, contact us at ",
-      "p3": "We will respond to all rights requests within 30 days (GDPR) or 45 days (CCPA)."
+      "p2": "To exercise any of these rights, contact us at "
     },
-    "s10": {
-      "title": "10. Children's Privacy",
-      "p1": "The Service is available to users aged 13 and older (or 16 in jurisdictions where GDPR requires it). We do not knowingly collect personal information from children under the applicable minimum age. If we learn that we have collected data from a child below the applicable age, we will promptly delete that information."
+    "s8": {
+      "title": "8. Children's Privacy",
+      "p1": "The Service is available to users aged 13 and older. We do not knowingly collect personal information from children under 13. If we learn that we have collected data from a child under 13, we will promptly delete that information."
     },
-    "s11": {
-      "title": "11. Security",
+    "s9": {
+      "title": "9. Security",
       "p1": "We employ industry-standard security measures including encrypted data transmission (TLS), cryptographic hashing (SHA-256) for sensitive identifiers, Firebase security rules, and Stripe's PCI-compliant payment infrastructure. However, no method of electronic storage or transmission is 100% secure."
     },
-    "s12": {
-      "title": "12. Changes to This Policy",
+    "s10": {
+      "title": "10. Changes to This Policy",
       "p1": "We may update this Privacy Policy from time to time. If we make material changes, we will provide notice through the Service. Continued use of the Service after changes constitutes acceptance of the updated policy."
     },
-    "s13": {
-      "title": "13. Data Protection Contact",
-      "p1": "For privacy-related questions, data protection inquiries, or to exercise your rights under GDPR, CCPA, or other applicable privacy laws, contact:",
-      "p2": "Golden Black LLC",
-      "p3": "Attn: Data Protection",
-      "p4": "Email: "
-    },
-    "s14": {
-      "title": "14. Contact",
-      "p1": "For general privacy questions, contact us at "
+    "s11": {
+      "title": "11. Contact",
+      "p1": "For privacy-related questions or requests, contact us at "
     }
   },
   "acceptableUse": {

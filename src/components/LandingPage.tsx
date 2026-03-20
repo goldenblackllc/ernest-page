@@ -10,55 +10,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
+import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
+import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
 
-// ─── Timezone → Dial Code Detection ────────────────────────────────
-function getDefaultDialCode(): string {
-    try {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-        const region = tz.split('/')[0];
-        const city = tz.split('/')[1] || '';
-
-        const tzToDialCode: Record<string, string> = {
-            'America': '+1', 'US': '+1',
-            'America/Mexico_City': '+52', 'America/Cancun': '+52', 'America/Tijuana': '+52',
-            'America/Sao_Paulo': '+55', 'America/Fortaleza': '+55', 'America/Manaus': '+55',
-            'America/Argentina': '+54', 'America/Buenos_Aires': '+54',
-            'America/Bogota': '+57', 'America/Lima': '+51', 'America/Santiago': '+56',
-            'Europe/London': '+44', 'Europe/Dublin': '+353',
-            'Europe/Berlin': '+49', 'Europe/Munich': '+49',
-            'Europe/Paris': '+33', 'Europe/Madrid': '+34', 'Europe/Rome': '+39',
-            'Europe/Amsterdam': '+31', 'Europe/Brussels': '+32',
-            'Europe/Stockholm': '+46', 'Europe/Oslo': '+47', 'Europe/Helsinki': '+358',
-            'Europe/Warsaw': '+48', 'Europe/Prague': '+420', 'Europe/Vienna': '+43',
-            'Europe/Zurich': '+41', 'Europe/Lisbon': '+351',
-            'Europe/Moscow': '+7', 'Europe/Kiev': '+380',
-            'Asia/Tokyo': '+81', 'Asia/Seoul': '+82',
-            'Asia/Shanghai': '+86', 'Asia/Hong_Kong': '+852', 'Asia/Taipei': '+886',
-            'Asia/Kolkata': '+91', 'Asia/Calcutta': '+91', 'Asia/Mumbai': '+91',
-            'Asia/Singapore': '+65', 'Asia/Bangkok': '+66',
-            'Asia/Dubai': '+971', 'Asia/Riyadh': '+966',
-            'Asia/Jakarta': '+62', 'Asia/Manila': '+63',
-            'Asia/Karachi': '+92', 'Asia/Dhaka': '+880',
-            'Australia/Sydney': '+61', 'Australia/Melbourne': '+61', 'Australia/Perth': '+61',
-            'Pacific/Auckland': '+64',
-            'Africa/Lagos': '+234', 'Africa/Johannesburg': '+27', 'Africa/Cairo': '+20',
-            'Africa/Nairobi': '+254', 'Africa/Casablanca': '+212',
-        };
-
-        if (tzToDialCode[tz]) return tzToDialCode[tz];
-        if (tzToDialCode[`${region}/${city}`]) return tzToDialCode[`${region}/${city}`];
-        if (tzToDialCode[region]) return tzToDialCode[region];
-
-        return '+1';
-    } catch {
-        return '+1';
-    }
-}
-
-function normalizePhoneNumber(input: string): string {
+// ─── Phone Number Normalization ────────────────────────────────────
+function normalizePhoneNumber(input: string, dialCode: string): string {
     const stripped = input.replace(/[\s\-\(\)\.]/g, '');
     if (stripped.startsWith('+')) return stripped;
-    return `${getDefaultDialCode()}${stripped}`;
+    return `${dialCode}${stripped}`;
 }
 
 // ─── Animation Variants ────────────────────────────────────────────
@@ -147,7 +106,8 @@ export function LandingPage() {
     const [step, setStep] = useState<'WELCOME' | 'INPUT_CODE'>('WELCOME');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [detectedDialCode] = useState(() => getDefaultDialCode());
+    const [selectedCountry, setSelectedCountry] = useState(() => detectCountryFromTimezone());
+    const detectedDialCode = getDialCodeForCountry(selectedCountry);
     const router = useRouter();
 
     const handleSendCode = async () => {
@@ -156,7 +116,7 @@ export function LandingPage() {
             setError(t('landing.auth.errorNoPhone'));
             return;
         }
-        const normalized = normalizePhoneNumber(phoneNumber);
+        const normalized = normalizePhoneNumber(phoneNumber, detectedDialCode);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/send-code', {
@@ -181,7 +141,7 @@ export function LandingPage() {
     const handleVerifyCode = async () => {
         setError(null);
         if (!verificationCode) return;
-        const normalized = normalizePhoneNumber(phoneNumber);
+        const normalized = normalizePhoneNumber(phoneNumber, detectedDialCode);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/verify-code', {
@@ -203,7 +163,7 @@ export function LandingPage() {
         }
     };
 
-    const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber) : '';
+    const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber, detectedDialCode) : '';
 
     const scrollToAuth = () => {
         document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -843,16 +803,17 @@ export function LandingPage() {
 
                     {step === 'WELCOME' && (
                         <div className="flex flex-col gap-3">
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-medium pointer-events-none select-none">
-                                    {detectedDialCode}
-                                </span>
+                            <div className="flex gap-2">
+                                <CountryCodeSelect
+                                    value={selectedCountry}
+                                    onChange={setSelectedCountry}
+                                />
                                 <input
                                     type="tel"
                                     placeholder={t('landing.auth.phonePlaceholder')}
                                     value={phoneNumber}
                                     onChange={(e) => setPhoneNumber(e.target.value)}
-                                    className="w-full bg-zinc-900/80 border border-white/10 pl-12 pr-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                    className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                 />
                             </div>
                             <button
@@ -871,7 +832,6 @@ export function LandingPage() {
                                 {t('landing.auth.and')}{' '}
                                 <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
                                     {t('landing.footer.privacy')}
-
                                 </Link>.
                             </p>
                         </div>

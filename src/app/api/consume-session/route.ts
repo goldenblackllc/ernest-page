@@ -35,9 +35,17 @@ export async function POST(req: Request) {
 
         // ─── SUBSCRIPTION CHECK (Archangel, Proving Ground, Long Game) ───
         const sub = data?.subscription;
-        const hasActiveSub = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
+        const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
+        const isActiveStatus = sub?.status === 'active' || sub?.status === 'past_due';
+        const hasActiveSub = isActiveStatus && subEndDate && new Date(subEndDate) > new Date();
 
-        if (hasActiveSub) {
+        // Allow 3-day grace period for past_due subscriptions beyond their period end
+        const isPastDueGrace = sub?.status === 'past_due' && subEndDate &&
+            (Date.now() - new Date(subEndDate).getTime()) < 3 * 24 * 60 * 60 * 1000;
+
+        const hasAccess = hasActiveSub || isPastDueGrace;
+
+        if (hasAccess) {
             // Increment daily counter but don't consume credits
             await db.collection('users').doc(uid).update({
                 sessions_today: sessionsToday + 1,
