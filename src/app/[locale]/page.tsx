@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { LandingPage } from "@/components/LandingPage";
 import { Onboarding } from "@/components/Onboarding";
-import { ContactFirewall } from "@/components/ContactFirewall";
+
 import { TriagePanel } from "@/components/TriagePanel";
 import { Ledger } from "@/components/Ledger";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -78,10 +78,6 @@ export default function Home() {
         return <Onboarding onComplete={() => setProfileLoaded(false)} />;
     }
 
-    // Authenticated + onboarded + no firewall → Contact Firewall
-    if (!profile?.firewall_synced) {
-        return <ContactFirewall onComplete={() => setProfileLoaded(false)} />;
-    }
 
     // Authenticated & onboarded & firewall done → Dashboard
     // No subscription gate — session credits are checked at the chat FAB level
