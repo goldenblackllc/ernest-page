@@ -141,6 +141,27 @@ export default function GiftPage() {
         setError(null);
         try {
             const token = await user.getIdToken();
+
+            // Try admin bypass first — server decides if caller qualifies
+            const adminRes = await fetch('/api/gift/create', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+            });
+
+            if (adminRes.ok) {
+                const adminData = await adminRes.json();
+                if (adminData.giftUrl) {
+                    setGiftUrl(adminData.giftUrl);
+                    setStep('done');
+                    return;
+                }
+            }
+
+            // Standard Stripe flow for non-admin users
             const res = await fetch('/api/create-payment-intent', {
                 method: 'POST',
                 headers: {
