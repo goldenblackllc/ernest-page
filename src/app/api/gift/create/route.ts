@@ -2,18 +2,51 @@ import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { nanoid } from 'nanoid';
 
+const ADMIN_UID = process.env.ADMIN_UID;
+
 /**
  * POST /api/gift/create
  * Called after a successful session_gift payment.
  * Generates a unique gift code and stores it in Firestore.
- * Body: { paymentIntentId: string }
+ * Body: { paymentIntentId?: string, count?: number }
+ *
+ * Admin bypass: if the authenticated user matches ADMIN_UID,
+ * paymentIntentId is optional and gifts are created for free.
+ * `count` (admin only) generates multiple gift codes at once (max 20).
  */
 export async function POST(req: Request) {
     try {
         const uid = await verifyAuth(req);
         if (!uid) return unauthorizedResponse();
 
-        const { paymentIntentId } = await req.json();
+        const body = await req.json();
+        const { paymentIntentId, count } = body;
+        const isAdmin = ADMIN_UID && uid === ADMIN_UID;
+
+        // ─── Admin batch creation ──────────────────────────────
+        if (isAdmin && !paymentIntentId) {
+            const batchSize = Math.min(Math.max(count || 1, 1), 20);
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://earnestpage.com';
+            const gifts: { giftCode: string; giftUrl: string }[] = [];
+
+            for (let i = 0; i < batchSize; i++) {
+                const giftCode = nanoid(12);
+                await db.collection('gifts').doc(giftCode).set({
+                    buyerUid: uid,
+                    paymentIntentId: 'admin_grant',
+                    recipientUid: null,
+                    redeemedAt: null,
+                    createdAt: new Date().toISOString(),
+                    status: 'pending',
+                });
+                gifts.push({ giftCode, giftUrl: `${baseUrl}/gift/${giftCode}` });
+            }
+
+            console.log(`Admin gift grant: ${batchSize} code(s) created by ${uid}`);
+            return Response.json(batchSize === 1 ? gifts[0] : { gifts });
+        }
+
+        // ─── Standard paid flow ────────────────────────────────
         if (!paymentIntentId) {
             return Response.json({ error: 'Payment intent ID is required.' }, { status: 400 });
         }
