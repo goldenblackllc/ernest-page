@@ -852,7 +852,7 @@ export function LandingPage() {
                                 placeholder={t('landing.auth.codePlaceholder')}
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                 maxLength={6}
                                 autoFocus
                             />
