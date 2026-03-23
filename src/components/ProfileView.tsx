@@ -13,7 +13,7 @@ import { DossierView } from "./DossierView";
 
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
-import { SecurityVault } from "./SecurityVault";
+
 import { useTranslations } from "next-intl";
 
 export function ProfileView() {
@@ -27,7 +27,7 @@ export function ProfileView() {
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
 
-    const [isVaultOpen, setIsVaultOpen] = useState(false);
+
     const t = useTranslations('profile');
 
     useEffect(() => {
@@ -44,20 +44,7 @@ export function ProfileView() {
         return () => unsubscribe();
     }, [user]);
 
-    // Listen for hash-based navigation (from hamburger menu)
-    useEffect(() => {
-        const handleHash = () => {
-            const hash = window.location.hash.replace('#', '');
-            if (hash === 'vault') {
-                setIsVaultOpen(true);
-                history.replaceState(null, '', window.location.pathname);
-            }
 
-        };
-        handleHash(); // Check on mount
-        window.addEventListener('hashchange', handleHash);
-        return () => window.removeEventListener('hashchange', handleHash);
-    }, [identity]);
 
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!bible && !identity) return null;
@@ -181,12 +168,6 @@ export function ProfileView() {
 
 
 
-            {/* Security Vault */}
-            <SecurityVault
-                isOpen={isVaultOpen}
-                onClose={() => setIsVaultOpen(false)}
-                profile={profile}
-            />
         </>
     );
 }

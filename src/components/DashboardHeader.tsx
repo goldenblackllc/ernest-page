@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl';
 import { DirectivesMenu } from "@/components/DirectivesMenu";
 import { RolodexModal } from "@/components/RolodexModal";
 import { SupportChat } from "@/components/SupportChat";
+import { SecurityVault } from "@/components/SecurityVault";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 
 export function DashboardHeader() {
@@ -22,6 +23,7 @@ export function DashboardHeader() {
     const [isDirectivesOpen, setIsDirectivesOpen] = useState(false);
     const [isRolodexOpen, setIsRolodexOpen] = useState(false);
     const [isSupportOpen, setIsSupportOpen] = useState(false);
+    const [isVaultOpen, setIsVaultOpen] = useState(false);
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const { user } = useAuth();
     const router = useRouter();
@@ -96,8 +98,7 @@ export function DashboardHeader() {
                                         <button
                                             onClick={() => {
                                                 setIsMenuOpen(false);
-                                                router.push('/profile');
-                                                setTimeout(() => { window.location.hash = 'vault'; }, 100);
+                                                setIsVaultOpen(true);
                                             }}
                                             className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                                         >
@@ -193,6 +194,12 @@ export function DashboardHeader() {
             <SupportChat
                 isOpen={isSupportOpen}
                 onClose={() => setIsSupportOpen(false)}
+            />
+
+            <SecurityVault
+                isOpen={isVaultOpen}
+                onClose={() => setIsVaultOpen(false)}
+                profile={profile}
             />
         </>
     );
