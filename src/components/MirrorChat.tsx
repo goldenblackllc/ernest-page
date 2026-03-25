@@ -117,8 +117,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
             };
             const newMessages = [userMessage];
 
-            // Layer 2: Consume credit on first message (if not a subscriber)
-            if (!isUnlimited && !creditConsumed) {
+            // Layer 2: Register session via consume-session (handles both credits and subscriber daily caps)
+            if (!creditConsumed) {
                 try {
                     const idToken = await authUser?.getIdToken();
                     const res = await fetch('/api/consume-session', {
@@ -135,9 +135,13 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                         return;
                     }
                     setCreditConsumed(true);
-                    // Mark session as credit-consumed in Firestore
+                    // Mark session as credit-consumed in Firestore, and persist routing preference
                     if (sessionId) {
-                        saveActiveChat(uid, { creditConsumed: true }, sessionId).catch(() => {});
+                        saveActiveChat(uid, {
+                            creditConsumed: true,
+                            sessionRouting,
+                            autoPublish: sessionRouting === 'public',
+                        }, sessionId).catch(() => {});
                     }
                 } catch {
                     // Network error — proceed, mirror route will re-check
@@ -265,8 +269,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         const newMessages = [...messages, userMessage];
         const isFirstMessage = messages.length === 0;
 
-        // Layer 2: Consume credit on first message (if not a subscriber)
-        if (isFirstMessage && !isUnlimited && !creditConsumed) {
+        // Layer 2: Register session via consume-session (handles both credits and subscriber daily caps)
+        if (isFirstMessage && !creditConsumed) {
             try {
                 const idToken = await authUser?.getIdToken();
                 const res = await fetch('/api/consume-session', {
@@ -285,9 +289,13 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                 }
 
                 setCreditConsumed(true);
-                // Mark session as credit-consumed in Firestore
+                // Mark session as credit-consumed in Firestore, and persist routing preference
                 if (sessionId) {
-                    saveActiveChat(uid, { creditConsumed: true }, sessionId).catch(() => {});
+                    saveActiveChat(uid, {
+                        creditConsumed: true,
+                        sessionRouting,
+                        autoPublish: sessionRouting === 'public',
+                    }, sessionId).catch(() => {});
                 }
             } catch {
                 // Network error — proceed, mirror route will re-check access
