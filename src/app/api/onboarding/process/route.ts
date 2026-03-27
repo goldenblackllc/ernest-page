@@ -183,20 +183,24 @@ export async function POST(req: Request) {
             things_i_enjoy: data.dossier.preferences,
         };
 
-        // Set status to 'compiling' so the feed can show the status card
-        await db.collection("users").doc(uid).set(
-            {
-                identity,
-                character_bible: {
-                    source_code: legacySourceCode,
-                    compiled_bible: {},
-                    compiled_output: { ideal: [] },
-                    last_updated: Date.now(),
-                    status: 'compiling',
-                },
+        // Set status to 'compiling' so the feed can show the status card.
+        // On first onboarding, also grant 1 free session credit.
+        const topLevelUpdate: Record<string, any> = {
+            identity,
+            character_bible: {
+                source_code: legacySourceCode,
+                compiled_bible: {},
+                compiled_output: { ideal: [] },
+                last_updated: Date.now(),
+                status: 'compiling',
             },
-            { merge: true }
-        );
+        };
+
+        if (!hasExistingDossier) {
+            topLevelUpdate.session_credits = 1;
+        }
+
+        await db.collection("users").doc(uid).set(topLevelUpdate, { merge: true });
 
         // Kick off bible + avatar generation in the background
         const origin = new URL(req.url).origin;
