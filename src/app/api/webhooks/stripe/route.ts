@@ -2,6 +2,8 @@ import Stripe from 'stripe';
 import { db, FieldValue } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
+export const maxDuration = 30;
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2026-02-25.clover',
 });
@@ -47,6 +49,7 @@ export async function POST(req: Request) {
         return Response.json({ error: 'Invalid signature.' }, { status: 400 });
     }
 
+    try {
     // ─── Handle payment_intent.succeeded (session purchases) ───
     if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
@@ -238,6 +241,13 @@ export async function POST(req: Request) {
         );
 
         console.log(`Webhook: Subscription expired for user ${uid}`);
+    }
+
+    } catch (err: any) {
+        console.error('Webhook: Unhandled error processing event:', event.type, err?.message || err);
+        // Still return 200 — we received the event, processing failed internally.
+        // Stripe should not retry for internal errors; monitor logs instead.
+        return Response.json({ received: true, warning: 'Processing error logged.' });
     }
 
     return Response.json({ received: true });

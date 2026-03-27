@@ -131,10 +131,11 @@ async function processUserChats(
         }
 
         const messages = chatData.messages || [];
-        // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback
+        // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback.
+        // Intentionally fail-safe: missing/undefined data defaults to private (not public).
         const isPublic = chatData.sessionRouting
             ? chatData.sessionRouting === 'public'
-            : chatData.autoPublish !== false;
+            : chatData.autoPublish === true;
 
         if (messages.length > 0) {
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
