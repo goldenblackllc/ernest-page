@@ -180,7 +180,24 @@
       "enjoymentsSub": "What excites you? The things that make you happy stay — your character should love what you love.",
       "enjoymentsPlaceholder": "Cooking for people, 90s hip-hop, horror movies, long drives with no plan, my morning coffee ritual, pickup basketball...",
       "skip": "Skip for now"
+    },
+    "preChat": {
+      "heading": "One thing before we begin.",
+      "subtext": "Your first session is free. We just need one detail to get started.",
+      "genderLabel": "Gender",
+      "genderPlaceholder": "Man, Woman, etc.",
+      "cta": "Start Your Free Session"
     }
+  },
+  "intake": {
+    "header": "Getting to know you",
+    "ofFive": "of 5",
+    "inputPlaceholder": "Type your answer...",
+    "compiling": "Preparing your session...",
+    "compilingSub": "This takes a moment. We're building something specific to you.",
+    "readyHeading": "You're all set.",
+    "readySub": "We've built someone based on the person you described — your ideal self. This is your free first session. Speak openly.",
+    "startSession": "Start Your First Session"
   },
   "vision": {
     "errorLogin": "You must be logged in to publish.",
@@ -214,6 +231,7 @@
     "consultingMirror": "Consulting The Mirror",
     "connectionSecured": "Connection secured.",
     "promptFriction": "\"Detail your current friction.\"",
+    "promptOnboarding": "Say hello — this is your free first session.",
     "extractingDirectives": "Extracting directives...",
     "extractDirectives": "Extract 24-Hour Directives",
     "directivesSaved": "✓ Directives saved",
@@ -265,6 +283,11 @@
     "bibleReadySub": "Tap to view your Ideal Self →",
     "writingPending": "Writing to Dear Earnest...",
     "emptyFeed": "No posts yet. Start a conversation to create your first post.",
+    "yourFirstSession": "Ready when you are",
+    "sessionsAvailable": "Sessions Available",
+    "sessionAvailable": "Session Available",
+    "firstSessionSub": "Start a conversation with your Ideal Self — speak freely.",
+    "startNow": "Start Now",
     "caughtUp": "You're all caught up.",
     "commentSaved": "Saved. Your character also left a note on another post ✨",
     "authorMe": "Me",

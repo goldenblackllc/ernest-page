@@ -11,7 +11,8 @@ export interface CharacterIdentity {
     dossier: string;            // AI-maintained structured case notes
     dossier_updated_at?: any;   // Firestore Timestamp
     session_count: number;      // Number of check-in/mirror sessions
-
+    onboarding_started?: boolean;  // Gender submitted, user can access dashboard
+    onboarding_complete?: boolean; // First session processed, character bible built
 }
 
 export interface CharacterBible {

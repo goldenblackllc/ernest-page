@@ -315,11 +315,76 @@ export function Ledger() {
         );
     }
 
-    if (entries.length === 0 && !pendingPostId && !showBibleCompiling && !showBibleReady && profileLoaded) {
-        return (
-            <div className="p-12 text-center border border-zinc-800 border-dashed rounded-xl bg-transparent">
-                <p className="text-sm text-zinc-500">{t('emptyFeed')}</p>
+    // Render feed or empty states
+    const isFeedEmpty = entries.length === 0 && !pendingPostId && !showBibleCompiling && profileLoaded;
+
+    if (isFeedEmpty) {
+        const sessionCredits = profile?.session_credits || 0;
+        const sub = profile?.subscription;
+        const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
+        const hasActiveSub = (sub?.status === 'active' || sub?.status === 'past_due') && subEndDate && new Date(subEndDate) > new Date();
+        const isNewUser = !profile?.identity?.session_count || profile.identity.session_count < 1;
+
+        let badgeText = t('yourFirstSession');
+        if (hasActiveSub) {
+            badgeText = t('sessionsAvailable');
+        } else if (sessionCredits > 0) {
+            badgeText = `${sessionCredits} ${sessionCredits === 1 ? t('sessionAvailable') : t('sessionsAvailable')}`;
+        } else if (!isNewUser) {
+            badgeText = t('yourFirstSession'); // Fallback for 0-credit returners with deleted feeds
+        }
+
+        const emptyStateContent = (
+            <div className="flex flex-col items-center justify-center text-center py-20 px-8">
+                <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4 font-bold">
+                    {badgeText}
+                </p>
+                <h2 className="text-2xl font-black tracking-tight text-white mb-3">
+                    {profile?.identity?.title || t('idealSelfDefault')}
+                </h2>
+                <p className="text-sm text-zinc-400 max-w-xs mx-auto leading-relaxed mb-8">
+                    {t('firstSessionSub')}
+                </p>
+                <button
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-mirror-chat'))}
+                    className="bg-white text-black text-sm font-bold px-8 py-3.5 rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
+                >
+                    {t('startNow')}
+                </button>
             </div>
+        );
+
+        return (
+            <section className="flex flex-col gap-6 pt-2">
+                {/* Bible ready card still renders at top if active */}
+                {showBibleReady && (
+                    <button
+                        onClick={() => {
+                            dismissBibleReady();
+                            window.location.href = '/profile';
+                        }}
+                        className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative text-left w-full hover:bg-zinc-800 transition-colors"
+                    >
+                        <div className="flex items-center gap-4 p-5">
+                            <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-white/20 overflow-hidden shrink-0">
+                                {profile?.character_bible?.compiled_output?.avatar_url ? (
+                                    <img src={profile.character_bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <Loader2 className="w-5 h-5 text-zinc-100 animate-spin" />
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white mb-0.5">{t('bibleReadyTitle')}</p>
+                                <p className="text-base font-bold text-white">{profile?.identity?.title || t('idealSelfDefault')}</p>
+                                <p className="text-xs text-zinc-500 mt-0.5">{t('bibleReadySub')}</p>
+                            </div>
+                        </div>
+                    </button>
+                )}
+                {emptyStateContent}
+            </section>
         );
     }
 
@@ -338,33 +403,6 @@ export function Ledger() {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {showBibleReady && (
-                <button
-                    onClick={() => {
-                        dismissBibleReady();
-                        window.location.href = '/profile';
-                    }}
-                    className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative text-left w-full hover:bg-zinc-800 transition-colors"
-                >
-                    <div className="flex items-center gap-4 p-5">
-                        <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-white/20 overflow-hidden shrink-0">
-                            {profile?.character_bible?.compiled_output?.avatar_url ? (
-                                <img src={profile.character_bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <Loader2 className="w-5 h-5 text-zinc-100 animate-spin" />
-                                </div>
-                            )}
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-white mb-0.5">{t('bibleReadyTitle')}</p>
-                            <p className="text-base font-bold text-white">{profile?.identity?.title || t('idealSelfDefault')}</p>
-                            <p className="text-xs text-zinc-500 mt-0.5">{t('bibleReadySub')}</p>
-                        </div>
-                    </div>
-                </button>
             )}
 
             {/* 28-Day Check-in Card */}

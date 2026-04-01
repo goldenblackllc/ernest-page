@@ -15,7 +15,7 @@ import { SessionPurchaseModal } from "./SessionPurchaseModal";
 
 const MAX_SESSIONS_PER_DAY = 5;
 
-export function TriagePanel() {
+export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
     const { user } = useAuth();
     const pathname = usePathname();
     const t = useTranslations();
@@ -33,6 +33,7 @@ export function TriagePanel() {
     const [sessionCredits, setSessionCredits] = useState<number>(0);
     const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
     const [sessionsToday, setSessionsToday] = useState<number>(0);
+    const [isOnboardingUser, setIsOnboardingUser] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -40,6 +41,9 @@ export function TriagePanel() {
             setBible(data.character_bible);
             setDefaultPostRouting(data.default_post_routing || 'public');
             setSessionCredits(data.session_credits || 0);
+            
+            const isLegacyComplete = !!data.identity?.title;
+            setIsOnboardingUser(!(data.identity?.onboarding_complete || isLegacyComplete));
 
             // Daily session count
             const today = new Date().toISOString().split('T')[0];
@@ -56,6 +60,22 @@ export function TriagePanel() {
         });
         return () => unsubscribe();
     }, [user]);
+
+    // Auto-open chat (from page.tsx after compile, or from Ledger first-session CTA)
+    const [hasAutoOpened, setHasAutoOpened] = useState(false);
+    useEffect(() => {
+        if (autoOpenChat && user && !hasAutoOpened) {
+            setHasAutoOpened(true);
+            setIsMirrorOpen(true);
+        }
+    }, [autoOpenChat, user, hasAutoOpened]);
+
+    // Listen for 'open-mirror-chat' custom event (e.g. from Ledger first-session card)
+    useEffect(() => {
+        const handleOpen = () => setIsMirrorOpen(true);
+        window.addEventListener('open-mirror-chat', handleOpen);
+        return () => window.removeEventListener('open-mirror-chat', handleOpen);
+    }, []);
 
     // Listen for 30-day check-in card tap
     useEffect(() => {
@@ -74,10 +94,10 @@ export function TriagePanel() {
     const dailyRemaining = MAX_SESSIONS_PER_DAY - sessionsToday;
 
     const attemptStartSession = async () => {
-        if (bible?.status === 'compiling') return;
+        if (!isOnboardingUser && bible?.status === 'compiling') return;
 
-        // No credits and no subscription → purchase modal
-        if (!canChat) {
+        // Onboarding users get free access — skip canChat gate
+        if (!isOnboardingUser && !canChat) {
             setIsPurchaseOpen(true);
             return;
         }
@@ -190,17 +210,17 @@ export function TriagePanel() {
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
                 <button
                     onClick={attemptStartSession}
-                    disabled={bible?.status === 'compiling'}
+                    disabled={!isOnboardingUser && bible?.status === 'compiling'}
                     className={cn(
                         "w-16 h-16 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black",
-                        bible?.status === 'compiling'
+                        !isOnboardingUser && bible?.status === 'compiling'
                             ? "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
                             : "bg-white text-black hover:scale-110 active:scale-95"
                     )}
                     title={
-                        bible?.status === 'compiling'
+                        !isOnboardingUser && bible?.status === 'compiling'
                             ? t('triagePanel.buildingCharacter')
-                            : canChat ? t('triagePanel.openChat') : t('triagePanel.purchaseSession')
+                            : canChat || isOnboardingUser ? t('triagePanel.openChat') : t('triagePanel.purchaseSession')
                     }
                 >
                     <MessageCircle className={cn("w-7 h-7", bible?.status === 'compiling' && "animate-pulse")} />
@@ -226,6 +246,7 @@ export function TriagePanel() {
                 defaultPostRouting={defaultPostRouting}
                 isUnlimited={hasActiveSubscription}
                 onNeedsPurchase={() => { setIsMirrorOpen(false); setIsPurchaseOpen(true); }}
+                isOnboarding={isOnboardingUser}
             />
 
             {/* Session Purchase Modal */}
