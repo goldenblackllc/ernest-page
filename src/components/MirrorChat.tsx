@@ -28,10 +28,9 @@ interface MirrorChatProps {
     defaultPostRouting?: 'public' | 'private';
     isUnlimited?: boolean; // Active subscription (e.g. Archangel) — skip session limits
     onNeedsPurchase?: () => void; // Called when credit consumption fails (no credits left)
-    isOnboarding?: boolean; // First session — free, no routing, welcoming empty state
 }
 
-export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting, isUnlimited, onNeedsPurchase, isOnboarding }: MirrorChatProps) {
+export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaultPostRouting, isUnlimited, onNeedsPurchase }: MirrorChatProps) {
     const { user: authUser } = useAuth();
     const t = useTranslations();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -271,7 +270,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
         const isFirstMessage = messages.length === 0;
 
         // Layer 2: Register session via consume-session (handles both credits and subscriber daily caps)
-        if (isFirstMessage && !creditConsumed && !isOnboarding) {
+        if (isFirstMessage && !creditConsumed) {
             try {
                 const idToken = await authUser?.getIdToken();
                 const res = await fetch('/api/consume-session', {
@@ -578,7 +577,7 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     <div>
                                         <p className="text-zinc-400 mb-2">{t('mirrorChat.connectionSecured')}</p>
                                         <p className="text-sm font-medium text-zinc-300 max-w-xs mx-auto">
-                                            {isOnboarding ? t('mirrorChat.promptOnboarding') : t('mirrorChat.promptFriction')}
+                                            {t('mirrorChat.promptFriction')}
                                         </p>
                                     </div>
                                 </div>
@@ -701,7 +700,6 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                             </AnimatePresence>
 
                             {/* ═══ SESSION ROUTING BAR ═══ */}
-                            {!isOnboarding && (
                             <>
                             <div className="flex items-center gap-3 mb-3 flex-wrap">
                                 <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-600 shrink-0">
@@ -761,7 +759,6 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                 )}
                             </AnimatePresence>
                             </>
-                            )}
 
                             {/* Session limit reached */}
                             {isSessionLimited && (

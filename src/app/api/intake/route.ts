@@ -35,9 +35,9 @@ QUESTION 4 — AGE:
 Ask their age or birth year simply and directly. Do not ask where they were born:
 "How old are you, or what year were you born?"
 
-QUESTION 5 — BACKGROUND (OPTIONAL):
-Ask about their ethnicity or cultural background so the character is visually accurate. Frame it as optional and give clear examples:
-"Last one, and totally optional — what's your ethnicity or cultural background? Like: 'Black American', 'Latino', 'South Asian', 'White', 'Mixed — Filipino and Irish'. We use this so your character actually looks like you. Skip it if you'd rather not say."
+QUESTION 5 — PERMANENT PHYSICAL TRAITS (OPTIONAL):
+Ask about any permanent physical traits so the character is visually accurate. Frame it as optional and give clear examples:
+"Last one, and totally optional — any permanent physical traits? Ethnicity, tattoos, piercings, scars — anything that can't easily change. Like: 'Black American, sleeve tattoo on left arm, nose piercing.' This helps your character actually look like you. Skip it if you'd rather not say."
 
 [OPENING MESSAGE]
 When the conversation starts (the user says "start"), respond with a short welcome and your first question. Keep it to 2 sentences max. Something like:
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
             result = await generateTextWithFallback({
                 primaryModelId: SONNET_MODEL,
                 fallbackModelId: SONNET_FALLBACK,
-                system: INTAKE_SYSTEM_PROMPT,
+                system: INTAKE_SYSTEM_PROMPT + `\n\n[CURRENT DATE]\nToday's date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}. Use this when calculating age from birth dates or birth years.`,
                 messages: cleanMessages,
                 abortSignal: AbortSignal.timeout(30000),
             });

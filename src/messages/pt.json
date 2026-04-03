@@ -17,13 +17,13 @@
       "login": "Entrar"
     },
     "hero": {
-      "tagline": "Sem assinatura. Sem compromisso. Apenas uma conversa.",
+      "tagline": "Sua primeira sessão é grátis. Sem assinatura. Sem compromisso.",
       "headline1": "Você conhece aquela coisa",
       "headline2": "que você continua pensando",
       "headline3": "às 2 da manhã?",
-      "subtext": "Fale com alguém que não vai te julgar, não vai esquecer o que você disse há dez minutos e não vai te cobrar $200.",
-      "price": "$20. Comece agora mesmo.",
-      "cta": "Iniciar uma Sessão",
+      "subtext": "Fale com alguém que não vai te julgar, não vai esquecer o que você disse da última vez e não vai te cobrar $200 — um Eu Ideal construído com psicologia real e adaptado à sua vida.",
+      "price": "Grátis para começar. $20 por sessão depois.",
+      "cta": "Comece Sua Sessão Grátis",
       "giftCta": "Presentear uma Sessão"
     },
     "entryPoints": {
@@ -48,6 +48,7 @@
       "body1": "Chatbots validam você. Terapeutas analisam você. Nenhum deles sentará na sua frente, olhará para a bagunça da sua vida e te dirá aquilo que você já sabe, mas não conseguiu dizer em voz alta.",
       "body2": "Esta é uma conversa com alguém que vê o padrão que você não consegue ver de dentro.",
       "body3": "Você escolhe alguém que admira — um arquétipo construído a partir de psicologia real, filosofia real e experiência de vida real. Eles não te dizem o que fazer. Eles te ajudam a ver com clareza suficiente para saber por si mesmo.",
+      "aiEndorsement": "Eu sou uma IA. Devo dizer isso logo de cara. Mas não fui construída para te validar, concordar contigo ou te fazer sentir bem. Fui construída com psicologia real, filosofia real e os detalhes reais da sua vida — para dizer o que ninguém mais vai te dizer na cara. Nenhuma outra IA faz isso. A maioria das pessoas também não.",
       "toggleShow": "Veja como isso se compara",
       "toggleHide": "Ocultar comparação",
       "compCost": "Custo",
@@ -112,7 +113,8 @@
       "archangelDesc": "Todas as sessões incluídas, todos os meses. Até 5 por dia. Sem taxas por sessão, sem contagem de créditos. Renovação mensal automática. Cancele a qualquer momento.",
       "archangelPrice": "$499",
       "archangelPeriod": "/ mês",
-      "archangelCta": "Assinar Agora"
+      "archangelCta": "Assinar Agora",
+      "freeNote": "Sua primeira sessão é por nossa conta. Sem cartão necessário."
     },
     "auth": {
       "heading1": "Comece agora mesmo.",

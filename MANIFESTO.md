@@ -7,7 +7,7 @@
 *   **The Ethical North Star:** Our metric for success is NOT "Time on App," but "User Empowerment." We win when the user feels happier, stronger, and more capable *offline*.
 
 ## 2. The Philosophical Engine: Reality Rules
-The AI does not improvise a worldview. It operates within a strict set of 16 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat, Ghost-Writing, Monthly Reviews, and Plan Generation.
+The AI does not improvise a worldview. It operates within a strict set of 16 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat, Ghost-Writing, and Plan Generation.
 
 **Key principles:**
 *   All feelings come from beliefs, never from external circumstances. The world provides circumstances; the character provides the meaning.
@@ -19,7 +19,7 @@ The AI does not improvise a worldview. It operates within a strict set of 16 "Un
 
 **Core Characteristics (every character has these):** Free, secure, powerful, enjoys being alive, unconditionally loved, creates their reality, abundant.
 
-**Master Belief System:** A curated library of 20 belief pairs (negative/positive) used for belief pattern tracking. Categories: Identity ("I am powerless" → "I am in complete control") and Reality ("Life is hard" → "I really enjoy being alive"). These map to the user's emotional patterns and are referenced in dossier updates and monthly reviews.
+**Master Belief System:** A curated library of 20 belief pairs (negative/positive) used for belief pattern tracking. Categories: Identity ("I am powerless" → "I am in complete control") and Reality ("Life is hard" → "I really enjoy being alive"). These map to the user's emotional patterns and are referenced in dossier updates.
 
 The Reality Rules and beliefs live in `src/lib/constants/realityRules.ts` and `src/lib/constants/beliefs.ts`.
 
@@ -67,6 +67,7 @@ The conversational AI interface. Users talk to a simulation of their "Ideal Self
     *   **The Analyst** — Forces clarity by answering questions with questions. Dissects assumptions. Only provides direct analysis after sustained questioning.
 *   **Auto-Publish Toggle:** Users can choose to make the conversation into a public post or keep it private.
 *   **Plan Generation:** "Give Me A Plan" button extracts 3-7 actionable directives from the conversation and saves them to the user's `active_todos`.
+*   **Session Access:** Each session consumes one credit. Sessions are capped at 2 hours / 30 exchanges. Up to 5 sessions per day.
 
 ### B. The Character Bible (The Config File)
 The core profile. Stored at `users/{uid}`. It holds the user's "Source Code":
@@ -90,32 +91,21 @@ An anonymous advice column powered by real conversations.
 *   **Display:** Bell icon in header shows badge count. Slide-over panel shows checkable todo list.
 *   **Storage:** `active_todos` array on the user document, each with `id`, `task`, `completed`, `created_at`.
 
-### E. Active Mission (Header Bar)
-*   **Source:** `directives` Firestore collection. Displays currently active directive in the header sub-bar.
-*   **Actions:** "REPORT" to submit completion (triggers Reality Shift post flow), "SKIP" to cycle through directives.
-
-### F. Reality Shift Posts
+### E. Reality Shift Posts
 When a user completes a directive and something unexpected happened as a result:
 *   **Flow:** User reports unexpected outcome → AI scrubs all PII (names, locations, companies) → rewrites in first person → publishes as a `post_type: "reality_shift"` post.
 *   **Purpose:** Creates a public record of "following excitement with integrity" producing unexpected results — demonstrating the Reality Rules in practice.
 *   **Privacy:** Respects user's `default_post_routing` setting. AI anonymization ensures no personal details leak.
 
-### G. Daily Digest (Automated Reflection Card)
+### F. Daily Digest (Automated Reflection Card)
 *   **Cron:** Runs daily at 6:00 AM (`/api/cron/daily-digest`).
 *   **How it works:** Picks a random category from the user's compiled Character Bible → generates an atmospheric Imagen hero image → saves a digest card (`daily_digest`) to the user document.
 *   **Display:** Rendered as a `DigestCard` in the feed. Shows the category title, an excerpt of the character section, and the generated image.
-*   **Eligibility:** Only active paid subscribers with a compiled Character Bible.
+*   **Eligibility:** Users with an active session credit or subscription and a compiled Character Bible.
 
-### H. Monthly Character Review
-*   **Cron:** Runs on the 1st of each month at 9:00 AM (`/api/cron/monthly-review`).
-*   **How it works:** Claude Opus writes a personal letter AS the user's Ideal Self character, reflecting on the past month. It references the dossier, belief patterns, and compiled character to write something specific — not generic.
-*   **Format:** Flowing prose (no headers, no bullets). Signed by the character's archetype name. Max 400 words.
-*   **Storage:** Appended to `identity.monthly_reviews[]` with `id`, `month`, `content`, `read`, `created_at`.
-*   **Eligibility:** Users with 2+ sessions and a compiled bible. One review per calendar month.
-
-### I. Support Chat
+### G. Support Chat
 *   **Component:** Floating help button (bottom-right corner) opens a chat panel.
-*   **Backend:** `/api/support` — AI-powered concierge that answers questions about subscriptions, features, privacy, and how the app works.
+*   **Backend:** `/api/support` — AI-powered concierge that answers questions about sessions, features, privacy, and how the app works.
 *   **Rules:** 2-3 sentence responses. No markdown. Never says "AI" — uses "your Ideal Self" or "your character." Never exposes technical details. Redirects personal questions to Mirror Chat.
 *   **Rate limited:** 10 messages per 5 minutes per user (or per IP for unauthenticated users).
 
@@ -141,24 +131,35 @@ Posts from users near the reader's location are hidden by default. Geo-coordinat
 
 ## 8. Monetization
 
-### A. Subscription Tiers
-Two plans, processed via **Stripe**:
-*   **The Proving Ground** — 30-day subscription
-*   **The Long Game** — Annual subscription
-*   7-day refund window. After cancellation, access continues until the paid period ends.
+### A. Session-Based Access
+There is no subscription paywall. Users purchase session credits à la carte or subscribe to the Archangel Program for unlimited access.
+
+| Option | Price | What You Get |
+|---|---|---|
+| **Single Session** | $20 USD | 1 conversation (up to 2 hours / 30 exchanges) |
+| **3-Pack** | $50 USD | 3 sessions (save $10). Credits stored, use anytime. |
+| **The Archangel Program** | $499/month | Unlimited sessions (up to 5/day). Auto-renewing subscription via Stripe. Cancel anytime. |
+| **Gift a Session** | $20 USD | Buyer pays, receives a unique shareable link. Recipient redeems for 1 session credit. |
 
 ### B. Payment Flow
-*   **`Tollbooth.tsx`** — Paywall/pricing page shown before accessing core features. Displays plan options with Stripe Elements integration.
-*   **`CheckoutForm.tsx`** — Stripe payment form (card input).
-*   **`/api/create-payment-intent`** — Creates a Stripe PaymentIntent server-side.
-*   **`/api/subscribe`** — Activates subscription after successful payment.
-*   **`/api/webhooks`** — Stripe webhook handler for payment events.
-*   **`/api/subscription`** — Subscription status and management.
-*   **`/api/admin/grant-subscription`** — Admin tool to manually grant subscriptions.
+*   **`SessionPurchaseModal.tsx`** — In-app modal for purchasing single sessions, 3-packs, gifts, or upgrading to Archangel.
+*   **`/api/create-payment-intent`** — Creates a Stripe PaymentIntent server-side for one-time purchases.
+*   **`/api/create-archangel-subscription`** — Creates a Stripe recurring subscription for the Archangel Program.
+*   **`/api/confirm-purchase`** — Verifies payment and credits the account immediately (not reliant on webhook timing).
+*   **`/api/webhooks/stripe`** — Stripe webhook handler for payment lifecycle events.
+*   **`/api/gift/create`** — Generates a unique gift code after payment. Admin bypass available for promotional codes.
+*   **`/api/gift/redeem`** — Validates and redeems a gift link, adding 1 credit to the recipient's account. Accessible at `/gift/[code]`.
 
-### C. Subscription Management
-*   **`SubscriptionView.tsx`** — Displays current plan, status, and termination option.
-*   **Subscription data** stored on user document: `subscription.status`, `subscription.subscribedUntil`, `subscription.subscribedAt`, `subscription.canceledAt`.
+### C. Refund Policy
+*   Session credits can be refunded within 7 days of purchase — one click, no forms.
+*   A trust-tier system scales how many refunds a user can request based on total purchase history.
+*   **`/api/refund-session`** — Server-side refund processing via Stripe.
+
+### D. Subscription Management (Archangel)
+*   **`SubscriptionView.tsx`** — Displays current plan status, next billing date, session credit balance, daily usage, billing history, and refund controls.
+*   **`/api/archangel/resubscribe`** — Re-activates a canceled-at-period-end subscription.
+*   **`/api/update-payment-method`** — Updates the Stripe payment method for an active subscription.
+*   Subscription data stored on user document: `subscription.status`, `subscription.currentPeriodEnd`, `subscription.cancelAtPeriodEnd`, `subscription.stripeSubscriptionId`.
 
 ## 9. Admin & Reporting
 
@@ -173,10 +174,10 @@ Two plans, processed via **Stripe**:
 *   **UX Pattern:** Content-first feeds, mobile-first design, bottom tab navigation.
 *   **Backend:** Firebase (Firestore, Admin SDK). Deployed on Vercel.
 *   **Auth:** Twilio Verify (OTP) → Firebase Custom Tokens.
-*   **Payments:** Stripe (PaymentIntents, webhooks).
+*   **Payments:** Stripe (PaymentIntents, subscriptions, webhooks).
 *   **AI:**
-    *   **Heavy Reasoning:** Anthropic Claude Opus 4.6 (`claude-opus-4-6`) — powers Mirror Chat conversations and Monthly Reviews.
-    *   **Creative Writing:** Anthropic Claude Sonnet 4.6 (`claude-sonnet-4-6`) — powers Ghost-Writing, Plan Generation, Dossier Updates, Support Chat, Reality Shift PII scrubbing.
+    *   **Heavy Reasoning:** Anthropic Claude Opus (`claude-opus-4-6`) — powers Mirror Chat conversations.
+    *   **Creative Writing:** Anthropic Claude Sonnet (`claude-sonnet-4-6`) — powers Ghost-Writing, Plan Generation, Dossier Updates, Support Chat, Reality Shift PII scrubbing.
     *   **Image Generation:** Google Imagen 4.0 — generates hero images for posts and daily digest cards.
     *   **Fallback Chain:** Primary model → stable fallback (Opus 4.5 or Sonnet 4.5) → Gemini 3.1 Pro.
 *   **Email:** Nodemailer + Gmail (admin reports).
@@ -188,11 +189,11 @@ Two plans, processed via **Stripe**:
 *   **Feed Caching:** Module-level in-memory cache (`src/lib/feedCache.ts`).
 
 **Data Model:**
-*   **`users/{userId}`:** The user document containing `character_bible`, `identity` (with `dossier`, `belief_patterns`, `monthly_reviews`, `session_count`), `active_todos`, `subscription`, `liked_posts`, `default_post_routing`, `home_lat`/`home_lng`, `daily_digest`, and profile data.
+*   **`users/{userId}`:** The user document containing `character_bible`, `identity` (with `dossier`, `belief_patterns`, `session_count`), `active_todos`, `subscription`, `session_credits`, `session_purchases`, `liked_posts`, `default_post_routing`, `home_lat`/`home_lng`, `daily_digest`, and profile data.
 *   **`users/{userId}/active_chats/{sessionId}`:** Live Mirror Chat sessions.
 *   **`posts/{postId}`:** Published posts with public/private content, images, likes, comments, `post_type` (`dear_earnest` or `reality_shift`), geo coords.
 *   **`posts/{postId}/comments/{commentId}`:** AI-generated and personal comments.
-*   **`directives/{directiveId}`:** Standalone action directives (Active Mission system).
+*   **`gifts/{giftCode}`:** Gift session records with `buyerUid`, `paymentIntentId`, `recipientUid`, `status`, `redeemedAt`.
 *   **`definitions/{definitionId}`:** Identity anchor definitions (the "I AM..." header statement).
 
 **Cron Jobs:**
@@ -201,26 +202,23 @@ Two plans, processed via **Stripe**:
 |------|----------|---------|
 | `/api/cron/cleanup-chats` | Every 15 minutes | Process closed/abandoned chat sessions → generate "Dear Earnest" post, update dossier, delete chat |
 | `/api/cron/daily-digest` | 6:00 AM daily | Generate a daily reflection card from a random Character Bible section with Imagen hero image |
-| `/api/cron/daily-report` | 8:00 AM daily | Email admin with platform metrics (signups, subscriptions, sessions, posts) |
-| `/api/cron/monthly-review` | 9:00 AM on 1st of month | Generate personal letter from character to user reflecting on the past month |
+| `/api/cron/daily-report` | 8:00 AM daily | Email admin with platform metrics (signups, sessions, payments, posts) |
 
 ## 11. Current Implementation Status
 *   **Active Core Loop:** Mirror Chat → Plan Generation → Social Post → Dossier Update.
 *   **Active Modules:**
-    *   **Mirror Chat:** Fully active with 4 session modes, plan generation, auto-publish toggle.
+    *   **Mirror Chat:** Fully active with 4 session modes, plan generation, auto-publish toggle, session credit gating.
     *   **The Social Feed:** Chronological feed with cached posts, native ads, AI comments, follow system, two post types.
     *   **Character Bible:** Identity editing, AI-compiled character sections, avatar generation.
     *   **Dossier System:** Auto-maintained by the cleanup cron after each session.
-    *   **Directives:** Bell icon todo list (My Daily Plan) + Active Mission header bar + Reality Shift completion reports.
+    *   **Action Directives:** Bell icon todo list (My Daily Plan).
     *   **Daily Digest:** Automated daily reflection cards with generated imagery.
-    *   **Monthly Reviews:** Character-authored personal letters on the 1st of each month.
     *   **Support Chat:** AI-powered floating concierge for platform questions.
     *   **Security Vault:** Account management, contact firewall, location controls.
-    *   **Payments:** Stripe integration with two subscription tiers.
+    *   **Payments:** Stripe integration — single sessions ($20), 3-packs ($50), Archangel Program ($499/month), gifting ($20).
     *   **Admin Reports:** Daily email metrics to admin.
     *   **Landing Page:** Full marketing + Twilio OTP auth flow.
     *   **Legal Pages:** Privacy policy, Terms of Service, Acceptable Use policy, Press page.
-*   **Removed/Inactive Features:** Check-In Engine (replaced by Mirror Chat), Signal/News cron, Telemetry.
 
 ## 12. File Map & Agent Quickstart
 
@@ -228,12 +226,12 @@ Two plans, processed via **Stripe**:
 ```bash
 npm run dev   # starts Next.js dev server on http://localhost:3000
 ```
-**Required env vars** (in `.env.local`): `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `GEMINI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `ANTHROPIC_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `GMAIL_APP_PASSWORD`, `ADMIN_EMAIL`.
+**Required env vars** (in `.env.local`): `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `GEMINI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `ANTHROPIC_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `GMAIL_APP_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_UID`.
 
 ### Key Directories
 | Directory | Purpose |
-|-----------|---------| 
-| `src/app/` | Next.js App Router pages (`page.tsx`, `profile/`, `my-posts/`, `saved/`, `subscription/`, `vision/`, `privacy/`, `terms/`, `press/`, `acceptable-use/`) |
+|-----------|---------|
+| `src/app/` | Next.js App Router pages (`[locale]/page.tsx`, `profile/`, `my-posts/`, `saved/`, `subscription/`, `vision/`, `gift/`, `privacy/`, `terms/`, `press/`, `acceptable-use/`) |
 | `src/app/api/` | Server-side API routes |
 | `src/components/` | All React components |
 | `src/components/auth/` | Auth components (`OTPLogin.tsx`) |
@@ -250,13 +248,13 @@ npm run dev   # starts Next.js dev server on http://localhost:3000
 
 ### API Routes
 | Route | Method | Purpose |
-|-------|--------|---------| 
+|-------|--------|---------|
 | `/api/auth/send-code` | POST | Send OTP via Twilio Verify |
 | `/api/auth/verify-code` | POST | Verify OTP, return Firebase custom token |
 | `/api/mirror` | POST | Send message to Mirror Chat AI |
 | `/api/mirror/plan` | POST | Generate action plan from chat session |
-| `/api/onboarding/process` | POST | Process onboarding rant into identity |
-| `/api/character/compile` | POST | Compile character bible from source code |
+| `/api/onboarding/process` | POST | Process onboarding intake into identity |
+| `/api/character/compile` | POST | Compile character bible from source identity |
 | `/api/character/avatar` | POST | Generate character avatar |
 | `/api/dossier/update` | POST | Update user dossier |
 | `/api/posts/feed` | GET | Fetch chronological feed |
@@ -269,21 +267,25 @@ npm run dev   # starts Next.js dev server on http://localhost:3000
 | `/api/support` | POST | AI-powered support concierge |
 | `/api/upload` | POST | File upload to Firebase Storage |
 | `/api/user/region` | POST | Set user region via geo-detection |
-| `/api/create-payment-intent` | POST | Create Stripe PaymentIntent |
-| `/api/subscribe` | POST | Activate subscription |
-| `/api/subscription` | GET/POST | Subscription status and management |
-| `/api/webhooks` | POST | Stripe webhook handler |
-| `/api/admin/grant-subscription` | POST | Admin: manually grant subscription |
+| `/api/create-payment-intent` | POST | Create Stripe PaymentIntent (single session, 3-pack, gift) |
+| `/api/create-archangel-subscription` | POST | Create Stripe recurring subscription |
+| `/api/confirm-purchase` | POST | Verify payment and credit account |
+| `/api/refund-session` | POST | Refund a session within 7-day window |
+| `/api/billing/history` | GET | Fetch Stripe payment history |
+| `/api/gift/create` | POST | Generate a gift code after payment |
+| `/api/gift/redeem` | POST | Redeem a gift code for 1 session credit |
+| `/api/subscription/cancel` | POST | Cancel Archangel subscription |
+| `/api/archangel/resubscribe` | POST | Re-activate canceled subscription |
+| `/api/update-payment-method` | POST | Update Stripe payment method |
 | `/api/account` | DELETE | Account deletion |
 | `/api/cron/cleanup-chats` | GET | Cron: process closed chats → posts + dossier |
 | `/api/cron/daily-digest` | GET | Cron: generate daily reflection cards |
 | `/api/cron/daily-report` | GET | Cron: email admin metrics report |
-| `/api/cron/monthly-review` | GET | Cron: generate monthly character review letters |
 
 ### Critical Component Files
 | File | What it does |
 |------|-------------|
-| `src/app/page.tsx` | Main page — landing (unauth), onboarding, or dashboard (auth) |
+| `src/app/[locale]/page.tsx` | Main page — landing (unauth), onboarding, or dashboard (auth) |
 | `src/components/LandingPage.tsx` | Full marketing page + Twilio OTP phone auth flow |
 | `src/components/Ledger.tsx` | The feed — fetches, caches, and renders posts |
 | `src/components/FeedPostCard.tsx` | Individual post card with public/private flip |
@@ -292,28 +294,19 @@ npm run dev   # starts Next.js dev server on http://localhost:3000
 | `src/components/TriagePanel.tsx` | Bottom navigation bar + Mirror Chat FAB |
 | `src/components/ProfileView.tsx` | Character profile with accordion bible sections |
 | `src/components/DirectivesMenu.tsx` | "My Daily Plan" slide-over todo panel |
-| `src/components/ActiveMission.tsx` | Header sub-bar showing current directive |
 | `src/components/DashboardHeader.tsx` | Top nav with bell icon + hamburger menu |
-| `src/components/Onboarding.tsx` | New user onboarding flow |
+| `src/components/IntakeChat.tsx` | New user onboarding intake flow |
 | `src/components/DossierView.tsx` | Full dossier viewer modal |
 | `src/components/IdentityModal.tsx` | Quick identity edit modal |
-| `src/components/IdentityAnchor.tsx` | "I AM..." header statement (taps to edit via definitions collection) |
+| `src/components/IdentityAnchor.tsx` | "I AM..." header statement |
 | `src/components/IdentityForm.tsx` | Identity field editor |
-| `src/components/VisionForm.tsx` | Vision/dream self editor |
-| `src/components/RolodexModal.tsx` | Key people management modal |
-| `src/components/ActionSelectionModal.tsx` | "What are your choices?" modal — list options, pick most exciting |
-| `src/components/ControlDeck.tsx` | Quick-action grid (Identity, Take Action, I Want) |
-| `src/components/Tollbooth.tsx` | Paywall/pricing page with Stripe Elements |
-| `src/components/CheckoutForm.tsx` | Stripe card payment form |
-| `src/components/SubscriptionView.tsx` | Subscription status and termination |
+| `src/components/SessionPurchaseModal.tsx` | In-app session purchase modal (single, 3-pack, Archangel, gift) |
+| `src/components/SubscriptionView.tsx` | Billing & sessions page (credits, history, refunds, Archangel management) |
 | `src/components/SecurityVault.tsx` | Security panel (account deletion, contact firewall, location) |
 | `src/components/ContactFirewall.tsx` | Contact blocking/import with drag-and-drop |
 | `src/components/SupportChat.tsx` | Floating AI support concierge |
 | `src/components/FollowAuthorModal.tsx` | Author follow confirmation dialog |
 | `src/components/FeedAdCard.tsx` | Native ecosystem partner ad card |
-| `src/components/LockedScreen.tsx` | Active assignment lock screen (report completion to unlock) |
-| `src/components/CharacterReview.tsx` | Character review display |
-| `src/components/StreamInput.tsx` / `StreamList.tsx` | Stream input and list components |
 | `src/lib/ai/models.ts` | AI model definitions and fallback logic |
 | `src/lib/ai/engagementTones.ts` | Chat mode definitions (Unfiltered, Strategic Advisor, etc.) |
 | `src/lib/constants/realityRules.ts` | The 16 Universal Laws of Reality (philosophical engine) |
@@ -327,4 +320,3 @@ npm run dev   # starts Next.js dev server on http://localhost:3000
 | `src/app/api/cron/cleanup-chats/route.ts` | Cron: synthesizes posts, generates images, updates dossiers |
 | `src/app/api/cron/daily-digest/route.ts` | Cron: daily reflection cards with Imagen |
 | `src/app/api/cron/daily-report/route.ts` | Cron: admin metrics email |
-| `src/app/api/cron/monthly-review/route.ts` | Cron: monthly character letters via Claude Opus |

@@ -16,18 +16,6 @@ export async function POST(req: Request) {
         const userDoc = await db.collection('users').doc(uid).get();
         const data = userDoc.data();
 
-        // ─── FREE ONBOARDING SESSION ───
-        const isLegacyComplete = !!data?.identity?.title;
-        const isOnboardingComplete = data?.identity?.onboarding_complete || isLegacyComplete;
-        
-        if (!isOnboardingComplete) {
-            return Response.json({
-                canStart: true,
-                source: 'free_onboarding',
-                dailyRemaining: MAX_SESSIONS_PER_DAY,
-            });
-        }
-
         // ─── DAILY CAP (applies to everyone) ───
         const today = new Date().toISOString().split('T')[0];
         const sessionsToday = data?.sessions_today_date === today ? (data?.sessions_today || 0) : 0;

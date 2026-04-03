@@ -22,7 +22,7 @@ import { useTranslations } from "next-intl";
 type OnboardingPhase = 'gender' | 'intake' | 'compiling' | 'done';
 
 export default function Home() {
-    const { user, loading } = useAuth();
+    const { user, loading, signOut } = useAuth();
     const t = useTranslations();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [profileLoaded, setProfileLoaded] = useState(false);
@@ -35,6 +35,10 @@ export default function Home() {
         if (!user) {
             setProfile(null);
             setProfileLoaded(false);
+            // Reset onboarding state so a re-login starts fresh
+            setOnboardingPhase('gender');
+            setGender('');
+            setGenderSubmitting(false);
             return;
         }
 
@@ -50,6 +54,15 @@ export default function Home() {
     const isLegacyComplete = !!profile?.identity?.title;
     const hasCompletedOnboarding = profile?.identity?.onboarding_complete || isLegacyComplete;
     const needsOnboarding = profileLoaded && !hasCompletedOnboarding;
+
+    // Reset onboarding phase if profile was wiped (e.g. Firestore doc deleted)
+    useEffect(() => {
+        if (needsOnboarding && !profile?.identity?.onboarding_started) {
+            setOnboardingPhase('gender');
+            setGender('');
+            setGenderSubmitting(false);
+        }
+    }, [needsOnboarding, profile?.identity?.onboarding_started]);
 
     // All hooks must be called before any early returns
     const handlePullRefresh = useCallback(async () => {
@@ -139,7 +152,14 @@ export default function Home() {
         // Phase 1: Gender screen
         if (onboardingPhase === 'gender' && !profile?.identity?.onboarding_started) {
             return (
-                <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
+                <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12 relative">
+                    {/* Sign out — go back to landing */}
+                    <button
+                        onClick={signOut}
+                        className="absolute top-6 right-6 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-semibold"
+                    >
+                        {t('common.signOut')}
+                    </button>
                     <div className="w-full max-w-md mx-auto animate-in fade-in duration-300">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-black tracking-tight mb-3">
@@ -180,7 +200,17 @@ export default function Home() {
 
         // Phase 2: Intake chat
         if (onboardingPhase === 'intake' || (onboardingPhase === 'gender' && profile?.identity?.onboarding_started)) {
-            return <IntakeChat onComplete={handleIntakeComplete} />;
+            return <IntakeChat onComplete={handleIntakeComplete} onBack={async () => {
+                // Reset to gender screen
+                if (user) {
+                    await setDoc(doc(db, 'users', user.uid), {
+                        identity: { onboarding_started: false },
+                    }, { merge: true });
+                }
+                setOnboardingPhase('gender');
+                setGender('');
+                setGenderSubmitting(false);
+            }} />;
         }
     }
 

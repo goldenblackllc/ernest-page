@@ -1,6 +1,7 @@
 import twilio from "twilio";
 import { getAuth } from "firebase-admin/auth";
 import "@/lib/firebase/admin"; // Ensure admin is initialized
+import { db } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 const client = twilio(
@@ -54,6 +55,12 @@ export async function POST(req: Request) {
                     console.log('[verify-code] Creating user with phone:', JSON.stringify(phone), 'length:', phone.length);
                     const newUser = await adminAuth.createUser({ phoneNumber: phone });
                     uid = newUser.uid;
+
+                    // Give new users 1 free session credit
+                    await db.collection('users').doc(newUser.uid).set({
+                        session_credits: 1,
+                        created_at: new Date().toISOString(),
+                    }, { merge: true });
                 } catch (createError: any) {
                     console.error('[verify-code] createUser failed:', createError?.code, createError?.message, JSON.stringify(createError?.errorInfo));
                     throw createError;

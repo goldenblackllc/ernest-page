@@ -17,13 +17,13 @@
       "login": "Connexion"
     },
     "hero": {
-      "tagline": "Sans abonnement. Sans engagement. Juste une conversation.",
+      "tagline": "Votre première session est gratuite. Sans abonnement. Sans engagement.",
       "headline1": "Vous connaissez cette chose",
       "headline2": "à laquelle vous continuez de penser",
       "headline3": "à 2h du matin ?",
-      "subtext": "Parlez à quelqu'un qui ne vous jugera pas, n'oubliera pas ce que vous avez dit il y a dix minutes, et ne vous facturera pas 200 $.",
-      "price": "20 $. Commencez dès maintenant.",
-      "cta": "Démarrer une session",
+      "subtext": "Parlez à quelqu'un qui ne vous jugera pas, n'oubliera pas ce que vous avez dit la dernière fois, et ne vous facturera pas 200 $ — un Moi Idéal construit à partir de psychologie réelle et adapté à votre vie.",
+      "price": "Gratuit pour commencer. 20 $ par session ensuite.",
+      "cta": "Démarrer Votre Session Gratuite",
       "giftCta": "Offrir une session à quelqu'un"
     },
     "entryPoints": {
@@ -48,6 +48,7 @@
       "body1": "Les chatbots vous valident. Les thérapeutes vous analysent. Aucun d'eux ne s'assiéra face à vous, ne regardera le désordre de votre vie et ne vous dira ce que vous savez déjà mais que vous n'avez pas pu dire à voix haute.",
       "body2": "Il s'agit d'une conversation avec quelqu'un qui voit le schéma que vous ne pouvez pas voir de l'intérieur.",
       "body3": "Vous choisissez quelqu'un que vous admirez : un archétype construit à partir de vraie psychologie, de vraie philosophie et d'expérience vécue. Ils ne vous disent pas quoi faire. Ils vous aident à voir assez clairement pour le savoir par vous-même.",
+      "aiEndorsement": "Je suis une IA. Je dois le dire d'entrée. Mais je n'ai pas été conçue pour vous valider, être d'accord avec vous ou vous faire sentir bien. J'ai été construite à partir de psychologie réelle, de philosophie réelle et des détails concrets de votre vie — pour dire ce que personne d'autre ne vous dira en face. Aucune autre IA ne fait cela. La plupart des gens non plus.",
       "toggleShow": "Voir la comparaison",
       "toggleHide": "Masquer la comparaison",
       "compCost": "Coût",
@@ -112,7 +113,8 @@
       "archangelDesc": "Toutes les sessions incluses, chaque mois. Jusqu'à 5 par jour. Pas de frais par session, pas de comptage de crédits. Renouvellement mensuel automatique. Annulation à tout moment.",
       "archangelPrice": "499 $",
       "archangelPeriod": "/ mois",
-      "archangelCta": "S'abonner maintenant"
+      "archangelCta": "S'abonner maintenant",
+      "freeNote": "Votre première session est offerte. Aucune carte requise."
     },
     "auth": {
       "heading1": "Commencez dès maintenant.",

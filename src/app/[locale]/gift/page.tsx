@@ -235,7 +235,7 @@ export default function GiftPage() {
 
                 {/* Back */}
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => router.push('/')}
                     className="flex items-center gap-2 text-zinc-500 hover:text-white text-sm mb-8 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />

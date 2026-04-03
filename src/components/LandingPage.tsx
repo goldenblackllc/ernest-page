@@ -377,6 +377,13 @@ export function LandingPage() {
                         <p>{t('landing.difference.body3')}</p>
                     </div>
 
+                    {/* AI Self-Endorsement */}
+                    <blockquote className="mt-10 border-l-2 border-zinc-700 pl-6 py-4">
+                        <p className="text-base sm:text-lg text-zinc-300 leading-relaxed italic">
+                            “{t('landing.difference.aiEndorsement')}”
+                        </p>
+                    </blockquote>
+
                     {/* Expandable comparison */}
                     <button
                         onClick={() => setIsComparisonOpen(!isComparisonOpen)}
@@ -758,9 +765,21 @@ export function LandingPage() {
                         </div>
                     </motion.div>
 
+                    {/* Free session note */}
+                    <motion.p
+                        className="text-center text-sm text-emerald-500/80 font-medium mt-8"
+                        custom={3.5}
+                        variants={cardReveal}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                    >
+                        {t('landing.pricing.freeNote')}
+                    </motion.p>
+
                     {/* Satisfaction guarantee */}
                     <motion.p
-                        className="text-center text-sm text-zinc-600 mt-10"
+                        className="text-center text-sm text-zinc-600 mt-4"
                         custom={4}
                         variants={cardReveal}
                         initial="hidden"

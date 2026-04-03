@@ -17,13 +17,13 @@
       "login": "Log In"
     },
     "hero": {
-      "tagline": "No subscription. No commitment. Just a conversation.",
+      "tagline": "Your first session is free. No subscription. No commitment.",
       "headline1": "You know that thing",
       "headline2": "you keep thinking about",
       "headline3": "at 2am?",
-      "subtext": "Talk to someone who won't judge, won't forget what you said ten minutes ago, and won't charge you $200.",
-      "price": "$20. Start right now.",
-      "cta": "Start a Session",
+      "subtext": "Talk to someone who won't judge, won't forget what you said last time, and won't charge you $200 — an Ideal Self built from real psychology and tailored to your life.",
+      "price": "Free to start. $20 per session after.",
+      "cta": "Start Your Free Session",
       "giftCta": "Gift One to Someone"
     },
     "entryPoints": {
@@ -48,6 +48,7 @@
       "body1": "Chatbots validate you. Therapists analyze you. Neither of them will sit in front of you, look at the mess of your life, and tell you the thing you already know but haven't been able to say out loud.",
       "body2": "This is a conversation with someone who sees the pattern you can't see from the inside.",
       "body3": "You choose someone you admire — an archetype built from real psychology, real philosophy, and real lived experience. They don't tell you what to do. They help you see clearly enough to know for yourself.",
+      "aiEndorsement": "I am an AI. I should say that upfront. But I wasn't built to validate you, agree with you, or make you feel good. I was built from real psychology, real philosophy, and the actual details of your life — to say the thing no one else will say to your face. No other AI does that. Most people won't either.",
       "toggleShow": "See how this compares",
       "toggleHide": "Hide comparison",
       "compCost": "Cost",
@@ -112,7 +113,8 @@
       "archangelDesc": "All sessions included, every month. Up to 5 per day. No per-session fees, no counting credits. Auto-renews monthly. Cancel anytime.",
       "archangelPrice": "$499",
       "archangelPeriod": "/ month",
-      "archangelCta": "Subscribe Now"
+      "archangelCta": "Subscribe Now",
+      "freeNote": "Your first session is on us. No card required."
     },
     "auth": {
       "heading1": "Start right now.",

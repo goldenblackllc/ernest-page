@@ -244,7 +244,11 @@ export function Ledger() {
     // Bible generation status — backed by Firestore, survives page reloads
     // IMPORTANT: These hooks must be ABOVE all early returns to satisfy Rules of Hooks
     const bibleStatus = profile?.character_bible?.status;
-    const showBibleCompiling = bibleStatus === 'compiling';
+    const hasBuiltCharacter = !!profile?.character_bible?.compiled_output?.avatar_url
+        || (profile?.character_bible?.compiled_output?.ideal?.length ?? 0) > 0;
+    // Treat "not built yet" the same as "compiling" to avoid premature empty-state CTA
+    const isAwaitingBuild = !bibleStatus && !hasBuiltCharacter && !!profile?.identity?.onboarding_complete;
+    const showBibleCompiling = bibleStatus === 'compiling' || isAwaitingBuild;
     const showBibleReady = bibleStatus === 'ready';
 
     const dismissBibleReady = async () => {

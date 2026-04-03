@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useTranslations } from "next-intl";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 
 const TOTAL_QUESTIONS = 5;
 
@@ -15,9 +15,10 @@ interface Message {
 
 interface IntakeChatProps {
     onComplete: (answers: { rant: string; people: string; enjoyments: string; age: string; ethnicity: string }) => void;
+    onBack?: () => void;
 }
 
-export function IntakeChat({ onComplete }: IntakeChatProps) {
+export function IntakeChat({ onComplete, onBack }: IntakeChatProps) {
     const { user, signOut } = useAuth();
     const t = useTranslations();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -142,6 +143,20 @@ export function IntakeChat({ onComplete }: IntakeChatProps) {
         }
     };
 
+    const handleBack = () => {
+        if (isLoading || questionNumber <= 1) return;
+        // Remove the last assistant message and the last user answer
+        const newMessages = [...messages];
+        // Pop assistant (last), then user (second to last)
+        if (newMessages.length >= 2 && newMessages[newMessages.length - 1].role === 'assistant') {
+            newMessages.pop(); // assistant
+            newMessages.pop(); // user
+        }
+        setMessages(newMessages);
+        setQuestionNumber(prev => Math.max(prev - 1, 1));
+        setInput('');
+    };
+
     const progressPct = questionNumber > 0 ? ((questionNumber - 1) / TOTAL_QUESTIONS) * 100 : 0;
 
     return (
@@ -157,12 +172,31 @@ export function IntakeChat({ onComplete }: IntakeChatProps) {
 
             {/* Header */}
             <div className="shrink-0 px-6 pt-5 pb-3 flex items-center justify-between">
-                <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">
+                <div className="flex items-center gap-3">
+                    {!isLoading && (
+                        questionNumber <= 1 && onBack ? (
+                            <button
+                                onClick={onBack}
+                                className="text-zinc-600 hover:text-white transition-colors p-1 -ml-1"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                            </button>
+                        ) : questionNumber > 1 ? (
+                            <button
+                                onClick={handleBack}
+                                className="text-zinc-600 hover:text-white transition-colors p-1 -ml-1"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                            </button>
+                        ) : null
+                    )}
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">
                     {questionNumber > 0 && questionNumber <= TOTAL_QUESTIONS
                         ? `${questionNumber} ${t('intake.ofFive')}`
                         : '\u00A0'
                     }
-                </p>
+                    </p>
+                </div>
                 <button
                     onClick={signOut}
                     className="text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-semibold"
@@ -178,11 +212,19 @@ export function IntakeChat({ onComplete }: IntakeChatProps) {
                     {/* Question text */}
                     <div className="mb-10 min-h-[80px] flex items-start">
                         {isLoading && !currentQuestion ? (
-                            /* Initial loading dots */
-                            <div className="flex items-center gap-2 pt-2">
-                                <div className="w-2 h-2 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: "0ms" }} />
-                                <div className="w-2 h-2 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: "150ms" }} />
-                                <div className="w-2 h-2 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: "300ms" }} />
+                            /* Initial loading — show intro context */
+                            <div className="space-y-3 animate-in fade-in duration-500">
+                                <p className="text-2xl sm:text-3xl font-semibold text-white leading-snug">
+                                    {t('intake.introHeading')}
+                                </p>
+                                <p className="text-sm text-zinc-400 leading-relaxed">
+                                    {t('intake.introSubtext')}
+                                </p>
+                                <div className="flex items-center gap-2 pt-2">
+                                    <div className="w-2 h-2 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: "0ms" }} />
+                                    <div className="w-2 h-2 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: "150ms" }} />
+                                    <div className="w-2 h-2 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: "300ms" }} />
+                                </div>
                             </div>
                         ) : (
                             <p
