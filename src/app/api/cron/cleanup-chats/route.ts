@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { z } from 'zod';
-import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, SONNET_MODEL, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
@@ -160,7 +160,9 @@ async function processUserChats(
             const currentDossier = identity?.dossier || '';
             const sessionCount = (identity?.session_count || 0) + 1;
 
-            // ─── COMBINED AI CALL: post synthesis + dossier update ───
+            // ─── PARALLEL AI CALLS: post synthesis + dossier update + session recap ───
+            // Each task gets its own focused call with only the context it needs.
+
             let languageCommand = "The output must be in English.";
             if (preferredLocale === "es") {
                 languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in SPANISH (Español).";
@@ -172,7 +174,9 @@ async function processUserChats(
                 languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in PORTUGUESE (Português).";
             }
 
-            const combinedPrompt = `You have TWO tasks to complete from the same chat transcript. Complete both.
+
+            // ── Call 1: Post Synthesis (Sonnet — creative writing) ──
+            const postPrompt = `You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received this raw chat transcript between a user (Character B) and their Ideal Self (Character A).
 ${languageCommand}
 
 CHARACTER BIBLE:
@@ -180,10 +184,6 @@ ${JSON.stringify(compiledBible)}
 
 CHAT TRANSCRIPT:
 ${transcript}
-
-═══ TASK 1: EDITORIAL POST SYNTHESIS ═══
-
-You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received this raw chat transcript between a user (Character B) and their Ideal Self (Character A).
 
 STEP 1: THE EDITORIAL JUDGMENT
 Determine if this transcript has "Editorial Value."
@@ -217,23 +217,29 @@ ${recentScaleHint}${demographicHint}
 - photo_vibe: One word capturing the emotional tone.
 - photo_scale: One of macro, lifestyle, wide, or human.
 - imagen_prompt: Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.
-- language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').
+- language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
-═══ TASK 2: DOSSIER UPDATE ═══
+            // ── Call 2: Dossier Rewrite (Opus — precision reasoning) ──
+            const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
 
-${buildDossierPrompt(currentDossier, sessionCount)}
+The following chat transcript is the new session data to incorporate.
 
-The transcript above is the new session data to incorporate.
+CHAT TRANSCRIPT:
+${transcript}`;
 
-═══ TASK 3: SESSION RECAP ═══
+            // ── Call 3: Session Recap (Opus — quality continuity) ──
+            const recapPrompt = `Write a 2-3 sentence recap of this session for continuity. What was discussed? What was the emotional tone? What was the outcome or takeaway? Write from the consultant's perspective. Keep it concise — this will be shown to the character at the start of the next session for context.
 
-Write a 2-3 sentence recap of this session for continuity. What was discussed? What was the emotional tone? What was the outcome or takeaway? Write from the consultant's perspective. Keep it concise — this will be shown to the character at the start of the next session for context.`;
+CHAT TRANSCRIPT:
+${transcript}`;
 
             try {
-                const result = await generateWithFallback({
-                    primaryModelId: SONNET_MODEL,
-                    schema: z.object({
-                        post: z.object({
+                // Fire all three calls in parallel
+                const [postResult, dossierResult, recapResult] = await Promise.all([
+                    // Call 1: Post Synthesis — Sonnet
+                    generateWithFallback({
+                        primaryModelId: SONNET_MODEL,
+                        schema: z.object({
                             is_publishable: z.boolean(),
                             title: z.string().optional(),
                             pseudonym: z.string().optional(),
@@ -244,13 +250,31 @@ Write a 2-3 sentence recap of this session for continuity. What was discussed? W
                             imagen_prompt: z.string().optional(),
                             language: z.string().optional(),
                         }),
-                        updated_dossier: z.string(),
-                        session_recap: z.string().describe("2-3 sentence recap of this session for continuity"),
+                        prompt: postPrompt,
                     }),
-                    prompt: combinedPrompt,
-                });
+                    // Call 2: Dossier Rewrite — Opus
+                    generateWithFallback({
+                        primaryModelId: OPUS_MODEL,
+                        fallbackModelId: OPUS_FALLBACK,
+                        schema: z.object({
+                            updated_dossier: z.string(),
+                        }),
+                        prompt: dossierRewritePrompt,
+                    }),
+                    // Call 3: Session Recap — Opus
+                    generateWithFallback({
+                        primaryModelId: OPUS_MODEL,
+                        fallbackModelId: OPUS_FALLBACK,
+                        schema: z.object({
+                            session_recap: z.string().describe("2-3 sentence recap of this session for continuity"),
+                        }),
+                        prompt: recapPrompt,
+                    }),
+                ]);
 
-                const object = result.object as any;
+                const post = postResult.object as any;
+                const dossier = dossierResult.object as any;
+                const recap = recapResult.object as any;
 
                 // ─── DOSSIER + RECAPS WRITE (runs in parallel with image gen below) ───
                 const dossierPromise = identity
@@ -259,14 +283,14 @@ Write a 2-3 sentence recap of this session for continuity. What was discussed? W
                         const existingRecaps = userData?.session_recaps || [];
                         const newRecap = {
                             date: new Date().toISOString().split('T')[0],
-                            recap: object.session_recap,
+                            recap: recap.session_recap,
                         };
                         const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 3);
 
                         await userDoc.ref.set({
                             identity: {
                                 ...identity,
-                                dossier: object.updated_dossier,
+                                dossier: dossier.updated_dossier,
                                 dossier_updated_at: FieldValue.serverTimestamp(),
                                 session_count: sessionCount,
                             },
@@ -279,19 +303,19 @@ Write a 2-3 sentence recap of this session for continuity. What was discussed? W
                     : Promise.resolve();
 
                 // ─── POST CREATION (with parallel image gen) ───
-                if (object.post.is_publishable && object.post.title) {
+                if (post.is_publishable && post.title) {
                     const postDocRef = db.collection('posts').doc();
 
                     // Start image generation and dossier write concurrently
                     const [imageResult] = await Promise.allSettled([
-                        generatePostImage(object.post.imagen_prompt, postDocRef.id),
+                        generatePostImage(post.imagen_prompt, postDocRef.id),
                         dossierPromise,
                     ]);
 
                     const imagen_url = imageResult.status === 'fulfilled' ? imageResult.value : null;
 
                     // Match sponsor from imagen prompt
-                    const sponsor = matchSponsor(object.post.imagen_prompt);
+                    const sponsor = matchSponsor(post.imagen_prompt);
 
                     // Compute author hash for Contact Firewall filtering
                     let authorHash: string | null = null;
@@ -321,25 +345,25 @@ Write a 2-3 sentence recap of this session for continuity. What was discussed? W
                         author: userData?.displayName || "Anonymous",
                         type: 'checkin',
                         public_post: {
-                            title: object.post.title,
-                            pseudonym: object.post.pseudonym,
-                            letter: object.post.letter,
-                            response: object.post.response,
+                            title: post.title,
+                            pseudonym: post.pseudonym,
+                            letter: post.letter,
+                            response: post.response,
                         },
-                        imagen_prompt: object.post.imagen_prompt,
-                        photo_vibe: object.post.photo_vibe,
-                        photo_scale: object.post.photo_scale,
-                        language: object.post.language || null,
+                        imagen_prompt: post.imagen_prompt,
+                        photo_vibe: post.photo_vibe,
+                        photo_scale: post.photo_scale,
+                        language: post.language || null,
                         imagen_url: imagen_url,
                         sponsored_by: sponsor?.name || null,
                         sponsored_link: sponsor?.link || null,
                         // Geolocation for proximity filtering
                         ...geoFields,
                         // Legacy fallbacks for uninterrupted rendering
-                        title: object.post.title,
-                        pseudonym: object.post.pseudonym,
-                        letter: object.post.letter,
-                        response: object.post.response,
+                        title: post.title,
+                        pseudonym: post.pseudonym,
+                        letter: post.letter,
+                        response: post.response,
                         content_raw: transcript,
                         status: "completed",
                         created_at: new Date(),

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earnest Page — TikTok Ad v2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    /* 
+      TikTok Safe Zones:
+      - Right ~110px: profile pic, like, comment, share, music disc
+      - Bottom ~280px: caption text, music ticker, CTA button
+      - Top ~60px: status bar / back button in ads
+      
+      So main content lives: top 8% to ~60% of card, left-biased
+    */
+    .card {
+      width: 540px;
+      height: 960px;
+      background: #000000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle grain texture */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Faint ambient glow */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: -60px;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.035) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── SAFE CONTENT ZONE ──
+       Kept to left 75% of card, top 60%
+       Avoids right-side TikTok UI and bottom caption area
+    */
+    .content {
+      position: relative;
+      z-index: 1;
+      padding: 72px 130px 0 44px; /* extra right padding for TikTok UI */
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* ── TOP LABEL ── */
+    .label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.32);
+      margin-bottom: 28px;
+    }
+
+    .label-dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      background: #fff;
+      border-radius: 50%;
+      margin-right: 8px;
+      opacity: 0.35;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+
+    /* ── HEADLINE ── */
+    .headline {
+      font-size: 54px;
+      font-weight: 900;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      color: #ffffff;
+      margin-bottom: 0;
+    }
+
+    .headline em {
+      font-style: normal;
+      color: rgba(255,255,255,0.38);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 40px;
+      height: 2px;
+      background: rgba(255,255,255,0.18);
+      margin: 32px 0 28px;
+    }
+
+    /* ── BODY ── */
+    .body {
+      font-size: 16.5px;
+      font-weight: 400;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.65);
+      max-width: 340px;
+    }
+
+    .body strong {
+      color: rgba(255,255,255,0.95);
+      font-weight: 600;
+    }
+
+    /* ── CTA BLOCK ── sits in the lower-center, above TikTok caption zone */
+    .cta-area {
+      position: absolute;
+      z-index: 1;
+      bottom: 310px; /* above caption/music zone */
+      left: 44px;
+      right: 130px; /* avoid right-side buttons */
+    }
+
+    .cta-block {
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 22px 26px 20px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .cta-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 8px;
+    }
+
+    .cta-instruction {
+      font-size: 15px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 2px;
+    }
+
+    .cta-keyword {
+      font-size: 46px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+
+    .cta-sub {
+      font-size: 13.5px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.35);
+      margin-top: 8px;
+    }
+
+    /* ── FOOTER ── just above the TikTok caption zone */
+    .footer {
+      position: absolute;
+      z-index: 1;
+      bottom: 272px;
+      left: 44px;
+    }
+
+    .brand {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.18);
+      text-transform: uppercase;
+    }
+
+    /* ── TIKTOK UI OVERLAY (preview only) ── */
+    .tiktok-overlay {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .tiktok-right {
+      position: absolute;
+      right: 12px;
+      bottom: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    .tt-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tt-icon-inner {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .tt-profile {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.15);
+      margin-bottom: 4px;
+    }
+
+    .tt-count {
+      font-size: 10px;
+      color: rgba(255,255,255,0.25);
+      font-weight: 600;
+    }
+
+    /* Caption preview zone */
+    .tiktok-caption {
+      position: absolute;
+      bottom: 40px;
+      left: 16px;
+      right: 80px;
+      z-index: 10;
+    }
+
+    .tt-handle {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 4px;
+    }
+
+    .tt-caption-text {
+      font-size: 12px;
+      color: rgba(255,255,255,0.15);
+      line-height: 1.4;
+    }
+
+    .tt-music {
+      font-size: 11px;
+      color: rgba(255,255,255,0.12);
+      margin-top: 8px;
+    }
+
+    /* Toggle to show/hide TikTok overlay */
+    .toggle-bar {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 100;
+    }
+
+    .toggle-btn {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .toggle-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.8);
+    }
+
+    .toggle-btn.active {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border-color: rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toggle-bar">
+    <button class="toggle-btn active" onclick="toggleOverlay(true)">With TikTok UI</button>
+    <button class="toggle-btn" onclick="toggleOverlay(false)">Clean (for screenshot)</button>
+  </div>
+
+  <div class="card" id="card">
+
+    <!-- Main Content — in TikTok safe zone -->
+    <div class="content">
+      <div class="label">
+        <span class="label-dot"></span>UGC Opportunity &nbsp;·&nbsp; Limited Spots
+      </div>
+
+      <div class="headline">
+        Getting<br>
+        paid $100<br>
+        to be<br>
+        <em>honest.</em>
+      </div>
+
+      <div class="divider"></div>
+
+      <p class="body">
+        We're looking for <strong>5–10 real people</strong> to try an app that helps you talk to your ideal self — and film the experience.
+      </p>
+    </div>
+
+    <!-- CTA Block — positioned above TikTok caption zone -->
+    <div class="cta-area">
+      <div class="cta-block">
+        <div class="cta-label">To Apply</div>
+        <div class="cta-instruction">DM us the word</div>
+        <div class="cta-keyword">ANXIOUS</div>
+        <div class="cta-sub">and we'll take it from there →</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="brand">earnestpage.com</div>
+    </div>
+
+    <!-- TikTok UI Preview Overlay (shows where native UI sits) -->
+    <div id="tiktokOverlay">
+      <!-- Right side icons -->
+      <div class="tiktok-right">
+        <div>
+          <div class="tt-profile"></div>
+        </div>
+        <div style="text-align:center">
+          <div class="tt-icon"><div class="tt-icon-inner"></div></div>
+          <div class="tt-count">♥</div>
+        </div>
+        <div style="text-align:center">
+          <div class="tt-icon"><div class="tt-icon-inner"></div></div>
+          <div class="tt-count">💬</div>
+        </div>
+        <div style="text-align:center">
+          <div class="tt-icon"><div class="tt-icon-inner"></div></div>
+          <div class="tt-count">↗</div>
+        </div>
+      </div>
+
+      <!-- Caption zone -->
+      <div class="tiktok-caption">
+        <div class="tt-handle">@youraccount</div>
+        <div class="tt-caption-text">DM "ANXIOUS" to apply. 5 spots. $100. #ugc #castingcall</div>
+        <div class="tt-music">♪ original sound - youraccount</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function toggleOverlay(show) {
+      document.getElementById('tiktokOverlay').style.display = show ? 'block' : 'none';
+      document.querySelectorAll('.toggle-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', show ? i === 0 : i === 1);
+      });
+    }
+  </script>
+</body>
+</html>
