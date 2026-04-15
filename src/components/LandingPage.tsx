@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
+import { useEffect } from 'react';
 import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
 
 // ─── Phone Number Normalization ────────────────────────────────────
@@ -106,8 +107,13 @@ export function LandingPage() {
     const [step, setStep] = useState<'WELCOME' | 'INPUT_CODE'>('WELCOME');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [selectedCountry, setSelectedCountry] = useState(() => detectCountryFromTimezone());
+    const [selectedCountry, setSelectedCountry] = useState('US'); // Fallback for SSR
     const detectedDialCode = getDialCodeForCountry(selectedCountry);
+
+    useEffect(() => {
+        // Detect timezone-based country after hydration to avoid SSR mismatch
+        setSelectedCountry(detectCountryFromTimezone());
+    }, []);
     const router = useRouter();
 
     const handleSendCode = async () => {

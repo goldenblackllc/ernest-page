@@ -42,15 +42,23 @@ export async function POST(req: Request) {
         const visualCues = dreamSelf.substring(0, 200);
 
         // Extract Style & Presence from compiled bible (if available)
+        // The compile route stores sections in compiled_output.ideal as [{heading, content}]
+        const compiledSections = bible?.compiled_output?.ideal || [];
+        const styleEntry = compiledSections.find(
+            (s: { heading: string; content: string }) =>
+                s.heading === 'Style & Presence' || s.heading === 'Style and Presence'
+        );
+        // Fallback to legacy path for older profiles
         const compiledBible = bible?.compiled_bible || {};
-        const styleSection = compiledBible.lifestyle?.['Style & Presence']
+        const legacyStyle = compiledBible.lifestyle?.['Style & Presence']
             || compiledBible.lifestyle?.['style_and_presence']
             || '';
+        const rawStyle = styleEntry?.content || legacyStyle;
         // Truncate to keep prompt manageable
-        const styleCues = typeof styleSection === 'string'
-            ? styleSection.substring(0, 300)
-            : typeof styleSection === 'object'
-                ? JSON.stringify(styleSection).substring(0, 300)
+        const styleCues = typeof rawStyle === 'string'
+            ? rawStyle.substring(0, 300)
+            : typeof rawStyle === 'object'
+                ? JSON.stringify(rawStyle).substring(0, 300)
                 : '';
 
         // Compute age from birth year if possible
