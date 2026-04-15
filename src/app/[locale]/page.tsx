@@ -119,12 +119,15 @@ export default function Home() {
         }
     };
 
-    // Show nothing while checking auth state
+    // Show landing page while checking auth state.
+    // Firebase resolves from IndexedDB cache in ~50-100ms, so the
+    // transition to the dashboard is near-instant for returning users.
     if (loading) {
         return (
-            <main className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-600 animate-pulse">Loading...</div>
-            </main>
+            <>
+                <LandingPage />
+                <SupportChat standalone />
+            </>
         );
     }
 
@@ -138,11 +141,33 @@ export default function Home() {
         );
     }
 
-    // Checking profile state
+    // Checking profile state — show dashboard skeleton (Firestore offline
+    // cache makes this nearly instant, but skeleton covers edge cases)
     if (!profileLoaded) {
         return (
-            <main className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-600 animate-pulse">Loading...</div>
+            <main className="flex flex-col min-h-screen text-zinc-300 font-sans">
+                <div className="fixed top-0 left-0 right-0 z-50 h-16 bg-black/80 backdrop-blur-md border-b border-zinc-800/50" />
+                <div className="flex-1 container mx-auto px-4 pt-[calc(64px+env(safe-area-inset-top)+16px)] pb-32 max-w-3xl">
+                    <div className="mb-6 space-y-3">
+                        <div className="h-5 w-32 bg-zinc-800/60 rounded-lg animate-pulse" />
+                        <div className="h-24 bg-zinc-900/60 rounded-2xl animate-pulse" />
+                    </div>
+                    {[1, 2].map((i) => (
+                        <div key={i} className="mb-4 p-5 bg-zinc-900/40 rounded-2xl animate-pulse" style={{ animationDelay: `${i * 150}ms` }}>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-9 h-9 rounded-full bg-zinc-800/80" />
+                                <div className="space-y-1.5">
+                                    <div className="h-3.5 w-24 bg-zinc-800/60 rounded" />
+                                    <div className="h-2.5 w-16 bg-zinc-800/40 rounded" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="h-3 w-full bg-zinc-800/50 rounded" />
+                                <div className="h-3 w-3/4 bg-zinc-800/40 rounded" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </main>
         );
     }
