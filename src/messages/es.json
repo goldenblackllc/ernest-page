@@ -54,7 +54,8 @@
       "compCost": "Costo",
       "compAvailable": "Disponibilidad",
       "compCommitment": "Compromiso",
-      "compRemembers": "Te recuerda",
+      "compPatterns": "Conoce tus patrones",
+      "compIntegrity": "Integridad",
       "compChallenges": "Te desafía",
       "compTherapy": "Terapia Tradicional",
       "compChatbots": "Chatbots de IA",
@@ -95,7 +96,10 @@
       "label": "Empezar",
       "heading1": "Una conversación.",
       "heading2": "Sin ataduras.",
-      "mostPopular": "Más Popular",
+      "freeLabel": "Tu Primera Sesión",
+      "freePrice": "Gratis",
+      "freeDesc": "Una conversación completa. Sin tarjeta. Sin ataduras.",
+      "freeCta": "Comenzar Ahora",
       "singleLabel": "Sesión Individual",
       "singlePrice": "$20",
       "singleDesc": "Una conversación completa. Hasta 2 horas. Sin compromiso.",
@@ -114,7 +118,8 @@
       "archangelPrice": "$499",
       "archangelPeriod": "/ mes",
       "archangelCta": "Suscribirse Ahora",
-      "freeNote": "Tu primera sesión es por nuestra cuenta. Sin tarjeta requerida."
+      "freeNote": "Tu primera sesión es por nuestra cuenta. Sin tarjeta requerida.",
+      "refundNote": "¿No estás satisfecho? Reembolso instantáneo. Sin formularios, sin correos, un clic."
     },
     "auth": {
       "heading1": "Empieza ahora mismo.",

@@ -54,7 +54,8 @@
       "compCost": "Cost",
       "compAvailable": "Available",
       "compCommitment": "Commitment",
-      "compRemembers": "Remembers you",
+      "compPatterns": "Knows your patterns",
+      "compIntegrity": "Integrity",
       "compChallenges": "Challenges you",
       "compTherapy": "Traditional Therapy",
       "compChatbots": "AI Chatbots",
@@ -95,7 +96,10 @@
       "label": "Get Started",
       "heading1": "One conversation.",
       "heading2": "No strings attached.",
-      "mostPopular": "Most Popular",
+      "freeLabel": "Your First Session",
+      "freePrice": "Free",
+      "freeDesc": "One full conversation. No card required. No strings.",
+      "freeCta": "Start Now",
       "singleLabel": "Single Session",
       "singlePrice": "$20",
       "singleDesc": "One full conversation. Up to 2 hours. No commitment.",
@@ -114,7 +118,8 @@
       "archangelPrice": "$499",
       "archangelPeriod": "/ month",
       "archangelCta": "Subscribe Now",
-      "freeNote": "Your first session is on us. No card required."
+      "freeNote": "Your first session is on us. No card required.",
+      "refundNote": "Not satisfied? Refund instantly. No forms, no emails, one click."
     },
     "auth": {
       "heading1": "Start right now.",
@@ -153,7 +158,7 @@
   },
   "onboarding": {
     "processing": "Building your character...",
-    "processingSubtext": "This takes a moment. Hang tight.",
+    "processingSubtext": "This takes a few minutes. Hang tight.",
     "submitLabel": "Create My Character",
     "errorDefault": "Something went wrong. Please try again.",
     "identityForm": {

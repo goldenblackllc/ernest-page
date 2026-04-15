@@ -88,10 +88,11 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
     }, [hasActiveSubscription, sessionCredits, sessionsToday]);
 
     const canChat = hasActiveSubscription || sessionCredits > 0;
+    const isBibleReady = bible != null && bible.status !== 'compiling';
     const dailyRemaining = MAX_SESSIONS_PER_DAY - sessionsToday;
 
     const attemptStartSession = async () => {
-        if (bible?.status === 'compiling') return;
+        if (!isBibleReady) return;
 
         if (!canChat) {
             setIsPurchaseOpen(true);
@@ -206,20 +207,20 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
                 <button
                     onClick={attemptStartSession}
-                    disabled={bible?.status === 'compiling'}
+                    disabled={!isBibleReady}
                     className={cn(
                         "w-16 h-16 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black",
-                        bible?.status === 'compiling'
+                        !isBibleReady
                             ? "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
                             : "bg-white text-black hover:scale-110 active:scale-95"
                     )}
                     title={
-                        bible?.status === 'compiling'
+                        !isBibleReady
                             ? t('triagePanel.buildingCharacter')
                             : canChat ? t('triagePanel.openChat') : t('triagePanel.purchaseSession')
                     }
                 >
-                    <MessageCircle className={cn("w-7 h-7", bible?.status === 'compiling' && "animate-pulse")} />
+                    <MessageCircle className={cn("w-7 h-7", !isBibleReady && "animate-pulse")} />
                 </button>
 
 

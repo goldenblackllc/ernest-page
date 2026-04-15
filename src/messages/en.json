@@ -54,7 +54,8 @@
       "compCost": "Cost",
       "compAvailable": "Available",
       "compCommitment": "Commitment",
-      "compRemembers": "Remembers you",
+      "compPatterns": "Knows your patterns",
+      "compIntegrity": "Integrity",
       "compChallenges": "Challenges you",
       "compTherapy": "Traditional Therapy",
       "compChatbots": "AI Chatbots",
@@ -95,7 +96,10 @@
       "label": "Get Started",
       "heading1": "One conversation.",
       "heading2": "No strings attached.",
-      "mostPopular": "Most Popular",
+      "freeLabel": "Your First Session",
+      "freePrice": "Free",
+      "freeDesc": "One full conversation. No card required. No strings.",
+      "freeCta": "Start Now",
       "singleLabel": "Single Session",
       "singlePrice": "$20",
       "singleDesc": "One full conversation. Up to 2 hours. No commitment.",
@@ -114,7 +118,8 @@
       "archangelPrice": "$499",
       "archangelPeriod": "/ month",
       "archangelCta": "Subscribe Now",
-      "freeNote": "Your first session is on us. No card required."
+      "freeNote": "Your first session is on us. No card required.",
+      "refundNote": "Not satisfied? Refund instantly. No forms, no emails, one click."
     },
     "auth": {
       "heading1": "Start right now.",
@@ -153,7 +158,7 @@
   },
   "onboarding": {
     "processing": "Building your character...",
-    "processingSubtext": "This takes a moment. Hang tight.",
+    "processingSubtext": "This takes a few minutes. Hang tight.",
     "submitLabel": "Create My Character",
     "errorDefault": "Something went wrong. Please try again.",
     "identityForm": {
@@ -185,23 +190,28 @@
     },
     "preChat": {
       "heading": "One thing before we begin.",
-      "subtext": "Your first session is free. We just need one detail to get started.",
+      "subtext": "This helps us build someone who matches you.",
       "genderLabel": "Gender",
       "genderPlaceholder": "Man, Woman, etc.",
-      "cta": "Start Your Free Session"
+      "cta": "Continue"
     }
   },
   "intake": {
     "header": "Getting to know you",
     "ofFive": "of 5",
     "introHeading": "Five quick questions.",
-    "introSubtext": "This isn't the session — that comes right after. We're building your Ideal Self.",
+    "introSubtext": "So the person you talk to actually knows your life. This takes about two minutes.",
     "inputPlaceholder": "Type your answer...",
     "compiling": "Preparing your session...",
-    "compilingSub": "This takes a moment. We're building something specific to you.",
+    "compilingSub": "This takes a few minutes. We're building something specific to you.",
     "readyHeading": "You're all set.",
     "readySub": "We've built someone based on the person you described — your ideal self. This is your free first session. Speak openly.",
-    "startSession": "Start Your First Session"
+    "startSession": "Start Your First Session",
+    "questionTitle1": "Your Vision",
+    "questionTitle2": "People in Your Life",
+    "questionTitle3": "What Lights You Up",
+    "questionTitle4": "When You Were Born",
+    "questionTitle5": "Physical Traits"
   },
   "vision": {
     "errorLogin": "You must be logged in to publish.",
@@ -281,7 +291,11 @@
   },
   "feed": {
     "bibleCompilingTitle": "Building your Ideal Self...",
-    "bibleCompilingSub": "We're using what you told us to create someone specific to you. This takes a minute or two — your free session starts as soon as it's ready.",
+    "bibleCompilingSub": "We're building someone specific to you from what you told us. This takes a few minutes — your session starts as soon as it's ready.",
+    "bibleStaleTitle": "Something went wrong.",
+    "bibleStaleSub": "The build took longer than expected. Tap below to try again.",
+    "bibleRetry": "Retry Build",
+    "bibleRetrying": "Rebuilding...",
     "bibleReadyTitle": "Build Finished ✓",
     "idealSelfDefault": "Your Ideal Self",
     "bibleReadySub": "Tap to view your Ideal Self →",

@@ -159,6 +159,10 @@ export function IntakeChat({ onComplete, onBack }: IntakeChatProps) {
 
     const progressPct = questionNumber > 0 ? ((questionNumber - 1) / TOTAL_QUESTIONS) * 100 : 0;
 
+    const questionTitle = questionNumber >= 1 && questionNumber <= TOTAL_QUESTIONS
+        ? t(`intake.questionTitle${questionNumber}` as any)
+        : '';
+
     return (
         <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col">
 
@@ -205,12 +209,12 @@ export function IntakeChat({ onComplete, onBack }: IntakeChatProps) {
                 </button>
             </div>
 
-            {/* Question area — vertically centered */}
-            <div className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
-                <div className="w-full max-w-lg">
+            {/* Question area — top-weighted so textarea + button always visible */}
+            <div className="flex-1 flex flex-col px-6 pb-6 min-h-0">
+                <div className="w-full max-w-lg mx-auto flex flex-col flex-1 min-h-0">
 
-                    {/* Question text */}
-                    <div className="mb-10 min-h-[80px] flex items-start">
+                    {/* Title + Prompt — scrollable if content is long */}
+                    <div className="flex-1 min-h-0 overflow-y-auto pt-4 pb-4">
                         {isLoading && !currentQuestion ? (
                             /* Initial loading — show intro context */
                             <div className="space-y-3 animate-in fade-in duration-500">
@@ -227,48 +231,59 @@ export function IntakeChat({ onComplete, onBack }: IntakeChatProps) {
                                 </div>
                             </div>
                         ) : (
-                            <p
+                            <div
                                 key={currentQuestion}
-                                className="text-2xl sm:text-3xl font-semibold text-white leading-snug animate-in fade-in slide-in-from-bottom-2 duration-400"
+                                className="animate-in fade-in slide-in-from-bottom-2 duration-400"
                             >
-                                {currentQuestion}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Input */}
-                    <div className="relative">
-                        <textarea
-                            ref={inputRef}
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder={t('intake.inputPlaceholder')}
-                            disabled={isLoading}
-                            rows={4}
-                            className="w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder-zinc-600 resize-none focus:outline-none focus:border-zinc-600 disabled:opacity-40 leading-relaxed transition-colors"
-                        />
-
-                        {/* Inline loading indicator while waiting for next question */}
-                        {isLoading && currentQuestion && (
-                            <div className="absolute bottom-4 left-5 flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                                <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                                <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                                {/* Deterministic title */}
+                                {questionTitle && (
+                                    <h2 className="text-2xl sm:text-3xl font-semibold text-white leading-snug mb-3">
+                                        {questionTitle}
+                                    </h2>
+                                )}
+                                {/* AI prompt as supporting body text */}
+                                <p className="text-base text-zinc-400 leading-relaxed">
+                                    {currentQuestion}
+                                </p>
                             </div>
                         )}
                     </div>
 
-                    {/* Submit */}
-                    <div className="mt-4 flex justify-end">
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!input.trim() || isLoading}
-                            className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl text-sm font-bold hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            Continue
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
+                    {/* Input — pinned to bottom, never pushed off screen */}
+                    <div className="shrink-0">
+                        <div className="relative">
+                            <textarea
+                                ref={inputRef}
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder={t('intake.inputPlaceholder')}
+                                disabled={isLoading}
+                                rows={3}
+                                className="w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder-zinc-600 resize-none focus:outline-none focus:border-zinc-600 disabled:opacity-40 leading-relaxed transition-colors"
+                            />
+
+                            {/* Inline loading indicator while waiting for next question */}
+                            {isLoading && currentQuestion && (
+                                <div className="absolute bottom-4 left-5 flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Submit */}
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                onClick={handleSubmit}
+                                disabled={!input.trim() || isLoading}
+                                className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl text-sm font-bold hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                                Continue
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
 
                 </div>

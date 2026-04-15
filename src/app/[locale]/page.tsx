@@ -7,7 +7,7 @@ import { LandingPage } from "@/components/LandingPage";
 import { TriagePanel } from "@/components/TriagePanel";
 import { Ledger } from "@/components/Ledger";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { DashboardFooter } from "@/components/DashboardFooter";
+
 import { SupportChat } from "@/components/SupportChat";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -231,7 +231,6 @@ export default function Home() {
                 </PullToRefresh>
             </div>
 
-            <DashboardFooter />
         </main>
     );
 }

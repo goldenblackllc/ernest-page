@@ -191,7 +191,7 @@ export function LandingPage() {
             {/* ═══════════════════════════════════════════════════════════
                 HERO — The hook
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center overflow-hidden">
+            <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20 text-center overflow-hidden">
                 {/* Background hero image with aggressive fade */}
                 <div className="absolute inset-0 z-0">
                     <Image
@@ -416,10 +416,11 @@ export function LandingPage() {
                                         <span className="text-center text-white font-semibold">{t('landing.difference.compEarnest')}</span>
                                     </div>
                                     {[
-                                        [t('landing.difference.compCost'), '$150–300', 'Free–$20/mo', '$20'],
+                                        [t('landing.difference.compCost'), '$150–300', 'Free', '$20'],
                                         [t('landing.difference.compAvailable'), 'Days/weeks', 'Anytime', 'Right now'],
                                         [t('landing.difference.compCommitment'), 'Weekly', 'None', 'None'],
-                                        [t('landing.difference.compRemembers'), 'Session notes', 'Mostly no', 'Yes'],
+                                        [t('landing.difference.compPatterns'), 'Session notes', 'Conversation history', 'Longitudinally'],
+                                        [t('landing.difference.compIntegrity'), 'Generic frameworks', 'Drifts to general advice', 'Anchored to your values'],
                                         [t('landing.difference.compChallenges'), 'Sometimes', 'Never', 'Always'],
                                     ].map(([label, trad, ai, us], i) => (
                                         <div key={i} className="grid grid-cols-4 text-sm border-b border-white/[0.04] px-6 py-3.5">
@@ -436,58 +437,7 @@ export function LandingPage() {
                 </motion.div>
             </section>
 
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
-            {/* ═══════════════════════════════════════════════════════════
-                THE SYSTEM — What you're walking into
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
-                <motion.div
-                    className="max-w-5xl mx-auto"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        {t('landing.system.label')}
-                    </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
-                        {t('landing.system.heading1')}
-                        <br />
-                        <span className="text-zinc-500">{t('landing.system.heading2')}</span>
-                    </h2>
-                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mb-16">
-                        {t('landing.system.body')}
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {PLATFORM_PILLARS.map((item, i) => (
-                            <motion.div
-                                key={item.titleKey}
-                                className="group relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 transition-colors duration-200 hover:border-white/20 hover:bg-zinc-900/60"
-                                custom={i}
-                                variants={cardReveal}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: '-60px' }}
-                            >
-                                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center mb-6">
-                                    <item.icon className="w-5 h-5 text-zinc-300" />
-                                </div>
-                                <h3 className="text-lg font-bold tracking-tight text-white mb-3">
-                                    {t(item.titleKey as any)}
-                                </h3>
-                                <p className="text-sm text-zinc-500 leading-relaxed">
-                                    {t(item.textKey as any)}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.div>
-            </section>
-
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
                 THE ARCHITECT — Founder credibility (condensed)
@@ -627,22 +577,49 @@ export function LandingPage() {
                         </h2>
                     </div>
 
+                    {/* Free Session Card — Visual Anchor */}
+                    <motion.div
+                        className="max-w-4xl mx-auto mb-8 rounded-2xl border-2 border-white/30 bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/50 relative"
+                        custom={0}
+                        variants={cardReveal}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, margin: '-60px' }}
+                    >
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-2">
+                                    {t('landing.pricing.freeLabel')}
+                                </p>
+                                <div className="flex items-baseline gap-3 mb-2">
+                                    <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
+                                        {t('landing.pricing.freePrice')}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-zinc-500 leading-relaxed">
+                                    {t('landing.pricing.freeDesc')}
+                                </p>
+                            </div>
+                            <button
+                                onClick={scrollToAuth}
+                                className="rounded-full bg-white text-black px-8 py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 shrink-0"
+                            >
+                                {t('landing.pricing.freeCta')}
+                            </button>
+                        </div>
+                    </motion.div>
+
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
                         {/* Single Session */}
                         <motion.div
-                            className="group rounded-2xl border-2 border-white/20 bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/40 relative"
+                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/20"
                             custom={0}
                             variants={cardReveal}
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: '-60px' }}
                         >
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                <span className="text-[10px] uppercase tracking-[0.2em] bg-white text-black px-3 py-1 rounded-full font-bold">
-                                    {t('landing.pricing.mostPopular')}
-                                </span>
-                            </div>
                             <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
                                 {t('landing.pricing.singleLabel')}
                             </p>
@@ -656,7 +633,7 @@ export function LandingPage() {
                             </p>
                             <button
                                 onClick={scrollToAuth}
-                                className="w-full rounded-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
+                                className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
                             >
                                 {t('landing.pricing.singleCta')}
                             </button>
@@ -786,8 +763,59 @@ export function LandingPage() {
                         whileInView="visible"
                         viewport={{ once: true }}
                     >
-                        Not satisfied? Refund instantly. No forms, no emails, one click.
+                        {t('landing.pricing.refundNote')}
                     </motion.p>
+                </motion.div>
+            </section>
+
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
+            {/* ═══════════════════════════════════════════════════════════
+                THE SYSTEM — What you're walking into (moved below pricing)
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative px-6 py-24 md:py-36">
+                <motion.div
+                    className="max-w-5xl mx-auto"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-80px' }}
+                >
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
+                        {t('landing.system.label')}
+                    </p>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
+                        {t('landing.system.heading1')}
+                        <br />
+                        <span className="text-zinc-500">{t('landing.system.heading2')}</span>
+                    </h2>
+                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mb-16">
+                        {t('landing.system.body')}
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {PLATFORM_PILLARS.map((item, i) => (
+                            <motion.div
+                                key={item.titleKey}
+                                className="group relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 transition-colors duration-200 hover:border-white/20 hover:bg-zinc-900/60"
+                                custom={i}
+                                variants={cardReveal}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: '-60px' }}
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center mb-6">
+                                    <item.icon className="w-5 h-5 text-zinc-300" />
+                                </div>
+                                <h3 className="text-lg font-bold tracking-tight text-white mb-3">
+                                    {t(item.titleKey as any)}
+                                </h3>
+                                <p className="text-sm text-zinc-500 leading-relaxed">
+                                    {t(item.textKey as any)}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
                 </motion.div>
             </section>
 

@@ -3,7 +3,7 @@
 import { ProfileView } from "@/components/ProfileView";
 import { TriagePanel } from "@/components/TriagePanel";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { DashboardFooter } from "@/components/DashboardFooter";
+
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function ProfilePage() {
@@ -17,7 +17,6 @@ export default function ProfilePage() {
                     <TriagePanel />
                 </div>
 
-                <DashboardFooter />
             </main>
         </ProtectedRoute>
     );

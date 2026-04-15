@@ -251,6 +251,38 @@ export function Ledger() {
     const showBibleCompiling = bibleStatus === 'compiling' || isAwaitingBuild;
     const showBibleReady = bibleStatus === 'ready';
 
+    // Detect stale compilations (stuck > 10 minutes)
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+    const bibleLastUpdated = profile?.character_bible?.last_updated;
+    const isStaleCompilation = showBibleCompiling && bibleLastUpdated
+        && (Date.now() - bibleLastUpdated) > STALE_THRESHOLD_MS;
+
+    const [retrying, setRetrying] = useState(false);
+    const retryCompile = useCallback(async () => {
+        if (!user || !profile?.character_bible?.source_code || retrying) return;
+        setRetrying(true);
+        try {
+            const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
+            // Reset status to compiling + fresh timestamp
+            await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
+                'character_bible.status': 'compiling',
+                'character_bible.last_updated': Date.now(),
+            });
+            // Trigger the compile
+            const res = await fetch('/api/onboarding/retry-compile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (!res.ok) {
+                console.error('[Ledger] Retry compile failed:', res.status);
+            }
+        } catch (err) {
+            console.error('[Ledger] Retry compile error:', err);
+        } finally {
+            setRetrying(false);
+        }
+    }, [user, profile?.character_bible?.source_code, retrying]);
+
     const dismissBibleReady = async () => {
         if (!user) return;
         try {
@@ -339,7 +371,7 @@ export function Ledger() {
         }
 
         const emptyStateContent = (
-            <div className="flex flex-col items-center justify-center text-center py-20 px-8">
+            <div className="flex flex-col items-center text-center pt-6 pb-32 px-8">
                 <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4 font-bold">
                     {badgeText}
                 </p>
@@ -359,7 +391,7 @@ export function Ledger() {
         );
 
         return (
-            <section className="flex flex-col gap-6 pt-2">
+            <section className="flex flex-col gap-6 pt-2 pb-24">
                 {/* Bible ready card still renders at top if active */}
                 {showBibleReady && (
                     <button
@@ -397,13 +429,34 @@ export function Ledger() {
 
             {/* Bible Generation Status Card */}
             {showBibleCompiling && (
-                <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
+                <div className={`bg-zinc-900/50 border ${isStaleCompilation ? 'border-red-500/30' : 'border-white/10'} rounded-xl overflow-hidden shadow-sm relative`}>
+                    {!isStaleCompilation && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
+                    )}
                     <div className="flex items-center gap-4 p-5 relative">
-                        <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
-                        <div>
-                            <p className="text-sm font-bold text-white mb-0.5">{t('bibleCompilingTitle')}</p>
-                            <p className="text-xs text-zinc-500">{t('bibleCompilingSub')}</p>
+                        {isStaleCompilation ? (
+                            <div className="w-12 h-12 rounded-full border-2 border-red-500/40 flex items-center justify-center shrink-0">
+                                <span className="text-red-400 text-lg">!</span>
+                            </div>
+                        ) : (
+                            <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
+                        )}
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-white mb-0.5">
+                                {isStaleCompilation ? t('bibleStaleTitle') : t('bibleCompilingTitle')}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                                {isStaleCompilation ? t('bibleStaleSub') : t('bibleCompilingSub')}
+                            </p>
+                            {isStaleCompilation && (
+                                <button
+                                    onClick={retryCompile}
+                                    disabled={retrying}
+                                    className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                                >
+                                    {retrying ? t('bibleRetrying') : t('bibleRetry')}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

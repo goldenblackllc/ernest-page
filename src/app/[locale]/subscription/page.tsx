@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { DashboardFooter } from "@/components/DashboardFooter";
+
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { SubscriptionView } from "@/components/SubscriptionView";
 
@@ -15,7 +15,6 @@ export default function SubscriptionPage() {
                     <SubscriptionView />
                 </div>
 
-                <DashboardFooter />
             </main>
         </ProtectedRoute>
     );
