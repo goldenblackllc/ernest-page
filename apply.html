@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Apply — Earnest Page Casting Call</title>
+  <meta name="description" content="Apply for the Earnest Page casting call. 5 spots. Get paid to figure out your relationship pattern — on camera." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: #000;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Grain texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient glow */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -120px;
+      left: -80px;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── CONTAINER ── */
+    .container {
+      position: relative;
+      max-width: 480px;
+      margin: 0 auto;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      gap: 4px;
+      padding: 20px 32px 0;
+      z-index: 10;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: rgba(255,255,255,0.6);
+      border-radius: 2px;
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .progress-bar.done .progress-fill { width: 100%; }
+    .progress-bar.active .progress-fill { width: 100%; }
+
+    /* ── STEPS ── */
+    .step {
+      position: absolute;
+      inset: 0;
+      padding: 72px 32px 40px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateX(80px);
+      pointer-events: none;
+      transition: all 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .step.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .step.exit {
+      opacity: 0;
+      transform: translateX(-60px);
+      pointer-events: none;
+    }
+
+    /* ── BACK BUTTON ── */
+    .back-btn {
+      position: absolute;
+      top: 36px;
+      left: 32px;
+      z-index: 20;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.3);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 0;
+      transition: color 0.2s;
+      display: none;
+    }
+
+    .back-btn:hover {
+      color: rgba(255,255,255,0.6);
+    }
+
+    .back-btn.visible {
+      display: block;
+    }
+
+    .back-arrow {
+      display: inline-block;
+      margin-right: 6px;
+      transition: transform 0.2s;
+    }
+
+    .back-btn:hover .back-arrow {
+      transform: translateX(-3px);
+    }
+
+    /* ── TYPOGRAPHY ── */
+    .step-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 24px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.4s 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .step-label {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .step-headline {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+      margin-bottom: 14px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: all 0.5s 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .step-headline {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .step-headline em {
+      font-style: normal;
+      color: rgba(255,255,255,0.32);
+    }
+
+    .step-sub {
+      font-size: 16px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.55;
+      margin-bottom: 36px;
+      max-width: 360px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.45s 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .step-sub {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── TEXT INPUT ── */
+    .field-group {
+      margin-bottom: 28px;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: all 0.45s 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .field-group {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 12px;
+    }
+
+    .text-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid rgba(255,255,255,0.12);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      padding: 14px 0;
+      outline: none;
+      transition: border-color 0.3s;
+      caret-color: rgba(255,255,255,0.6);
+    }
+
+    .text-input::placeholder {
+      color: rgba(255,255,255,0.12);
+      font-weight: 400;
+    }
+
+    .text-input:focus {
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .text-input-small {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    /* ── INLINE FIELDS (Instagram + Age side by side on mobile) ── */
+    .fields-row {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── PATTERN CARDS ── */
+    .pattern-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      padding-bottom: 20px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: all 0.5s 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .pattern-grid {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .pattern-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      font-size: 15px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.4;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pattern-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .pattern-card:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.75);
+    }
+
+    .pattern-card:active {
+      transform: scale(0.98);
+    }
+
+    .pattern-card.selected {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.3);
+      color: #fff;
+      transform: scale(1.01);
+    }
+
+    .pattern-card.selected::before {
+      opacity: 1;
+    }
+
+    .pattern-emoji {
+      display: inline-block;
+      margin-right: 10px;
+      font-size: 16px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn-area {
+      margin-top: auto;
+      padding-top: 24px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.4s 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .btn-area {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .next-btn {
+      width: 100%;
+      padding: 18px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      letter-spacing: -0.01em;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .next-btn:disabled {
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.15);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .next-btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 32px rgba(255,255,255,0.08);
+    }
+
+    .next-btn:not(:disabled):active {
+      transform: translateY(0);
+    }
+
+    .next-btn .btn-text {
+      transition: opacity 0.2s;
+    }
+
+    .next-btn.loading .btn-text {
+      opacity: 0;
+    }
+
+    .next-btn .spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(0,0,0,0.15);
+      border-top-color: #000;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .next-btn.loading .spinner {
+      opacity: 1;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* ── CONFIRMATION SCREEN ── */
+    .confirm-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32px;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.6s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .step.active .confirm-icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .confirm-check {
+      width: 28px;
+      height: 28px;
+      stroke: rgba(255,255,255,0.7);
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .confirm-check path {
+      stroke-dasharray: 30;
+      stroke-dashoffset: 30;
+      transition: stroke-dashoffset 0.5s 0.5s ease;
+    }
+
+    .step.active .confirm-check path {
+      stroke-dashoffset: 0;
+    }
+
+    .confirm-note {
+      font-size: 14px;
+      color: rgba(255,255,255,0.35);
+      line-height: 1.6;
+      margin-top: 40px;
+      padding: 20px;
+      border-left: 2px solid rgba(255,255,255,0.08);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.4s 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .confirm-note {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .confirm-note strong {
+      color: rgba(255,255,255,0.55);
+      font-weight: 600;
+    }
+
+    /* ── FOOTER ── */
+    .footer-brand {
+      position: absolute;
+      bottom: 24px;
+      left: 32px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.12);
+      text-transform: uppercase;
+      z-index: 5;
+    }
+
+    /* ── SPOTS COUNTER ── */
+    .spots-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 28px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.4s 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step.active .spots-tag {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .spots-dot {
+      width: 6px;
+      height: 6px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-height: 680px) {
+      .step { padding-top: 56px; }
+      .step-headline { font-size: 32px; }
+      .step-sub { margin-bottom: 24px; }
+      .pattern-card { padding: 13px 18px; font-size: 14px; }
+      .pattern-grid { gap: 8px; }
+    }
+
+    @media (min-width: 481px) {
+      .container {
+        border-left: 1px solid rgba(255,255,255,0.04);
+        border-right: 1px solid rgba(255,255,255,0.04);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Progress -->
+    <div class="progress">
+      <div class="progress-bar active" id="prog1"><div class="progress-fill"></div></div>
+      <div class="progress-bar" id="prog2"><div class="progress-fill"></div></div>
+      <div class="progress-bar" id="prog3"><div class="progress-fill"></div></div>
+    </div>
+
+    <!-- Back button -->
+    <button class="back-btn" id="backBtn" onclick="goBack()">
+      <span class="back-arrow">←</span> Back
+    </button>
+
+    <!-- ═══════════ STEP 1: NAME ═══════════ -->
+    <div class="step active" id="step1">
+      <div class="spots-tag">
+        <span class="spots-dot"></span>
+        5 spots remaining
+      </div>
+
+      <div class="step-headline">
+        You keep choosing<br>the wrong <em>one.</em>
+      </div>
+
+      <div class="step-sub">
+        We're paying 5 people to figure out why — on camera. Takes 60 seconds to apply.
+      </div>
+
+      <div class="field-group">
+        <input
+          type="text"
+          class="text-input"
+          id="nameInput"
+          placeholder="Your first name"
+          autocomplete="given-name"
+          autofocus
+          oninput="validateStep1()"
+        />
+      </div>
+
+      <div class="btn-area">
+        <button class="next-btn" id="btn1" disabled onclick="goToStep(2)">
+          <span class="btn-text">Continue</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ STEP 2: PATTERN ═══════════ -->
+    <div class="step" id="step2">
+      <div class="step-label">Your pattern</div>
+
+      <div class="step-headline">
+        Which one<br>is <em>yours?</em>
+      </div>
+
+      <div class="pattern-grid">
+        <div class="pattern-card" onclick="selectPattern(this)" data-value="going-back">
+          <span class="pattern-emoji">🔁</span> I keep going back to someone I know is wrong for me
+        </div>
+        <div class="pattern-card" onclick="selectPattern(this)" data-value="same-type">
+          <span class="pattern-emoji">🧲</span> I attract the same type of person every time
+        </div>
+        <div class="pattern-card" onclick="selectPattern(this)" data-value="self-sabotage">
+          <span class="pattern-emoji">💣</span> I self-sabotage when things actually start going well
+        </div>
+        <div class="pattern-card" onclick="selectPattern(this)" data-value="cant-let-go">
+          <span class="pattern-emoji">👻</span> I can't stop thinking about someone I need to let go
+        </div>
+        <div class="pattern-card" onclick="selectPattern(this)" data-value="lose-myself">
+          <span class="pattern-emoji">🪞</span> I lose myself completely in every relationship
+        </div>
+        <div class="pattern-card" onclick="selectPattern(this)" data-value="avoid-closeness">
+          <span class="pattern-emoji">🧊</span> I push people away or avoid getting close to anyone
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ STEP 3: CONTACT ═══════════ -->
+    <div class="step" id="step3">
+      <div class="step-label">Last step</div>
+
+      <div class="step-headline" id="step3Headline">
+        How do we<br>reach <em>you?</em>
+      </div>
+
+      <div class="step-sub">
+        If you're selected, we'll DM you on TikTok within 48 hours.
+      </div>
+
+      <div class="fields-row">
+        <div class="field-group">
+          <div class="field-label">TikTok Username</div>
+          <input
+            type="text"
+            class="text-input text-input-small"
+            id="igInput"
+            placeholder="@yourtiktok"
+            autocomplete="off"
+            autocapitalize="none"
+            oninput="validateStep3()"
+          />
+        </div>
+
+        <div class="field-group" style="transition-delay: 0.42s;">
+          <div class="field-label">Age</div>
+          <input
+            type="number"
+            class="text-input text-input-small"
+            id="ageInput"
+            placeholder="18–28"
+            min="18"
+            max="28"
+            inputmode="numeric"
+            oninput="validateStep3()"
+          />
+        </div>
+      </div>
+
+      <div class="btn-area">
+        <button class="next-btn" id="btn3" disabled onclick="submitForm()">
+          <span class="btn-text">Submit Application</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ STEP 4: CONFIRMATION ═══════════ -->
+    <div class="step" id="step4">
+      <div class="confirm-icon">
+        <svg class="confirm-check" viewBox="0 0 24 24">
+          <path d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+
+      <div class="step-headline" id="confirmHeadline">
+        You're in the<br>running.
+      </div>
+
+      <div class="step-sub">
+        If you're selected, we'll DM you on TikTok within 48 hours with everything you need.
+      </div>
+
+      <div class="confirm-note">
+        <strong>One thing —</strong> Don't look up Earnest Page before we reach out. Your raw, unfiltered first reaction is the whole point. That's what makes this real.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-brand">earnestpage.com</div>
+
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════
+       CONFIGURATION
+       Replace with your email or API endpoint.
+       Using FormSubmit.co — free, no signup required.
+       After first submission, check your email
+       to verify and activate.
+       ═══════════════════════════════════════════ */
+    const FORM_ENDPOINT = 'https://formsubmit.co/ajax/0f9393acc50d112b93dadc216aa52a2e';
+
+    /* ── STATE ── */
+    let currentStep = 1;
+    let formData = {
+      name: '',
+      pattern: '',
+      tiktok: '',
+      age: ''
+    };
+
+    /* ── NAVIGATION ── */
+    function goToStep(n) {
+      const prev = document.getElementById('step' + currentStep);
+      const next = document.getElementById('step' + n);
+
+      // Exit current
+      prev.classList.remove('active');
+      prev.classList.add('exit');
+
+      // Enter next
+      setTimeout(() => {
+        next.classList.add('active');
+      }, 80);
+
+      // Clean up exit class
+      setTimeout(() => {
+        prev.classList.remove('exit');
+      }, 600);
+
+      // Update progress
+      for (let i = 1; i <= 3; i++) {
+        const bar = document.getElementById('prog' + i);
+        bar.classList.remove('active', 'done');
+        if (i < n) bar.classList.add('done');
+        if (i === n && n <= 3) bar.classList.add('active');
+      }
+
+      // Back button
+      const backBtn = document.getElementById('backBtn');
+      backBtn.classList.toggle('visible', n > 1 && n < 4);
+
+      // Personalize step 3
+      if (n === 3) {
+        const name = formData.name;
+        document.getElementById('step3Headline').innerHTML =
+          `How do we<br>reach you, <em>${name}?</em>`;
+      }
+
+      // Personalize step 4
+      if (n === 4) {
+        document.getElementById('confirmHeadline').innerHTML =
+          `You're in the<br>running, <em>${formData.name}.</em>`;
+
+        // Hide progress on confirmation
+        document.querySelector('.progress').style.opacity = '0';
+      }
+
+      currentStep = n;
+
+      // Focus input on new step
+      setTimeout(() => {
+        if (n === 1) document.getElementById('nameInput')?.focus();
+        if (n === 3) document.getElementById('igInput')?.focus();
+      }, 400);
+    }
+
+    function goBack() {
+      if (currentStep <= 1) return;
+      const target = currentStep - 1;
+
+      const curr = document.getElementById('step' + currentStep);
+      const prev = document.getElementById('step' + target);
+
+      // Reverse animation: current slides right, prev comes from left
+      curr.classList.remove('active');
+      curr.style.transform = 'translateX(80px)';
+      curr.style.opacity = '0';
+
+      prev.style.transform = 'translateX(-60px)';
+      prev.style.opacity = '0';
+
+      setTimeout(() => {
+        prev.classList.add('active');
+        prev.style.transform = '';
+        prev.style.opacity = '';
+      }, 80);
+
+      setTimeout(() => {
+        curr.style.transform = '';
+        curr.style.opacity = '';
+      }, 600);
+
+      // Update progress
+      for (let i = 1; i <= 3; i++) {
+        const bar = document.getElementById('prog' + i);
+        bar.classList.remove('active', 'done');
+        if (i < target) bar.classList.add('done');
+        if (i === target) bar.classList.add('active');
+      }
+
+      // Back button
+      const backBtn = document.getElementById('backBtn');
+      backBtn.classList.toggle('visible', target > 1);
+
+      currentStep = target;
+    }
+
+    /* ── VALIDATION ── */
+    function validateStep1() {
+      const name = document.getElementById('nameInput').value.trim();
+      formData.name = name;
+      document.getElementById('btn1').disabled = name.length < 1;
+    }
+
+    function validateStep3() {
+      const ig = document.getElementById('igInput').value.trim();
+      const age = document.getElementById('ageInput').value.trim();
+      formData.tiktok = ig;
+      formData.age = age;
+
+      const ageNum = parseInt(age);
+      const valid = ig.length >= 2 && ageNum >= 18 && ageNum <= 28;
+      document.getElementById('btn3').disabled = !valid;
+    }
+
+    /* ── PATTERN SELECTION ── */
+    function selectPattern(el) {
+      // Deselect all
+      document.querySelectorAll('.pattern-card').forEach(c => c.classList.remove('selected'));
+
+      // Select this one
+      el.classList.add('selected');
+      formData.pattern = el.dataset.value;
+
+      // Auto-advance after brief feedback delay
+      setTimeout(() => goToStep(3), 450);
+    }
+
+    /* ── SUBMIT ── */
+    async function submitForm() {
+      const btn = document.getElementById('btn3');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      // Prepare data
+      const payload = {
+        name: formData.name,
+        pattern: formData.pattern,
+        tiktok: formData.tiktok,
+        age: formData.age,
+        _subject: `Casting Call Application — ${formData.name}`,
+        _template: 'table'
+      };
+
+      try {
+        const res = await fetch(FORM_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        // Go to confirmation regardless
+        goToStep(4);
+      } catch (err) {
+        // Still show confirmation — the data is captured in formData
+        // and can be retried. Don't punish the user for a network blip.
+        console.log('Submission data:', payload);
+        goToStep(4);
+      }
+
+      btn.classList.remove('loading');
+    }
+
+    /* ── KEYBOARD SUPPORT ── */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (currentStep === 1 && !document.getElementById('btn1').disabled) {
+          goToStep(2);
+        } else if (currentStep === 3 && !document.getElementById('btn3').disabled) {
+          submitForm();
+        }
+      }
+    });
+
+    /* ── AUTO-PREFIX INSTAGRAM ── */
+    document.getElementById('igInput').addEventListener('focus', function() {
+      if (!this.value) this.value = '@';
+    });
+
+    document.getElementById('igInput').addEventListener('blur', function() {
+      if (this.value === '@') this.value = '';
+    });
+
+    document.getElementById('igInput').addEventListener('input', function() {
+      // Strip multiple leading @s
+      this.value = this.value.replace(/^@+/, '@');
+      // Ensure it starts with @
+      if (this.value && !this.value.startsWith('@')) {
+        this.value = '@' + this.value;
+      }
+    });
+  </script>
+
+</body>
+</html>

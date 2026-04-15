@@ -271,48 +271,11 @@
       margin-top: 8px;
     }
 
-    /* Toggle to show/hide TikTok overlay */
-    .toggle-bar {
-      position: fixed;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 12px;
-      z-index: 100;
-    }
 
-    .toggle-btn {
-      background: rgba(255,255,255,0.08);
-      color: rgba(255,255,255,0.5);
-      border: 1px solid rgba(255,255,255,0.15);
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .toggle-btn:hover {
-      background: rgba(255,255,255,0.12);
-      color: rgba(255,255,255,0.8);
-    }
-
-    .toggle-btn.active {
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      border-color: rgba(255,255,255,0.3);
-    }
   </style>
 </head>
 <body>
 
-  <div class="toggle-bar">
-    <button class="toggle-btn active" onclick="toggleOverlay(true)">With TikTok UI</button>
-    <button class="toggle-btn" onclick="toggleOverlay(false)">Clean (for screenshot)</button>
-  </div>
 
   <div class="card" id="card">
 
@@ -323,16 +286,16 @@
       </div>
 
       <div class="headline">
-        Getting<br>
-        paid $100<br>
-        to be<br>
-        <em>honest.</em>
+        You keep<br>
+        choosing<br>
+        the wrong<br>
+        <em>one.</em>
       </div>
 
       <div class="divider"></div>
 
       <p class="body">
-        We're looking for <strong>5–10 real people</strong> to try an app that helps you talk to your ideal self — and film the experience.
+        We'll pay you to figure out why. We're looking for <strong>5–10 real people</strong> to test an app that shows you the pattern you can't see — and film the experience.
       </p>
     </div>
 
@@ -340,9 +303,9 @@
     <div class="cta-area">
       <div class="cta-block">
         <div class="cta-label">To Apply</div>
-        <div class="cta-instruction">DM us the word</div>
-        <div class="cta-keyword">ANXIOUS</div>
-        <div class="cta-sub">and we'll take it from there →</div>
+        <div class="cta-instruction">Tap the button below</div>
+        <div class="cta-keyword">APPLY</div>
+        <div class="cta-sub">read the brief and submit →</div>
       </div>
     </div>
 
@@ -350,44 +313,6 @@
       <div class="brand">earnestpage.com</div>
     </div>
 
-    <!-- TikTok UI Preview Overlay (shows where native UI sits) -->
-    <div id="tiktokOverlay">
-      <!-- Right side icons -->
-      <div class="tiktok-right">
-        <div>
-          <div class="tt-profile"></div>
-        </div>
-        <div style="text-align:center">
-          <div class="tt-icon"><div class="tt-icon-inner"></div></div>
-          <div class="tt-count">♥</div>
-        </div>
-        <div style="text-align:center">
-          <div class="tt-icon"><div class="tt-icon-inner"></div></div>
-          <div class="tt-count">💬</div>
-        </div>
-        <div style="text-align:center">
-          <div class="tt-icon"><div class="tt-icon-inner"></div></div>
-          <div class="tt-count">↗</div>
-        </div>
-      </div>
-
-      <!-- Caption zone -->
-      <div class="tiktok-caption">
-        <div class="tt-handle">@youraccount</div>
-        <div class="tt-caption-text">DM "ANXIOUS" to apply. 5 spots. $100. #ugc #castingcall</div>
-        <div class="tt-music">♪ original sound - youraccount</div>
-      </div>
-    </div>
-
   </div>
-
-  <script>
-    function toggleOverlay(show) {
-      document.getElementById('tiktokOverlay').style.display = show ? 'block' : 'none';
-      document.querySelectorAll('.toggle-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', show ? i === 0 : i === 1);
-      });
-    }
-  </script>
 </body>
 </html>
