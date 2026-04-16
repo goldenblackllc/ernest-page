@@ -715,6 +715,14 @@
 
   <script>
 
+    /* ── PAGE VIEW TRACKER ── */
+    /* Fires a lightweight ping so we can count real visitors in Vercel logs */
+    (function() {
+      try {
+        var img = new Image();
+        img.src = '/api/ping?page=apply&t=' + Date.now();
+      } catch(e) {}
+    })();
 
     /* ── STATE ── */
     let currentStep = 1;
