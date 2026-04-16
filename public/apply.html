@@ -696,20 +696,25 @@
       </div>
     </div>
 
+    <!-- Hidden form for bulletproof submission (works in TikTok's in-app browser) -->
+    <iframe name="submit_iframe" id="submit_iframe" style="display:none;"></iframe>
+    <form id="hidden_form" method="POST" action="https://formsubmit.co/0f9393acc50d112b93dadc216aa52a2e" target="submit_iframe">
+      <input type="hidden" name="name" id="hf_name" />
+      <input type="hidden" name="pattern" id="hf_pattern" />
+      <input type="hidden" name="tiktok" id="hf_tiktok" />
+      <input type="hidden" name="age" id="hf_age" />
+      <input type="hidden" name="_subject" id="hf_subject" />
+      <input type="hidden" name="_template" value="table" />
+      <input type="hidden" name="_captcha" value="false" />
+    </form>
+
     <!-- Footer -->
     <div class="footer-brand">earnestpage.com</div>
 
   </div>
 
   <script>
-    /* ═══════════════════════════════════════════
-       CONFIGURATION
-       Replace with your email or API endpoint.
-       Using FormSubmit.co — free, no signup required.
-       After first submission, check your email
-       to verify and activate.
-       ═══════════════════════════════════════════ */
-    const FORM_ENDPOINT = 'https://formsubmit.co/ajax/0f9393acc50d112b93dadc216aa52a2e';
+
 
     /* ── STATE ── */
     let currentStep = 1;
@@ -848,42 +853,27 @@
       setTimeout(() => goToStep(3), 450);
     }
 
-    /* ── SUBMIT ── */
-    async function submitForm() {
+    /* ── SUBMIT (native form POST — works in all WebViews including TikTok) ── */
+    function submitForm() {
       const btn = document.getElementById('btn3');
       btn.classList.add('loading');
       btn.disabled = true;
 
-      // Prepare data
-      const payload = {
-        name: formData.name,
-        pattern: formData.pattern,
-        tiktok: formData.tiktok,
-        age: formData.age,
-        _subject: `Casting Call Application — ${formData.name}`,
-        _template: 'table'
-      };
+      // Populate hidden form fields
+      document.getElementById('hf_name').value = formData.name;
+      document.getElementById('hf_pattern').value = formData.pattern;
+      document.getElementById('hf_tiktok').value = formData.tiktok;
+      document.getElementById('hf_age').value = formData.age;
+      document.getElementById('hf_subject').value = 'Casting Call Application — ' + formData.name;
 
-      try {
-        const res = await fetch(FORM_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
+      // Submit via native form POST to hidden iframe
+      document.getElementById('hidden_form').submit();
 
-        // Go to confirmation regardless
+      // Show confirmation after brief delay
+      setTimeout(function() {
         goToStep(4);
-      } catch (err) {
-        // Still show confirmation — the data is captured in formData
-        // and can be retried. Don't punish the user for a network blip.
-        console.log('Submission data:', payload);
-        goToStep(4);
-      }
-
-      btn.classList.remove('loading');
+        btn.classList.remove('loading');
+      }, 600);
     }
 
     /* ── KEYBOARD SUPPORT ── */
