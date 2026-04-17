@@ -521,18 +521,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         onClick={() => setIsExpanded(true)}
                                         className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors duration-200"
                                     >
-                                        {t('readCounsel')}
+                                        {t('readMore')}
                                     </button>
                                 ) : (
                                     <>
-                                        {/* Counsel Divider */}
-                                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 block">
-                                            {t('theCounsel')}
-                                        </span>
+
+
 
                                         {/* Response Block (The Ideal Self's Advice) */}
                                         <div className="text-zinc-100 not-italic text-sm sm:text-[15px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{translatedData?.response || publicResponse}</ReactMarkdown>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{(translatedData?.response || publicResponse || '').replace(/^THE COUNSEL:\s*/i, '')}</ReactMarkdown>
                                         </div>
 
                                         <button
