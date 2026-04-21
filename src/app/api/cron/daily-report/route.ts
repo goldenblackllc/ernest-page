@@ -32,7 +32,9 @@ export async function GET(req: Request) {
         for (const userDoc of allUsers) {
             const data = userDoc.data();
 
-            const createdAt = data?.createdAt?.toDate?.() || (data?.createdAt ? new Date(data.createdAt) : null);
+            // User creation may be stored as `createdAt` (camelCase) or `created_at` (snake_case)
+            const rawCreated = data?.createdAt || data?.created_at;
+            const createdAt = rawCreated?.toDate?.() || (rawCreated ? new Date(rawCreated) : null);
             if (createdAt && createdAt > yesterday) {
                 newSignups++;
             }
@@ -56,6 +58,17 @@ export async function GET(req: Request) {
             .where('created_at', '>=', yesterday)
             .get();
         const postsCreated = postsSnapshot.size;
+
+        // Site visits in last 24h — the window spans two calendar dates
+        const yesterdayDateStr = yesterday.toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const todayDateStr = now.toLocaleDateString('en-CA');
+        const [visitDocYesterday, visitDocToday] = await Promise.all([
+            db.collection('site_visits').doc(yesterdayDateStr).get(),
+            db.collection('site_visits').doc(todayDateStr).get(),
+        ]);
+        const siteVisits =
+            (visitDocYesterday.exists ? (visitDocYesterday.data()?.count || 0) : 0) +
+            (visitDocToday.exists ? (visitDocToday.data()?.count || 0) : 0);
 
         // Active sessions in last 24h (from already-fetched user data)
         let activeSessions = 0;
@@ -108,9 +121,13 @@ export async function GET(req: Request) {
             <td style="padding: 10px 0; color: #a1a1aa;">Active Sessions (24h)</td>
             <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${activeSessions}</td>
         </tr>
-        <tr>
+        <tr style="border-bottom: 1px solid #27272a;">
             <td style="padding: 10px 0; color: #a1a1aa;">Posts Created (24h)</td>
             <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${postsCreated}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 0; color: #a1a1aa;">Site Visits (24h)</td>
+            <td style="padding: 10px 0; text-align: right; color: #60a5fa; font-weight: 600;">${siteVisits}</td>
         </tr>
     </table>
 
@@ -122,12 +139,12 @@ export async function GET(req: Request) {
             console.warn('[Daily Report] GMAIL_APP_PASSWORD not set. Logging report to console.');
             console.log('[Daily Report]', {
                 totalUsers, newSignups, activeSubscriptions, paidLast24h,
-                canceledLast24h, activeSessions, postsCreated,
+                canceledLast24h, activeSessions, postsCreated, siteVisits,
             });
             return NextResponse.json({
                 success: true,
                 warning: 'GMAIL_APP_PASSWORD not configured. Report logged to console.',
-                metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated },
+                metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, siteVisits },
             });
         }
 
@@ -142,7 +159,7 @@ export async function GET(req: Request) {
         await transporter.sendMail({
             from: `Earnest Page <${ADMIN_EMAIL}>`,
             to: ADMIN_EMAIL,
-            subject: `📊 Daily Report — ${newSignups} new · ${activeSessions} active · ${postsCreated} posts`,
+            subject: `📊 Daily Report — ${newSignups} new · ${siteVisits} visits · ${activeSessions} active · ${postsCreated} posts`,
             html: htmlReport,
         });
 
@@ -150,7 +167,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({
             success: true,
-            metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated },
+            metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, siteVisits },
         });
 
     } catch (error: any) {
