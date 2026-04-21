@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from 'next-intl';
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { getMostRecentActiveChat } from "@/lib/firebase/chat";
-import { CharacterBible } from "@/types/character";
+import { CharacterBible, CharacterIdentity } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
 import { SessionPurchaseModal } from "./SessionPurchaseModal";
 
@@ -27,6 +27,7 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
 
     // Data for Mirror Chat
     const [bible, setBible] = useState<CharacterBible | null>(null);
+    const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
     const [defaultPostRouting, setDefaultPostRouting] = useState<'public' | 'private'>('public');
 
     // Session credit / subscription state
@@ -38,6 +39,7 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
         if (!user) return;
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
             setBible(data.character_bible);
+            setIdentity(data.identity || null);
             setDefaultPostRouting(data.default_post_routing || 'public');
             setSessionCredits(data.session_credits || 0);
             
@@ -238,6 +240,7 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
                 isOpen={isMirrorOpen}
                 onClose={() => { setIsMirrorOpen(false); setInitialContext(null); }}
                 bible={bible}
+                identity={identity}
                 uid={user?.uid || ""}
                 initialContext={initialContext}
                 defaultPostRouting={defaultPostRouting}
