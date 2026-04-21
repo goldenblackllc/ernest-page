@@ -246,7 +246,7 @@
   "mirrorChat": {
     "consultingMirror": "Consulting The Mirror",
     "connectionSecured": "Connection secured.",
-    "promptFriction": "\"Detail your current friction.\"",
+    "promptFriction": "\"Name what you want. Name what's in the way.\"",
     "promptOnboarding": "Say hello — this is your free first session.",
     "extractingDirectives": "Extracting directives...",
     "extractDirectives": "Extract 24-Hour Directives",
@@ -261,7 +261,7 @@
     "sessionExpired": "Session Time Expired",
     "sessionCompleteDesc": "You've reached {max} exchanges. Extract your directives and close to start a new session.",
     "sessionExpiredDesc": "Your {hours}-hour session window has ended. Extract your directives and close to start a new session.",
-    "placeholderDefault": "State your friction...",
+    "placeholderDefault": "Name it...",
     "placeholderEnded": "Session ended. Close to start a new one.",
     "encryptedPrivate": "Encrypted & Private",
     "stop": "Stop",
