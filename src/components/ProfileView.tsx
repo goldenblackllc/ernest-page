@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/character";
-import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
 import { User, ChevronDown, Pencil, FileText, Loader2, Shield } from "lucide-react";
@@ -151,7 +150,7 @@ export function ProfileView() {
 
             </div>
 
-            {/* Edit Modal — Rant-based flow */}
+            {/* Edit Modal — Form-based editor with pre-populated values */}
             <EditIdentityModal
                 isOpen={isEditOpen}
                 onClose={() => setIsEditOpen(false)}
@@ -161,18 +160,14 @@ export function ProfileView() {
                 currentEthnicity={identity?.ethnicity || ""}
                 currentPeople={identity?.important_people || ""}
                 currentEnjoyments={identity?.things_i_enjoy || ""}
-                currentCharacterName={identity?.character_name || ""}
+                currentCharacterName={bible?.character_name || identity?.character_name || ""}
             />
-
-            {/* Dossier Modal — hidden from users, data still maintained */}
-
-
 
         </>
     );
 }
 
-// ——— Edit Identity Modal (Shared Form → Background Generation) ———
+// ——— Edit Identity Modal (Form-based → Background Character Rebuild) ———
 
 function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentEthnicity, currentPeople, currentEnjoyments, currentCharacterName }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentEthnicity: string; currentPeople: string; currentEnjoyments: string; currentCharacterName: string }) {
     const { user } = useAuth();
@@ -229,45 +224,44 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={isProcessing ? undefined : onClose} />
+        <div className="fixed inset-0 z-[60] bg-zinc-950 flex flex-col">
+            {/* Header */}
+            <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between pt-[calc(16px+env(safe-area-inset-top))]">
+                <h2 className="text-sm font-bold text-white">{t('editIdentityModalTitle')}</h2>
+                <button onClick={isProcessing ? undefined : onClose} className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3">
+                    {t('close')}
+                </button>
+            </div>
 
-            <div className="relative w-full max-w-lg max-h-[85vh] bg-zinc-950 border border-white/10 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-white">{t('editIdentityModalTitle')}</h2>
-                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3">
-                        {t('close')}
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6">
-                    {isProcessing ? (
-                        <div className="flex flex-col items-center gap-6 py-12">
-                            <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
-                            <p className="text-base text-zinc-400">{t('rebuildingCharacter')}</p>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-5">
-                            {error && (
-                                <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl">{error}</div>
-                            )}
-                            <IdentityForm
-                                initialValues={{
-                                    character_name: currentCharacterName,
-                                    gender: currentGender,
-                                    age: currentAge,
-                                    ethnicity: currentEthnicity,
-                                    rant: currentRant,
-                                    people: currentPeople,
-                                    enjoyments: currentEnjoyments,
-                                }}
-                                onSubmit={handleSubmit}
-                                isSubmitting={isProcessing}
-                                submitLabel={t('rebuildCharacterBtn')}
-                            />
-                        </div>
-                    )}
-                </div>
+            {/* Content — fills remaining screen height */}
+            <div className="flex-1 flex flex-col min-h-0 px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
+                {isProcessing ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-6">
+                        <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
+                        <p className="text-base text-zinc-400">{t('rebuildingCharacter')}</p>
+                    </div>
+                ) : (
+                    <>
+                        {error && (
+                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4 shrink-0">{error}</div>
+                        )}
+                        <IdentityForm
+                            initialValues={{
+                                character_name: currentCharacterName,
+                                gender: currentGender,
+                                age: currentAge,
+                                ethnicity: currentEthnicity,
+                                rant: currentRant,
+                                people: currentPeople,
+                                enjoyments: currentEnjoyments,
+                            }}
+                            onSubmit={handleSubmit}
+                            isSubmitting={isProcessing}
+                            submitLabel={t('rebuildCharacterBtn')}
+                            showHeadings={false}
+                        />
+                    </>
+                )}
             </div>
         </div>
     );

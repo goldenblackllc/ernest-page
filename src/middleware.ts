@@ -16,6 +16,12 @@ const SECURITY_HEADERS: Record<string, string> = {
 export default function proxy(request: NextRequest) {
     const response = intlMiddleware(request);
 
+    // Fire-and-forget: track page visit without blocking the response
+    const trackUrl = new URL('/api/track-visit', request.url);
+    fetch(trackUrl, { method: 'POST' }).catch(() => {
+        /* swallow — tracking should never break the site */
+    });
+
     for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
         response.headers.set(key, value);
     }

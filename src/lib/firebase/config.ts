@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { Firestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore as getFirestoreFallback } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
@@ -13,7 +13,21 @@ const firebaseConfig = {
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+
+// Enable Firestore offline persistence — reads resolve from local
+// IndexedDB cache first, eliminating 1-2s network wait on cold opens.
+let db: Firestore;
+try {
+    db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+        })
+    });
+} catch {
+    // Firestore already initialized (e.g. HMR) — reuse existing instance
+    db = getFirestoreFallback(app);
+}
+
 const auth = getAuth(app);
 const storage = getStorage(app);
 

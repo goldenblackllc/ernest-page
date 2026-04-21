@@ -88,7 +88,7 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
     }, [hasActiveSubscription, sessionCredits, sessionsToday]);
 
     const canChat = hasActiveSubscription || sessionCredits > 0;
-    const isBibleReady = bible != null && bible.status !== 'compiling';
+    const isBibleReady = bible != null && (bible.compiled_output?.ideal?.length ?? 0) > 0;
     const dailyRemaining = MAX_SESSIONS_PER_DAY - sessionsToday;
 
     const attemptStartSession = async () => {

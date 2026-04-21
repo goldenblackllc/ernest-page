@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { CharacterBible } from "@/types/character";
 import { User, Shield, Square, RefreshCcw, ChevronDown, Target, Globe, Lock, Flame, Loader2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -244,6 +244,36 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
     }, [isOpen]);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+    // Track the visual viewport to detect when the software keyboard is open.
+    // When the keyboard appears the visual viewport shrinks; the difference
+    // between the layout height and the visual height is the keyboard height.
+    // We shift the fixed overlay upward by that amount so the input bar stays
+    // visible above the keyboard on iOS and Android.
+    const updateKeyboardOffset = useCallback(() => {
+        if (!window.visualViewport) return;
+        const vvHeight = window.visualViewport.height;
+        const layoutHeight = window.innerHeight;
+        const offset = Math.max(0, layoutHeight - vvHeight - window.visualViewport.offsetTop);
+        setKeyboardOffset(offset);
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setKeyboardOffset(0);
+            return;
+        }
+        const vv = window.visualViewport;
+        if (!vv) return;
+        vv.addEventListener('resize', updateKeyboardOffset);
+        vv.addEventListener('scroll', updateKeyboardOffset);
+        updateKeyboardOffset();
+        return () => {
+            vv.removeEventListener('resize', updateKeyboardOffset);
+            vv.removeEventListener('scroll', updateKeyboardOffset);
+        };
+    }, [isOpen, updateKeyboardOffset]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInput(e.target.value);
@@ -471,7 +501,12 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-50 w-screen h-[100dvh] bg-zinc-950 flex flex-col"
+                    className="fixed inset-0 z-50 w-screen bg-zinc-950 flex flex-col"
+                    style={{
+                        // Shrink the overlay by the keyboard height so the
+                        // pinned input bar is never hidden under the keyboard.
+                        height: `calc(100dvh - ${keyboardOffset}px)`,
+                    }}
                 >
                     {/* ═══ PINNED HEADER ═══ */}
                     <div className="flex items-center justify-between px-5 sm:px-8 py-4 border-b border-zinc-800/50 bg-zinc-950 z-10 shrink-0">
@@ -793,9 +828,8 @@ export function MirrorChat({ isOpen, onClose, bible, uid, initialContext, defaul
                                     placeholder={isSessionLimited ? t('mirrorChat.placeholderEnded') : t('mirrorChat.placeholderDefault')}
                                     disabled={isSessionLimited}
                                     onFocus={() => {
-                                        setTimeout(() => {
-                                            textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        }, 300);
+                                        // Visual viewport listener handles keeping
+                                        // the input visible; no manual scroll needed.
                                     }}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {

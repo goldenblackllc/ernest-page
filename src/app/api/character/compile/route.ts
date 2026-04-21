@@ -25,16 +25,17 @@ CREATIVITY RULE: You are a Visionary Biographer. The user gives you the 'seeds' 
 Fill in the gaps: If the user says they are a 'Gentleman,' invent how they keep their desk (impeccable), how they handle their laundry (folded immediately), and the scent of their home (cedar and espresso).
 Visualize: Use sensory language. Make the user feel the ideal life.`;
 
-const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following User Inputs. Your task is to output a comprehensive Character Bible perfectly broken out into these 6 exact sections:
+const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following User Inputs. Your task is to output a comprehensive Character Bible perfectly broken out into these 7 exact sections:
 1. "Style & Presence" (Aesthetics, Wardrobe, Physicality)
 2. "Daily Life & Habits" (Routines, Occupations, Passions)
 3. "People & Connections" (Relationships, Communication, Social Interaction)
 4. "The Inner Mind" (How they process emotions, crisis, and reality)
 5. "Quirks & Details" (Pets, diet, languages, unique variables)
 6. "Order & Sanctuary" (Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace)
+7. "The World I Love" (Music, Shows, Movies, Books, Food, Games, Sports — the named cultural touchpoints that define who they are)
 
 CRITICAL FORMATTING RULE — SUBSECTIONS:
-Each of the 6 sections above MUST be broken into multiple subsections using bold markdown subheadings. Use the format: **Subheading:** followed by the prose for that subsection.
+Each of the 7 sections above MUST be broken into multiple subsections using bold markdown subheadings. Use the format: **Subheading:** followed by the prose for that subsection.
 The subsection names should be organic and character-specific — not generic labels. Here are examples of the kind of subsections expected for each section:
 - "Style & Presence" → **Wardrobe:** ... **Grooming:** ... **Physicality:** ... **Travel Style:** ...
 - "Daily Life & Habits" → **Morning Ritual:** ... **The Work:** ... **Weekend Mode:** ... **Passions:** ...
@@ -43,6 +44,8 @@ The subsection names should be organic and character-specific — not generic la
 - "The Inner Mind" → **Processing Emotions:** ... **Under Pressure:** ... **Self-Talk:** ... **Relationship with Reality:** ...
 - "Quirks & Details" → **Diet:** ... **Languages:** ... **Guilty Pleasures:** ... **Pets:** ... (include only what applies)
 - "Order & Sanctuary" → **The Home:** ... **The Car:** ... **The Workspace:** ... **Systems & Rituals:** ...
+- "The World I Love" → **The Music:** ... **The Screen:** ... **The Table:** ... **The Game:** ...
+  CRITICAL — NAMES NOT VIBES: This section exists to preserve the specific artists, shows, movies, books, foods, restaurants, games, and cultural references that make this person *them*. Do NOT abstract these into aesthetic descriptions. "Billie Eilish" must stay "Billie Eilish" — not become "dark, moody music." "Dr. Who" must stay "Dr. Who" — not become "a love of British sci-fi." Use the real names. Describe the *relationship* to each one — when they listen, how it makes them feel, what it means to them. If the user only gave a few seeds, extrapolate adjacent tastes that would logically fit, but always use specific names and titles, never genres or moods alone.
 These are examples — you MUST adapt the subsection names to fit the actual character. Invent subsections that make sense for who they are. Every subsection must use the **Name:** format so the UI can parse them.
 
 Crucial Instruction: Use the user inputs as your foundation, but actively extrapolate and invent logical details. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead. 
@@ -142,7 +145,8 @@ export async function POST(req: Request) {
                 People_and_Connections: z.string().describe("Relationships, Communication, Social Interaction"),
                 The_Inner_Mind: z.string().describe("How they process emotions, crisis, and reality"),
                 Quirks_and_Details: z.string().describe("Pets, diet, languages, unique variables"),
-                Order_and_Sanctuary: z.string().describe("Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace")
+                Order_and_Sanctuary: z.string().describe("Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace"),
+                The_World_I_Love: z.string().describe("The cultural identity — specific artists, shows, movies, books, food, music, games, sports, and the named things that define their taste. Use real names, not abstractions.")
             })
         });
 
@@ -172,6 +176,10 @@ export async function POST(req: Request) {
             {
                 heading: "Order & Sanctuary",
                 content: rawObj.Order_and_Sanctuary
+            },
+            {
+                heading: "The World I Love",
+                content: rawObj.The_World_I_Love
             }
         ];
 

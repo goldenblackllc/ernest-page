@@ -60,8 +60,8 @@ export async function POST(req: Request) {
         // Server-side length limits (defense-in-depth, mirrors client maxLength)
         const rant = (rawBody.rant || '').substring(0, 5000);
         const gender = (rawBody.gender || '').substring(0, 50);
-        const age = (rawBody.age || '').substring(0, 4);
-        const ethnicity = (rawBody.ethnicity || '').substring(0, 100);
+        const age = (rawBody.age || '').substring(0, 30);
+        const ethnicity = (rawBody.ethnicity || '').substring(0, 300);
         const important_people = (rawBody.important_people || '').substring(0, 3000);
         const things_i_enjoy = (rawBody.things_i_enjoy || '').substring(0, 3000);
         const character_name = (rawBody.character_name || '').substring(0, 100);
@@ -184,15 +184,19 @@ export async function POST(req: Request) {
         };
 
         // Set status to 'compiling' so the feed can show the status card.
-        // On first onboarding, also grant 1 free session credit.
+        // On re-edit, PRESERVE the existing compiled_output so the old bible
+        // remains usable for mirror chat while the new compile runs.
+        const existingBible = existingUserDoc.data()?.character_bible;
         const topLevelUpdate: Record<string, any> = {
             identity,
             character_bible: {
                 source_code: legacySourceCode,
-                compiled_bible: {},
-                compiled_output: { ideal: [] },
+                compiled_bible: existingBible?.compiled_bible || {},
+                compiled_output: existingBible?.compiled_output || { ideal: [] },
                 last_updated: Date.now(),
                 status: 'compiling',
+                // Preserve existing character_name during re-compile
+                ...(existingBible?.character_name ? { character_name: existingBible.character_name } : {}),
             },
         };
 

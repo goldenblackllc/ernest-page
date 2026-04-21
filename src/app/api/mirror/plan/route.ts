@@ -30,16 +30,22 @@ ${JSON.stringify(compiledBible)}
 [CURRENT TIME]
 ${localTime || 'Unknown'}
 
-You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their action plan.
+You have just had a conversation with someone who has hired you as their mentor through Earnest Page. Based on everything discussed, you must now generate their 24-HOUR PLAN — a sequence of actions spread across the next 24 hours.
 
-THE MOVE (FIRST DIRECTIVE):
-The very first directive must be THE MOVE — the single most EXCITING action this person can take RIGHT NOW with integrity. Not the most productive, not the most urgent — the most exciting. It must be:
-- Physical (stand up, walk, call, write, go)
-- Specific (not "reflect on" — name the exact action)
-- Completable in under 10 minutes
+TIME AWARENESS:
+Pay close attention to the current time. Structure the plan so that each action lands at a natural moment in the person's day:
+- If it's morning, start with something for today.
+- If it's late at night, the first action might be for tomorrow morning.
+- Space actions out — don't pile everything into one block.
+- Use natural time anchors like "tonight before bed," "first thing tomorrow morning," "at lunch tomorrow," "tomorrow evening."
 
-WHAT'S NEXT (REMAINING DIRECTIVES):
-After THE MOVE, generate 2-5 natural follow-up actions for the rest of today and tomorrow. These are where the energy wants to go — not obligations, but exciting next steps. Include a note to pay attention to anything unexpected that happens.
+WHAT TO GENERATE:
+Generate 3-6 specific actions for the next 24 hours. These are where the energy wants to go — not obligations, but exciting next steps. Each action must be:
+- Physical and specific (not "reflect on" — name the exact action)
+- Tied directly to what was discussed in the conversation
+- Placed at a time that makes sense given when this conversation is happening
+
+Include a note to pay attention to anything unexpected that happens along the way.
 
 RULES:
 - Write each directive in your character's voice — direct, personal, in character.
@@ -47,7 +53,7 @@ RULES:
 - Do NOT add bullet points, numbers, or any other formatting.
 - Do NOT output generic productivity advice. Every directive must be specifically tied to what was discussed.
 
-Example output: 'Pick up the phone right now and call your brother. Say exactly this: "I've been thinking about what you said."||Before bed tonight, write one sentence about what surprised you today.||Tomorrow morning, wake up 20 minutes early and sit with your coffee before anyone else is up.||Pay attention — something unexpected will happen when you start moving. Notice it.'`;
+Example output (for a conversation at 9pm): 'Tonight before you sleep, open your notes app and write the three names that came to mind during our conversation.||Tomorrow morning, before you check your phone, sit with your coffee and read what you wrote last night.||At lunch tomorrow, call your brother. Say exactly this: "I've been thinking about what you said."||Tomorrow evening, take a 20-minute walk with no headphones. Just walk.||Pay attention — something unexpected will happen when you start moving on this. Notice it.'`;
 
         const conversationContext = messages.map((m: any) =>
             `${m.role === 'user' ? 'USER' : 'CHARACTER'}: ${m.content}`
@@ -73,7 +79,7 @@ Example output: 'Pick up the phone right now and call your brother. Say exactly 
                 id: Math.random().toString(36).substring(2, 10),
                 task,
                 completed: false,
-                priority: index === 0 ? 'immediate' : 'next',
+                priority: 'next',
                 created_at: new Date().toISOString(),
             }))
         }, { merge: true });
