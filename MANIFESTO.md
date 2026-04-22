@@ -136,6 +136,7 @@ There is no subscription paywall. Users purchase session credits à la carte or 
 
 | Option | Price | What You Get |
 |---|---|---|
+| **First Session** | Free | 1 session on account creation. No card required. |
 | **Single Session** | $20 USD | 1 conversation (up to 2 hours / 30 exchanges) |
 | **3-Pack** | $50 USD | 3 sessions (save $10). Credits stored, use anytime. |
 | **The Archangel Program** | $499/month | Unlimited sessions (up to 5/day). Auto-renewing subscription via Stripe. Cancel anytime. |
