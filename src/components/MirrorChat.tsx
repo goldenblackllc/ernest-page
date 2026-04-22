@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
-import { Shield, Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X } from "lucide-react";
+import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +40,26 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const [sessionTone] = useState(DEFAULT_TONE);
     const [isRoutingOpen, setIsRoutingOpen] = useState(false);
     const routingRef = useRef<HTMLDivElement>(null);
+
+    // Layout measurement — three-zone keyboard-safe layout
+    const headerRef = useRef<HTMLDivElement>(null);
+    const inputZoneRef = useRef<HTMLDivElement>(null);
+    const [headerHeight, setHeaderHeight] = useState(88);
+    const [inputZoneHeight, setInputZoneHeight] = useState(80);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const ro = new ResizeObserver(() => {
+            if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+            if (inputZoneRef.current) setInputZoneHeight(inputZoneRef.current.offsetHeight);
+        });
+        if (headerRef.current) ro.observe(headerRef.current);
+        if (inputZoneRef.current) ro.observe(inputZoneRef.current);
+        // Initial measurement
+        if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+        if (inputZoneRef.current) setInputZoneHeight(inputZoneRef.current.offsetHeight);
+        return () => ro.disconnect();
+    }, [isOpen]);
     const [sessionRouting, setSessionRouting] = useState<SessionRouting>(
         defaultPostRouting === 'private' ? 'private' : 'public'
     );
@@ -502,15 +522,13 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-50 w-screen bg-zinc-950 flex flex-col"
-                    style={{
-                        // Shrink the overlay by the keyboard height so the
-                        // pinned input bar is never hidden under the keyboard.
-                        height: `calc(100dvh - ${keyboardOffset}px)`,
-                    }}
+                    className="fixed inset-0 z-50 bg-zinc-950"
                 >
-                    {/* ═══ PINNED HEADER — Character Presence Bar ═══ */}
-                    <div className="flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-zinc-800/50 bg-zinc-950 z-10 shrink-0">
+                    {/* ═══ ZONE 1: HEADER — always pinned to top ═══ */}
+                    <div
+                        ref={headerRef}
+                        className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-zinc-800/50 bg-zinc-950"
+                    >
                         {/* Avatar — prominent face */}
                         <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden flex items-center justify-center shrink-0">
                             {avatarUrl ? (
@@ -553,15 +571,19 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                         </button>
                     </div>
 
-
-
-                    {/* ═══ READING ZONE ═══ */}
-                    <div className="flex-1 overflow-y-auto bg-zinc-950 custom-scrollbar scroll-smooth">
+                    {/* ═══ ZONE 2: MESSAGES — fills space between header and input ═══ */}
+                    <div
+                        className="absolute left-0 right-0 overflow-y-auto bg-zinc-950 custom-scrollbar"
+                        style={{
+                            top: headerHeight,
+                            bottom: inputZoneHeight + keyboardOffset,
+                        }}
+                    >
                         <div className="max-w-3xl mx-auto px-5 sm:px-8 lg:px-12 py-6 space-y-3">
                             {messages.length === 0 ? (
                                 <div className="h-full min-h-[60vh] flex flex-col items-center justify-center text-center space-y-4 opacity-70">
                                     <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                                        <Shield className="w-8 h-8 text-zinc-500" />
+                                        <Lock className="w-8 h-8 text-zinc-500" />
                                     </div>
                                     <div>
                                         <p className="text-zinc-400 mb-2">{t('mirrorChat.connectionSecured')}</p>
@@ -634,8 +656,12 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                         </div>
                     </div>
 
-                    {/* ═══ INPUT ZONE ═══ */}
-                    <div className="bg-zinc-950 border-t border-zinc-800/50 shrink-0">
+                    {/* ═══ ZONE 3: INPUT — pinned above keyboard ═══ */}
+                    <div
+                        ref={inputZoneRef}
+                        className="absolute left-0 right-0 bg-zinc-950 border-t border-zinc-800/50"
+                        style={{ bottom: keyboardOffset }}
+                    >
                         <div className="max-w-3xl mx-auto px-5 sm:px-8 py-4 relative">
                             {/* Regenerate Button */}
                             {!isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
@@ -664,21 +690,13 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                 )}
                             </AnimatePresence>
 
-                            {/* ═══ ROUTING BADGE + SETTINGS ═══ */}
-                            <div className="flex items-center justify-between mb-3" ref={routingRef}>
-                                {/* Active routing badge */}
+                            {/* ═══ ROUTING ICON + SETTINGS ═══ */}
+                            <div className="flex items-center justify-between mb-2" ref={routingRef}>
+                                {/* Routing icon only — no text label */}
                                 <div className="flex items-center gap-1.5">
                                     {sessionRouting === 'public' && <Globe className="w-3 h-3 text-zinc-600" />}
                                     {sessionRouting === 'private' && <Lock className="w-3 h-3 text-zinc-600" />}
-                                    {sessionRouting === 'burn' && <Flame className="w-3 h-3 text-red-600" />}
-                                    <span className={cn(
-                                        "text-[10px] uppercase font-bold tracking-widest",
-                                        sessionRouting === 'burn' ? "text-red-600" : "text-zinc-600"
-                                    )}>
-                                        {sessionRouting === 'public' && t('mirrorChat.publicFeed')}
-                                        {sessionRouting === 'private' && t('mirrorChat.encryptedPrivate')}
-                                        {sessionRouting === 'burn' && t('mirrorChat.burnOnClose')}
-                                    </span>
+                                    {sessionRouting === 'burn' && <Flame className="w-3 h-3 text-red-500" />}
                                 </div>
 
                                 {/* Settings icon → routing popover */}
