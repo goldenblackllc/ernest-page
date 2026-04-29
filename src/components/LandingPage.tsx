@@ -836,6 +836,28 @@ export function LandingPage() {
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
+                DISCLAIMER — The Therapy Shot Reality Check
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="relative px-6 py-16 md:py-20">
+                <motion.div
+                    className="max-w-2xl mx-auto text-center"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-80px' }}
+                >
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
+                        {t('landing.disclaimer.heading')}
+                    </p>
+                    <p className="text-sm text-zinc-500 leading-relaxed">
+                        {t('landing.disclaimer.body')}
+                    </p>
+                </motion.div>
+            </section>
+
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
+            {/* ═══════════════════════════════════════════════════════════
                 AUTH CARD — Phone login
                ═══════════════════════════════════════════════════════════ */}
             <section id="auth-section" className="relative px-6 py-24 md:py-32">
@@ -951,7 +973,7 @@ export function LandingPage() {
                     </div>
                 </div>
                 <p className="max-w-5xl mx-auto text-[10px] text-zinc-700 text-center sm:text-left mt-4">
-                    Clarity Sessions are not a substitute for licensed therapy or psychiatric care.
+                    Therapy Shots are not a substitute for licensed therapy or psychiatric care.
                     If you are in crisis, please contact the 988 Suicide &amp; Crisis Lifeline.
                 </p>
             </footer>
