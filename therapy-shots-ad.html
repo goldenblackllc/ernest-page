@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earnest Page — Therapy Shots Campaign</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      gap: 24px;
+    }
+
+    /* ── VARIANT PICKER (preview tool only) ── */
+    .picker {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .picker-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.35);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .picker-btn:hover, .picker-btn.active {
+      border-color: rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .picker-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.15);
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+
+    /* ──────────────────────────────────────────
+       TikTok Safe Zones:
+       - Right ~110px : profile, like, share, etc
+       - Bottom ~280px: caption, music, CTA
+       - Top ~60px    : status bar
+    ────────────────────────────────────────── */
+    .card {
+      width: 540px;
+      height: 960px;
+      background: #000000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Grain texture */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── SAFE CONTENT ZONE ── */
+    .content {
+      position: relative;
+      z-index: 1;
+      /* top 8% → ~76px, left 44px, right 130px for TikTok UI */
+      padding: 76px 130px 0 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* ── TOP EYEBROW ── */
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.20);
+      margin-bottom: 36px;
+    }
+
+    /* ── PROBLEM STATEMENT ──
+       This is the ONLY thing you change per ad.
+       Edit the text inside #problem-text.
+    ── */
+    .problem {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      color: #ffffff;
+    }
+
+    /* Dim second line for contrast rhythm */
+    .problem .dim {
+      color: rgba(255,255,255,0.32);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 36px;
+      height: 2px;
+      background: rgba(255,255,255,0.12);
+      margin: 36px 0;
+    }
+
+    /* ── TAGLINE BLOCK — always the same ── */
+    .tagline {
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.95);
+    }
+
+    .tagline .deliverable {
+      display: block;
+      font-size: 22px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.38);
+      letter-spacing: -0.01em;
+      margin-top: 10px;
+    }
+
+    .tagline .price {
+      display: block;
+      font-size: 22px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.20);
+      letter-spacing: -0.01em;
+      margin-top: 2px;
+    }
+
+    /* ── BRAND — bottom left, above TikTok UI ── */
+    .brand {
+      position: absolute;
+      z-index: 1;
+      bottom: 296px;
+      left: 44px;
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.13);
+      text-transform: uppercase;
+    }
+
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+      position: absolute;
+      z-index: 1;
+      bottom: 280px;
+      left: 44px;
+      font-size: 7.5px;
+      color: rgba(255,255,255,0.07);
+    }
+
+    /* ── TIKTOK UI CHROME (preview only) ── */
+    .tiktok-right {
+      position: absolute;
+      right: 14px;
+      bottom: 330px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      z-index: 10;
+    }
+
+    .tt-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin-bottom: 4px;
+    }
+
+    .tt-icon-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tt-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.025);
+    }
+
+    .tt-count {
+      font-size: 9px;
+      color: rgba(255,255,255,0.15);
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .tiktok-caption {
+      position: absolute;
+      bottom: 36px;
+      left: 16px;
+      right: 80px;
+      z-index: 10;
+    }
+
+    .tt-handle {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.13);
+      margin-bottom: 5px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .tt-caption-text {
+      font-size: 12px;
+      color: rgba(255,255,255,0.10);
+      line-height: 1.4;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* ── TRANSITION ── */
+    .problem, .tagline, .divider, .eyebrow {
+      transition: opacity 0.25s ease;
+    }
+
+    .card.switching .problem,
+    .card.switching .tagline,
+    .card.switching .divider,
+    .card.switching .eyebrow {
+      opacity: 0;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Preview variant picker -->
+  <div class="picker">
+    <span class="picker-label">Ad variant</span>
+    <button class="picker-btn active" onclick="setVariant(0)">01</button>
+    <button class="picker-btn" onclick="setVariant(1)">02</button>
+    <button class="picker-btn" onclick="setVariant(2)">03</button>
+    <button class="picker-btn" onclick="setVariant(3)">04</button>
+    <button class="picker-btn" onclick="setVariant(4)">05</button>
+  </div>
+
+  <div class="card" id="card">
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="content">
+
+      <div class="eyebrow" id="eyebrow-text">Earnest Page</div>
+
+      <!--
+        ═══════════════════════════════════════════
+        PROBLEM STATEMENT
+        Change this text for each ad in the series.
+        Keep it under 8 words. No punctuation except
+        a period on the last line if needed.
+        ═══════════════════════════════════════════
+      -->
+      <div class="problem" id="problem-text">
+        You keep<br>
+        choosing the<br>
+        <span class="dim">wrong one.</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- TAGLINE — never changes -->
+      <div class="tagline">
+        Therapy<br>Shots.
+        <span class="deliverable">The Answer. Today.</span>
+        <span class="price">$20</span>
+      </div>
+
+    </div>
+
+    <!-- Brand + disclaimer -->
+    <div class="brand">Earnest Page</div>
+    <div class="disclaimer">AI-powered personal development · not a licensed therapy service</div>
+
+    <!-- TikTok chrome (preview only) -->
+    <div class="tiktok-right">
+      <div class="tt-avatar"></div>
+      <div class="tt-icon-group">
+        <div class="tt-icon"></div>
+        <div class="tt-count">0</div>
+      </div>
+      <div class="tt-icon-group">
+        <div class="tt-icon"></div>
+        <div class="tt-count">0</div>
+      </div>
+      <div class="tt-icon-group">
+        <div class="tt-icon"></div>
+        <div class="tt-count">0</div>
+      </div>
+    </div>
+
+    <div class="tiktok-caption">
+      <div class="tt-handle">@earnestpage</div>
+      <div class="tt-caption-text">Take your first shot free · earnestpage.com</div>
+    </div>
+
+  </div>
+
+  <script>
+    /*
+      ═══════════════════════════════════════════════════════
+      CAMPAIGN VARIANTS
+      Add new ads by adding objects to this array.
+      'lines' supports plain strings and {dim: true} objects.
+      ═══════════════════════════════════════════════════════
+    */
+    const variants = [
+      {
+        // AD 01 — relationships / recurring pattern
+        // "You keep choosing the wrong one." — proven original, keep it
+        lines: [
+          "You keep",
+          "choosing the",
+          { text: "wrong one.", dim: true }
+        ]
+      },
+      {
+        // AD 02 — self-sabotage / fear of success
+        // You stop right before it would have worked.
+        lines: [
+          "You stopped",
+          "right before",
+          { text: "it worked.", dim: true }
+        ]
+      },
+      {
+        // AD 03 — conflict / things left unsaid
+        // You meant every word you took back.
+        lines: [
+          "You meant",
+          "every word",
+          { text: "you took back.", dim: true }
+        ]
+      },
+      {
+        // AD 04 — performing okayness
+        // You've been fine for months. You're not fine.
+        lines: [
+          "You've been fine",
+          { text: "for months.", dim: true },
+          "You're not fine."
+        ]
+      },
+      {
+        // AD 05 — resignation / pattern recognition
+        // You already know how this ends.
+        lines: [
+          "You already",
+          "know how",
+          { text: "this ends.", dim: true }
+        ]
+      }
+    ];
+
+    let current = 0;
+
+    function renderVariant(v) {
+      const el = document.getElementById('problem-text');
+      el.innerHTML = v.lines.map((line, i) => {
+        const isLast = i === v.lines.length - 1;
+        const text = typeof line === 'string' ? line : line.text;
+        const dim = typeof line === 'object' && line.dim;
+        return `<span class="${dim ? 'dim' : ''}">${text}</span>${isLast ? '' : '<br>'}`;
+      }).join('');
+    }
+
+    function setVariant(index) {
+      const card = document.getElementById('card');
+      current = index;
+
+      // Update picker buttons
+      document.querySelectorAll('.picker-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === index);
+      });
+
+      // Fade out → swap → fade in
+      card.classList.add('switching');
+      setTimeout(() => {
+        renderVariant(variants[index]);
+        card.classList.remove('switching');
+      }, 250);
+    }
+
+    // Keyboard nav: left/right arrows
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') setVariant((current + 1) % variants.length);
+      if (e.key === 'ArrowLeft')  setVariant((current - 1 + variants.length) % variants.length);
+    });
+
+    // Init
+    renderVariant(variants[0]);
+  </script>
+
+</body>
+</html>

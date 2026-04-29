@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
@@ -114,6 +115,13 @@ export function LandingPage() {
         // Detect timezone-based country after hydration to avoid SSR mismatch
         setSelectedCountry(detectCountryFromTimezone());
     }, []);
+
+    // ── Funnel: track landing page view ──
+    const { trackEvent } = useTrackEvent();
+    useEffect(() => {
+        trackEvent('landing');
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const router = useRouter();
 
     const handleSendCode = async () => {

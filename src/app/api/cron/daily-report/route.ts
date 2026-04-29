@@ -59,16 +59,21 @@ export async function GET(req: Request) {
             .get();
         const postsCreated = postsSnapshot.size;
 
-        // Site visits in last 24h — the window spans two calendar dates
+        // Funnel metrics — unique visitors, landing views, logins
         const yesterdayDateStr = yesterday.toLocaleDateString('en-CA'); // YYYY-MM-DD
         const todayDateStr = now.toLocaleDateString('en-CA');
-        const [visitDocYesterday, visitDocToday] = await Promise.all([
-            db.collection('site_visits').doc(yesterdayDateStr).get(),
-            db.collection('site_visits').doc(todayDateStr).get(),
+        const [funnelDocYesterday, funnelDocToday] = await Promise.all([
+            db.collection('funnel').doc(yesterdayDateStr).get(),
+            db.collection('funnel').doc(todayDateStr).get(),
         ]);
-        const siteVisits =
-            (visitDocYesterday.exists ? (visitDocYesterday.data()?.count || 0) : 0) +
-            (visitDocToday.exists ? (visitDocToday.data()?.count || 0) : 0);
+        const sumField = (field: string) =>
+            (funnelDocYesterday.exists ? (funnelDocYesterday.data()?.[field] || 0) : 0) +
+            (funnelDocToday.exists ? (funnelDocToday.data()?.[field] || 0) : 0);
+        const uniqueVisitors = sumField('unique_visitors');
+        const landingViews = sumField('landing_views');
+        const funnelLogins = sumField('logins');
+        const landingPct = uniqueVisitors > 0 ? Math.round((landingViews / uniqueVisitors) * 100) : 0;
+        const loginPct = landingViews > 0 ? Math.round((funnelLogins / landingViews) * 100) : 0;
 
         // Active sessions in last 24h (from already-fetched user data)
         let activeSessions = 0;
@@ -125,11 +130,25 @@ export async function GET(req: Request) {
             <td style="padding: 10px 0; color: #a1a1aa;">Posts Created (24h)</td>
             <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${postsCreated}</td>
         </tr>
-        <tr>
-            <td style="padding: 10px 0; color: #a1a1aa;">Site Visits (24h)</td>
-            <td style="padding: 10px 0; text-align: right; color: #60a5fa; font-weight: 600;">${siteVisits}</td>
-        </tr>
     </table>
+
+    <div style="margin: 20px 0 0 0; padding: 16px; border: 1px solid #27272a; border-radius: 10px;">
+        <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 12px 0;">Visitor Funnel (24h)</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr style="border-bottom: 1px solid #27272a;">
+                <td style="padding: 8px 0; color: #a1a1aa;">Unique Visitors</td>
+                <td style="padding: 8px 0; text-align: right; color: #60a5fa; font-weight: 600;">${uniqueVisitors}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #27272a;">
+                <td style="padding: 8px 0; color: #a1a1aa;">Landing Page Views</td>
+                <td style="padding: 8px 0; text-align: right; color: #60a5fa; font-weight: 600;">${landingViews} <span style="color: #52525b; font-size: 11px;">(${landingPct}%)</span></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #a1a1aa;">Logins</td>
+                <td style="padding: 8px 0; text-align: right; color: #34d399; font-weight: 600;">${funnelLogins} <span style="color: #52525b; font-size: 11px;">(${loginPct}% of landing)</span></td>
+            </tr>
+        </table>
+    </div>
 
     <p style="font-size: 10px; color: #3f3f46; text-transform: uppercase; letter-spacing: 0.2em; text-align: center; margin: 24px 0 0 0;">Automated Report — Earnest Page</p>
 </div>`;
@@ -139,12 +158,12 @@ export async function GET(req: Request) {
             console.warn('[Daily Report] GMAIL_APP_PASSWORD not set. Logging report to console.');
             console.log('[Daily Report]', {
                 totalUsers, newSignups, activeSubscriptions, paidLast24h,
-                canceledLast24h, activeSessions, postsCreated, siteVisits,
+                canceledLast24h, activeSessions, postsCreated, uniqueVisitors, landingViews, funnelLogins,
             });
             return NextResponse.json({
                 success: true,
                 warning: 'GMAIL_APP_PASSWORD not configured. Report logged to console.',
-                metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, siteVisits },
+                metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, uniqueVisitors, landingViews, funnelLogins },
             });
         }
 
@@ -159,7 +178,7 @@ export async function GET(req: Request) {
         await transporter.sendMail({
             from: `Earnest Page <${ADMIN_EMAIL}>`,
             to: ADMIN_EMAIL,
-            subject: `📊 Daily Report — ${newSignups} new · ${siteVisits} visits · ${activeSessions} active · ${postsCreated} posts`,
+            subject: `📊 Daily Report — ${newSignups} new · ${uniqueVisitors} visitors · ${funnelLogins} logins · ${postsCreated} posts`,
             html: htmlReport,
         });
 
@@ -167,7 +186,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({
             success: true,
-            metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, siteVisits },
+            metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, uniqueVisitors, landingViews, funnelLogins },
         });
 
     } catch (error: any) {

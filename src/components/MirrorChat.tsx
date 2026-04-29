@@ -301,7 +301,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
     const autoResizeTextarea = (el: HTMLTextAreaElement) => {
         el.style.height = 'auto';
-        el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+        el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -782,7 +782,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                             )}>
                                 <textarea
                                     ref={textareaRef}
-                                    className="w-full bg-transparent text-white px-1 pr-12 min-h-[44px] max-h-[200px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar text-base leading-relaxed"
+                                    className="w-full bg-transparent text-white px-1 pr-12 min-h-[44px] max-h-[120px] resize-none focus:outline-none placeholder:text-zinc-600 custom-scrollbar text-base leading-relaxed"
                                     value={input}
                                     onChange={handleInputChange}
                                     placeholder={isSessionLimited ? t('mirrorChat.placeholderEnded') : t('mirrorChat.placeholderDefault')}
