@@ -17,14 +17,31 @@
       "login": "Log In"
     },
     "hero": {
-      "tagline": "Your first shot is free. No subscription. No commitment.",
-      "headline1": "You know that thing",
-      "headline2": "you keep thinking about",
-      "headline3": "at 2am?",
-      "subtext": "Talk to someone who won't judge, won't charge you $200. Get your answer today — an Ideal Self built from real psychology and tailored to your life.",
+      "tagline": "First shot free · No subscription · No commitment",
+      "headline1": "You have 2-3 beliefs",
+      "headline2": "running your entire life.",
+      "headline3": "You can't see them. We can.",
+      "subtext": "Tell us what's going on and we'll figure out the rest.",
       "price": "Free to start. $20 per shot after.",
       "cta": "Take Your First Shot — Free",
       "giftCta": "Gift One to Someone"
+    },
+    "mechanism": {
+      "label": "How It Works",
+      "step1Title": "Tell us what makes you you.",
+      "step1Body": "Answers aren't generic. Everything is tailored to the unique person you are.",
+      "step2Title": "You tell us what's going on. You tell us what you want.",
+      "step2Body": "We analyze your words to find out who you truly are underneath the story.",
+      "step3Title": "Once you see who you really are, you can't unsee it.",
+      "step3Body": "You can choose a new you and a new life."
+    },
+    "truth": {
+      "label": "What This Is",
+      "heading": "This is not therapy.",
+      "line1": "This is your truth.",
+      "line2": "The real truth.",
+      "line3": "The truth you always wanted.",
+      "line4": "Right now."
     },
     "entryPoints": {
       "label": "Sound Familiar?",
@@ -122,8 +139,8 @@
       "refundNote": "Not satisfied? Refund instantly. No forms, no emails, one click."
     },
     "auth": {
-      "heading1": "Start right now.",
-      "heading2": "No accounts. No emails. Just your phone.",
+      "heading1": "Your phone number is your security key.",
+      "heading2": "We hash it, never store it. This is how we shield your content from others.",
       "phonePlaceholder": "Phone number",
       "sendCode": "Send Code",
       "sending": "Sending...",
@@ -205,8 +222,8 @@
   "intake": {
     "header": "Getting to know you",
     "ofFive": "of 5",
-    "introHeading": "Five quick questions.",
-    "introSubtext": "So the person you talk to actually knows your life. This takes about two minutes.",
+    "introHeading": "Before we begin...",
+    "introSubtext": "You are unique and we don't give generic feedback. We need to know a little about who you are so everything is tailored to you.",
     "inputPlaceholder": "Type your answer...",
     "compiling": "Preparing your session...",
     "compilingSub": "This takes a few minutes. We're building something specific to you.",

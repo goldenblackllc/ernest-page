@@ -5,8 +5,8 @@ import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, MessageCircle, Clock, Shield, Zap, Gift, ArrowRight, Crown, Lock, BarChart3, Target, Award } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Shield, Gift, Crown, Lock, MessageCircle, BarChart3, Award } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -50,34 +50,7 @@ const sectionFade = {
     },
 };
 
-// ─── Entry Points (The Problem Stack) ──────────────────────────────
-const ENTRY_POINTS = [
-    {
-        labelKey: "landing.entryPoints.stuck",
-        subtextKey: 'landing.entryPoints.stuckSub',
-        color: 'from-blue-500/20 to-transparent',
-    },
-    {
-        labelKey: "landing.entryPoints.secret",
-        subtextKey: 'landing.entryPoints.secretSub',
-        color: 'from-purple-500/20 to-transparent',
-    },
-    {
-        labelKey: 'landing.entryPoints.pattern',
-        subtextKey: 'landing.entryPoints.patternSub',
-        color: 'from-amber-500/20 to-transparent',
-    },
-    {
-        labelKey: 'landing.entryPoints.gap',
-        subtextKey: 'landing.entryPoints.gapSub',
-        color: 'from-emerald-500/20 to-transparent',
-    },
-    {
-        labelKey: 'landing.entryPoints.mask',
-        subtextKey: 'landing.entryPoints.maskSub',
-        color: 'from-rose-500/20 to-transparent',
-    },
-];
+
 
 // ─── What You Walk Into ────────────────────────────────────────────
 const PLATFORM_PILLARS = [
@@ -103,8 +76,7 @@ export function LandingPage() {
     const t = useTranslations();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
-    const [hoveredEntry, setHoveredEntry] = useState<number | null>(null);
-    const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+
     const [step, setStep] = useState<'WELCOME' | 'INPUT_CODE'>('WELCOME');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -180,7 +152,7 @@ export function LandingPage() {
     const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber, detectedDialCode) : '';
 
     const scrollToAuth = () => {
-        document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     return (
@@ -203,9 +175,9 @@ export function LandingPage() {
             </nav>
 
             {/* ═══════════════════════════════════════════════════════════
-                HERO — The hook
+                HERO + AUTH — One unit, above the fold
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20 text-center overflow-hidden">
+            <section className="relative flex flex-col items-center px-6 pt-28 sm:pt-32 pb-16 text-center overflow-hidden">
                 {/* Background hero image with aggressive fade */}
                 <div className="absolute inset-0 z-0">
                     <Image
@@ -223,18 +195,8 @@ export function LandingPage() {
                 </div>
 
                 <div className="relative z-10 max-w-3xl mx-auto">
-                    <motion.p
-                        className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-zinc-500 mb-8"
-                        custom={0}
-                        variants={fadeUp}
-                        initial="hidden"
-                        animate="visible"
-                    >
-                        {t('landing.hero.tagline')}
-                    </motion.p>
-
                     <motion.h1
-                        className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-8"
+                        className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6"
                         custom={1}
                         variants={fadeUp}
                         initial="hidden"
@@ -248,7 +210,7 @@ export function LandingPage() {
                     </motion.h1>
 
                     <motion.p
-                        className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-4"
+                        className="text-lg sm:text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-10"
                         custom={2}
                         variants={fadeUp}
                         initial="hidden"
@@ -257,59 +219,124 @@ export function LandingPage() {
                         {t('landing.hero.subtext')}
                     </motion.p>
 
-                    <motion.p
-                        className="text-lg sm:text-xl text-white font-semibold tracking-wide mb-10"
+                    {/* AUTH CARD — Inline with hero */}
+                    <motion.div
+                        className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950/80 backdrop-blur-sm p-8 sm:p-10"
                         custom={3}
+                        variants={fadeUp}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <div className="text-center mb-6">
+                            <h2 className="text-sm sm:text-base font-semibold tracking-tight text-zinc-300 mb-1">
+                                {t('landing.auth.heading1')}
+                            </h2>
+                            <p className="text-xs text-zinc-400">
+                                {t('landing.auth.heading2')}
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
+                                {error}
+                            </div>
+                        )}
+
+                        {step === 'WELCOME' && (
+                            <div className="flex flex-col gap-3">
+                                <div className="flex gap-2">
+                                    <CountryCodeSelect
+                                        value={selectedCountry}
+                                        onChange={setSelectedCountry}
+                                    />
+                                    <input
+                                        type="tel"
+                                        placeholder={t('landing.auth.phonePlaceholder')}
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value)}
+                                        className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleSendCode}
+                                    disabled={loading}
+                                    className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
+                                >
+                                    {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
+                                </button>
+
+                                <p className="text-[10px] text-zinc-600 text-center mt-2 leading-relaxed">
+                                    {t('landing.auth.byContinuing')}{' '}
+                                    <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
+                                        {t('landing.footer.terms')}
+                                    </Link>{' '}
+                                    {t('landing.auth.and')}{' '}
+                                    <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
+                                        {t('landing.footer.privacy')}
+                                    </Link>.
+                                </p>
+                            </div>
+                        )}
+
+                        {step === 'INPUT_CODE' && (
+                            <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
+                                <p className="text-xs text-zinc-400 text-center mb-2">
+                                    {t('landing.auth.codeSent')} <span className="text-white font-semibold">{displayNumber}</span>
+                                </p>
+                                <input
+                                    id="otp-code"
+                                    name="otp-code"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    autoComplete="one-time-code"
+                                    placeholder={t('landing.auth.codePlaceholder')}
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value)}
+                                    className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                    maxLength={6}
+                                    autoFocus
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={loading || verificationCode.length < 6}
+                                    className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
+                                >
+                                    {loading ? t('landing.auth.verifying') : t('landing.auth.verify')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setStep('WELCOME');
+                                        setVerificationCode('');
+                                        setError(null);
+                                    }}
+                                    className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
+                                >
+                                    ← {t('landing.auth.wrongNumber')}
+                                </button>
+                            </form>
+                        )}
+                    </motion.div>
+
+                    <motion.p
+                        className="text-sm text-zinc-600 mt-6"
+                        custom={4}
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
                     >
                         {t('landing.hero.price')}
                     </motion.p>
-
-                    <motion.div
-                        custom={4}
-                        variants={fadeUp}
-                        initial="hidden"
-                        animate="visible"
-                        className="flex flex-col sm:flex-row items-center justify-center gap-4"
-                    >
-                        <button
-                            onClick={scrollToAuth}
-                            className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
-                        >
-                            {t('landing.hero.cta')}
-                        </button>
-                        <button
-                            onClick={scrollToAuth}
-                            className="rounded-full border border-white/20 bg-transparent text-white px-8 py-4 font-semibold text-base hover:bg-white/10 active:scale-[0.97] transition-all duration-150 flex items-center gap-2"
-                        >
-                            <Gift className="w-4 h-4" />
-                            {t('landing.hero.giftCta')}
-                        </button>
-                    </motion.div>
                 </div>
-
-                {/* Scroll indicator */}
-                <motion.div
-                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.4, duration: 0.6 }}
-                >
-                    <motion.div
-                        animate={{ y: [0, 8, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-                    >
-                        <ChevronDown className="w-5 h-5 text-zinc-600" />
-                    </motion.div>
-                </motion.div>
             </section>
 
+            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
+
             {/* ═══════════════════════════════════════════════════════════
-                THE PROBLEM STACK — Entry Points
+                HOW IT WORKS — The mechanism
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
+            <section className="relative px-6 py-24 md:py-32">
                 <motion.div
                     className="max-w-3xl mx-auto"
                     variants={sectionFade}
@@ -317,47 +344,35 @@ export function LandingPage() {
                     whileInView="visible"
                     viewport={{ once: true, margin: '-80px' }}
                 >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        {t('landing.entryPoints.label')}
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-500 mb-6">
+                        {t('landing.mechanism.label')}
                     </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-16">
-                        {t('landing.entryPoints.heading1')}
-                        <br />
-                        <span className="text-zinc-500">{t('landing.entryPoints.heading2')}</span>
-                    </h2>
 
-                    <div className="space-y-3">
-                        {ENTRY_POINTS.map((entry, i) => (
-                            <motion.button
-                                key={i}
-                                className="relative w-full text-left rounded-2xl border border-white/[0.08] bg-zinc-950 p-6 sm:p-8 transition-all duration-200 hover:border-white/20 hover:bg-zinc-900/60 group overflow-hidden"
-                                custom={i}
-                                variants={cardReveal}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: '-40px' }}
-                                onMouseEnter={() => setHoveredEntry(i)}
-                                onMouseLeave={() => setHoveredEntry(null)}
-                                onClick={scrollToAuth}
-                            >
-                                <div
-                                    className={`absolute inset-0 bg-gradient-to-r ${entry.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-                                />
-                                <div className="relative z-10 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-lg sm:text-xl font-bold text-white mb-1">
-                                            &ldquo;{t(entry.labelKey as any)}&rdquo;
-                                        </p>
-                                        <p className="text-sm text-zinc-500">
-                                            {t(entry.subtextKey as any)}
-                                        </p>
-                                    </div>
-                                    <ArrowRight
-                                        className={`w-5 h-5 text-zinc-600 transition-all duration-200 ${hoveredEntry === i ? 'text-white translate-x-1' : ''}`}
-                                    />
-                                </div>
-                            </motion.button>
-                        ))}
+                    <div className="space-y-12">
+                        <div>
+                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                                {t('landing.mechanism.step1Title')}
+                            </h3>
+                            <p className="text-base text-zinc-400 leading-relaxed">
+                                {t('landing.mechanism.step1Body')}
+                            </p>
+                        </div>
+                        <div>
+                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                                {t('landing.mechanism.step2Title')}
+                            </h3>
+                            <p className="text-base text-zinc-400 leading-relaxed">
+                                {t('landing.mechanism.step2Body')}
+                            </p>
+                        </div>
+                        <div>
+                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                                {t('landing.mechanism.step3Title')}
+                            </h3>
+                            <p className="text-base text-zinc-400 leading-relaxed">
+                                {t('landing.mechanism.step3Body')}
+                            </p>
+                        </div>
                     </div>
                 </motion.div>
             </section>
@@ -365,92 +380,30 @@ export function LandingPage() {
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
-                THE DIFFERENCE — What this isn't
+                THE TRUTH — Aspirational positioning
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
+            <section className="relative px-6 py-24 md:py-32">
                 <motion.div
-                    className="max-w-3xl mx-auto"
+                    className="max-w-2xl mx-auto text-center"
                     variants={sectionFade}
                     initial="hidden"
                     whileInView="visible"
                     viewport={{ once: true, margin: '-80px' }}
                 >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        {t('landing.difference.label')}
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-500 mb-10">
+                        {t('landing.truth.label')}
                     </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
-                        {t('landing.difference.heading1')}
-                        <br />
-                        <span className="text-zinc-500">{t('landing.difference.heading2')}</span>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-8">
+                        {t('landing.truth.heading')}
                     </h2>
-                    <div className="space-y-6 text-base sm:text-lg text-zinc-400 leading-relaxed">
-                        <p>{t('landing.difference.body1')}</p>
-                        <p className="text-zinc-300 font-semibold">
-                            {t('landing.difference.body2')}
-                        </p>
-                        <p>{t('landing.difference.body3')}</p>
+                    <div className="space-y-2 text-xl sm:text-2xl text-zinc-400 font-semibold leading-relaxed">
+                        <p>{t('landing.truth.line1')}</p>
+                        <p>{t('landing.truth.line2')}</p>
+                        <p>{t('landing.truth.line3')}</p>
+                        <p className="text-white">{t('landing.truth.line4')}</p>
                     </div>
-
-                    {/* AI Self-Endorsement */}
-                    <blockquote className="mt-10 border-l-2 border-zinc-700 pl-6 py-4">
-                        <p className="text-base sm:text-lg text-zinc-300 leading-relaxed italic">
-                            “{t('landing.difference.aiEndorsement')}”
-                        </p>
-                    </blockquote>
-
-                    {/* Expandable comparison */}
-                    <button
-                        onClick={() => setIsComparisonOpen(!isComparisonOpen)}
-                        className="mt-10 flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
-                    >
-                        <span>{isComparisonOpen ? t('landing.difference.toggleHide') : t('landing.difference.toggleShow')}</span>
-                        <motion.span
-                            animate={{ rotate: isComparisonOpen ? 180 : 0 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <ChevronDown className="w-4 h-4" />
-                        </motion.span>
-                    </button>
-
-                    <AnimatePresence initial={false}>
-                        {isComparisonOpen && (
-                            <motion.div
-                                key="comparison"
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                                className="overflow-hidden"
-                            >
-                                <div className="mt-8 rounded-2xl border border-white/[0.08] bg-zinc-950 overflow-hidden">
-                                    <div className="grid grid-cols-4 text-[11px] uppercase tracking-[0.15em] text-zinc-600 border-b border-white/[0.06] px-6 py-4">
-                                        <span></span>
-                                        <span className="text-center">{t('landing.difference.compTherapy')}</span>
-                                        <span className="text-center">{t('landing.difference.compChatbots')}</span>
-                                        <span className="text-center text-white font-semibold">{t('landing.difference.compEarnest')}</span>
-                                    </div>
-                                    {[
-                                        [t('landing.difference.compCost'), '$150–300', 'Free', '$20'],
-                                        [t('landing.difference.compAvailable'), 'Days/weeks', 'Anytime', 'Right now'],
-                                        [t('landing.difference.compCommitment'), 'Weekly', 'None', 'None'],
-                                        [t('landing.difference.compPatterns'), 'Session notes', 'Conversation history', 'Longitudinally'],
-                                        [t('landing.difference.compIntegrity'), 'Generic frameworks', 'Drifts to general advice', 'Anchored to your values'],
-                                        [t('landing.difference.compChallenges'), 'Sometimes', 'Never', 'Always'],
-                                    ].map(([label, trad, ai, us], i) => (
-                                        <div key={i} className="grid grid-cols-4 text-sm border-b border-white/[0.04] px-6 py-3.5">
-                                            <span className="text-zinc-400 font-medium">{label}</span>
-                                            <span className="text-center text-zinc-600">{trad}</span>
-                                            <span className="text-center text-zinc-600">{ai}</span>
-                                            <span className="text-center text-white font-semibold">{us}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
                 </motion.div>
             </section>
-
 
 
             {/* ═══════════════════════════════════════════════════════════
@@ -855,112 +808,7 @@ export function LandingPage() {
                 </motion.div>
             </section>
 
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
-            {/* ═══════════════════════════════════════════════════════════
-                AUTH CARD — Phone login
-               ═══════════════════════════════════════════════════════════ */}
-            <section id="auth-section" className="relative px-6 py-24 md:py-32">
-                <motion.div
-                    className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10"
-                    variants={cardReveal}
-                    custom={0}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-40px' }}
-                >
-                    <div className="text-center mb-8">
-                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-                            {t('landing.auth.heading1')}
-                        </h2>
-                        <p className="text-sm text-zinc-500">
-                            {t('landing.auth.heading2')}
-                        </p>
-                    </div>
-
-                    {error && (
-                        <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
-                            {error}
-                        </div>
-                    )}
-
-                    {step === 'WELCOME' && (
-                        <div className="flex flex-col gap-3">
-                            <div className="flex gap-2">
-                                <CountryCodeSelect
-                                    value={selectedCountry}
-                                    onChange={setSelectedCountry}
-                                />
-                                <input
-                                    type="tel"
-                                    placeholder={t('landing.auth.phonePlaceholder')}
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                />
-                            </div>
-                            <button
-                                onClick={handleSendCode}
-                                disabled={loading}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                            >
-                                {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
-                            </button>
-
-                            <p className="text-[10px] text-zinc-600 text-center mt-3 leading-relaxed">
-                                {t('landing.auth.byContinuing')}{' '}
-                                <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
-                                    {t('landing.footer.terms')}
-                                </Link>{' '}
-                                {t('landing.auth.and')}{' '}
-                                <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
-                                    {t('landing.footer.privacy')}
-                                </Link>.
-                            </p>
-                        </div>
-                    )}
-
-                    {step === 'INPUT_CODE' && (
-                        <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
-                            <p className="text-xs text-zinc-400 text-center mb-2">
-                                {t('landing.auth.codeSent')} <span className="text-white font-semibold">{displayNumber}</span>
-                            </p>
-                            <input
-                                id="otp-code"
-                                name="otp-code"
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                autoComplete="one-time-code"
-                                placeholder={t('landing.auth.codePlaceholder')}
-                                value={verificationCode}
-                                onChange={(e) => setVerificationCode(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                maxLength={6}
-                                autoFocus
-                            />
-                            <button
-                                type="submit"
-                                disabled={loading || verificationCode.length < 6}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                            >
-                                {loading ? t('landing.auth.verifying') : t('landing.auth.verify')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setStep('WELCOME');
-                                    setVerificationCode('');
-                                    setError(null);
-                                }}
-                                className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
-                            >
-                                ← {t('landing.auth.wrongNumber')}
-                            </button>
-                        </form>
-                    )}
-                </motion.div>
-            </section>
 
             {/* ── FOOTER ── */}
             <footer className="border-t border-white/[0.06] px-6 py-10">
