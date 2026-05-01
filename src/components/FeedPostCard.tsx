@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { User, Clock, Trash2, Globe, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -53,6 +53,7 @@ interface FeedPostProps {
         language?: string;
         created_at: Timestamp;
         is_public?: boolean;
+        visibility?: 'private' | 'community' | 'public';
         isLikedByMe?: boolean;
         like_count?: number;
         author_avatar_url?: string;
@@ -69,7 +70,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [localIsPublic, setLocalIsPublic] = useState(post.is_public ?? false);
+    const [localVisibility, setLocalVisibility] = useState<'private' | 'community' | 'public'>(post.visibility || (post.is_public ? 'community' : 'private'));
     const t = useTranslations('feed');
     const locale = useLocale();
 
@@ -193,15 +194,18 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
     const handleDelete = () => onRequestDelete?.(post.id);
 
-    const togglePrivacy = async () => {
+    const handleVisibilityChange = async (value: 'private' | 'community' | 'public') => {
         if (!user || user.uid !== post.uid) return;
-        const newStatus = !localIsPublic;
-        setLocalIsPublic(newStatus);
+        const prev = localVisibility;
+        setLocalVisibility(value);
         try {
-            await updateDoc(doc(db, "posts", post.id), { is_public: newStatus });
+            await updateDoc(doc(db, "posts", post.id), {
+                visibility: value,
+                is_public: value !== 'private',
+            });
         } catch (error) {
-            console.error("Error toggling privacy:", error);
-            setLocalIsPublic(!newStatus); // revert on failure
+            console.error("Error changing visibility:", error);
+            setLocalVisibility(prev); // revert on failure
         }
     };
 
@@ -261,23 +265,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     </button>
                                 )}
                                 {user?.uid === post.uid && (
-                                    <button
-                                        onClick={togglePrivacy}
-                                        className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 py-1 px-1.5 rounded-md transition-all group/privacy"
+                                    <select
+                                        value={localVisibility}
+                                        onChange={(e) => handleVisibilityChange(e.target.value as 'private' | 'community' | 'public')}
+                                        className="text-[10px] font-bold tracking-wide bg-zinc-900 border border-zinc-700 text-zinc-400 rounded-md px-1.5 py-1 focus:outline-none focus:border-zinc-500 transition-all cursor-pointer appearance-none"
+                                        style={{ backgroundImage: 'none' }}
                                     >
-                                        {localIsPublic ? (
-                                            <>
-                                                <Globe className="w-3 h-3 text-blue-400" />
-                                                <span className="text-blue-400">{t('privacyEveryone')}</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Lock className="w-3 h-3 text-zinc-500" />
-                                                <span className="text-zinc-500">{t('privacyOnlyMe')}</span>
-                                            </>
-                                        )}
-                                        <ChevronDown className="w-3 h-3 text-zinc-600 group-hover/privacy:text-zinc-400" />
-                                    </button>
+                                        <option value="private">🔒 Only Me</option>
+                                        <option value="community">👥 Community</option>
+                                        <option value="public">🌐 Public</option>
+                                    </select>
                                 )}
                             </div>
                         </div>
@@ -384,24 +381,17 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 </button>
                             )}
                             {user?.uid === post.uid && (
-                                <button
-                                    onClick={togglePrivacy}
-                                    className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide hover:bg-white/5 py-1 px-1.5 rounded-md transition-all group/privacy"
-                                >
-                                    {localIsPublic ? (
-                                        <>
-                                            <Globe className="w-3 h-3 text-blue-400" />
-                                            <span className="text-blue-400">Everyone</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Lock className="w-3 h-3 text-zinc-500" />
-                                            <span className="text-zinc-500">Only Me</span>
-                                        </>
-                                    )}
-                                    <ChevronDown className="w-3 h-3 text-zinc-600 group-hover/privacy:text-zinc-400" />
-                                </button>
-                            )}
+                                    <select
+                                        value={localVisibility}
+                                        onChange={(e) => handleVisibilityChange(e.target.value as 'private' | 'community' | 'public')}
+                                        className="text-[10px] font-bold tracking-wide bg-zinc-900 border border-zinc-700 text-zinc-400 rounded-md px-1.5 py-1 focus:outline-none focus:border-zinc-500 transition-all cursor-pointer appearance-none"
+                                        style={{ backgroundImage: 'none' }}
+                                    >
+                                        <option value="private">🔒 Only Me</option>
+                                        <option value="community">👥 Community</option>
+                                        <option value="public">🌐 Public</option>
+                                    </select>
+                                )}
                         </div>
                     </div>
                     <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">

@@ -32,8 +32,8 @@ export async function POST(req: Request) {
         const userDoc = await db.collection("users").doc(uid).get();
         const userData = userDoc.data() || {};
         const pseudonym = userData?.identity?.title || "Anonymous";
-        const defaultRouting = userData?.default_post_routing || "public";
-        const isPublic = defaultRouting === "public";
+        const defaultRouting = userData?.default_post_routing || "community";
+        const visibility = defaultRouting;
 
         // 3. AI-rewrite to scrub PII and frame as a "dispatch"
         const result = await generateTextWithFallback({
@@ -94,7 +94,8 @@ Anonymize both the task title AND the report. Return JSON only.`,
             post_type: "reality_shift",
             directive_title: scrubbedTitle,
             unexpected_yield: rewrittenContent,
-            is_public: isPublic,
+            is_public: visibility !== 'private',
+            visibility: visibility,
             created_at: FieldValue.serverTimestamp(),
             likes: 0,
             comments: 0,

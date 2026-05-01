@@ -56,7 +56,7 @@ export interface CharacterProfile {
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
     saved_posts?: string[]; // Bookmarked posts
-    default_post_routing?: 'public' | 'private'; // Default routing for new Mirror Chat sessions
+    default_post_routing?: 'private' | 'community' | 'public'; // Default visibility for new posts
     firewall_synced?: boolean; // Whether user has completed the Contact Firewall step
     proximity_anchor?: string; // Zip code or city for Proximity Blind Spot radius
     last_thirty_day_checkin?: string; // ISO date of last 28-day check-in session

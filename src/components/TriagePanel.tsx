@@ -28,7 +28,7 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
     // Data for Mirror Chat
     const [bible, setBible] = useState<CharacterBible | null>(null);
     const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
-    const [defaultPostRouting, setDefaultPostRouting] = useState<'public' | 'private'>('public');
+    const [defaultPostRouting, setDefaultPostRouting] = useState<'private' | 'community' | 'public'>('community');
 
     // Session credit / subscription state
     const [sessionCredits, setSessionCredits] = useState<number>(0);
@@ -40,7 +40,7 @@ export function TriagePanel({ autoOpenChat }: { autoOpenChat?: boolean } = {}) {
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
             setBible(data.character_bible);
             setIdentity(data.identity || null);
-            setDefaultPostRouting(data.default_post_routing || 'public');
+            setDefaultPostRouting(data.default_post_routing || 'community');
             setSessionCredits(data.session_credits || 0);
             
 

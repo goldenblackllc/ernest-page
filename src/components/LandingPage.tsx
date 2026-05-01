@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -14,6 +14,7 @@ import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
 import { useEffect } from 'react';
 import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
+import { ShowcasePostCard } from '@/components/ShowcasePostCard';
 
 // ─── Phone Number Normalization ────────────────────────────────────
 function normalizePhoneNumber(input: string, dialCode: string): string {
@@ -95,6 +96,34 @@ export function LandingPage() {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const router = useRouter();
+
+    // ── Showcase: public posts carousel ──
+    const [showcasePosts, setShowcasePosts] = useState<any[]>([]);
+    const [activeShowcaseIndex, setActiveShowcaseIndex] = useState(0);
+    const [showcasePaused, setShowcasePaused] = useState(false);
+    const touchStartX = useRef<number | null>(null);
+
+    useEffect(() => {
+        fetch('/api/posts/public')
+            .then(res => res.json())
+            .then(data => {
+                if (data.posts?.length) setShowcasePosts(data.posts);
+            })
+            .catch(() => {});
+    }, []);
+
+    // Auto-advance the showcase every 6 seconds (paused when reading)
+    useEffect(() => {
+        if (showcasePosts.length < 2 || showcasePaused) return;
+
+        const interval = setInterval(() => {
+            setActiveShowcaseIndex(prev =>
+                prev >= showcasePosts.length - 1 ? 0 : prev + 1
+            );
+        }, 6000);
+
+        return () => clearInterval(interval);
+    }, [showcasePosts, showcasePaused]);
 
     const handleSendCode = async () => {
         setError(null);
@@ -330,6 +359,66 @@ export function LandingPage() {
                     </motion.p>
                 </div>
             </section>
+
+            {/* ═══════════════════════════════════════════════════════════
+                SHOWCASE — Real public posts from inside the app
+               ═══════════════════════════════════════════════════════════ */}
+            {showcasePosts.length > 0 && (
+                <section className="relative py-10 md:py-14">
+                    <div className="max-w-2xl mx-auto px-4 sm:px-6">
+                        {/* Swipeable card area */}
+                        <div
+                            className="relative overflow-hidden"
+                            onTouchStart={(e) => {
+                                touchStartX.current = e.touches[0].clientX;
+                            }}
+                            onTouchEnd={(e) => {
+                                if (touchStartX.current === null) return;
+                                const diff = touchStartX.current - e.changedTouches[0].clientX;
+                                if (Math.abs(diff) > 50) {
+                                    if (diff > 0) {
+                                        // Swipe left → next
+                                        setActiveShowcaseIndex(prev =>
+                                            prev >= showcasePosts.length - 1 ? 0 : prev + 1
+                                        );
+                                    } else {
+                                        // Swipe right → prev
+                                        setActiveShowcaseIndex(prev =>
+                                            prev <= 0 ? showcasePosts.length - 1 : prev - 1
+                                        );
+                                    }
+                                }
+                                touchStartX.current = null;
+                            }}
+                        >
+                            <ShowcasePostCard
+                                key={showcasePosts[activeShowcaseIndex].id}
+                                post={showcasePosts[activeShowcaseIndex]}
+                                onInteract={scrollToAuth}
+                                onExpandChange={setShowcasePaused}
+                            />
+                        </div>
+
+                        {/* Dot indicators */}
+                        {showcasePosts.length > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-5">
+                                {showcasePosts.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setActiveShowcaseIndex(i)}
+                                        className={`transition-all duration-300 rounded-full ${
+                                            i === activeShowcaseIndex
+                                                ? 'w-6 h-2 bg-white'
+                                                : 'w-2 h-2 bg-zinc-700 hover:bg-zinc-500'
+                                        }`}
+                                        aria-label={`View post ${i + 1}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
 
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 

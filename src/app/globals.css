@@ -60,3 +60,12 @@
 .grecaptcha-badge {
   visibility: hidden !important;
 }
+
+/* Utility: hide scrollbar while preserving scroll behavior */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

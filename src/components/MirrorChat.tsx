@@ -25,7 +25,7 @@ interface MirrorChatProps {
     identity?: CharacterIdentity | null;
     uid: string;
     initialContext?: string | null;
-    defaultPostRouting?: 'public' | 'private';
+    defaultPostRouting?: 'private' | 'community' | 'public';
     isUnlimited?: boolean; // Active subscription (e.g. Archangel) — skip session limits
     onNeedsPurchase?: () => void; // Called when credit consumption fails (no credits left)
 }

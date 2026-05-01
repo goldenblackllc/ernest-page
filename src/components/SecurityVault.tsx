@@ -34,8 +34,8 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
     const [isBurning, setIsBurning] = useState(false);
     const [burnConfirm, setBurnConfirm] = useState(false);
     const [purgeConfirm, setPurgeConfirm] = useState(false);
-    const [routing, setRouting] = useState<'public' | 'private'>(
-        profile?.default_post_routing || 'public'
+    const [routing, setRouting] = useState<'private' | 'community' | 'public'>(
+        profile?.default_post_routing || 'community'
     );
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [showFirewall, setShowFirewall] = useState(false);
@@ -65,7 +65,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
 
     // Sync routing from profile
     useEffect(() => {
-        setRouting(profile?.default_post_routing || 'public');
+        setRouting(profile?.default_post_routing || 'community');
     }, [profile?.default_post_routing]);
 
     // Close on escape
@@ -153,7 +153,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
         }
     }, [user, purgeConfirm]);
 
-    const handleRoutingChange = useCallback(async (value: 'public' | 'private') => {
+    const handleRoutingChange = useCallback(async (value: 'private' | 'community' | 'public') => {
         if (!user) return;
         setRouting(value);
         try {
@@ -375,7 +375,6 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
                                 )}
                             >
-                                {/* Custom Radio Indicator */}
                                 <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200"
                                     style={{
                                         borderColor: routing === 'public' ? 'rgba(255,255,255,0.8)' : 'rgba(113,113,122,0.5)',
@@ -390,7 +389,39 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         "text-sm font-bold block mb-1 transition-colors",
                                         routing === 'public' ? "text-white" : "text-zinc-400"
                                     )}>
-                                        {t('publicRouting')}
+                                        🌐 Public
+                                    </span>
+                                    <span className="text-xs text-zinc-600 leading-relaxed block">
+                                        Visible to anyone, including the landing page. Choose this when you want your post to help others find us.
+                                    </span>
+                                </div>
+                            </button>
+
+                            {/* Community */}
+                            <button
+                                onClick={() => handleRoutingChange('community')}
+                                className={cn(
+                                    "w-full flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-200",
+                                    routing === 'community'
+                                        ? "border-white/30 bg-zinc-900"
+                                        : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+                                )}
+                            >
+                                <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200"
+                                    style={{
+                                        borderColor: routing === 'community' ? 'rgba(255,255,255,0.8)' : 'rgba(113,113,122,0.5)',
+                                    }}
+                                >
+                                    {routing === 'community' && (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                                    )}
+                                </div>
+                                <div>
+                                    <span className={cn(
+                                        "text-sm font-bold block mb-1 transition-colors",
+                                        routing === 'community' ? "text-white" : "text-zinc-400"
+                                    )}>
+                                        👥 Community
                                     </span>
                                     <span className="text-xs text-zinc-600 leading-relaxed block">
                                         {t('publicRoutingDesc')}
@@ -422,7 +453,7 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                         "text-sm font-bold block mb-1 transition-colors",
                                         routing === 'private' ? "text-white" : "text-zinc-400"
                                     )}>
-                                        {t('privateRouting')}
+                                        🔒 Only Me
                                     </span>
                                     <span className="text-xs text-zinc-600 leading-relaxed block">
                                         {t('privateRoutingDesc')}

@@ -132,10 +132,10 @@ async function processUserChats(
 
         const messages = chatData.messages || [];
         // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback.
-        // Default to public unless explicitly routed private.
-        const isPublic = chatData.sessionRouting != null
-            ? chatData.sessionRouting === 'public'
-            : chatData.autoPublish ?? true;
+        // Default to community unless explicitly routed private.
+        const visibility = chatData.sessionRouting != null
+            ? (chatData.sessionRouting === 'private' ? 'private' : 'community')
+            : (chatData.autoPublish === false ? 'private' : 'community');
 
         if (messages.length > 0) {
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
@@ -362,7 +362,8 @@ ${transcript}`;
                         content_raw: transcript,
                         status: "completed",
                         created_at: new Date(),
-                        is_public: isPublic,
+                        is_public: visibility !== 'private',
+                        visibility: visibility,
                         likes: 0,
                         comments: 0
                     });
