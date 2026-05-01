@@ -225,16 +225,16 @@ export function LandingPage() {
 
                 <div className="relative z-10 max-w-3xl mx-auto">
                     <motion.h1
-                        className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6 break-words"
+                        className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6 break-words"
                         custom={1}
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
                     >
                         {t('landing.hero.headline1')}
-                        <br />
+                        <br className="hidden sm:block" />
                         <span className="text-zinc-500">{t('landing.hero.headline2')}</span>
-                        <br />
+                        <br className="hidden sm:block" />
                         {t('landing.hero.headline3')}
                     </motion.h1>
 
@@ -364,7 +364,7 @@ export function LandingPage() {
                 SHOWCASE — Real public posts from inside the app
                ═══════════════════════════════════════════════════════════ */}
             {showcasePosts.length > 0 && (
-                <section className="relative py-10 md:py-14">
+                <section className="relative py-10 md:py-14 overflow-hidden">
                     <div className="max-w-2xl mx-auto px-4 sm:px-6">
                         {/* Swipeable card area */}
                         <div
