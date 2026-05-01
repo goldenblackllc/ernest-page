@@ -132,10 +132,10 @@ async function processUserChats(
 
         const messages = chatData.messages || [];
         // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback.
-        // Intentionally fail-safe: missing/undefined data defaults to private (not public).
-        const isPublic = chatData.sessionRouting
+        // Default to public unless explicitly routed private.
+        const isPublic = chatData.sessionRouting != null
             ? chatData.sessionRouting === 'public'
-            : chatData.autoPublish === true;
+            : chatData.autoPublish ?? true;
 
         if (messages.length > 0) {
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
@@ -359,11 +359,6 @@ ${transcript}`;
                         sponsored_link: sponsor?.link || null,
                         // Geolocation for proximity filtering
                         ...geoFields,
-                        // Legacy fallbacks for uninterrupted rendering
-                        title: post.title,
-                        pseudonym: post.pseudonym,
-                        letter: post.letter,
-                        response: post.response,
                         content_raw: transcript,
                         status: "completed",
                         created_at: new Date(),
