@@ -206,7 +206,7 @@ export function LandingPage() {
             {/* ═══════════════════════════════════════════════════════════
                 HERO + AUTH — One unit, above the fold
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative flex flex-col items-center px-6 pt-28 sm:pt-32 pb-16 text-center overflow-hidden">
+            <section className="relative px-6 pt-28 sm:pt-32 pb-16 overflow-hidden">
                 {/* Background hero image with aggressive fade */}
                 <div className="absolute inset-0 z-0">
                     <Image
@@ -223,7 +223,7 @@ export function LandingPage() {
                     />
                 </div>
 
-                <div className="relative z-10 max-w-3xl mx-auto">
+                <div className="relative z-10 max-w-3xl mx-auto w-full text-center">
                     <motion.h1
                         className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6 break-words"
                         custom={1}
