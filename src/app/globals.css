@@ -13,6 +13,7 @@
   body {
     /* Cinematic Dark Mode: Deep charcoal background, off-white text */
     @apply bg-black text-zinc-200 font-sans antialiased;
+    overflow-x: hidden; /* prevent horizontal scroll from any overflowing child */
   }
 
   /* The Cinematic Highlight */

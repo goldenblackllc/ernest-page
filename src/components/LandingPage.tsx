@@ -185,7 +185,7 @@ export function LandingPage() {
     };
 
     return (
-        <main className="min-h-screen bg-black text-white scroll-smooth">
+        <main className="min-h-screen bg-black text-white scroll-smooth overflow-x-hidden">
 
             {/* ── STICKY TOP NAV ── */}
             <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/[0.06]">
@@ -225,7 +225,7 @@ export function LandingPage() {
 
                 <div className="relative z-10 max-w-3xl mx-auto">
                     <motion.h1
-                        className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6"
+                        className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6 break-words"
                         custom={1}
                         variants={fadeUp}
                         initial="hidden"
