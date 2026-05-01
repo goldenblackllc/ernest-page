@@ -206,7 +206,7 @@ export function LandingPage() {
             {/* ═══════════════════════════════════════════════════════════
                 HERO + AUTH — One unit, above the fold
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 pt-28 sm:pt-32 pb-16 overflow-hidden">
+            <section className="relative px-6 pt-28 sm:pt-32 pb-10 overflow-hidden">
                 {/* Background hero image with aggressive fade */}
                 <div className="absolute inset-0 z-0">
                     <Image
@@ -231,9 +231,9 @@ export function LandingPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        {t('landing.hero.headline1')}
+                        {t('landing.hero.headline1')}{' '}
                         <br className="hidden sm:block" />
-                        <span className="text-zinc-500">{t('landing.hero.headline2')}</span>
+                        <span className="text-zinc-500">{t('landing.hero.headline2')}</span>{' '}
                         <br className="hidden sm:block" />
                         {t('landing.hero.headline3')}
                     </motion.h1>
@@ -347,16 +347,6 @@ export function LandingPage() {
                             </form>
                         )}
                     </motion.div>
-
-                    <motion.p
-                        className="text-sm text-zinc-600 mt-6"
-                        custom={4}
-                        variants={fadeUp}
-                        initial="hidden"
-                        animate="visible"
-                    >
-                        {t('landing.hero.price')}
-                    </motion.p>
                 </div>
             </section>
 
@@ -364,7 +354,7 @@ export function LandingPage() {
                 SHOWCASE — Real public posts from inside the app
                ═══════════════════════════════════════════════════════════ */}
             {showcasePosts.length > 0 && (
-                <section className="relative py-10 md:py-14 overflow-hidden">
+                <section className="relative py-6 md:py-10 overflow-hidden">
                     <div className="max-w-2xl mx-auto px-4 sm:px-6">
                         {/* Swipeable card area */}
                         <div
