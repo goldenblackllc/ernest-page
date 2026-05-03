@@ -311,7 +311,10 @@ function VoiceBrowser({ currentVoiceId, currentVoiceName }: { currentVoiceId?: s
     }, []);
 
     const search = useCallback(async () => {
-        if (!user) return;
+        if (!user) {
+            console.warn('[VoiceBrowser] No user — skipping search');
+            return;
+        }
         setLoading(true);
         stopPlaying();
 
@@ -329,9 +332,11 @@ function VoiceBrowser({ currentVoiceId, currentVoiceName }: { currentVoiceId?: s
             if (res.ok) {
                 const data = await res.json();
                 setResults(data.voices || []);
+            } else {
+                console.error('[VoiceBrowser] Search failed:', res.status, await res.text().catch(() => ''));
             }
         } catch (err) {
-            console.error('[VoiceBrowser] Search failed:', err);
+            console.error('[VoiceBrowser] Search error:', err);
         } finally {
             setLoading(false);
         }

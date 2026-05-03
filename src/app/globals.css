@@ -70,3 +70,10 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Voice waveform bars — speaking animation */
+@keyframes voiceBar {
+  0% { height: 4px; }
+  50% { height: 16px; }
+  100% { height: 6px; }
+}

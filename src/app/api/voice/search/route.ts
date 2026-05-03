@@ -12,10 +12,12 @@ export const maxDuration = 15;
  */
 export async function GET(req: Request) {
     try {
+        // Auth is optional for voice search (read-only proxy to public library)
+        // If authenticated, rate limit per user. Otherwise rate limit by IP.
         const uid = await verifyAuth(req);
-        if (!uid) return unauthorizedResponse();
+        const rateLimitKey = uid || req.headers.get('x-forwarded-for') || 'anon';
 
-        const rl = checkRateLimit(`voice-search:${uid}`, { maxRequests: 30, windowMs: 60_000 });
+        const rl = checkRateLimit(`voice-search:${rateLimitKey}`, { maxRequests: 30, windowMs: 60_000 });
         if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
         const apiKey = process.env.ELEVENLABS_API_KEY;

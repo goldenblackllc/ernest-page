@@ -72,6 +72,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         try { return localStorage.getItem('ep-auto-speak') === '1'; } catch { return false; }
     });
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [isLoadingTTS, setIsLoadingTTS] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastSpokenIdRef = useRef<string | null>(null);
     const voiceId = bible?.voice_id || null;
@@ -452,6 +453,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
         if (!cleanText) return;
 
+        setIsLoadingTTS(true);
         setIsSpeaking(true);
 
         try {
@@ -473,21 +475,25 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
             audio.onended = () => {
                 setIsSpeaking(false);
+                setIsLoadingTTS(false);
                 URL.revokeObjectURL(audioUrl);
                 audioRef.current = null;
             };
 
             audio.onerror = () => {
                 setIsSpeaking(false);
+                setIsLoadingTTS(false);
                 URL.revokeObjectURL(audioUrl);
                 audioRef.current = null;
             };
 
             audioRef.current = audio;
+            setIsLoadingTTS(false);
             await audio.play();
         } catch (err) {
             console.error('[TTS] Playback failed:', err);
             setIsSpeaking(false);
+            setIsLoadingTTS(false);
         }
     };
 
@@ -742,6 +748,39 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
 
                                         </div>
+
+                                        {/* ═══ VOICE WAVEFORM — loading/speaking indicator beneath last assistant msg ═══ */}
+                                        {m.role === 'assistant' && idx === messages.length - 1 && (isSpeaking || isLoadingTTS) && (
+                                            <div className="flex items-center gap-2 mt-2 pl-1">
+                                                <div className="flex items-end gap-[3px] h-4">
+                                                    {[0, 1, 2, 3, 4].map(i => (
+                                                        <div
+                                                            key={i}
+                                                            className={cn(
+                                                                "w-[3px] rounded-full transition-all",
+                                                                isLoadingTTS
+                                                                    ? "bg-zinc-600 animate-pulse"
+                                                                    : "bg-zinc-400"
+                                                            )}
+                                                            style={{
+                                                                height: isLoadingTTS
+                                                                    ? `${6 + (i % 3) * 3}px`
+                                                                    : undefined,
+                                                                animation: !isLoadingTTS && isSpeaking
+                                                                    ? `voiceBar 0.8s ease-in-out ${i * 0.1}s infinite alternate`
+                                                                    : undefined,
+                                                                animationDelay: isLoadingTTS
+                                                                    ? `${i * 150}ms`
+                                                                    : undefined,
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <span className="text-[10px] text-zinc-600 font-medium tracking-wide">
+                                                    {isLoadingTTS ? 'Preparing voice...' : 'Speaking'}
+                                                </span>
+                                            </div>
+                                        )}
 
                                         {/* ═══ EXTRACT DIRECTIVES — compact chip after last assistant message ═══ */}
                                         {m.role === 'assistant' && idx === messages.length - 1 && !isLoading && messages.length >= 4 && (
