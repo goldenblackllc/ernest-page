@@ -52,7 +52,7 @@ export async function POST(req: Request) {
                 },
                 body: JSON.stringify({
                     text,
-                    model_id: 'eleven_multilingual_v2',
+                    model_id: 'eleven_v3',
                     voice_settings: {
                         stability: 0.3,           // Lower = more natural variation, less robotic
                         similarity_boost: 0.8,     // High fidelity to the voice
