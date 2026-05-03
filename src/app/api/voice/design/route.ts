@@ -60,6 +60,7 @@ export async function POST(req: Request) {
         // Step 3: Update bible with new voice data
         const voicePreviews = result.previews.map((p, i) => ({
             generated_voice_id: p.generated_voice_id,
+            audio_base64: p.audio_base64,
             duration_secs: p.duration_secs,
             is_selected: i === result.selected_preview_index,
         }));

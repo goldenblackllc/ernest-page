@@ -14,8 +14,8 @@
 
 export interface VoicePreview {
     generated_voice_id: string;
+    audio_base64: string;
     duration_secs: number;
-    // Note: audio is streamed on demand via /api/voice/preview — not stored here
 }
 
 export interface VoiceDesignResult {
@@ -62,8 +62,8 @@ export async function generateVoicePreviews(
     const data = await res.json();
     return (data.previews || []).map((p: any) => ({
         generated_voice_id: p.generated_voice_id,
+        audio_base64: p.audio_base_64 || '',
         duration_secs: p.duration_secs || 0,
-        // audio_base64 intentionally omitted — streamed on demand
     }));
 }
 
