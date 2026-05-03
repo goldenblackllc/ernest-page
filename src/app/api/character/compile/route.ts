@@ -6,8 +6,6 @@ import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { REALITY_RULES } from '@/lib/constants/realityRules';
 import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
-import { generateVoiceDesignPrompt } from '@/lib/ai/voiceCatalog';
-import { designAndSaveVoice } from '@/lib/ai/voiceDesign';
 
 export const maxDuration = 300;
 
@@ -210,50 +208,6 @@ export async function POST(req: Request) {
                 }
             }
 
-            // ─── VOICE DESIGN — Generate a custom voice for the character ───
-            const userGender = data?.identity?.gender || '';
-            const userAge = data?.identity?.age || '';
-            const userEthnicity = data?.identity?.ethnicity || '';
-
-            let voiceId = '';
-            let voiceDesignPrompt = '';
-            let voicePreviews: any[] = [];
-            try {
-                // Wrap entire voice design in a 45s timeout — never block compile
-                const voiceDesignTimeout = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error('Voice design timed out')), 45_000)
-                );
-
-                const voiceDesignWork = (async () => {
-                    voiceDesignPrompt = await generateVoiceDesignPrompt({
-                        manifesto: source_code.manifesto || '',
-                        archetype: source_code.archetype || '',
-                        characterName,
-                        gender: userGender,
-                        age: userAge,
-                        ethnicity: userEthnicity,
-                        appLanguage: 'en',
-                    });
-
-                    console.log('[Compile] Voice design prompt:', voiceDesignPrompt);
-
-                    const oldVoiceId = currentBible.voice_id;
-                    const result = await designAndSaveVoice(voiceDesignPrompt, characterName, oldVoiceId);
-                    voiceId = result.voice_id;
-                    // Store only IDs — audio streams on demand via /api/voice/preview
-                    voicePreviews = result.previews.map((p, i) => ({
-                        generated_voice_id: p.generated_voice_id,
-                        duration_secs: p.duration_secs,
-                        is_selected: i === result.selected_preview_index,
-                    }));
-                })();
-
-                await Promise.race([voiceDesignWork, voiceDesignTimeout]);
-            } catch (err) {
-                console.error('[Compile] Voice design failed (non-fatal):', err);
-                voiceId = currentBible.voice_id || '';
-            }
-
             const updatedBible: CharacterBible = {
                 ...currentBible,
                 source_code: {
@@ -265,9 +219,9 @@ export async function POST(req: Request) {
                     ideal: idealSections
                 },
                 character_name: characterName,
-                voice_id: voiceId,
-                voice_design_prompt: voiceDesignPrompt || currentBible.voice_design_prompt,
-                voice_previews: voicePreviews.length > 0 ? voicePreviews : currentBible.voice_previews,
+                voice_id: currentBible.voice_id || '',  // Preserve existing; voice design runs async
+                voice_design_prompt: currentBible.voice_design_prompt,
+                voice_previews: currentBible.voice_previews,
                 last_updated: Date.now()
             };
 
@@ -278,6 +232,17 @@ export async function POST(req: Request) {
                 compile_count_date: today,
                 last_compile_at: Date.now(),
             }, { merge: true });
+
+            // ─── VOICE DESIGN — fire-and-forget background call ───
+            const origin = new URL(req.url).origin;
+            fetch(`${origin}/api/voice/design`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-key': process.env.CRON_SECRET || '',
+                },
+                body: JSON.stringify({ uid }),
+            }).catch(err => console.error('[Compile] Voice design trigger failed:', err));
         }
 
         // Generate avatar — awaited so the client knows everything is ready
