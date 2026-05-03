@@ -6,6 +6,8 @@ import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { REALITY_RULES } from '@/lib/constants/realityRules';
 import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import { generateVoiceDesignPrompt } from '@/lib/ai/voiceCatalog';
+import { designAndSaveVoice } from '@/lib/ai/voiceDesign';
 
 export const maxDuration = 300;
 
@@ -208,6 +210,44 @@ export async function POST(req: Request) {
                 }
             }
 
+            // ─── VOICE DESIGN — Generate a custom voice for the character ───
+            const userGender = data?.identity?.gender || '';
+            const userAge = data?.identity?.age || '';
+            const userEthnicity = data?.identity?.ethnicity || '';
+
+            let voiceId = '';
+            let voiceDesignPrompt = '';
+            let voicePreviews: any[] = [];
+            try {
+                // Step 1: AI generates the ElevenLabs voice design prompt
+                voiceDesignPrompt = await generateVoiceDesignPrompt({
+                    manifesto: source_code.manifesto || '',
+                    archetype: source_code.archetype || '',
+                    characterName,
+                    gender: userGender,
+                    age: userAge,
+                    ethnicity: userEthnicity,
+                    appLanguage: 'en', // TODO: derive from request headers
+                });
+
+                console.log('[Compile] Voice design prompt:', voiceDesignPrompt);
+
+                // Step 2: Generate 3 previews, auto-select first, save to ElevenLabs
+                const oldVoiceId = currentBible.voice_id;
+                const result = await designAndSaveVoice(voiceDesignPrompt, characterName, oldVoiceId);
+                voiceId = result.voice_id;
+                voicePreviews = result.previews.map((p, i) => ({
+                    generated_voice_id: p.generated_voice_id,
+                    audio_base64: p.audio_base64,
+                    duration_secs: p.duration_secs,
+                    is_selected: i === result.selected_preview_index,
+                }));
+            } catch (err) {
+                console.error('[Compile] Voice design failed (non-fatal):', err);
+                // Preserve existing voice if design fails
+                voiceId = currentBible.voice_id || '';
+            }
+
             const updatedBible: CharacterBible = {
                 ...currentBible,
                 source_code: {
@@ -219,6 +259,9 @@ export async function POST(req: Request) {
                     ideal: idealSections
                 },
                 character_name: characterName,
+                voice_id: voiceId,
+                voice_design_prompt: voiceDesignPrompt || currentBible.voice_design_prompt,
+                voice_previews: voicePreviews.length > 0 ? voicePreviews : currentBible.voice_previews,
                 last_updated: Date.now()
             };
 

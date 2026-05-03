@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/character";
 import { db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Pencil, FileText, Loader2, Shield } from "lucide-react";
+import { User, ChevronDown, Pencil, FileText, Loader2, Shield, Volume2, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { DossierView } from "./DossierView";
 
@@ -146,7 +146,13 @@ export function ProfileView() {
                     </div>
                 )}
 
-
+                {/* ── MY VOICE ── */}
+                {bible?.voice_previews && bible.voice_previews.length > 0 && (
+                    <VoiceAudition
+                        previews={bible.voice_previews}
+                        currentVoiceId={bible.voice_id}
+                    />
+                )}
 
             </div>
 
@@ -262,6 +268,156 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                         />
                     </>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// ——— Voice Audition Component ———
+
+interface VoiceAuditionProps {
+    previews: Array<{
+        generated_voice_id: string;
+        audio_base64: string;
+        duration_secs: number;
+        is_selected: boolean;
+    }>;
+    currentVoiceId?: string;
+}
+
+function VoiceAudition({ previews, currentVoiceId }: VoiceAuditionProps) {
+    const { user } = useAuth();
+    const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+    const [selectingIndex, setSelectingIndex] = useState<number | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number>(
+        previews.findIndex(p => p.is_selected) ?? 0
+    );
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const stopPlaying = useCallback(() => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
+            audioRef.current = null;
+        }
+        setPlayingIndex(null);
+    }, []);
+
+    const playPreview = useCallback((index: number) => {
+        stopPlaying();
+
+        if (playingIndex === index) return; // was already playing, just stop
+
+        const preview = previews[index];
+        if (!preview?.audio_base64) return;
+
+        const audio = new Audio(`data:audio/mpeg;base64,${preview.audio_base64}`);
+        audio.onended = () => setPlayingIndex(null);
+        audio.onerror = () => setPlayingIndex(null);
+        audio.play();
+        audioRef.current = audio;
+        setPlayingIndex(index);
+    }, [previews, playingIndex, stopPlaying]);
+
+    const selectVoice = useCallback(async (index: number) => {
+        if (!user || selectingIndex !== null) return;
+        if (index === selectedIndex) return;
+
+        setSelectingIndex(index);
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch('/api/voice/select', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ previewIndex: index }),
+            });
+
+            if (res.ok) {
+                setSelectedIndex(index);
+            }
+        } catch (err) {
+            console.error('[VoiceAudition] Failed to select voice:', err);
+        } finally {
+            setSelectingIndex(null);
+        }
+    }, [user, selectedIndex, selectingIndex]);
+
+    // Cleanup on unmount
+    useEffect(() => () => stopPlaying(), [stopPlaying]);
+
+    return (
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-3">
+                My Voice
+            </p>
+            <div className="space-y-2">
+                {previews.map((preview, i) => {
+                    const isPlaying = playingIndex === i;
+                    const isSelected = selectedIndex === i;
+                    const isSelecting = selectingIndex === i;
+
+                    return (
+                        <div
+                            key={preview.generated_voice_id}
+                            className={cn(
+                                "flex items-center gap-3 p-3 rounded-lg border transition-all",
+                                isSelected
+                                    ? "border-white/20 bg-zinc-800/50"
+                                    : "border-zinc-800/50 bg-zinc-950/30 hover:bg-zinc-900/50"
+                            )}
+                        >
+                            {/* Play button */}
+                            <button
+                                onClick={() => playPreview(i)}
+                                className={cn(
+                                    "shrink-0 w-10 h-10 flex items-center justify-center rounded-full border transition-all",
+                                    isPlaying
+                                        ? "bg-white/10 border-white/20 animate-pulse"
+                                        : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
+                                )}
+                                aria-label={`Play voice ${i + 1}`}
+                            >
+                                <Volume2 className={cn(
+                                    "w-4 h-4",
+                                    isPlaying ? "text-white" : "text-zinc-400"
+                                )} />
+                            </button>
+
+                            {/* Label */}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm text-zinc-300 font-medium">
+                                    Voice {i + 1}
+                                </p>
+                                <p className="text-[10px] text-zinc-600">
+                                    {Math.round(preview.duration_secs || 0)}s preview
+                                </p>
+                            </div>
+
+                            {/* Select button */}
+                            {isSelected ? (
+                                <div className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-zinc-400">
+                                    <Check className="w-3.5 h-3.5" />
+                                    Active
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => selectVoice(i)}
+                                    disabled={isSelecting}
+                                    className="shrink-0 text-xs font-bold text-zinc-500 hover:text-white px-3 py-1.5 rounded-full border border-zinc-700 hover:border-zinc-500 transition-all disabled:opacity-50"
+                                >
+                                    {isSelecting ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        'Select'
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

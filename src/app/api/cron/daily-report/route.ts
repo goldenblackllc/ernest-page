@@ -60,18 +60,14 @@ export async function GET(req: Request) {
         const postsCreated = postsSnapshot.size;
 
         // Funnel metrics — unique visitors, landing views, logins
+        // Read only yesterday's funnel doc (the cron runs at 8am UTC, so
+        // yesterday is the complete 24h window we care about).
         const yesterdayDateStr = yesterday.toLocaleDateString('en-CA'); // YYYY-MM-DD
-        const todayDateStr = now.toLocaleDateString('en-CA');
-        const [funnelDocYesterday, funnelDocToday] = await Promise.all([
-            db.collection('funnel').doc(yesterdayDateStr).get(),
-            db.collection('funnel').doc(todayDateStr).get(),
-        ]);
-        const sumField = (field: string) =>
-            (funnelDocYesterday.exists ? (funnelDocYesterday.data()?.[field] || 0) : 0) +
-            (funnelDocToday.exists ? (funnelDocToday.data()?.[field] || 0) : 0);
-        const uniqueVisitors = sumField('unique_visitors');
-        const landingViews = sumField('landing_views');
-        const funnelLogins = sumField('logins');
+        const funnelDoc = await db.collection('funnel').doc(yesterdayDateStr).get();
+        const funnelData = funnelDoc.exists ? funnelDoc.data() : null;
+        const uniqueVisitors = funnelData?.unique_visitors || 0;
+        const landingViews = funnelData?.landing_views || 0;
+        const funnelLogins = funnelData?.logins || 0;
         const landingPct = uniqueVisitors > 0 ? Math.round((landingViews / uniqueVisitors) * 100) : 0;
         const loginPct = landingViews > 0 ? Math.round((funnelLogins / landingViews) * 100) : 0;
 
@@ -103,11 +99,11 @@ export async function GET(req: Request) {
 
     <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <tr style="border-bottom: 1px solid #27272a;">
-            <td style="padding: 10px 0; color: #a1a1aa;">Total Enrollments</td>
+            <td style="padding: 10px 0; color: #a1a1aa;">Total Users</td>
             <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${totalUsers}</td>
         </tr>
         <tr style="border-bottom: 1px solid #27272a;">
-            <td style="padding: 10px 0; color: #a1a1aa;">New Signups (24h)</td>
+            <td style="padding: 10px 0; color: #a1a1aa;">New Users (24h)</td>
             <td style="padding: 10px 0; text-align: right; color: #34d399; font-weight: 600;">${newSignups}</td>
         </tr>
         <tr style="border-bottom: 1px solid #27272a;">

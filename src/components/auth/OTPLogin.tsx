@@ -6,6 +6,7 @@ import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
 import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
+import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 
 function normalizePhoneNumber(input: string, dialCode: string): string {
     const stripped = input.replace(/[\s\-\(\)\.]/g, '');
@@ -22,6 +23,7 @@ export default function OTPLogin() {
     const [selectedCountry, setSelectedCountry] = useState(() => detectCountryFromTimezone());
     const dialCode = getDialCodeForCountry(selectedCountry);
     const router = useRouter();
+    const { trackEvent } = useTrackEvent();
 
     const handleSendCode = async () => {
         setError(null);
@@ -68,6 +70,7 @@ export default function OTPLogin() {
                 return;
             }
             await signInWithCustomToken(auth, data.token);
+            trackEvent('login');
             router.push('/');
         } catch {
             setError("Invalid code. Please try again.");

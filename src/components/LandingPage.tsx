@@ -170,6 +170,7 @@ export function LandingPage() {
                 return;
             }
             await signInWithCustomToken(auth, data.token);
+            trackEvent('login');
             router.push('/');
         } catch {
             setError(t('landing.auth.errorVerifyFailed'));

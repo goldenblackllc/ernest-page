@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth, getAuthHint } from "@/lib/auth/AuthContext";
 import { useTrackEvent } from "@/lib/analytics/useTrackEvent";
 import { LandingPage } from "@/components/LandingPage";
@@ -32,21 +32,16 @@ export default function Home() {
     const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>('gender');
     const [autoOpenChat, setAutoOpenChat] = useState(false);
     const { trackEvent } = useTrackEvent();
-    const hasTrackedLogin = useRef(false);
+
+    // Defer localStorage-based auth hint until after hydration to prevent
+    // server/client mismatch (server has no localStorage).
+    const [hasMounted, setHasMounted] = useState(false);
+    useEffect(() => { setHasMounted(true); }, []);
 
     // ── Funnel: track unique visit on mount ──
     useEffect(() => {
         trackEvent('visit');
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // ── Funnel: track login when auth resolves ──
-    useEffect(() => {
-        if (user && !loading && !hasTrackedLogin.current) {
-            hasTrackedLogin.current = true;
-            trackEvent('login');
-        }
-    }, [user, loading]); // eslint-disable-line react-hooks/exhaustive-deps
-
     useEffect(() => {
         if (!user) {
             setProfile(null);
@@ -135,12 +130,22 @@ export default function Home() {
         }
     };
 
-    // While Firebase auth is initialising, check the localStorage hint
-    // to decide what to show. Returning users (hint = true) see the
-    // dashboard skeleton so there's no jarring landing-page flash.
+    // While Firebase auth is initialising, show the appropriate skeleton.
+    // Both server and client must render the SAME output during hydration.
+    // We always render the landing page on first paint — the auth hint
+    // skeleton only activates after mount to prevent hydration mismatch.
     if (loading) {
+        if (!hasMounted) {
+            // Server + client first render: always landing page (matches SSR output)
+            return (
+                <>
+                    <LandingPage />
+                    <SupportChat standalone />
+                </>
+            );
+        }
         if (getAuthHint()) {
-            // Returning user — show dashboard skeleton
+            // Client-only: returning user — show dashboard skeleton
             return (
                 <main className="flex flex-col min-h-screen text-zinc-300 font-sans">
                     <div className="fixed top-0 left-0 right-0 z-50 h-16 bg-black/80 backdrop-blur-md border-b border-zinc-800/50" />

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
-import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X } from "lucide-react";
+import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -66,6 +66,15 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const hasManuallySetRouting = useRef(false);
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
+
+    // ═══ CHARACTER VOICE (TTS) ═══
+    const [autoSpeak, setAutoSpeak] = useState(() => {
+        try { return localStorage.getItem('ep-auto-speak') === '1'; } catch { return false; }
+    });
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const lastSpokenIdRef = useRef<string | null>(null);
+    const voiceId = bible?.voice_id || null;
 
     // Layer 2: Track whether a credit has been consumed for this session
     const [creditConsumed, setCreditConsumed] = useState(false);
@@ -422,6 +431,95 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const displayName = characterName || characterArchetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_output?.avatar_url;
 
+    // ═══ TTS — Speak text aloud in the character's voice ═══
+    const speakText = async (text: string) => {
+        if (!voiceId) return;
+
+        // Stop any currently playing audio
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+
+        // Strip markdown for cleaner speech
+        const cleanText = text
+            .replace(/[#*_~`>]/g, '')
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replace(/\n{2,}/g, '. ')
+            .replace(/\n/g, ' ')
+            .trim()
+            .slice(0, 2000);
+
+        if (!cleanText) return;
+
+        setIsSpeaking(true);
+
+        try {
+            const idToken = await authUser?.getIdToken();
+            const res = await fetch('/api/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                },
+                body: JSON.stringify({ text: cleanText, voiceId }),
+            });
+
+            if (!res.ok) throw new Error('TTS failed');
+
+            const audioBlob = await res.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+
+            audio.onended = () => {
+                setIsSpeaking(false);
+                URL.revokeObjectURL(audioUrl);
+                audioRef.current = null;
+            };
+
+            audio.onerror = () => {
+                setIsSpeaking(false);
+                URL.revokeObjectURL(audioUrl);
+                audioRef.current = null;
+            };
+
+            audioRef.current = audio;
+            await audio.play();
+        } catch (err) {
+            console.error('[TTS] Playback failed:', err);
+            setIsSpeaking(false);
+        }
+    };
+
+    // Auto-speak: when a new assistant message arrives and autoSpeak is on
+    useEffect(() => {
+        if (!autoSpeak || !voiceId || isLoading) return;
+
+        const lastMsg = messages[messages.length - 1];
+        if (!lastMsg || lastMsg.role !== 'assistant') return;
+        if (lastMsg.id === lastSpokenIdRef.current) return; // Already spoke this one
+
+        lastSpokenIdRef.current = lastMsg.id;
+        speakText(lastMsg.content);
+    }, [messages, isLoading, autoSpeak, voiceId]);
+
+    // Stop audio & clean up on toggle off, unmount, or close
+    const stopSpeaking = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        setIsSpeaking(false);
+    };
+
+    useEffect(() => {
+        if (!autoSpeak) stopSpeaking();
+    }, [autoSpeak]);
+
+    useEffect(() => {
+        return () => stopSpeaking();
+    }, []);
+
     const handleExtractDirectives = async () => {
         if (isGeneratingPlan || messages.length < 2) return;
         setIsGeneratingPlan(true);
@@ -561,6 +659,29 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                             </span>
                         )}
 
+                        {/* Voice toggle — auto-speak on/off */}
+                        {voiceId && (
+                            <button
+                                onClick={() => {
+                                    setAutoSpeak(prev => {
+                                        const next = !prev;
+                                        try { localStorage.setItem('ep-auto-speak', next ? '1' : '0'); } catch {}
+                                        return next;
+                                    });
+                                }}
+                                className={cn(
+                                    "shrink-0 w-8 h-8 flex items-center justify-center rounded-full border transition-all",
+                                    autoSpeak
+                                        ? "text-white border-zinc-500 bg-zinc-800"
+                                        : "text-zinc-600 border-zinc-700 hover:text-zinc-400 hover:border-zinc-500",
+                                    isSpeaking && "animate-pulse"
+                                )}
+                                aria-label={autoSpeak ? 'Turn off voice' : 'Turn on voice'}
+                            >
+                                {autoSpeak ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                            </button>
+                        )}
+
                         {/* Close */}
                         <button
                             onClick={handleClose}
@@ -618,6 +739,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                                     <p className="whitespace-pre-wrap">{m.content}</p>
                                                 )}
                                             </div>
+
+
                                         </div>
 
                                         {/* ═══ EXTRACT DIRECTIVES — compact chip after last assistant message ═══ */}

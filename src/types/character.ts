@@ -37,6 +37,14 @@ export interface CharacterBible {
 
     // --- SYSTEM METADATA ---
     character_name?: string;    // Character's name (user-chosen or AI-generated)
+    voice_id?: string;          // ElevenLabs voice ID — the active custom voice
+    voice_design_prompt?: string; // The prompt used to generate the voice
+    voice_previews?: Array<{      // All 3 generated previews for audition
+        generated_voice_id: string;
+        audio_base64: string;
+        duration_secs: number;
+        is_selected: boolean;
+    }>;
     last_updated: number;   // Timestamp for the "Batch Post" logic.
     version?: number;       // e.g. 1.0, 1.1
     last_commit?: any;      // Firestore Timestamp of last "Finish & Commit"
