@@ -37,7 +37,8 @@ export interface CharacterBible {
 
     // --- SYSTEM METADATA ---
     character_name?: string;    // Character's name (user-chosen or AI-generated)
-    voice_id?: string;          // ElevenLabs voice ID — the active custom voice
+    voice_id?: string;          // ElevenLabs voice ID — shared library voice
+    voice_name?: string;        // Display name of the selected voice
     voice_design_prompt?: string; // The prompt used to generate the voice
     voice_previews?: Array<{      // Generated previews for audition
         generated_voice_id: string;

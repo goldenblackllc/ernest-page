@@ -47,10 +47,12 @@ export async function generateVoicePreviews(
         },
         body: JSON.stringify({
             voice_description: voicePrompt,
-            model_id: 'eleven_multilingual_ttv_v2',
+            model_id: 'eleven_ttv_v3',
             text: sampleText || 'I see exactly who you are, and I want you to know — you are already enough. Everything you need is already within you.',
             output_format: 'mp3_44100_128',
             loudness: 0,
+            should_enhance: true,
+            guidance_scale: 5,
         }),
     });
 
@@ -142,17 +144,17 @@ export async function designAndSaveVoice(
     const selectedIndex = 0;
     const selectedPreview = previews[selectedIndex];
 
-    // Step 3: Save to ElevenLabs as a permanent voice
+    // Step 3: Clean up old voice FIRST (ElevenLabs has a custom voice limit)
+    if (oldVoiceId) {
+        await deleteVoice(oldVoiceId);
+    }
+
+    // Step 4: Save to ElevenLabs as a permanent voice
     const voiceId = await saveVoiceFromPreview(
         selectedPreview.generated_voice_id,
         `${characterName} - Ideal Self`,
         voicePrompt.slice(0, 500)
     );
-
-    // Step 4: Clean up old voice if replacing
-    if (oldVoiceId) {
-        await deleteVoice(oldVoiceId);
-    }
 
     return {
         voice_id: voiceId,

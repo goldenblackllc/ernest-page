@@ -208,6 +208,61 @@ export async function POST(req: Request) {
                 }
             }
 
+            // ─── AUTO-DEFAULT VOICE — pick from shared library if none set ───
+            let voiceId = currentBible.voice_id || '';
+            let voiceName = currentBible.voice_name || '';
+
+            if (!voiceId) {
+                try {
+                    const userGender = (data?.identity?.gender || '').toLowerCase();
+                    const userAge = data?.identity?.age || '';
+
+                    // Map gender
+                    const gender = userGender.includes('female') || userGender.includes('woman') ? 'female' : 'male';
+
+                    // Map age to ElevenLabs categories
+                    let ageCategory = 'middle_aged';
+                    const ageNum = parseInt(userAge);
+                    if (!isNaN(ageNum)) {
+                        if (ageNum < 30) ageCategory = 'young';
+                        else if (ageNum >= 60) ageCategory = 'old';
+                    } else if (userAge.toLowerCase().includes('young') || userAge.includes('20')) {
+                        ageCategory = 'young';
+                    } else if (userAge.toLowerCase().includes('senior') || userAge.toLowerCase().includes('elder')) {
+                        ageCategory = 'old';
+                    }
+
+                    const apiKey = process.env.ELEVENLABS_API_KEY;
+                    if (apiKey) {
+                        const params = new URLSearchParams({
+                            page_size: '1',
+                            language: 'en',
+                            gender,
+                            age: ageCategory,
+                            accent: 'british',
+                            sort: 'usage_character_count_1y',
+                        });
+
+                        const voiceRes = await fetch(
+                            `https://api.elevenlabs.io/v1/shared-voices?${params}`,
+                            { headers: { 'xi-api-key': apiKey } }
+                        );
+
+                        if (voiceRes.ok) {
+                            const voiceData = await voiceRes.json();
+                            const topVoice = voiceData.voices?.[0];
+                            if (topVoice) {
+                                voiceId = topVoice.voice_id;
+                                voiceName = topVoice.name;
+                                console.log(`[Compile] Auto-assigned voice: ${voiceName} (${voiceId})`);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('[Compile] Voice auto-default failed (non-fatal):', err);
+                }
+            }
+
             const updatedBible: CharacterBible = {
                 ...currentBible,
                 source_code: {
@@ -219,9 +274,8 @@ export async function POST(req: Request) {
                     ideal: idealSections
                 },
                 character_name: characterName,
-                voice_id: currentBible.voice_id || '',  // Preserve existing; voice design runs async
-                voice_design_prompt: currentBible.voice_design_prompt,
-                voice_previews: currentBible.voice_previews,
+                voice_id: voiceId,
+                voice_name: voiceName,
                 last_updated: Date.now()
             };
 
@@ -232,17 +286,6 @@ export async function POST(req: Request) {
                 compile_count_date: today,
                 last_compile_at: Date.now(),
             }, { merge: true });
-
-            // ─── VOICE DESIGN — fire-and-forget background call ───
-            const origin = new URL(req.url).origin;
-            fetch(`${origin}/api/voice/design`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-internal-key': process.env.CRON_SECRET || '',
-                },
-                body: JSON.stringify({ uid }),
-            }).catch(err => console.error('[Compile] Voice design trigger failed:', err));
         }
 
         // Generate avatar — awaited so the client knows everything is ready

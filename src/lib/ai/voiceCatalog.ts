@@ -65,11 +65,11 @@ Generate a voice design prompt following this EXACT format:
 "Native <accent variant of ${language}>. <Gender>, <age range>. High quality.
 Persona: <2-5 words from the manifesto's energy>. Emotion: <2-3 adjectives>.
 <1-2 sentences about timbre, pacing, and delivery — concrete acoustic descriptors only, NO metaphors>.
-${input.ethnicity ? `Ethnicity: ${input.ethnicity} without any accent.` : ''}"
+${input.ethnicity ? 'Ethnicity: <ethnic descriptor only> without any accent.' : ''}"
 
 RULES:
 1. The accent (e.g. "British English" vs "American English") must come from the MANIFESTO's socioeconomic energy, NOT from the person's ethnicity. A refined, luxurious character gets British English. A self-made hustler gets American English. Match the character's aspirational identity.
-2. If ethnicity is provided, append it as "Ethnicity: [value] without any accent." This preserves ethnic timbre without triggering an accent change.
+2. If ethnicity is provided, extract ONLY the ethnic/racial descriptor from it. The ethnicity field may contain physical appearance details like hair color or beard — IGNORE those. Only use the ethnic label. For example: "White with blond hair, medium length, and clean beard" → use ONLY "White". "African American with short hair" → use ONLY "African American". "Hispanic" → use "Hispanic". Append as "Ethnicity: [ethnic label] without any accent."
 3. If ethnicity is empty, omit the ethnicity line entirely.
 4. Age range should be derived from the age/birthday field. Convert birthdays to approximate decade (e.g. "June 19, 1971" → "mid-50s").
 5. Use ONLY concrete acoustic adjectives: rich, deep, bright, warm, crisp, melodious, resonant, smooth, full-bodied, clear. NO literary language like "makes you feel held" or "carries the weight of experience."
