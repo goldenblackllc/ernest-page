@@ -278,7 +278,6 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
 interface VoiceAuditionProps {
     previews: Array<{
         generated_voice_id: string;
-        audio_base64: string;
         duration_secs: number;
         is_selected: boolean;
     }>;
@@ -288,6 +287,7 @@ interface VoiceAuditionProps {
 function VoiceAudition({ previews, currentVoiceId }: VoiceAuditionProps) {
     const { user } = useAuth();
     const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+    const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
     const [selectingIndex, setSelectingIndex] = useState<number | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number>(
         previews.findIndex(p => p.is_selected) ?? 0
@@ -303,21 +303,36 @@ function VoiceAudition({ previews, currentVoiceId }: VoiceAuditionProps) {
         setPlayingIndex(null);
     }, []);
 
-    const playPreview = useCallback((index: number) => {
+    const playPreview = useCallback(async (index: number) => {
         stopPlaying();
-
-        if (playingIndex === index) return; // was already playing, just stop
+        if (playingIndex === index) return;
 
         const preview = previews[index];
-        if (!preview?.audio_base64) return;
+        if (!preview?.generated_voice_id || !user) return;
 
-        const audio = new Audio(`data:audio/mpeg;base64,${preview.audio_base64}`);
-        audio.onended = () => setPlayingIndex(null);
-        audio.onerror = () => setPlayingIndex(null);
-        audio.play();
-        audioRef.current = audio;
-        setPlayingIndex(index);
-    }, [previews, playingIndex, stopPlaying]);
+        setLoadingIndex(index);
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch(
+                `/api/voice/preview?previewId=${preview.generated_voice_id}`,
+                { headers: { Authorization: `Bearer ${idToken}` } }
+            );
+            if (!res.ok) throw new Error('Preview unavailable');
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.onended = () => { setPlayingIndex(null); URL.revokeObjectURL(url); };
+            audio.onerror = () => { setPlayingIndex(null); URL.revokeObjectURL(url); };
+            audio.play();
+            audioRef.current = audio;
+            setPlayingIndex(index);
+        } catch {
+            setPlayingIndex(null);
+        } finally {
+            setLoadingIndex(null);
+        }
+    }, [previews, playingIndex, stopPlaying, user]);
 
     const selectVoice = useCallback(async (index: number) => {
         if (!user || selectingIndex !== null) return;
@@ -356,6 +371,7 @@ function VoiceAudition({ previews, currentVoiceId }: VoiceAuditionProps) {
             <div className="space-y-2">
                 {previews.map((preview, i) => {
                     const isPlaying = playingIndex === i;
+                    const isLoading = loadingIndex === i;
                     const isSelected = selectedIndex === i;
                     const isSelecting = selectingIndex === i;
 
@@ -372,18 +388,25 @@ function VoiceAudition({ previews, currentVoiceId }: VoiceAuditionProps) {
                             {/* Play button */}
                             <button
                                 onClick={() => playPreview(i)}
+                                disabled={isLoading}
                                 className={cn(
                                     "shrink-0 w-10 h-10 flex items-center justify-center rounded-full border transition-all",
                                     isPlaying
                                         ? "bg-white/10 border-white/20 animate-pulse"
+                                        : isLoading
+                                        ? "bg-zinc-800 border-zinc-700 opacity-70"
                                         : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
                                 )}
                                 aria-label={`Play voice ${i + 1}`}
                             >
-                                <Volume2 className={cn(
-                                    "w-4 h-4",
-                                    isPlaying ? "text-white" : "text-zinc-400"
-                                )} />
+                                {isLoading ? (
+                                    <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
+                                ) : (
+                                    <Volume2 className={cn(
+                                        "w-4 h-4",
+                                        isPlaying ? "text-white" : "text-zinc-400"
+                                    )} />
+                                )}
                             </button>
 
                             {/* Label */}

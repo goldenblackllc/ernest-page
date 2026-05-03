@@ -39,9 +39,8 @@ export interface CharacterBible {
     character_name?: string;    // Character's name (user-chosen or AI-generated)
     voice_id?: string;          // ElevenLabs voice ID — the active custom voice
     voice_design_prompt?: string; // The prompt used to generate the voice
-    voice_previews?: Array<{      // All 3 generated previews for audition
+    voice_previews?: Array<{      // Generated previews for audition (audio streamed on demand)
         generated_voice_id: string;
-        audio_base64: string;
         duration_secs: number;
         is_selected: boolean;
     }>;

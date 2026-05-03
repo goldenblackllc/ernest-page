@@ -219,32 +219,38 @@ export async function POST(req: Request) {
             let voiceDesignPrompt = '';
             let voicePreviews: any[] = [];
             try {
-                // Step 1: AI generates the ElevenLabs voice design prompt
-                voiceDesignPrompt = await generateVoiceDesignPrompt({
-                    manifesto: source_code.manifesto || '',
-                    archetype: source_code.archetype || '',
-                    characterName,
-                    gender: userGender,
-                    age: userAge,
-                    ethnicity: userEthnicity,
-                    appLanguage: 'en', // TODO: derive from request headers
-                });
+                // Wrap entire voice design in a 45s timeout — never block compile
+                const voiceDesignTimeout = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Voice design timed out')), 45_000)
+                );
 
-                console.log('[Compile] Voice design prompt:', voiceDesignPrompt);
+                const voiceDesignWork = (async () => {
+                    voiceDesignPrompt = await generateVoiceDesignPrompt({
+                        manifesto: source_code.manifesto || '',
+                        archetype: source_code.archetype || '',
+                        characterName,
+                        gender: userGender,
+                        age: userAge,
+                        ethnicity: userEthnicity,
+                        appLanguage: 'en',
+                    });
 
-                // Step 2: Generate 3 previews, auto-select first, save to ElevenLabs
-                const oldVoiceId = currentBible.voice_id;
-                const result = await designAndSaveVoice(voiceDesignPrompt, characterName, oldVoiceId);
-                voiceId = result.voice_id;
-                voicePreviews = result.previews.map((p, i) => ({
-                    generated_voice_id: p.generated_voice_id,
-                    audio_base64: p.audio_base64,
-                    duration_secs: p.duration_secs,
-                    is_selected: i === result.selected_preview_index,
-                }));
+                    console.log('[Compile] Voice design prompt:', voiceDesignPrompt);
+
+                    const oldVoiceId = currentBible.voice_id;
+                    const result = await designAndSaveVoice(voiceDesignPrompt, characterName, oldVoiceId);
+                    voiceId = result.voice_id;
+                    // Store only IDs — audio streams on demand via /api/voice/preview
+                    voicePreviews = result.previews.map((p, i) => ({
+                        generated_voice_id: p.generated_voice_id,
+                        duration_secs: p.duration_secs,
+                        is_selected: i === result.selected_preview_index,
+                    }));
+                })();
+
+                await Promise.race([voiceDesignWork, voiceDesignTimeout]);
             } catch (err) {
                 console.error('[Compile] Voice design failed (non-fatal):', err);
-                // Preserve existing voice if design fails
                 voiceId = currentBible.voice_id || '';
             }
 
