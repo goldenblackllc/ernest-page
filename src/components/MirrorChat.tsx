@@ -73,7 +73,9 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     });
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
+    const [pendingAudioMsgId, setPendingAudioMsgId] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const preUnlockedAudio = useRef<HTMLAudioElement | null>(null);
     const lastSpokenIdRef = useRef<string | null>(null);
     const voiceId = bible?.voice_id || null;
 
@@ -361,6 +363,18 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             }
         }
 
+        // Pre-unlock audio for mobile: create a silent audio element during the user gesture
+        // so we can reuse it for TTS playback later without autoplay restrictions.
+        if (autoSpeak && voiceId) {
+            try {
+                const silentAudio = new Audio();
+                silentAudio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwCHAAAAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwCHAAAAAAAAAAAAAAAAAAAA';
+                await silentAudio.play().catch(() => {});
+                silentAudio.pause();
+                preUnlockedAudio.current = silentAudio;
+            } catch {}
+        }
+
         // Optimistic update
         setMessages(newMessages);
         setInput("");
@@ -432,15 +446,9 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const displayName = characterName || characterArchetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_output?.avatar_url;
 
-    // ═══ TTS — Speak text aloud in the character's voice ═══
-    const speakText = async (text: string) => {
-        if (!voiceId) return;
-
-        // Stop any currently playing audio
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-        }
+    // ═══ TTS — Fetch audio blob for text (does NOT play) ═══
+    const fetchTTSAudio = async (text: string): Promise<Blob | null> => {
+        if (!voiceId) return null;
 
         // Strip markdown for cleaner speech
         const cleanText = text
@@ -451,10 +459,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             .trim()
             .slice(0, 2000);
 
-        if (!cleanText) return;
-
-        setIsLoadingTTS(true);
-        setIsSpeaking(true);
+        if (!cleanText) return null;
 
         try {
             const idToken = await authUser?.getIdToken();
@@ -468,45 +473,84 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             });
 
             if (!res.ok) throw new Error('TTS failed');
-
-            const audioBlob = await res.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-
-            audio.onended = () => {
-                setIsSpeaking(false);
-                setIsLoadingTTS(false);
-                URL.revokeObjectURL(audioUrl);
-                audioRef.current = null;
-            };
-
-            audio.onerror = () => {
-                setIsSpeaking(false);
-                setIsLoadingTTS(false);
-                URL.revokeObjectURL(audioUrl);
-                audioRef.current = null;
-            };
-
-            audioRef.current = audio;
-            setIsLoadingTTS(false);
-            await audio.play();
+            return await res.blob();
         } catch (err) {
-            console.error('[TTS] Playback failed:', err);
-            setIsSpeaking(false);
-            setIsLoadingTTS(false);
+            console.error('[TTS] Fetch failed:', err);
+            return null;
         }
     };
 
-    // Auto-speak: when a new assistant message arrives and autoSpeak is on
+    // ═══ TTS — Play a blob using the pre-unlocked audio element (mobile-safe) ═══
+    const playAudioBlob = async (blob: Blob) => {
+        // Stop any currently playing audio
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+
+        const audioUrl = URL.createObjectURL(blob);
+
+        // Reuse the pre-unlocked audio element if available (mobile autoplay fix)
+        const audio = preUnlockedAudio.current || new Audio();
+        preUnlockedAudio.current = null; // consumed
+        audio.src = audioUrl;
+
+        audio.onended = () => {
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+            audioRef.current = null;
+        };
+
+        audio.onerror = () => {
+            console.error('[TTS] Audio playback error');
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+            audioRef.current = null;
+        };
+
+        audioRef.current = audio;
+        setIsSpeaking(true);
+
+        try {
+            await audio.play();
+        } catch (err) {
+            console.error('[TTS] Play failed:', err);
+            setIsSpeaking(false);
+        }
+    };
+
+    // ═══ TTS — Legacy: speak text directly (for manual play, non-autoSpeak) ═══
+    const speakText = async (text: string) => {
+        if (!voiceId) return;
+        setIsLoadingTTS(true);
+        const blob = await fetchTTSAudio(text);
+        setIsLoadingTTS(false);
+        if (blob) await playAudioBlob(blob);
+    };
+
+    // Auto-speak: when a new assistant message arrives and autoSpeak is on,
+    // HOLD the message (keep dots) until TTS audio is ready, then reveal + play simultaneously.
     useEffect(() => {
         if (!autoSpeak || !voiceId || isLoading) return;
 
         const lastMsg = messages[messages.length - 1];
         if (!lastMsg || lastMsg.role !== 'assistant') return;
-        if (lastMsg.id === lastSpokenIdRef.current) return; // Already spoke this one
+        if (lastMsg.id === lastSpokenIdRef.current) return;
 
         lastSpokenIdRef.current = lastMsg.id;
-        speakText(lastMsg.content);
+
+        // Hold the message — hide it and show dots while TTS loads
+        setPendingAudioMsgId(lastMsg.id);
+        setIsLoadingTTS(true);
+
+        (async () => {
+            const blob = await fetchTTSAudio(lastMsg.content);
+            // Reveal the message
+            setPendingAudioMsgId(null);
+            setIsLoadingTTS(false);
+            // Play audio simultaneously with text reveal
+            if (blob) await playAudioBlob(blob);
+        })();
     }, [messages, isLoading, autoSpeak, voiceId]);
 
     // Stop audio & clean up on toggle off, unmount, or close
@@ -720,7 +764,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                     </div>
                                 </div>
                             ) : (
-                                messages.map((m: any, idx: number) => (
+                                messages.filter((m: any) => m.id !== pendingAudioMsgId).map((m: any, idx: number, filteredArr: any[]) => (
                                     <div key={m.id}>
                                         {/* Message bubble — no per-message avatars */}
                                         <div
@@ -749,41 +793,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
                                         </div>
 
-                                        {/* ═══ VOICE WAVEFORM — loading/speaking indicator beneath last assistant msg ═══ */}
-                                        {m.role === 'assistant' && idx === messages.length - 1 && (isSpeaking || isLoadingTTS) && (
-                                            <div className="flex items-center gap-2 mt-2 pl-1">
-                                                <div className="flex items-end gap-[3px] h-4">
-                                                    {[0, 1, 2, 3, 4].map(i => (
-                                                        <div
-                                                            key={i}
-                                                            className={cn(
-                                                                "w-[3px] rounded-full transition-all",
-                                                                isLoadingTTS
-                                                                    ? "bg-zinc-600 animate-pulse"
-                                                                    : "bg-zinc-400"
-                                                            )}
-                                                            style={{
-                                                                height: isLoadingTTS
-                                                                    ? `${6 + (i % 3) * 3}px`
-                                                                    : undefined,
-                                                                animation: !isLoadingTTS && isSpeaking
-                                                                    ? `voiceBar 0.8s ease-in-out ${i * 0.1}s infinite alternate`
-                                                                    : undefined,
-                                                                animationDelay: isLoadingTTS
-                                                                    ? `${i * 150}ms`
-                                                                    : undefined,
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                                <span className="text-[10px] text-zinc-600 font-medium tracking-wide">
-                                                    {isLoadingTTS ? 'Preparing voice...' : 'Speaking'}
-                                                </span>
-                                            </div>
-                                        )}
-
                                         {/* ═══ EXTRACT DIRECTIVES — compact chip after last assistant message ═══ */}
-                                        {m.role === 'assistant' && idx === messages.length - 1 && !isLoading && messages.length >= 4 && (
+                                        {m.role === 'assistant' && idx === filteredArr.length - 1 && !isLoading && !pendingAudioMsgId && filteredArr.length >= 4 && (
                                             <div className="flex justify-end mt-2 pr-1">
                                                 {isGeneratingPlan ? (
                                                     <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-widest px-3 py-1.5">
@@ -805,7 +816,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                 ))
                             )}
 
-                            {isLoading && (
+                            {(isLoading || pendingAudioMsgId) && (
                                 <div className="flex justify-start">
                                     <div className="bg-zinc-900/60 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5 h-[46px]">
                                         <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "0ms" }} />
