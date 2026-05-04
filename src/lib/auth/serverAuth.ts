@@ -1,3 +1,4 @@
+import '@/lib/firebase/admin'; // Ensure Admin SDK is initialized before getAuth()
 import { getAuth } from 'firebase-admin/auth';
 
 /**
