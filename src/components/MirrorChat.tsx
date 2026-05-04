@@ -73,10 +73,11 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     });
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
-    const [pendingAudioMsgId, setPendingAudioMsgId] = useState<string | null>(null);
+    const [releasedMsgId, setReleasedMsgId] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const preUnlockedAudio = useRef<HTMLAudioElement | null>(null);
     const lastSpokenIdRef = useRef<string | null>(null);
+    const expectingVoiceRef = useRef(false);
     const voiceId = bible?.voice_id || null;
 
     // Layer 2: Track whether a credit has been consumed for this session
@@ -276,23 +277,30 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [keyboardOffset, setKeyboardOffset] = useState(0);
+    const [viewportTop, setViewportTop] = useState(0);
 
     // Track the visual viewport to detect when the software keyboard is open.
     // When the keyboard appears the visual viewport shrinks; the difference
     // between the layout height and the visual height is the keyboard height.
     // We shift the fixed overlay upward by that amount so the input bar stays
     // visible above the keyboard on iOS and Android.
+    // We also track visualViewport.offsetTop — on iOS the browser scrolls the
+    // fixed-position page down when focusing an input, which pushes the header
+    // above the visible area. By tracking offsetTop we can shift the entire
+    // container down to stay within the visible viewport.
     const updateKeyboardOffset = useCallback(() => {
         if (!window.visualViewport) return;
         const vvHeight = window.visualViewport.height;
         const layoutHeight = window.innerHeight;
         const offset = Math.max(0, layoutHeight - vvHeight - window.visualViewport.offsetTop);
         setKeyboardOffset(offset);
+        setViewportTop(window.visualViewport.offsetTop);
     }, []);
 
     useEffect(() => {
         if (!isOpen) {
             setKeyboardOffset(0);
+            setViewportTop(0);
             return;
         }
         const vv = window.visualViewport;
@@ -379,6 +387,12 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         setMessages(newMessages);
         setInput("");
         setIsLoading(true);
+
+        // Signal that we're expecting a voice response — set BEFORE the response arrives
+        // so shouldHoldLastMessage is true on the very first render with the new message.
+        if (autoSpeak && voiceId) {
+            expectingVoiceRef.current = true;
+        }
 
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -472,7 +486,11 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                 body: JSON.stringify({ text: cleanText, voiceId }),
             });
 
-            if (!res.ok) throw new Error('TTS failed');
+            if (!res.ok) {
+                const errText = await res.text().catch(() => '');
+                console.error(`[TTS] Failed: ${res.status}`, errText);
+                throw new Error(`TTS failed: ${res.status}`);
+            }
             return await res.blob();
         } catch (err) {
             console.error('[TTS] Fetch failed:', err);
@@ -529,7 +547,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     };
 
     // Auto-speak: when a new assistant message arrives and autoSpeak is on,
-    // HOLD the message (keep dots) until TTS audio is ready, then reveal + play simultaneously.
+    // fetch TTS audio in the background, then release the message and play simultaneously.
+    // The message is held (hidden) during render via shouldHoldLastMessage (uses expectingVoiceRef).
     useEffect(() => {
         if (!autoSpeak || !voiceId || isLoading) return;
 
@@ -538,20 +557,27 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         if (lastMsg.id === lastSpokenIdRef.current) return;
 
         lastSpokenIdRef.current = lastMsg.id;
-
-        // Hold the message — hide it and show dots while TTS loads
-        setPendingAudioMsgId(lastMsg.id);
         setIsLoadingTTS(true);
 
         (async () => {
             const blob = await fetchTTSAudio(lastMsg.content);
-            // Reveal the message
-            setPendingAudioMsgId(null);
+            // Release: clear the hold flag and set released ID
+            expectingVoiceRef.current = false;
+            setReleasedMsgId(lastMsg.id);
             setIsLoadingTTS(false);
             // Play audio simultaneously with text reveal
             if (blob) await playAudioBlob(blob);
         })();
     }, [messages, isLoading, autoSpeak, voiceId]);
+
+    // Compute whether to hold the last assistant message during render (no flash).
+    // expectingVoiceRef is set in handleSubmit BEFORE the response arrives,
+    // so the hold is active on the very first render that includes the new message.
+    const lastMsg = messages[messages.length - 1];
+    const shouldHoldLastMessage = !!(expectingVoiceRef.current
+        && !isLoading
+        && lastMsg?.role === 'assistant'
+        && lastMsg.id !== releasedMsgId);
 
     // Stop audio & clean up on toggle off, unmount, or close
     const stopSpeaking = () => {
@@ -670,12 +696,16 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-50 bg-zinc-950"
+                    className="fixed left-0 right-0 z-50 bg-zinc-950"
+                    style={{
+                        top: viewportTop,
+                        bottom: keyboardOffset,
+                    }}
                 >
                     {/* ═══ ZONE 1: HEADER — always pinned to top ═══ */}
                     <div
                         ref={headerRef}
-                        className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-zinc-800/50 bg-zinc-950"
+                        className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-zinc-800/50 bg-zinc-950 pt-[max(12px,env(safe-area-inset-top))]"
                     >
                         {/* Avatar — prominent face */}
                         <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden flex items-center justify-center shrink-0">
@@ -747,7 +777,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                         className="absolute left-0 right-0 overflow-y-auto bg-zinc-950 custom-scrollbar"
                         style={{
                             top: headerHeight,
-                            bottom: inputZoneHeight + keyboardOffset,
+                            bottom: inputZoneHeight,
                         }}
                     >
                         <div className="max-w-3xl mx-auto px-5 sm:px-8 lg:px-12 py-6 space-y-3">
@@ -764,7 +794,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                     </div>
                                 </div>
                             ) : (
-                                messages.filter((m: any) => m.id !== pendingAudioMsgId).map((m: any, idx: number, filteredArr: any[]) => (
+                                messages.filter((m: any) => !(shouldHoldLastMessage && m.id === lastMsg?.id)).map((m: any, idx: number, filteredArr: any[]) => (
                                     <div key={m.id}>
                                         {/* Message bubble — no per-message avatars */}
                                         <div
@@ -794,7 +824,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                         </div>
 
                                         {/* ═══ EXTRACT DIRECTIVES — compact chip after last assistant message ═══ */}
-                                        {m.role === 'assistant' && idx === filteredArr.length - 1 && !isLoading && !pendingAudioMsgId && filteredArr.length >= 4 && (
+                                        {m.role === 'assistant' && idx === filteredArr.length - 1 && !isLoading && !shouldHoldLastMessage && filteredArr.length >= 4 && (
                                             <div className="flex justify-end mt-2 pr-1">
                                                 {isGeneratingPlan ? (
                                                     <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-widest px-3 py-1.5">
@@ -816,7 +846,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                 ))
                             )}
 
-                            {(isLoading || pendingAudioMsgId) && (
+                            {(isLoading || shouldHoldLastMessage) && (
                                 <div className="flex justify-start">
                                     <div className="bg-zinc-900/60 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5 h-[46px]">
                                         <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -832,8 +862,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     {/* ═══ ZONE 3: INPUT — pinned above keyboard ═══ */}
                     <div
                         ref={inputZoneRef}
-                        className="absolute left-0 right-0 bg-zinc-950 border-t border-zinc-800/50"
-                        style={{ bottom: keyboardOffset }}
+                        className="absolute left-0 right-0 bottom-0 bg-zinc-950 border-t border-zinc-800/50"
                     >
                         <div className="max-w-3xl mx-auto px-5 sm:px-8 py-4 relative">
                             {/* Regenerate Button */}
