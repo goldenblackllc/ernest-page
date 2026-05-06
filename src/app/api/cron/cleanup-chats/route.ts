@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
     try {
         const now = Date.now();
-        const timeoutMs = 15 * 60 * 1000; // 15 mins
+        const timeoutMs = 30 * 60 * 1000; // 30 mins
         let processedCount = 0;
 
         // ─── PER-USER SUBCOLLECTION QUERIES ───

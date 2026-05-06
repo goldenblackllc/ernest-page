@@ -303,29 +303,6 @@ export async function POST(req: Request) {
             console.error('[Compile] Avatar generation failed (non-fatal):', err);
         }
 
-        // Fire-and-forget: merge important_people & things_i_enjoy into the existing dossier
-        // This updates KEY PEOPLE and PREFERENCES & STYLE without wiping session-accumulated data
-        const importantPeople = source_code.important_people || '';
-        const thingsIEnjoy = source_code.things_i_enjoy || '';
-        if (importantPeople || thingsIEnjoy) {
-            const mergeSummary = [
-                importantPeople ? `USER'S IMPORTANT PEOPLE (updated):\n${importantPeople}` : '',
-                thingsIEnjoy ? `USER'S THINGS THEY ENJOY (updated):\n${thingsIEnjoy}` : '',
-            ].filter(Boolean).join('\n\n');
-
-            fetch(`${origin}/api/dossier/update`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-internal-key': process.env.CRON_SECRET || '',
-                },
-                body: JSON.stringify({
-                    uid,
-                    conversation_summary: `[PROFILE UPDATE — NOT A CONVERSATION]\nThe user has updated their profile information. Merge the following into the appropriate dossier sections (KEY PEOPLE and PREFERENCES & STYLE). Do not remove any existing facts from other sections.\n\n${mergeSummary}`,
-                }),
-            }).catch(err => console.error('[Compile] Dossier merge fire-and-forget error:', err));
-        }
-
         return Response.json({
             success: true,
             ideal: idealSections
