@@ -54,7 +54,7 @@ export async function POST(req: Request) {
                     text,
                     model_id: 'eleven_v3',
                     voice_settings: {
-                        stability: 0.3,           // Lower = more natural variation, less robotic
+                        stability: 0.5,           // Balanced: natural variation with consistent start
                         similarity_boost: 0.8,     // High fidelity to the voice
                         style: 0.45,               // More personality and expressiveness
                         use_speaker_boost: true,

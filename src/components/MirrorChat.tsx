@@ -468,20 +468,37 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const displayName = characterName || characterArchetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_output?.avatar_url;
 
-    // ═══ TTS — Fetch audio blob for text (does NOT play) ═══
-    const fetchTTSAudio = async (text: string): Promise<Blob | null> => {
-        if (!voiceId) return null;
-
-        // Strip markdown for cleaner speech
-        const cleanText = text
+    // ═══ TTS — Split text into speakable chunks (by paragraph, max ~500 chars each) ═══
+    const splitIntoChunks = (text: string): string[] => {
+        // Strip markdown
+        const clean = text
             .replace(/[#*_~`>]/g, '')
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-            .replace(/\n{2,}/g, '. ')
-            .replace(/\n/g, ' ')
-            .trim()
-            .slice(0, 2000);
+            .trim();
 
-        if (!cleanText) return null;
+        // Split by double newline (paragraphs)
+        const paragraphs = clean.split(/\n{2,}/).map(p => p.replace(/\n/g, ' ').trim()).filter(Boolean);
+
+        // Merge small paragraphs, split large ones (~500 char target)
+        const chunks: string[] = [];
+        let current = '';
+
+        for (const para of paragraphs) {
+            if (current && (current.length + para.length) > 500) {
+                chunks.push(current.trim());
+                current = para;
+            } else {
+                current = current ? `${current}\n\n${para}` : para;
+            }
+        }
+        if (current.trim()) chunks.push(current.trim());
+
+        return chunks.length > 0 ? chunks : [clean.slice(0, 2000)];
+    };
+
+    // ═══ TTS — Fetch audio blob for a single chunk ═══
+    const fetchChunkAudio = async (text: string): Promise<Blob | null> => {
+        if (!voiceId || !text.trim()) return null;
 
         try {
             const idToken = await authUser?.getIdToken();
@@ -491,72 +508,110 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     'Content-Type': 'application/json',
                     ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
                 },
-                body: JSON.stringify({ text: cleanText, voiceId }),
+                body: JSON.stringify({ text: text.slice(0, 2000), voiceId }),
             });
 
             if (!res.ok) {
                 const errText = await res.text().catch(() => '');
-                console.error(`[TTS] Failed: ${res.status}`, errText);
-                throw new Error(`TTS failed: ${res.status}`);
+                console.error(`[TTS] Chunk failed: ${res.status}`, errText);
+                return null;
             }
             return await res.blob();
         } catch (err) {
-            console.error('[TTS] Fetch failed:', err);
+            console.error('[TTS] Chunk fetch failed:', err);
             return null;
         }
     };
 
-    // ═══ TTS — Play a blob using the pre-unlocked audio element (mobile-safe) ═══
-    const playAudioBlob = async (blob: Blob) => {
-        // Stop any currently playing audio
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-        }
+    // ═══ TTS — Play a single blob, returns a promise that resolves when playback ends ═══
+    const playAudioBlob = (blob: Blob): Promise<void> => {
+        return new Promise((resolve) => {
+            // Stop any currently playing audio
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
 
-        const audioUrl = URL.createObjectURL(blob);
+            const audioUrl = URL.createObjectURL(blob);
 
-        // Reuse the pre-unlocked audio element if available (mobile autoplay fix)
-        const audio = preUnlockedAudio.current || new Audio();
-        preUnlockedAudio.current = null; // consumed
-        audio.src = audioUrl;
+            // Reuse the pre-unlocked audio element if available (mobile autoplay fix)
+            const audio = preUnlockedAudio.current || new Audio();
+            preUnlockedAudio.current = null;
+            audio.src = audioUrl;
 
-        audio.onended = () => {
-            setIsSpeaking(false);
-            URL.revokeObjectURL(audioUrl);
-            audioRef.current = null;
-        };
+            audio.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                audioRef.current = null;
+                resolve();
+            };
 
-        audio.onerror = () => {
-            console.error('[TTS] Audio playback error');
-            setIsSpeaking(false);
-            URL.revokeObjectURL(audioUrl);
-            audioRef.current = null;
-        };
+            audio.onerror = () => {
+                console.error('[TTS] Audio playback error');
+                URL.revokeObjectURL(audioUrl);
+                audioRef.current = null;
+                resolve(); // Resolve anyway so next chunk can play
+            };
 
-        audioRef.current = audio;
-        setIsSpeaking(true);
+            audioRef.current = audio;
 
-        try {
-            await audio.play();
-        } catch (err) {
-            console.error('[TTS] Play failed:', err);
-            setIsSpeaking(false);
-        }
+            audio.play().catch((err) => {
+                console.error('[TTS] Play failed:', err);
+                resolve();
+            });
+        });
     };
 
-    // ═══ TTS — Legacy: speak text directly (for manual play, non-autoSpeak) ═══
+    // ═══ TTS — Play all chunks sequentially (fetch first immediately, rest in parallel) ═══
+    const playChunkedAudio = async (text: string) => {
+        const chunks = splitIntoChunks(text);
+        if (chunks.length === 0) return;
+
+        setIsSpeaking(true);
+
+        // Fetch first chunk immediately for fast start
+        const firstBlob = await fetchChunkAudio(chunks[0]);
+
+        // Start fetching remaining chunks in parallel while first one plays
+        const restPromises = chunks.slice(1).map(chunk => fetchChunkAudio(chunk));
+
+        // Play first chunk
+        if (firstBlob) {
+            await playAudioBlob(firstBlob);
+        }
+
+        // Play remaining chunks sequentially as they resolve
+        for (const promise of restPromises) {
+            const blob = await promise;
+            if (blob) {
+                await playAudioBlob(blob);
+            }
+        }
+
+        setIsSpeaking(false);
+    };
+
+    // ═══ TTS — Speak text directly (for manual play, non-autoSpeak) ═══
     const speakText = async (text: string) => {
         if (!voiceId) return;
         setIsLoadingTTS(true);
-        const blob = await fetchTTSAudio(text);
+        setIsSpeaking(true);
+        // Fetch first chunk to clear loading state fast
+        const chunks = splitIntoChunks(text);
+        const firstBlob = await fetchChunkAudio(chunks[0]);
         setIsLoadingTTS(false);
-        if (blob) await playAudioBlob(blob);
+        if (firstBlob) {
+            await playAudioBlob(firstBlob);
+            // Play rest
+            for (let i = 1; i < chunks.length; i++) {
+                const blob = await fetchChunkAudio(chunks[i]);
+                if (blob) await playAudioBlob(blob);
+            }
+        }
+        setIsSpeaking(false);
     };
 
     // Auto-speak: when a new assistant message arrives and autoSpeak is on,
-    // fetch TTS audio in the background, then release the message and play simultaneously.
-    // The message is held (hidden) during render via shouldHoldLastMessage (uses expectingVoiceRef).
+    // fetch TTS audio in chunks, release the message when first chunk is ready.
     useEffect(() => {
         if (!autoSpeak || !voiceId || isLoading) return;
 
@@ -568,13 +623,32 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         setIsLoadingTTS(true);
 
         (async () => {
-            const blob = await fetchTTSAudio(lastMsg.content);
+            const chunks = splitIntoChunks(lastMsg.content);
+
+            // Fetch first chunk — release message as soon as it's ready
+            const firstBlob = await fetchChunkAudio(chunks[0]);
+
             // Release: clear the hold flag and set released ID
             expectingVoiceRef.current = false;
             setReleasedMsgId(lastMsg.id);
             setIsLoadingTTS(false);
-            // Play audio simultaneously with text reveal
-            if (blob) await playAudioBlob(blob);
+
+            if (!firstBlob) return;
+
+            // Start fetching remaining chunks in parallel
+            const restPromises = chunks.slice(1).map(c => fetchChunkAudio(c));
+
+            // Play first chunk immediately
+            setIsSpeaking(true);
+            await playAudioBlob(firstBlob);
+
+            // Play remaining chunks sequentially
+            for (const promise of restPromises) {
+                const blob = await promise;
+                if (blob) await playAudioBlob(blob);
+            }
+
+            setIsSpeaking(false);
         })();
     }, [messages, isLoading, autoSpeak, voiceId]);
 
