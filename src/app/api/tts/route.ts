@@ -1,7 +1,7 @@
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // Max characters per TTS request — keeps costs bounded
 const MAX_TEXT_LENGTH = 2000;
