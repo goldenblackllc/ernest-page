@@ -371,9 +371,17 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             }
         }
 
-        // Pre-unlock audio for mobile: create a silent audio element during the user gesture
-        // so we can reuse it for TTS playback later without autoplay restrictions.
+        // iOS: set audio session to "ambient" so TTS mixes with Spotify/music
+        // instead of pausing it. Supported on iOS Safari 16.4+.
         if (autoSpeak && voiceId) {
+            try {
+                if ('audioSession' in navigator) {
+                    (navigator as any).audioSession.type = 'ambient';
+                }
+            } catch {}
+
+            // Pre-unlock audio for mobile: create a silent audio element during the user gesture
+            // so we can reuse it for TTS playback later without autoplay restrictions.
             try {
                 const silentAudio = new Audio();
                 silentAudio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwCHAAAAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwCHAAAAAAAAAAAAAAAAAAAA';
