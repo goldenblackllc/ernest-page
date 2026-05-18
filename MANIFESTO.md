@@ -177,10 +177,10 @@ There is no subscription paywall. Users purchase session credits à la carte or 
 *   **Auth:** Twilio Verify (OTP) → Firebase Custom Tokens.
 *   **Payments:** Stripe (PaymentIntents, subscriptions, webhooks).
 *   **AI:**
-    *   **Heavy Reasoning:** Anthropic Claude Opus (`claude-opus-4-6`) — powers Mirror Chat conversations.
+    *   **Heavy Reasoning:** Anthropic Claude Opus (`claude-opus-4-7`) — powers Mirror Chat conversations.
     *   **Creative Writing:** Anthropic Claude Sonnet (`claude-sonnet-4-6`) — powers Ghost-Writing, Plan Generation, Dossier Updates, Support Chat, Reality Shift PII scrubbing.
     *   **Image Generation:** Google Imagen 4.0 — generates hero images for posts and daily digest cards.
-    *   **Fallback Chain:** Primary model → stable fallback (Opus 4.5 or Sonnet 4.5) → Gemini 3.1 Pro.
+    *   **Fallback Chain:** Primary model → stable fallback (Opus 4.6 or Sonnet 4.5) → Gemini 3.1 Pro.
 *   **Email:** Nodemailer + Gmail (admin reports).
 
 **Infrastructure:**
