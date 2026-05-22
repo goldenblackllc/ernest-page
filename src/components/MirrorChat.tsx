@@ -468,7 +468,50 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const displayName = characterName || characterArchetype || "Your Ideal Self";
     const avatarUrl = bible?.compiled_output?.avatar_url;
 
-    // ═══ TTS — Fetch audio blob for full text (single call, no chunking) ═══
+    // ═══ TTS — Split text into chunks at sentence boundaries ═══
+    const splitTextIntoChunks = (text: string, maxLen: number): string[] => {
+        if (text.length <= maxLen) return [text];
+
+        const chunks: string[] = [];
+        let remaining = text;
+
+        while (remaining.length > 0) {
+            if (remaining.length <= maxLen) {
+                chunks.push(remaining);
+                break;
+            }
+
+            // Find the last sentence-ending punctuation within the limit
+            let splitAt = -1;
+            const searchRegion = remaining.slice(0, maxLen);
+
+            // Prefer splitting at sentence boundaries: . ! ? followed by a space
+            for (let i = searchRegion.length - 1; i >= Math.floor(maxLen * 0.5); i--) {
+                if ((searchRegion[i] === '.' || searchRegion[i] === '!' || searchRegion[i] === '?')
+                    && (i + 1 >= searchRegion.length || searchRegion[i + 1] === ' ')) {
+                    splitAt = i + 1;
+                    break;
+                }
+            }
+
+            // Fallback: split at last space
+            if (splitAt === -1) {
+                splitAt = searchRegion.lastIndexOf(' ');
+            }
+
+            // Last resort: hard split at maxLen
+            if (splitAt <= 0) {
+                splitAt = maxLen;
+            }
+
+            chunks.push(remaining.slice(0, splitAt).trim());
+            remaining = remaining.slice(splitAt).trim();
+        }
+
+        return chunks.filter(c => c.length > 0);
+    };
+
+    // ═══ TTS — Fetch audio blob(s) for full text, chunking if needed ═══
     const fetchTTSAudio = async (text: string): Promise<Blob | null> => {
         if (!voiceId) return null;
 
@@ -478,28 +521,44 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
             .replace(/\n{2,}/g, '. ')
             .replace(/\n/g, ' ')
-            .trim()
-            .slice(0, 2000);
+            .trim();
 
         if (!cleanText) return null;
 
+        // Split into chunks that fit within ElevenLabs eleven_v3 limit (5000 chars)
+        // Use 4800 as the chunk target to leave margin
+        const chunks = splitTextIntoChunks(cleanText, 4800);
+
         try {
             const idToken = await authUser?.getIdToken();
-            const res = await fetch('/api/tts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                },
-                body: JSON.stringify({ text: cleanText, voiceId }),
-            });
+            const audioBlobs: Blob[] = [];
 
-            if (!res.ok) {
-                const errText = await res.text().catch(() => '');
-                console.error(`[TTS] Failed: ${res.status}`, errText);
-                return null;
+            for (const chunk of chunks) {
+                const res = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+                    },
+                    body: JSON.stringify({ text: chunk, voiceId }),
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => '');
+                    console.error(`[TTS] Failed: ${res.status}`, errText);
+                    // If any chunk fails, return whatever we have so far
+                    break;
+                }
+                audioBlobs.push(await res.blob());
             }
-            return await res.blob();
+
+            if (audioBlobs.length === 0) return null;
+
+            // Single chunk — return directly (most common case)
+            if (audioBlobs.length === 1) return audioBlobs[0];
+
+            // Multiple chunks — concatenate into a single blob
+            return new Blob(audioBlobs, { type: 'audio/mpeg' });
         } catch (err) {
             console.error('[TTS] Fetch failed:', err);
             return null;

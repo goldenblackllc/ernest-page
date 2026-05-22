@@ -3,8 +3,8 @@ import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit'
 
 export const maxDuration = 120;
 
-// Max characters per TTS request — keeps costs bounded
-const MAX_TEXT_LENGTH = 2000;
+// Max characters per TTS request — ElevenLabs eleven_v3 supports up to 5,000
+const MAX_TEXT_LENGTH = 5000;
 
 // Validate voice ID — basic format check, real validation happens at ElevenLabs
 function isValidVoiceId(id: string): boolean {
