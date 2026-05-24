@@ -261,6 +261,7 @@
     "buildingCharacter": "Construyendo tu personaje...",
     "openChat": "Abrir chat",
     "purchaseSession": "Comprar una sesión",
+    "startOnboarding": "Configura tu personaje",
     "dailyLimit": "Límite diario alcanzado — ve a hacer el trabajo."
   },
   "feed": {

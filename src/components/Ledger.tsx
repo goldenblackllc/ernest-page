@@ -488,16 +488,17 @@ export function Ledger() {
                 </div>
             )}
 
+            {/* Daily Digest Card — always first */}
+            {profile?.daily_digest?.title && (
+                <DigestCard
+                    title={profile.daily_digest.title}
+                    content={profile.daily_digest.full_content || profile.daily_digest.content}
+                    imageUrl={profile.daily_digest.image_url}
+                />
+            )}
+
             {entries.map((entry, index) => (
                 <React.Fragment key={entry.id}>
-                    {/* Insert digest card as the 3rd item */}
-                    {index === 2 && profile?.daily_digest?.title && (
-                        <DigestCard
-                            title={profile.daily_digest.title}
-                            content={profile.daily_digest.full_content || profile.daily_digest.content}
-                            imageUrl={profile.daily_digest.image_url}
-                        />
-                    )}
                     <FeedPostCard
                         post={entry as any}
                         followingMap={followingMap}
