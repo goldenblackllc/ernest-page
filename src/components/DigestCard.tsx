@@ -1,6 +1,7 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import { useTranslations } from "next-intl";
 
 interface DigestCardProps {
     title: string;
@@ -9,6 +10,7 @@ interface DigestCardProps {
 }
 
 export function DigestCard({ title, content, imageUrl }: DigestCardProps) {
+    const t = useTranslations('feed');
     // Strip bold lead-ins like "**The Home:** " from content
     const cleanContent = content.replace(/^\*\*[^*]+:\*\*\s*/gm, '');
 
@@ -27,6 +29,9 @@ export function DigestCard({ title, content, imageUrl }: DigestCardProps) {
                 )}
 
                 {/* Category title — stark headline */}
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
+                    {t('digestLabel')}
+                </p>
                 <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2 leading-tight">
                     {title}
                 </h3>

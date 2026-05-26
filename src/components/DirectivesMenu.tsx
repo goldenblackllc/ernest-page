@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Bell, CheckCircle2, Circle, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { X, Bell, CheckCircle2, Circle, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -16,11 +16,8 @@ interface DirectivesMenuProps {
 }
 
 export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps) {
-    const { user } = useAuth();
+    useAuth();
     const [isUpdating, setIsUpdating] = useState(false);
-    const [pendingCompleteId, setPendingCompleteId] = useState<string | null>(null);
-    const [unexpectedText, setUnexpectedText] = useState("");
-    const [isSubmittingShift, setIsSubmittingShift] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const t = useTranslations('directivesMenu');
 
@@ -28,23 +25,16 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape" && isOpen) {
-                if (pendingCompleteId) {
-                    setPendingCompleteId(null);
-                    setUnexpectedText("");
-                } else {
-                    onClose();
-                }
+                onClose();
             }
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose, pendingCompleteId]);
+    }, [isOpen, onClose]);
 
     const activeTodos = profile?.active_todos || [];
 
-    const pendingTodo = pendingCompleteId ? activeTodos.find(t => t.id === pendingCompleteId) : null;
-
-    const completeDirective = async (todoId: string, yieldText?: string) => {
+    const completeDirective = async (todoId: string) => {
         if (!profile?.uid || isUpdating) return;
         setIsUpdating(true);
 
@@ -54,7 +44,6 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
                     return {
                         ...todo,
                         completed: true,
-                        ...(yieldText ? { unexpected_yield: yieldText } : {}),
                     };
                 }
                 return todo;
@@ -63,42 +52,20 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
             await updateDoc(doc(db, "users", profile.uid), {
                 active_todos: updatedTodos
             });
-
-            // Fire-and-forget: create Reality Shift post in background (don't block UI)
-            if (yieldText?.trim() && user) {
-                const directiveTitle = activeTodos.find(t => t.id === todoId)?.task || "Unknown";
-                user.getIdToken().then(idToken => {
-                    fetch("/api/posts/reality-shift", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${idToken}`,
-                        },
-                        body: JSON.stringify({
-                            directiveTitle,
-                            unexpectedYield: yieldText.trim(),
-                        }),
-                    }).catch(err => console.error("Failed to create Reality Shift post:", err));
-                });
-            }
         } catch (error) {
             console.error("Error completing directive:", error);
         } finally {
             setIsUpdating(false);
-            setIsSubmittingShift(false);
-            setPendingCompleteId(null);
-            setUnexpectedText("");
         }
     };
 
     const handleTodoClick = (todoId: string, currentStatus: boolean) => {
         if (currentStatus) {
-            // Un-completing — instant, no prompt
+            // Un-completing — instant
             handleUncomplete(todoId);
         } else {
-            // Completing — show prompt
-            setPendingCompleteId(todoId);
-            setUnexpectedText("");
+            // Completing — instant, no prompt
+            completeDirective(todoId);
         }
     };
 
@@ -171,67 +138,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    {/* Completion Prompt Overlay */}
-                    {pendingTodo ? (
-                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
-                            {/* What's being completed */}
-                            <div className="flex items-center gap-2 mb-4">
-                                <CheckCircle2 className="w-4 h-4 text-zinc-100" />
-                                <span className="text-[10px] tracking-[0.2em] uppercase text-zinc-100">{t('completing')}</span>
-                            </div>
-                            <div className="text-base text-zinc-100 mb-6 leading-snug">
-                                {pendingTodo.task}
-                            </div>
-
-                            {/* The Prompt */}
-                            <div className="mb-4">
-                                <label className="text-xs tracking-widest uppercase text-zinc-400 mb-2 block">
-                                    {t('question')}
-                                </label>
-                                <textarea
-                                    value={unexpectedText}
-                                    onChange={(e) => setUnexpectedText(e.target.value)}
-                                    placeholder={t('placeholder')}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-base text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none resize-none min-h-[100px] transition-colors"
-                                />
-                                <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
-                                    {t('description')}
-                                </p>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex flex-col gap-2">
-                                <button
-                                    onClick={() => completeDirective(pendingTodo.id, unexpectedText.trim() || undefined)}
-                                    disabled={isUpdating || isSubmittingShift}
-                                    className="w-full flex items-center justify-center gap-2 bg-white text-black px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                                >
-                                    {isSubmittingShift ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            {t('logging')}
-                                        </>
-                                    ) : unexpectedText.trim() ? (
-                                        <>
-                                            <Sparkles className="w-4 h-4" />
-                                            {t('completeAndLog')}
-                                        </>
-                                    ) : (
-                                        t('markComplete')
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setPendingCompleteId(null);
-                                        setUnexpectedText("");
-                                    }}
-                                    className="w-full text-xs text-zinc-500 hover:text-zinc-300 py-2 transition-colors"
-                                >
-                                    {t('cancel')}
-                                </button>
-                            </div>
-                        </div>
-                    ) : activeTodos.length === 0 ? (
+                    {activeTodos.length === 0 ? (
                         <div className="text-center py-12 text-zinc-600 text-xs font-mono uppercase tracking-widest border border-dashed border-zinc-800 rounded-xl">
                             {t('noDirectives')}
                         </div>
