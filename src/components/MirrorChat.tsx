@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
-import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X, Volume2, VolumeX } from "lucide-react";
+import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X, Volume2, VolumeX, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,6 +78,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const preUnlockedAudio = useRef<HTMLAudioElement | null>(null);
     const lastSpokenIdRef = useRef<string | null>(null);
     const expectingVoiceRef = useRef(false);
+    const cachedBlobRef = useRef<Blob | null>(null);
+    const cachedBlobMsgIdRef = useRef<string | null>(null);
     const voiceId = bible?.voice_id || null;
 
     // Layer 2: Track whether a credit has been consumed for this session
@@ -583,7 +585,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
             audio.onended = () => {
                 setIsSpeaking(false);
-                URL.revokeObjectURL(audioUrl);
+                // Don't revoke — blob is cached for replay. URLs are cleaned up on close/unmount.
                 audioRef.current = null;
                 resolve();
             };
@@ -591,7 +593,6 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             audio.onerror = () => {
                 console.error('[TTS] Audio playback error');
                 setIsSpeaking(false);
-                URL.revokeObjectURL(audioUrl);
                 audioRef.current = null;
                 resolve();
             };
@@ -630,6 +631,9 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
         (async () => {
             const blob = await fetchTTSAudio(lastMsg.content);
+            // Cache the blob for replay (toggle off/on, visibility resume, replay button)
+            cachedBlobRef.current = blob;
+            cachedBlobMsgIdRef.current = lastMsg.id;
             // Release: clear the hold flag and set released ID
             expectingVoiceRef.current = false;
             setReleasedMsgId(lastMsg.id);
@@ -639,7 +643,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         })();
     }, [messages, isLoading, autoSpeak, voiceId]);
 
-    // Re-speak: when autoSpeak is toggled ON, speak the last assistant message
+    // Re-speak: when autoSpeak is toggled ON, replay from cache if available
     const prevAutoSpeakRef = useRef(autoSpeak);
     useEffect(() => {
         const wasOff = !prevAutoSpeakRef.current;
@@ -650,9 +654,21 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         const lastMsg = messages[messages.length - 1];
         if (!lastMsg || lastMsg.role !== 'assistant' || isLoading) return;
 
-        // Speak the last assistant message (don't hold it — it's already visible)
+        // If we have a cached blob for this message, replay instantly — no API call
+        if (cachedBlobRef.current && cachedBlobMsgIdRef.current === lastMsg.id) {
+            playAudioBlob(cachedBlobRef.current);
+            return;
+        }
+
+        // Cache miss — fetch fresh from ElevenLabs
         speakText(lastMsg.content);
     }, [autoSpeak]);
+
+    // Replay the cached audio for the last assistant message (tap-to-play button)
+    const replayLastAudio = () => {
+        if (!cachedBlobRef.current) return;
+        playAudioBlob(cachedBlobRef.current);
+    };
 
     // Compute whether to hold the last assistant message during render (no flash).
     // expectingVoiceRef is set in handleSubmit BEFORE the response arrives,
@@ -672,13 +688,38 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         setIsSpeaking(false);
     };
 
+    // Full cleanup — wipe cached blob (used on close/unmount)
+    const cleanupAudio = () => {
+        stopSpeaking();
+        cachedBlobRef.current = null;
+        cachedBlobMsgIdRef.current = null;
+    };
+
     useEffect(() => {
         if (!autoSpeak) stopSpeaking();
     }, [autoSpeak]);
 
     useEffect(() => {
-        return () => stopSpeaking();
+        return () => cleanupAudio();
     }, []);
+
+    // Resume audio when returning to the PWA (iOS suspends audio on tab/app switch)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && audioRef.current?.paused && isSpeaking) {
+                // Audio was playing before we switched away — resume it
+                audioRef.current.play().catch(() => {
+                    // Autoplay blocked on return — user will need to tap replay
+                    setIsSpeaking(false);
+                });
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [isOpen, isSpeaking]);
 
     const handleExtractDirectives = async () => {
         if (isGeneratingPlan || messages.length < 2) return;
@@ -757,6 +798,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         }
 
         // Wipe local state
+        cleanupAudio();
         setSessionId(null);
         setMessages([]);
         setInput("");
@@ -904,6 +946,16 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                                 )}
                                             </div>
 
+                                            {/* Replay button — shown on last assistant message when cached audio exists */}
+                                            {m.role === 'assistant' && idx === filteredArr.length - 1 && voiceId && cachedBlobRef.current && cachedBlobMsgIdRef.current === m.id && !isSpeaking && !isLoadingTTS && (
+                                                <button
+                                                    onClick={replayLastAudio}
+                                                    className="ml-1 shrink-0 self-end w-7 h-7 flex items-center justify-center text-zinc-600 hover:text-white border border-zinc-700/50 hover:border-zinc-500 rounded-full transition-all"
+                                                    aria-label="Replay audio"
+                                                >
+                                                    <Play className="w-3 h-3" />
+                                                </button>
+                                            )}
 
                                         </div>
 
