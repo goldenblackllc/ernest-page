@@ -226,6 +226,7 @@ export async function POST(req: Request) {
                             things_i_enjoy: things_i_enjoy || '',
                         },
                     }),
+                    signal: AbortSignal.timeout(240_000), // 4 min — fail fast so status doesn't stay 'compiling'
                 });
 
                 if (!compileRes.ok) {

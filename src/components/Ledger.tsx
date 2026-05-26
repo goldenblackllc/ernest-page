@@ -251,8 +251,11 @@ export function Ledger() {
     const showBibleCompiling = bibleStatus === 'compiling' || isAwaitingBuild;
     const showBibleReady = bibleStatus === 'ready';
 
-    // Detect stale compilations (stuck > 10 minutes)
-    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+    // Detect failed compilations
+    const showBibleFailed = bibleStatus === 'failed';
+
+    // Detect stale compilations (stuck > 4 minutes)
+    const STALE_THRESHOLD_MS = 4 * 60 * 1000; // 4 minutes
     const bibleLastUpdated = profile?.character_bible?.last_updated;
     const isStaleCompilation = showBibleCompiling && bibleLastUpdated
         && (Date.now() - bibleLastUpdated) > STALE_THRESHOLD_MS;
@@ -352,7 +355,7 @@ export function Ledger() {
     }
 
     // Render feed or empty states
-    const isFeedEmpty = entries.length === 0 && !pendingPostId && !showBibleCompiling && profileLoaded;
+    const isFeedEmpty = entries.length === 0 && !pendingPostId && !showBibleCompiling && !showBibleFailed && profileLoaded;
 
     if (isFeedEmpty) {
         const sessionCredits = profile?.session_credits || 0;
@@ -457,6 +460,32 @@ export function Ledger() {
                                     {retrying ? t('bibleRetrying') : t('bibleRetry')}
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bible Failed Card — shown when compile errored out */}
+            {showBibleFailed && (
+                <div className="bg-zinc-900/50 border border-red-500/30 rounded-xl overflow-hidden shadow-sm relative">
+                    <div className="flex items-center gap-4 p-5 relative">
+                        <div className="w-12 h-12 rounded-full border-2 border-red-500/40 flex items-center justify-center shrink-0">
+                            <span className="text-red-400 text-lg">!</span>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-white mb-0.5">
+                                {t('bibleStaleTitle')}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                                {t('bibleStaleSub')}
+                            </p>
+                            <button
+                                onClick={retryCompile}
+                                disabled={retrying}
+                                className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                            >
+                                {retrying ? t('bibleRetrying') : t('bibleRetry')}
+                            </button>
                         </div>
                     </div>
                 </div>
