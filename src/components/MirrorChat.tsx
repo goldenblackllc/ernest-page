@@ -80,6 +80,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const expectingVoiceRef = useRef(false);
     const cachedBlobRef = useRef<Blob | null>(null);
     const cachedBlobMsgIdRef = useRef<string | null>(null);
+    const ttsInFlightMsgIdRef = useRef<string | null>(null);
     const voiceId = bible?.voice_id || null;
 
     // Layer 2: Track whether a credit has been consumed for this session
@@ -628,9 +629,11 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
 
         lastSpokenIdRef.current = lastMsg.id;
         setIsLoadingTTS(true);
+        ttsInFlightMsgIdRef.current = lastMsg.id;
 
         (async () => {
             const blob = await fetchTTSAudio(lastMsg.content);
+            ttsInFlightMsgIdRef.current = null;
             // Cache the blob for replay (toggle off/on, visibility resume, replay button)
             cachedBlobRef.current = blob;
             cachedBlobMsgIdRef.current = lastMsg.id;
@@ -657,6 +660,11 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         // If we have a cached blob for this message, replay instantly — no API call
         if (cachedBlobRef.current && cachedBlobMsgIdRef.current === lastMsg.id) {
             playAudioBlob(cachedBlobRef.current);
+            return;
+        }
+
+        // If auto-speak is already fetching this message, let it finish — don't duplicate
+        if (ttsInFlightMsgIdRef.current === lastMsg.id) {
             return;
         }
 
