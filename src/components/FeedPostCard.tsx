@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -58,6 +58,8 @@ interface FeedPostProps {
         like_count?: number;
         author_avatar_url?: string;
         comments?: number;
+        letter_audio_url?: string;
+        response_audio_url?: string;
         translations?: Record<string, any>;
         _translated?: Record<string, any>;
     };
@@ -73,6 +75,109 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [localVisibility, setLocalVisibility] = useState<'private' | 'community' | 'public'>(post.visibility || (post.is_public ? 'community' : 'private'));
     const t = useTranslations('feed');
     const locale = useLocale();
+
+    // ═══ AUDIO PLAYBACK STATE ═══
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [audioPhase, setAudioPhase] = useState<'idle' | 'letter' | 'response'>('idle');
+    const [audioProgress, setAudioProgress] = useState(0);
+    const cardRef = useRef<HTMLDivElement>(null);
+    const hasAutoPlayed = useRef(false);
+
+    const hasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
+
+    // Play/pause toggle
+    const toggleAudio = useCallback(() => {
+        if (isPlaying && audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+            return;
+        }
+
+        // Start from the beginning if idle
+        if (audioPhase === 'idle' || !audioRef.current) {
+            if (!post.letter_audio_url) return;
+            const audio = new Audio(post.letter_audio_url);
+            audioRef.current = audio;
+            setAudioPhase('letter');
+
+            audio.ontimeupdate = () => {
+                if (audio.duration) {
+                    setAudioProgress(audio.currentTime / audio.duration);
+                }
+            };
+
+            audio.onended = () => {
+                // Letter finished — play response
+                if (post.response_audio_url) {
+                    const responseAudio = new Audio(post.response_audio_url);
+                    audioRef.current = responseAudio;
+                    setAudioPhase('response');
+                    setAudioProgress(0);
+
+                    responseAudio.ontimeupdate = () => {
+                        if (responseAudio.duration) {
+                            setAudioProgress(responseAudio.currentTime / responseAudio.duration);
+                        }
+                    };
+
+                    responseAudio.onended = () => {
+                        setIsPlaying(false);
+                        setAudioPhase('idle');
+                        setAudioProgress(0);
+                        audioRef.current = null;
+                    };
+
+                    responseAudio.play().catch(() => setIsPlaying(false));
+                } else {
+                    setIsPlaying(false);
+                    setAudioPhase('idle');
+                    setAudioProgress(0);
+                    audioRef.current = null;
+                }
+            };
+
+            audio.play().catch(() => setIsPlaying(false));
+            setIsPlaying(true);
+        } else {
+            // Resume paused audio
+            audioRef.current.play().catch(() => setIsPlaying(false));
+            setIsPlaying(true);
+        }
+    }, [isPlaying, audioPhase, post.letter_audio_url, post.response_audio_url]);
+
+    // Autoplay when card scrolls into view (TikTok/Reels behavior)
+    useEffect(() => {
+        if (!hasAudio || !cardRef.current) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && !hasAutoPlayed.current) {
+                    // Card is visible — autoplay
+                    hasAutoPlayed.current = true;
+                    toggleAudio();
+                } else if (!entry.isIntersecting && isPlaying && audioRef.current) {
+                    // Card scrolled away — pause
+                    audioRef.current.pause();
+                    setIsPlaying(false);
+                }
+            },
+            { threshold: 0.6 } // 60% visible triggers play
+        );
+
+        observer.observe(cardRef.current);
+        return () => observer.disconnect();
+    }, [hasAudio, toggleAudio, isPlaying]);
+
+    // Cleanup audio on unmount
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
 
     const [translatedData, setTranslatedData] = useState<any>(post._translated || post.translations?.[locale] || null);
 
@@ -354,8 +459,275 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         ? post.counsel?.slice(0, 400) + "..."
         : post.counsel;
 
+    // ═══ SHORT-FORM VIDEO MODE ═══
+    // When a post has audio and a hero image, render as a vertical "short"
+    const heroUrl = post.public_post?.imagen_url || post.imagen_url;
+    if (hasAudio && heroUrl) {
+        // Split text into ~12-word chunks for subtitle display.
+        // Equal word counts ≈ equal speaking durations, giving better sync.
+        const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {
+            const words = text.replace(/\n+/g, ' ').split(/\s+/).filter(w => w);
+            const chunks: string[] = [];
+            for (let i = 0; i < words.length; i += wordsPerChunk) {
+                chunks.push(words.slice(i, i + wordsPerChunk).join(' '));
+            }
+            return chunks.length > 0 ? chunks : [''];
+        };
+
+        const letterChunks = chunkText(publicLetter || '');
+        const responseChunks = chunkText((publicResponse || '').replace(/^THE COUNSEL:\s*/i, ''));
+
+        // Calculate which subtitle line to show based on audio progress and phase
+        const getCurrentSubtitle = () => {
+            if (audioPhase === 'idle' && !isPlaying) return null;
+
+            const lines = audioPhase === 'response' ? responseChunks : letterChunks;
+            if (lines.length === 0) return null;
+
+            // Map progress (0-1) to line index
+            const lineIndex = Math.min(
+                Math.floor(audioProgress * lines.length),
+                lines.length - 1
+            );
+
+            // Show current line and next line for context
+            const current = lines[lineIndex] || '';
+            const next = lines[lineIndex + 1] || '';
+            return { current, next, lineIndex, totalLines: lines.length };
+        };
+
+        const subtitle = getCurrentSubtitle();
+
+        return (
+            <div ref={cardRef} className="bg-black border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-lg relative font-sans">
+                {/* Short-form video container — 4:5 aspect ratio */}
+                <div
+                    className="relative w-full cursor-pointer overflow-hidden"
+                    style={{ aspectRatio: '4 / 5' }}
+                    onClick={toggleAudio}
+                >
+                    {/* Hero image as full background */}
+                    <img
+                        src={heroUrl}
+                        alt={publicTitle || ""}
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+
+                    {/* Dark gradient overlays for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
+
+                    {/* Top: Author + Title */}
+                    <div className="absolute top-0 left-0 right-0 p-4 z-10">
+                        {/* Author row */}
+                        <div className="flex items-center gap-2.5 mb-3">
+                            <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
+                                {post.author_avatar_url ? (
+                                    <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User className="w-4 h-4 text-zinc-400" />
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <span className="text-sm font-semibold text-white/90 truncate block">
+                                    {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
+                                </span>
+                                <span className="text-[10px] text-white/50">{timeAgo}</span>
+                            </div>
+                            {/* Phase indicator */}
+                            {isPlaying && (
+                                <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10">
+                                    <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                                        {audioPhase === 'letter' ? 'Letter' : 'Response'}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Title */}
+                        {publicTitle && (
+                            <h2 className="text-lg font-black text-white leading-tight drop-shadow-lg">
+                                {publicTitle}
+                            </h2>
+                        )}
+                    </div>
+
+                    {/* Center: Play button (shown when paused) */}
+                    {!isPlaying && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                            <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-transform hover:scale-110">
+                                <Play className="w-7 h-7 text-white ml-1" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bottom: Subtitle text */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 z-10">
+                        {subtitle ? (
+                            <div className="space-y-1.5">
+                                <p className="text-[15px] font-medium text-white leading-snug drop-shadow-lg transition-all duration-300">
+                                    {subtitle.current}
+                                </p>
+                                {subtitle.next && (
+                                    <p className="text-[13px] text-white/40 leading-snug drop-shadow-lg transition-all duration-300">
+                                        {subtitle.next}
+                                    </p>
+                                )}
+                                {/* Line progress dots */}
+                                <div className="flex items-center gap-0.5 pt-2">
+                                    {Array.from({ length: Math.min(subtitle.totalLines, 20) }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={cn(
+                                                "h-0.5 rounded-full transition-all duration-200",
+                                                i <= subtitle.lineIndex ? "bg-white/80" : "bg-white/20",
+                                                i === subtitle.lineIndex ? "flex-[2]" : "flex-1"
+                                            )}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            /* Static preview when not playing */
+                            <div>
+                                <p className="text-[13px] text-white/60 leading-snug drop-shadow-lg line-clamp-2">
+                                    {letterChunks[0]}
+                                </p>
+                                <p className="text-[11px] text-white/30 mt-1.5 uppercase tracking-widest font-bold">
+                                    Tap to listen
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10 z-20">
+                        <div
+                            className="h-full bg-white/70 transition-all duration-200"
+                            style={{ width: `${audioProgress * 100}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* Compact footer — likes, comments, actions */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-black/60 border-t border-white/5">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={toggleLike}
+                            className={cn(
+                                "flex items-center gap-1.5 transition-all duration-200",
+                                localLiked ? "text-red-500" : "text-zinc-400 hover:text-white"
+                            )}
+                        >
+                            <Heart className={cn("w-5 h-5", localLiked && "fill-current")} />
+                            {totalLikes > 0 && (
+                                <span className="text-xs font-medium">{totalLikes}</span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setIsCommentOpen(!isCommentOpen)}
+                            className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            {post.comments && post.comments > 0 && (
+                                <span className="text-xs font-medium">{post.comments}</span>
+                            )}
+                        </button>
+                    </div>
+                    {user?.uid === post.uid && (
+                        <button onClick={handleDelete} className="text-zinc-500 hover:text-white transition-colors p-1">
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+
+                {/* Comment section (reused) */}
+                {isCommentOpen && (
+                    <div className="px-3 sm:px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
+                        {commentToast && (
+                            <div className="text-xs text-zinc-300 bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2">
+                                {commentToast}
+                            </div>
+                        )}
+                        <div className="relative bg-zinc-900/50 border border-zinc-800 rounded-full flex items-center px-4 py-2">
+                            <input
+                                type="text"
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && submitComment()}
+                                placeholder={t('commentPlaceholder')}
+                                className="bg-transparent border-none focus:ring-0 focus:outline-none text-white placeholder-zinc-500 w-full pr-10 text-sm"
+                                disabled={isSubmittingComment}
+                            />
+                            <button
+                                onClick={submitComment}
+                                disabled={!commentText.trim() || isSubmittingComment}
+                                className={cn(
+                                    "absolute right-3 transition-all duration-200",
+                                    commentText.trim()
+                                        ? "text-white cursor-pointer hover:scale-105"
+                                        : "text-zinc-600 cursor-default"
+                                )}
+                            >
+                                <ArrowUp className="w-5 h-5" />
+                            </button>
+                        </div>
+                        {comments.length > 0 && (
+                            <div className="space-y-3 pt-1">
+                                {comments.map((c: any) => (
+                                    <div key={c.id} className="flex items-start gap-2.5">
+                                        <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden shrink-0 mt-0.5">
+                                            {c.author_avatar_url ? (
+                                                <img src={c.author_avatar_url} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <User className="w-3.5 h-3.5 text-zinc-500" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-xs font-semibold text-zinc-400">
+                                                {c.is_mine ? t('roleYou') : c.author_title}
+                                            </span>
+                                            <p className="text-sm text-zinc-300 leading-relaxed mt-0.5">{c.content}</p>
+                                        </div>
+                                        {c.is_mine && (
+                                            <button
+                                                onClick={async () => {
+                                                    if (!user) return;
+                                                    setComments(prev => prev.filter(x => x.id !== c.id));
+                                                    try {
+                                                        const idToken = await user.getIdToken();
+                                                        await fetch('/api/posts/comment/delete', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'Authorization': `Bearer ${idToken}`,
+                                                            },
+                                                            body: JSON.stringify({ postId: post.id, commentId: c.id }),
+                                                        });
+                                                    } catch (err) {
+                                                        console.error('Failed to delete comment:', err);
+                                                    }
+                                                }}
+                                                className="shrink-0 p-1 text-zinc-600 hover:text-red-500 transition-colors mt-0.5"
+                                                title={t('deleteComment')}
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
-        <div className="bg-[#1a1a1a] border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
+        <div ref={cardRef} className="bg-[#1a1a1a] border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative group font-sans">
             {/* Header */}
             <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 mb-2 w-full">
                 <div className="shrink-0">
@@ -429,12 +801,52 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                                 return (
                                     <div className="px-3 sm:px-4 mb-2">
-                                        <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                                <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                             <img
                                                 src={displayUrl}
                                                 alt={publicTitle || "Hero Object"}
                                                 className="w-full h-full object-cover transition-all duration-500"
                                             />
+                                            {/* Audio play/pause overlay */}
+                                            {hasAudio && (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleAudio(); }}
+                                                        className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-all duration-300 group/play"
+                                                        aria-label={isPlaying ? 'Pause' : 'Play'}
+                                                    >
+                                                        <div className={cn(
+                                                            "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
+                                                            isPlaying
+                                                                ? "bg-black/60 backdrop-blur-sm border border-white/20 opacity-0 group-hover/play:opacity-100"
+                                                                : "bg-black/60 backdrop-blur-sm border border-white/20"
+                                                        )}>
+                                                            {isPlaying
+                                                                ? <Pause className="w-6 h-6 text-white" />
+                                                                : <Play className="w-6 h-6 text-white ml-0.5" />
+                                                            }
+                                                        </div>
+                                                    </button>
+                                                    {/* Audio progress bar */}
+                                                    {isPlaying && (
+                                                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+                                                            <div
+                                                                className="h-full bg-white/80 transition-all duration-200"
+                                                                style={{ width: `${audioProgress * 100}%` }}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {/* Phase indicator */}
+                                                    {isPlaying && (
+                                                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10">
+                                                            <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                                                            <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                                                                {audioPhase === 'letter' ? 'Letter' : 'Response'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
                                         {post.sponsored_by && (
                                             <a

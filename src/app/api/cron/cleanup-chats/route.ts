@@ -8,6 +8,7 @@ import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/securit
 import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
+import { generatePostAudio } from '@/lib/ai/postTTS';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -367,6 +368,30 @@ ${transcript}`;
                         likes: 0,
                         comments: 0
                     });
+
+                    // ─── POST AUDIO GENERATION (fire-and-forget) ───
+                    // Generate TTS audio for the letter and response using the character's voice.
+                    // This runs after the post is saved so it doesn't block post creation.
+                    const characterVoiceId = userData?.character_bible?.voice_id;
+                    if (characterVoiceId && post.letter && post.response) {
+                        generatePostAudio(
+                            post.letter,
+                            post.response,
+                            characterVoiceId,
+                            postDocRef.id,
+                        ).then(async (audioResult) => {
+                            if (audioResult) {
+                                await postDocRef.update({
+                                    letter_audio_url: audioResult.letterAudioUrl,
+                                    response_audio_url: audioResult.responseAudioUrl,
+                                });
+                                console.log(`[Cron] Audio attached to post ${postDocRef.id}`);
+                            }
+                        }).catch((err) => {
+                            console.error(`[Cron] Post audio failed for ${postDocRef.id}:`, err);
+                        });
+                    }
+
                     processed++;
                 } else {
                     // Not publishable — still need to await dossier write
