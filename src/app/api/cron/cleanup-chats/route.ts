@@ -421,8 +421,7 @@ async function generatePostImage(prompt: string, postId: string): Promise<string
                 parameters: {
                     sampleCount: 1,
                     aspectRatio: "16:9",
-                    personGeneration: "ALLOW_ADULT",
-                    negativePrompt: "face, facial features, eyes, nose, mouth, portrait, headshot, front-facing person, cartoon, illustration, anime, drawing, painting, sketch, digital art, 3D render, CGI, unrealistic, stylized"
+                    personGeneration: "ALLOW_ADULT"
                 }
             })
         });
