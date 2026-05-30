@@ -369,17 +369,18 @@ ${transcript}`;
                         comments: 0
                     });
 
-                    // ─── POST AUDIO GENERATION (fire-and-forget) ───
+                    // ─── POST AUDIO GENERATION ───
                     // Generate TTS audio for the letter and response using the character's voice.
-                    // This runs after the post is saved so it doesn't block post creation.
+                    // Must be awaited — Vercel kills pending promises after the function returns.
                     const characterVoiceId = userData?.character_bible?.voice_id;
                     if (characterVoiceId && post.letter && post.response) {
-                        generatePostAudio(
-                            post.letter,
-                            post.response,
-                            characterVoiceId,
-                            postDocRef.id,
-                        ).then(async (audioResult) => {
+                        try {
+                            const audioResult = await generatePostAudio(
+                                post.letter,
+                                post.response,
+                                characterVoiceId,
+                                postDocRef.id,
+                            );
                             if (audioResult) {
                                 await postDocRef.update({
                                     letter_audio_url: audioResult.letterAudioUrl,
@@ -387,9 +388,9 @@ ${transcript}`;
                                 });
                                 console.log(`[Cron] Audio attached to post ${postDocRef.id}`);
                             }
-                        }).catch((err) => {
+                        } catch (err) {
                             console.error(`[Cron] Post audio failed for ${postDocRef.id}:`, err);
-                        });
+                        }
                     }
 
                     processed++;
