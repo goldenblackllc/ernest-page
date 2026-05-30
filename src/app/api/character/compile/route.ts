@@ -135,7 +135,7 @@ export async function POST(req: Request) {
 
         const idealResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
-            abortSignal: AbortSignal.timeout(90_000), // 90s before falling back
+            abortSignal: AbortSignal.timeout(150_000), // 2.5 min before falling back
             providerOptions,
             system: SYSTEM_PROMPT,
             prompt: idealPrompt,

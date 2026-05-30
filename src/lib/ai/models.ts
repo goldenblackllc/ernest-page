@@ -35,7 +35,7 @@ export async function generateWithFallback(options: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await generateObject({
             ...aiOptions,
-            abortSignal: AbortSignal.timeout(120000),
+            abortSignal: AbortSignal.timeout(150_000),
             model: getProviderModel(fallback)
         });
     }
@@ -57,7 +57,7 @@ export async function streamWithFallback(options: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await streamText({
             ...aiOptions,
-            abortSignal: AbortSignal.timeout(120000),
+            abortSignal: AbortSignal.timeout(150_000),
             model: getProviderModel(fallback)
         });
     }
@@ -79,7 +79,7 @@ export async function generateTextWithFallback(options: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await generateText({
             ...aiOptions,
-            abortSignal: AbortSignal.timeout(120000),
+            abortSignal: AbortSignal.timeout(150_000),
             model: getProviderModel(fallback)
         });
     }

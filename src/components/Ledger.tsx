@@ -272,15 +272,26 @@ export function Ledger() {
                 'character_bible.last_updated': Date.now(),
             });
             // Trigger the compile
+            const idToken = await user.getIdToken();
             const res = await fetch('/api/onboarding/retry-compile', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
             });
             if (!res.ok) {
                 console.error('[Ledger] Retry compile failed:', res.status);
+                // Reset status so the user can retry instead of seeing an infinite spinner
+                const { doc: d, updateDoc: u } = await import('firebase/firestore');
+                await u(d(db, 'users', user.uid), { 'character_bible.status': 'failed' });
             }
         } catch (err) {
             console.error('[Ledger] Retry compile error:', err);
+            try {
+                const { doc: d, updateDoc: u } = await import('firebase/firestore');
+                await u(d(db, 'users', user.uid), { 'character_bible.status': 'failed' });
+            } catch { /* best-effort */ }
         } finally {
             setRetrying(false);
         }
