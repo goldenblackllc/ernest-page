@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { DigestCard } from "@/components/DigestCard";
 import { CheckInCard } from "@/components/CheckInCard";
+import { VoiceBrowser } from "@/components/VoiceBrowser";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 
 import { Loader2 } from "lucide-react";
@@ -447,31 +448,59 @@ export function Ledger() {
                     {!isStaleCompilation && (
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
                     )}
-                    <div className="flex items-center gap-4 p-5 relative">
-                        {isStaleCompilation ? (
-                            <div className="w-12 h-12 rounded-full border-2 border-red-500/40 flex items-center justify-center shrink-0">
-                                <span className="text-red-400 text-lg">!</span>
-                            </div>
-                        ) : (
-                            <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
-                        )}
-                        <div className="flex-1">
-                            <p className="text-sm font-bold text-white mb-0.5">
-                                {isStaleCompilation ? t('bibleStaleTitle') : t('bibleCompilingTitle')}
-                            </p>
-                            <p className="text-xs text-zinc-500">
-                                {isStaleCompilation ? t('bibleStaleSub') : t('bibleCompilingSub')}
-                            </p>
-                            {isStaleCompilation && (
-                                <button
-                                    onClick={retryCompile}
-                                    disabled={retrying}
-                                    className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                                >
-                                    {retrying ? t('bibleRetrying') : t('bibleRetry')}
-                                </button>
+                    <div className="p-5 relative">
+                        <div className="flex items-center gap-4 mb-4">
+                            {isStaleCompilation ? (
+                                <div className="w-12 h-12 rounded-full border-2 border-red-500/40 flex items-center justify-center shrink-0">
+                                    <span className="text-red-400 text-lg">!</span>
+                                </div>
+                            ) : (
+                                <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
                             )}
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-white mb-0.5">
+                                    {isStaleCompilation ? t('bibleStaleTitle') : t('bibleCompilingTitle')}
+                                </p>
+                                <p className="text-xs text-zinc-500">
+                                    {isStaleCompilation ? t('bibleStaleSub') : t('bibleCompilingSub')}
+                                </p>
+                            </div>
                         </div>
+
+                        {/* Onboarding Ground Rules */}
+                        {!isStaleCompilation && (
+                            <div className="border-t border-white/5 pt-4 mt-2">
+                                <p className="text-[11px] uppercase tracking-widest text-zinc-500 font-bold mb-3">Before your first session</p>
+                                <div className="space-y-2.5">
+                                    {[
+                                        { icon: '✦', text: 'Be fully honest — say what you actually feel' },
+                                        { icon: '✦', text: "If you disagree, say so — you won't offend anyone" },
+                                        { icon: '✦', text: 'Commit to the full session — there is an end' },
+                                        { icon: '✦', text: 'Answer every question, even the hard ones' },
+                                        { icon: '✦', text: 'No one is listening. No one is judging you.' },
+                                    ].map((rule, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-start gap-2.5 opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
+                                            style={{ animationDelay: `${i * 0.6}s` }}
+                                        >
+                                            <span className="text-white/40 text-xs mt-0.5 shrink-0">{rule.icon}</span>
+                                            <p className="text-sm text-zinc-300 leading-snug">{rule.text}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {isStaleCompilation && (
+                            <button
+                                onClick={retryCompile}
+                                disabled={retrying}
+                                className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                            >
+                                {retrying ? t('bibleRetrying') : t('bibleRetry')}
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -528,12 +557,63 @@ export function Ledger() {
                 </div>
             )}
 
+            {/* Ground Rules Card — shown until first Mirror Chat session */}
+            {!showBibleCompiling && !showBibleFailed && hasBuiltCharacter
+                && (!profile?.identity?.session_count || profile.identity.session_count < 1) && (
+                <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm">
+                    <div className="p-5">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-bold mb-1">Before your first session</p>
+                        <p className="text-sm font-bold text-white mb-4">Ground Rules</p>
+                        <div className="space-y-2.5">
+                            {[
+                                { icon: '✦', text: 'Be fully honest — say what you actually feel' },
+                                { icon: '✦', text: "If you disagree, say so — you won't offend anyone" },
+                                { icon: '✦', text: 'Commit to the full session — there is an end' },
+                                { icon: '✦', text: 'Answer every question, even the hard ones' },
+                                { icon: '✦', text: 'No one is listening. No one is judging you.' },
+                            ].map((rule, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-start gap-2.5 opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
+                                    style={{ animationDelay: `${i * 0.3}s` }}
+                                >
+                                    <span className="text-white/40 text-xs mt-0.5 shrink-0">{rule.icon}</span>
+                                    <p className="text-sm text-zinc-300 leading-snug">{rule.text}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Voice Confirmation Card — shown once after bible is built, until user confirms */}
+            {hasBuiltCharacter && bibleStatus === 'stable'
+                && profile?.character_bible?.voice_id
+                && !profile?.character_bible?.voice_confirmed && user && (
+                <VoiceBrowser
+                    currentVoiceId={profile.character_bible.voice_id}
+                    currentVoiceName={profile.character_bible.voice_name}
+                    startOpen
+                    onVoiceSelected={async () => {
+                        try {
+                            const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
+                            await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
+                                'character_bible.voice_confirmed': true,
+                            });
+                        } catch (err) {
+                            console.error('Failed to confirm voice:', err);
+                        }
+                    }}
+                />
+            )}
+
             {/* Daily Digest Card — always first */}
             {profile?.daily_digest?.title && (
                 <DigestCard
                     title={profile.daily_digest.title}
                     content={profile.daily_digest.full_content || profile.daily_digest.content}
                     imageUrl={profile.daily_digest.image_url}
+                    audioUrl={profile.daily_digest.audio_url}
                 />
             )}
 

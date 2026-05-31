@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2 } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -85,6 +85,24 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const hasAutoPlayed = useRef(false);
 
     const hasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
+    const heroUrl = post.public_post?.imagen_url || post.imagen_url;
+    const canPlayShort = hasAudio && Boolean(heroUrl);
+
+    // Share handler — Web Share API with clipboard fallback
+    const [shareToast, setShareToast] = useState(false);
+    const handleShare = useCallback(async () => {
+        const url = `${window.location.origin}/post/${post.id}`;
+        const text = post.public_post?.title || 'Check out this post on Earnest Page';
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: text, url });
+            } else {
+                await navigator.clipboard.writeText(url);
+                setShareToast(true);
+                setTimeout(() => setShareToast(false), 2000);
+            }
+        } catch { /* user cancelled share sheet */ }
+    }, [post.id, post.public_post?.title]);
 
     // Play/pause toggle
     const toggleAudio = useCallback(() => {
@@ -148,7 +166,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
     // Autoplay when card scrolls into view (TikTok/Reels behavior)
     useEffect(() => {
-        if (!hasAudio || !cardRef.current) return;
+        if (!canPlayShort || !cardRef.current) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -167,7 +185,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         observer.observe(cardRef.current);
         return () => observer.disconnect();
-    }, [hasAudio, toggleAudio, isPlaying]);
+    }, [canPlayShort, toggleAudio, isPlaying]);
 
     // Cleanup audio on unmount
     useEffect(() => {
@@ -461,8 +479,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
     // ═══ SHORT-FORM VIDEO MODE ═══
     // When a post has audio and a hero image, render as a vertical "short"
-    const heroUrl = post.public_post?.imagen_url || post.imagen_url;
-    if (hasAudio && heroUrl) {
+    if (canPlayShort) {
         // Split text into ~12-word chunks for subtitle display.
         // Equal word counts ≈ equal speaking durations, giving better sync.
         const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {
@@ -541,6 +558,20 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         {audioPhase === 'letter' ? 'Letter' : 'Response'}
                                     </span>
                                 </div>
+                            )}
+                            {/* Visibility control */}
+                            {user?.uid === post.uid && (
+                                <select
+                                    value={localVisibility}
+                                    onChange={(e) => { e.stopPropagation(); handleVisibilityChange(e.target.value as 'private' | 'community' | 'public'); }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[10px] font-bold tracking-wide bg-black/50 backdrop-blur-sm border border-white/20 text-white/70 rounded-md px-1.5 py-1 focus:outline-none transition-all cursor-pointer appearance-none"
+                                    style={{ backgroundImage: 'none' }}
+                                >
+                                    <option value="private">🔒 Only Me</option>
+                                    <option value="community">👥 Community</option>
+                                    <option value="public">🌐 Public</option>
+                                </select>
                             )}
                         </div>
 
@@ -639,6 +670,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             <Trash2 className="w-4 h-4" />
                         </button>
                     )}
+                    <button
+                        onClick={handleShare}
+                        className="text-zinc-400 hover:text-white transition-colors p-1 ml-auto relative"
+                        title="Share"
+                    >
+                        <Share2 className="w-4 h-4" />
+                        {shareToast && (
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
+                        )}
+                    </button>
                 </div>
 
                 {/* Comment section (reused) */}
@@ -1109,6 +1150,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             <Trash2 className="w-4 h-4" />
                         </button>
                     )}
+                    <button
+                        onClick={handleShare}
+                        className="text-zinc-400 hover:text-white transition-colors duration-200 p-1 ml-auto relative"
+                        title="Share"
+                    >
+                        <Share2 className="w-4 h-4" />
+                        {shareToast && (
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
+                        )}
+                    </button>
                 </div>
 
                 {/* Comment section */}

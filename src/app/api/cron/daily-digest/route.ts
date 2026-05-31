@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
+import { generatePostAudio } from '@/lib/ai/postTTS';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
         let cardsGenerated = 0;
 
         // Build list of eligible users with their digest data
-        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference; demographicHint: string; archetype: string; identityTitle: string }[] = [];
+        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference; demographicHint: string; archetype: string; identityTitle: string; voiceId: string | null }[] = [];
 
         for (const userDoc of usersSnapshot.docs) {
             const uid = userDoc.id;
@@ -111,7 +112,9 @@ export async function GET(req: Request) {
             const archetype = userData?.character_bible?.source_code?.archetype || '';
             const identityTitle = identity?.title || '';
 
-            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle });
+            const voiceId = userData?.character_bible?.voice_id || null;
+
+            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle, voiceId });
         }
 
         // ─── BATCH PROCESSING: generate images in parallel groups of 5 ───
@@ -148,6 +151,7 @@ async function generateDigestCard(user: {
     demographicHint: string;
     archetype: string;
     identityTitle: string;
+    voiceId: string | null;
 }): Promise<boolean> {
     let imageUrl: string | null = null;
 
@@ -189,11 +193,33 @@ async function generateDigestCard(user: {
         console.error('[Daily Digest] Image generation failed:', imgErr);
     }
 
+    // ─── TTS Audio Generation ───
+    let audioUrl: string | null = null;
+    if (user.voiceId) {
+        try {
+            // Narrate as: "About me and my life. [Title]. [Content]"
+            const narrationText = `About me and my life. ${user.title}. ${user.content}`;
+            const audioResult = await generatePostAudio(
+                narrationText,
+                '',  // No response — single narration track
+                user.voiceId,
+                `digest_${user.uid}_${Date.now()}`,
+            );
+            if (audioResult?.letterAudioUrl) {
+                audioUrl = audioResult.letterAudioUrl;
+                console.log(`[Daily Digest] Audio generated for ${user.uid}`);
+            }
+        } catch (audioErr) {
+            console.error('[Daily Digest] Audio generation failed:', audioErr);
+        }
+    }
+
     const digestCard = {
         title: user.title,
         content: user.content,
         full_content: user.content,
         image_url: imageUrl,
+        audio_url: audioUrl,
         date: new Date().toISOString().split('T')[0],
         updated_at: new Date().toISOString(),
     };

@@ -176,25 +176,27 @@ export async function generatePostAudio(
     }
 
     try {
-        // Generate both audio tracks in parallel
+        // Generate audio tracks — response may be empty (e.g. digest narration)
         const [letterBuffer, responseBuffer] = await Promise.all([
             generateTTSAudio(letterText, voiceId, apiKey),
-            generateTTSAudio(responseText, voiceId, apiKey),
+            responseText ? generateTTSAudio(responseText, voiceId, apiKey) : Promise.resolve(null),
         ]);
 
-        if (!letterBuffer || !responseBuffer) {
-            console.error('[PostTTS] Failed to generate one or both audio tracks');
+        if (!letterBuffer) {
+            console.error('[PostTTS] Failed to generate letter audio track');
             return null;
         }
 
-        // Upload both to Firebase Storage in parallel
-        const [letterAudioUrl, responseAudioUrl] = await Promise.all([
-            uploadAudio(letterBuffer, `post-audio/${postId}_letter.mp3`),
-            uploadAudio(responseBuffer, `post-audio/${postId}_response.mp3`),
-        ]);
+        // Upload tracks — skip response if not generated
+        const letterAudioUrl = await uploadAudio(letterBuffer, `post-audio/${postId}_letter.mp3`);
+        let responseAudioUrl: string | undefined;
+
+        if (responseBuffer) {
+            responseAudioUrl = await uploadAudio(responseBuffer, `post-audio/${postId}_response.mp3`);
+        }
 
         console.log(`[PostTTS] Audio generated for post ${postId}`);
-        return { letterAudioUrl, responseAudioUrl };
+        return { letterAudioUrl, responseAudioUrl: responseAudioUrl || '' };
     } catch (err) {
         console.error('[PostTTS] Audio generation failed:', err);
         return null;

@@ -188,15 +188,17 @@ ${transcript}
 
 STEP 1: THE EDITORIAL JUDGMENT
 Determine if this transcript has "Editorial Value."
-* Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, or circular banter with no substance.
-* Valuable (is_publishable: true): Contains a psychological struggle, a request for advice, OR a specific lifestyle/aesthetic question (e.g., "What soap do you use?", "How do you structure your morning?"). Readers love specific lifestyle details and psychological breakthroughs.
+* Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where you cannot identify a clear INTENTION (what the person wants) and OBSTACLE (what's in the way). Vague chats produce weak shorts.
+* Valuable (is_publishable: true): Contains a clear intention AND obstacle — a psychological struggle, a request for advice, OR a specific lifestyle question. The reader must be able to feel the tension in under 60 seconds.
 
 STEP 2: THE SYNTHESIS (If Publishable)
+These posts will be read aloud as 60-second audio shorts for TikTok, Instagram Reels, and YouTube Shorts. Every word must earn its place.
+
 If the transcript is valuable, populate the post fields:
-- title: Write as if the letter writer chose their own subject line — a first-person confession or declaration (4-8 words). Never use second person ("you"). Never editorialize or philosophize. Think of it as the one sentence someone would text their best friend at midnight when they finally admit what's been eating at them. Examples: "I Almost Told the Truth Today", "Everyone Thinks I Have It Together", "I Don't Know Who I Am Without Her".
+- title: Write a curiosity-driven hook title (8-15 words). The viewer should NEED to hear the answer. Use INTENTION + OBSTACLE as either a tension statement or a question. Never use second person. Examples: 'I Want To Be a Good Father But I Keep Choosing Work', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I Don't Like Who I've Become'. The title should make someone stop scrolling.
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: Ghostwrite Character B's side into a punchy social media letter. VOICE: Write in first person, speaking DIRECTLY TO the archetype — as if the user is writing this letter RIGHT NOW to ask for guidance. TENSE: Write in PRESENT TENSE. The letter is being written NOW — the person is reaching out for the first time. NEVER use past tense to recap the conversation (e.g., WRONG: 'I came to you this morning', RIGHT: 'I come to you this morning'). NEVER reference the chat, conversation, or session itself — the letter should read as though no prior exchange happened. The reader should feel like they're reading someone's raw, honest letter — not a recap of a therapy session. NEVER narrate in third person (e.g., 'I told him I wasn't happy'). Instead, write it as a direct emotional appeal (e.g., 'I'm not happy and I can't explain why'). FORMATTING RULES: You MUST start exactly with: 'Dear ${archetype},' followed by a double line break (\\n\\n). Write the body of the letter. End with a double line break (\\n\\n) followed by 'Sincerely,' then a line break and the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). SCRUB ALL PII (names, locations). The letter must be strictly in the requested language.
-- response: Synthesize Character A's advice into a response letter addressed to the sender. Write strictly in Character A's exact voice. FORMATTING RULES: You MUST start the response exactly with 'Dear ' followed by the pseudonym you generated for this post and a comma (e.g., 'Dear Curious Creator,') followed by a double line break (\\n\\n). Write the body of the response. You MUST end the response with a double line break (\\n\\n) followed by 'Sincerely,' then a line break and the archetype name: 'Sincerely,\n${archetype}'. Strip away all standard AI formatting like bullet points unless the character would use them. The response must be strictly in the requested language.
+- letter: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the letter will be read aloud in ~30 seconds. STRUCTURE: One sentence stating what the person wants (INTENTION). Two-three sentences on what's blocking them (OBSTACLE). One closing line of raw emotional honesty. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). SCRUB ALL PII. Write strictly in the requested language.
+- response: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the response will be read aloud in ~30 seconds. STRUCTURE: One sentence acknowledging the tension. Two-three sentences delivering the core insight or reframe. One closing line with a direct instruction or challenge. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ' followed by the pseudonym and a comma (e.g., 'Dear Curious Creator,\n\n'). Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
 
 STEP 3: THE ART DIRECTOR (Image Generation)
 You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
@@ -363,8 +365,8 @@ ${transcript}`;
                         content_raw: transcript,
                         status: "completed",
                         created_at: new Date(),
-                        is_public: visibility !== 'private',
-                        visibility: visibility,
+                        is_public: imagen_url ? (visibility !== 'private') : false,
+                        visibility: imagen_url ? visibility : 'private',
                         likes: 0,
                         comments: 0
                     });

@@ -49,6 +49,7 @@ export interface CharacterBible {
     last_updated: number;   // Timestamp for the "Batch Post" logic.
     version?: number;       // e.g. 1.0, 1.1
     last_commit?: any;      // Firestore Timestamp of last "Finish & Commit"
+    voice_confirmed?: boolean; // True once user has confirmed their auto-assigned voice
     status?: 'stable' | 'compiling' | 'ready' | 'failed'; // Lockout state during updates
 }
 
@@ -111,6 +112,7 @@ export interface CharacterProfile {
         content: string;
         full_content?: string;
         image_url?: string | null;
+        audio_url?: string | null;
         date: string;
         updated_at: string;
     };
