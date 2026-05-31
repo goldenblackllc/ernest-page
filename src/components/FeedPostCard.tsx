@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2, Share2 } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -675,6 +675,26 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 <span className="text-xs font-medium">{post.comments}</span>
                             )}
                         </button>
+                        {/* Restart — shown once audio has started */}
+                        {audioPhase !== 'idle' && (
+                            <button
+                                onClick={() => {
+                                    if (audioRef.current) {
+                                        audioRef.current.pause();
+                                        audioRef.current = null;
+                                    }
+                                    setIsPlaying(false);
+                                    setAudioPhase('idle');
+                                    setAudioProgress(0);
+                                    // Small delay so state settles, then auto-play from start
+                                    setTimeout(() => toggleAudio(), 50);
+                                }}
+                                className="text-zinc-400 hover:text-white transition-colors"
+                                title="Restart"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Center: transcript toggle — only for author */}
