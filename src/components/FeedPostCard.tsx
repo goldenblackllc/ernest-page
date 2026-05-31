@@ -650,9 +650,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     </div>
                 </div>
 
-                {/* Compact footer — likes, comments, actions */}
-                <div className="flex items-center justify-between px-4 py-2.5 bg-black/60 border-t border-white/5">
-                    <div className="flex items-center gap-4">
+                {/* Compact footer — likes | transcript toggle | delete + share */}
+                <div className="flex items-center px-4 py-2.5 bg-black/60 border-t border-white/5 gap-3">
+                    {/* Left: social actions */}
+                    <div className="flex items-center gap-4 flex-1">
                         <button
                             onClick={toggleLike}
                             className={cn(
@@ -675,21 +676,41 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             )}
                         </button>
                     </div>
-                    {user?.uid === post.uid && (
-                        <button onClick={handleDelete} className="text-zinc-500 hover:text-white transition-colors p-1">
-                            <Trash2 className="w-4 h-4" />
+
+                    {/* Center: transcript toggle — only for author */}
+                    {isAuthor && hasPrivateData && (
+                        <button
+                            onClick={() => { setIsFlipped(!isFlipped); setIsResponseExpanded(false); }}
+                            className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200",
+                                isFlipped
+                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                    : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+                            )}
+                        >
+                            <RefreshCw className={cn("w-3.5 h-3.5 transition-transform duration-500", isFlipped && "rotate-180")} />
+                            {isFlipped ? 'Post' : 'Chat'}
                         </button>
                     )}
-                    <button
-                        onClick={handleShare}
-                        className="text-zinc-400 hover:text-white transition-colors p-1 ml-auto relative"
-                        title="Share"
-                    >
-                        <Share2 className="w-4 h-4" />
-                        {shareToast && (
-                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
+
+                    {/* Right: delete + share */}
+                    <div className="flex items-center gap-2">
+                        {user?.uid === post.uid && (
+                            <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
                         )}
-                    </button>
+                        <button
+                            onClick={handleShare}
+                            className="text-zinc-400 hover:text-white transition-colors relative"
+                            title="Share"
+                        >
+                            <Share2 className="w-4 h-4" />
+                            {shareToast && (
+                                <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
+                            )}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Comment section (reused) */}
@@ -773,6 +794,59 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         )}
                     </div>
                 )}
+
+                {/* Original chat transcript — shown when author taps the Chat button */}
+                {isAuthor && hasPrivateData && isFlipped && (() => {
+                    // Parse content_raw (old format) into chat bubble array
+                    const parseRaw = (raw: string) => {
+                        const parts = raw.split(/(?=\b(?:user|assistant):\s)/i).filter(Boolean);
+                        return parts.map(part => {
+                            const match = part.match(/^(user|assistant):\s*([\s\S]*)/i);
+                            if (!match) return null;
+                            return { role: match[1].toLowerCase(), content: match[2].trim() };
+                        }).filter(Boolean);
+                    };
+
+                    const messages = post.conversation_messages && post.conversation_messages.length > 0
+                        ? post.conversation_messages
+                        : post.content_raw ? parseRaw(post.content_raw) : [];
+
+                    return (
+                        <div className="border-t border-white/5 bg-zinc-950">
+                            <div className="p-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Lock className="w-3.5 h-3.5 text-emerald-500" />
+                                    <h3 className="text-xs font-bold text-emerald-500 uppercase tracking-widest">Original Chat</h3>
+                                </div>
+                                <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+                                    {messages.length > 0 ? messages.map((msg: any, idx: number) => (
+                                        <div key={idx} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                                            <div className={cn(
+                                                "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                                                msg.role === 'user'
+                                                    ? "bg-zinc-800 text-zinc-200 rounded-br-sm"
+                                                    : "bg-zinc-900/80 text-zinc-300 rounded-bl-sm border border-zinc-800"
+                                            )}>
+                                                {msg.content}
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        // Final fallback — rant/counsel format
+                                        <div className="space-y-4">
+                                            {post.rant && <p className="text-sm text-zinc-300 leading-relaxed">{post.rant}</p>}
+                                            {post.counsel && (
+                                                <>
+                                                    <div className="border-t border-zinc-800" />
+                                                    <p className="text-sm text-zinc-400 leading-relaxed">{post.counsel}</p>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
         );
     }
