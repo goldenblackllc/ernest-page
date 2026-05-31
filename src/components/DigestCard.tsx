@@ -48,7 +48,7 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
             setAudioProgress(0);
         };
 
-        audio.play();
+        audio.play().catch(() => setIsPlaying(false));
         setIsPlaying(true);
     }, [audioUrl, isPlaying]);
 

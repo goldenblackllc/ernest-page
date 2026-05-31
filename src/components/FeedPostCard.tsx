@@ -545,9 +545,19 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <span className="text-sm font-semibold text-white/90 truncate block">
-                                    {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-white/90 truncate">
+                                        {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
+                                    </span>
+                                    {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onFollowClick(postAuthorId); }}
+                                            className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-0.5 rounded transition-all tracking-wide shrink-0"
+                                        >
+                                            {t('followAuthor')}
+                                        </button>
+                                    )}
+                                </div>
                                 <span className="text-[10px] text-white/50">{timeAgo}</span>
                             </div>
                             {/* Phase indicator */}
