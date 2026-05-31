@@ -3,7 +3,7 @@
 // Goal: Instant cold-open by serving cached assets before network.
 // ═══════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'ep-v1';
+const CACHE_VERSION = 'ep-v2';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -67,9 +67,9 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Strategy 2: Stale-while-revalidate for JS bundles
+    // Strategy 2: Network-first for JS bundles — always fetch fresh, fallback to cache offline
     if (url.pathname.startsWith('/_next/') && url.pathname.endsWith('.js')) {
-        event.respondWith(staleWhileRevalidate(request));
+        event.respondWith(networkFirst(request));
         return;
     }
 
