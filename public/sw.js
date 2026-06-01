@@ -3,7 +3,7 @@
 // Goal: Instant cold-open by serving cached assets before network.
 // ═══════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'ep-v2';
+const CACHE_VERSION = 'ep-v3';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
