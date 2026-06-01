@@ -51,6 +51,11 @@ export async function GET(req: Request) {
                     const data = chatDoc.data();
                     const isExpired = data.updatedAt && data.updatedAt <= (now - timeoutMs);
                     const isClosed = data.isClosed === true;
+                    // Skip chats already claimed by another cron run (unless claim is stale >10min)
+                    if (data.processing && data.processingStartedAt) {
+                        const claimAge = now - data.processingStartedAt;
+                        if (claimAge < 10 * 60 * 1000) return false; // still fresh, skip
+                    }
                     return isExpired || isClosed;
                 });
 
@@ -139,6 +144,9 @@ async function processUserChats(
             : (chatData.autoPublish === false ? 'private' : 'community');
 
         if (messages.length > 0) {
+            // Claim this chat to prevent duplicate processing by concurrent cron runs
+            await chatDoc.ref.update({ processing: true, processingStartedAt: Date.now() });
+
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
             // Fetch recent posts to avoid repeating the same photo scale

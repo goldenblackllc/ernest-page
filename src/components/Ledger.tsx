@@ -434,6 +434,35 @@ export function Ledger() {
                         </div>
                     </button>
                 )}
+
+                {/* Ground Rules — visible in empty feed for new users */}
+                {hasBuiltCharacter && (!profile?.identity?.session_count || profile.identity.session_count < 1) && (
+                    <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm">
+                        <div className="p-5">
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-bold mb-1">Before your first session</p>
+                            <p className="text-sm font-bold text-white mb-4">Ground Rules</p>
+                            <div className="space-y-2.5">
+                                {[
+                                    { icon: '✦', text: 'Be fully honest — say what you actually feel' },
+                                    { icon: '✦', text: "If you disagree, say so — you won't offend anyone" },
+                                    { icon: '✦', text: 'Commit to the full session — there is an end' },
+                                    { icon: '✦', text: 'Answer every question, even the hard ones' },
+                                    { icon: '✦', text: 'No one is listening. No one is judging you.' },
+                                ].map((rule, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-start gap-2.5 opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
+                                        style={{ animationDelay: `${i * 0.3}s` }}
+                                    >
+                                        <span className="text-white/40 text-xs mt-0.5 shrink-0">{rule.icon}</span>
+                                        <p className="text-sm text-zinc-300 leading-snug">{rule.text}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {emptyStateContent}
             </section>
         );
