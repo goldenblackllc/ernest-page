@@ -731,20 +731,24 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                             headers: { Authorization: `Bearer ${idToken}` },
                                         });
                                         if (!res.ok) throw new Error('Failed to generate video');
-                                        const { url } = await res.json();
+
+                                        // API streams the MP4 bytes directly
+                                        const blob = await res.blob();
+                                        const blobUrl = URL.createObjectURL(blob);
+                                        const filename = `earnest-page-${post.id}.mp4`;
 
                                         // Try native share (iOS saves to camera roll)
                                         if (navigator.share && /iPhone|iPad/i.test(navigator.userAgent)) {
-                                            const blob = await (await fetch(url)).blob();
-                                            const file = new File([blob], `earnest-page-${post.id}.mp4`, { type: 'video/mp4' });
+                                            const file = new File([blob], filename, { type: 'video/mp4' });
                                             await navigator.share({ files: [file] });
                                         } else {
                                             // Desktop / Android — direct download
                                             const a = document.createElement('a');
-                                            a.href = url;
-                                            a.download = `earnest-page-${post.id}.mp4`;
+                                            a.href = blobUrl;
+                                            a.download = filename;
                                             a.click();
                                         }
+                                        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
                                         setVideoToast('Video ready!');
                                         setTimeout(() => setVideoToast(null), 3000);
                                     } catch (err) {

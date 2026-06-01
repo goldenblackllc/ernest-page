@@ -56,11 +56,15 @@ export async function GET(
         const file = storage.bucket().file(videoPath);
         const [exists] = await file.exists();
         if (exists) {
-            const [signedUrl] = await file.getSignedUrl({
-                action: 'read',
-                expires: Date.now() + 60 * 60 * 1000, // 1 hour
+            console.log('[Video] Serving from cache');
+            const [cachedBuffer] = await file.download();
+            return new NextResponse(new Uint8Array(cachedBuffer), {
+                headers: {
+                    'Content-Type': 'video/mp4',
+                    'Content-Disposition': `attachment; filename="earnest-page-${postId}.mp4"`,
+                    'Content-Length': String(cachedBuffer.length),
+                },
             });
-            return NextResponse.json({ url: signedUrl, cached: true });
         }
 
         // ── Download assets to /tmp ──
@@ -94,26 +98,53 @@ export async function GET(
         }
 
         // ── Get audio durations via ffmpeg ──
-        const ffmpegPath = require('ffmpeg-static') as string;
+        // Turbopack rewrites require() and require.resolve() paths at bundle time.
+        // Construct the real path manually from process.cwd().
+        const { existsSync } = require('fs');
+        const { execSync: execSyncCheck, spawnSync } = require('child_process');
+        const pathMod = require('path');
+
+        let ffmpegPath = pathMod.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+        if (!existsSync(ffmpegPath)) {
+            // Fallback: try system ffmpeg
+            try {
+                ffmpegPath = execSyncCheck('which ffmpeg', { encoding: 'utf8' }).trim();
+            } catch {
+                throw new Error(`ffmpeg not found at ${ffmpegPath} or in system PATH`);
+            }
+        }
+        console.log('[Video] ffmpeg path:', ffmpegPath, 'exists:', existsSync(ffmpegPath));
 
         const getDuration = async (filePath: string): Promise<number> => {
-            const { execSync } = require('child_process');
-            try {
-                // ffmpeg -i with no output always exits non-zero, printing duration to stderr
-                execSync(`"${ffmpegPath}" -i "${filePath}" 2>&1`, { encoding: 'utf8' });
-            } catch (e: any) {
-                const output = (e.stderr || '') + (e.stdout || '');
-                const match = output.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
-                if (match) {
-                    return parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]) + parseInt(match[4]) / 100;
-                }
+            const stat = await fs.stat(filePath);
+            console.log(`[Video] File ${filePath}: ${stat.size} bytes`);
+
+            if (stat.size === 0) return 0;
+
+            const result = spawnSync(ffmpegPath, ['-i', filePath], {
+                encoding: 'utf8',
+                timeout: 10000,
+            });
+
+            // ffmpeg -i always exits non-zero (no output file), duration is in stderr
+            const output = (result.stderr || '') + (result.stdout || '');
+            console.log('[Video] ffmpeg output snippet:', output.substring(0, 300));
+
+            const match = output.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
+            if (match) {
+                const dur = parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]) + parseInt(match[4]) / 100;
+                console.log(`[Video] Duration: ${dur}s`);
+                return dur;
             }
+
+            console.log('[Video] Could not parse duration from output');
             return 0;
         };
 
         const letterDuration = await getDuration(letterAudioPath);
         const responseDuration = hasResponseAudio ? await getDuration(responseAudioPath) : 0;
         const totalDuration = letterDuration + responseDuration;
+        console.log(`[Video] Letter: ${letterDuration}s, Response: ${responseDuration}s, Total: ${totalDuration}s`);
 
         if (totalDuration <= 0) {
             throw new Error('Could not determine audio duration');
@@ -121,14 +152,13 @@ export async function GET(
 
         // ── Concatenate audio if we have response ──
         if (hasResponseAudio) {
-            const { execSync } = require('child_process');
             // Create concat list file
             const concatListPath = join(workDir, 'concat.txt');
             await fs.writeFile(concatListPath, `file '${letterAudioPath}'\nfile '${responseAudioPath}'\n`);
-            execSync(
-                `"${ffmpegPath}" -y -f concat -safe 0 -i "${concatListPath}" -c copy "${combinedAudioPath}"`,
-                { timeout: 30000 }
-            );
+            spawnSync(ffmpegPath, [
+                '-y', '-f', 'concat', '-safe', '0',
+                '-i', concatListPath, '-c', 'copy', combinedAudioPath,
+            ], { timeout: 30000 });
         } else {
             await fs.copyFile(letterAudioPath, combinedAudioPath);
         }
@@ -157,7 +187,7 @@ export async function GET(
         // ── Gradient overlays FIRST (behind text) ──
         const nextLabelTopGrad = `v${labelIndex++}`;
         filters.push(
-            `[${currentLabel}]drawbox=x=0:y=0:w=iw:h=220:color=black@0.6:t=fill[${nextLabelTopGrad}]`
+            `[${currentLabel}]drawbox=x=0:y=0:w=iw:h=300:color=black@0.6:t=fill[${nextLabelTopGrad}]`
         );
         currentLabel = nextLabelTopGrad;
 
@@ -167,14 +197,34 @@ export async function GET(
         );
         currentLabel = nextLabelBottomGrad;
 
-        // ── Title at top — persistent throughout video ──
-        const escapedTitle = escapeDrawText(titleText);
-        const nextLabel1 = `v${labelIndex++}`;
-        filters.push(
-            `[${currentLabel}]drawtext=text='${escapedTitle}':fontfile='${fontBold}':fontsize=42:fontcolor=white:` +
-            `x=(w-tw)/2:y=80:shadowcolor=black@0.7:shadowx=2:shadowy=2[${nextLabel1}]`
-        );
-        currentLabel = nextLabel1;
+        // ── Title at top — word-wrapped across multiple lines ──
+        const MAX_TITLE_CHARS = 30;
+        const titleWords = titleText.split(' ');
+        const titleLines: string[] = [];
+        let currentLine = '';
+        for (const word of titleWords) {
+            if (currentLine.length + word.length + 1 > MAX_TITLE_CHARS && currentLine.length > 0) {
+                titleLines.push(currentLine.trim());
+                currentLine = word;
+            } else {
+                currentLine += (currentLine ? ' ' : '') + word;
+            }
+        }
+        if (currentLine) titleLines.push(currentLine.trim());
+
+        const titleFontSize = 34;
+        const titleLineHeight = titleFontSize + 10;
+        const titleStartY = 50;
+
+        for (let i = 0; i < titleLines.length; i++) {
+            const escapedLine = escapeDrawText(titleLines[i]);
+            const nextLabel = `v${labelIndex++}`;
+            filters.push(
+                `[${currentLabel}]drawtext=text='${escapedLine}':fontfile='${fontBold}':fontsize=${titleFontSize}:fontcolor=white:` +
+                `x=(w-tw)/2:y=${titleStartY + i * titleLineHeight}:shadowcolor=black@0.7:shadowx=2:shadowy=2[${nextLabel}]`
+            );
+            currentLabel = nextLabel;
+        }
 
         // ── Phase label (LETTER / RESPONSE) — small text above subtitles ──
         const nextLabelLetterPhase = `v${labelIndex++}`;
@@ -208,63 +258,70 @@ export async function GET(
             currentLabel = nextLabel;
         }
 
-        // ── Progress bar at the very bottom ──
-        const nextLabelBar = `v${labelIndex++}`;
-        filters.push(
-            `[${currentLabel}]drawbox=x=0:y=h-4:w=t/${totalDuration.toFixed(2)}*w:h=4:color=white@0.7:t=fill[${nextLabelBar}]`
-        );
-        currentLabel = nextLabelBar;
+        // (Progress bar removed because drawbox width does not support dynamic time expressions)
 
         // ── Run ffmpeg ──
-        const filterComplex = filters.join(';\n');
-        const { execSync } = require('child_process');
+        const filterComplex = filters.join(';');
 
-        const ffmpegCmd = [
-            `"${ffmpegPath}"`,
-            '-y',
-            '-loop 1',
-            `-i "${heroPath}"`,
-            `-i "${combinedAudioPath}"`,
-            `-filter_complex "${filterComplex}"`,
-            `-map "[${currentLabel}]"`,
-            '-map 1:a',
-            '-c:v libx264',
-            '-preset fast',
-            '-crf 23',
-            '-c:a aac',
-            '-b:a 128k',
-            `-t ${totalDuration.toFixed(2)}`,
-            '-movflags +faststart',
-            '-pix_fmt yuv420p',
-            `"${outputPath}"`,
-        ].join(' ');
+        // Debug: dump filter for manual inspection
+        const filterDebugPath = pathMod.join(workDir, 'filter_debug.txt');
+        await fs.writeFile(filterDebugPath, filterComplex);
+        console.log('[Video] Filter debug file:', filterDebugPath);
+        console.log('[Video] Filter first 300 chars:', filterComplex.substring(0, 300));
 
         console.log('[Video] Running ffmpeg...');
-        execSync(ffmpegCmd, { timeout: 90000 });
+        const ffmpegResult = spawnSync(ffmpegPath, [
+            '-y',
+            '-loop', '1',
+            '-i', heroPath,
+            '-i', combinedAudioPath,
+            '-filter_complex', filterComplex,
+            '-map', `[${currentLabel}]`,
+            '-map', '1:a',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-t', totalDuration.toFixed(2),
+            '-movflags', '+faststart',
+            '-pix_fmt', 'yuv420p',
+            outputPath,
+        ], { timeout: 90000 });
+
+        if (ffmpegResult.status !== 0) {
+            const fullStderr = (ffmpegResult.stderr || '').toString();
+            const stderrDebugPath = pathMod.join(workDir, 'ffmpeg_stderr.txt');
+            await fs.writeFile(stderrDebugPath, fullStderr);
+            console.error('[Video] Full stderr at:', stderrDebugPath);
+            console.error('[Video] ffmpeg signal:', ffmpegResult.signal);
+            console.error('[Video] ffmpeg stderr tail:', fullStderr.slice(-300));
+            throw new Error(`ffmpeg exited with code ${ffmpegResult.status} signal ${ffmpegResult.signal}`);
+        }
         console.log('[Video] FFmpeg completed');
 
-        // ── Upload to Firebase Storage ──
+        // ── Upload to Firebase Storage (cache) + stream directly to client ──
         const videoBuffer = await fs.readFile(outputPath);
-        await file.save(videoBuffer, {
+
+        // Cache in the background — don't await so we can stream immediately
+        file.save(videoBuffer, {
             metadata: {
                 contentType: 'video/mp4',
-                metadata: {
-                    postId,
-                    generatedAt: new Date().toISOString(),
-                },
+                metadata: { postId, generatedAt: new Date().toISOString() },
             },
-        });
-
-        // Generate signed URL
-        const [signedUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: Date.now() + 60 * 60 * 1000,
-        });
+        }).catch((e: any) => console.warn('[Video] Cache upload failed:', e.message));
 
         // ── Cleanup /tmp ──
         await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
 
-        return NextResponse.json({ url: signedUrl, cached: false });
+        // Stream the MP4 directly — no signed URL, no Google login prompt
+        return new NextResponse(new Uint8Array(videoBuffer), {
+            headers: {
+                'Content-Type': 'video/mp4',
+                'Content-Disposition': `attachment; filename="earnest-page-${postId}.mp4"`,
+                'Content-Length': String(videoBuffer.length),
+            },
+        });
 
     } catch (error: any) {
         console.error('[Video] Generation failed:', error);

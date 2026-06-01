@@ -25,16 +25,19 @@ function chunkText(text: string, wordsPerChunk = 12): string[] {
 }
 
 /**
- * Escape text for ffmpeg drawtext filter.
- * FFmpeg drawtext requires escaping: : ' \ and newlines.
+ * Escape text for ffmpeg drawtext filter (filter_complex_script context, no shell).
+ * Inside single-quoted values in ffmpeg filter graphs:
+ *   \\ → literal \
+ *   \' → literal '
+ * Everything else is literal (colons, semicolons, brackets don't need escaping inside quotes).
+ * Additionally, drawtext interprets %{...} as dynamic text, so % must become %%.
  */
 export function escapeDrawText(text: string): string {
     return text
-        .replace(/\\/g, '\\\\\\\\')  // backslash
-        .replace(/'/g, "'\\\\\\''")   // single quote
-        .replace(/:/g, '\\:')         // colon
-        .replace(/\n/g, '')           // newlines (handled by chunking)
-        .replace(/%/g, '%%');         // percent sign
+        .replace(/\\/g, () => '\\\\')        // backslash → literal backslash
+        .replace(/'/g, () => "'\\''")        // single quote → break string, escaped quote, resume string ('\'')
+        .replace(/%/g, () => '%%')           // percent → escaped percent (drawtext expansion)
+        .replace(/\n/g, () => ' ');          // newlines → space
 }
 
 /**
