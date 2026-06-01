@@ -22,6 +22,8 @@ export async function GET(
 ) {
     try {
         const { id: postId } = await params;
+        const url = new URL(request.url);
+        const forceRefresh = url.searchParams.get('refresh') === '1';
 
         // ── Auth ──
         const authHeader = request.headers.get('Authorization');
@@ -51,11 +53,11 @@ export async function GET(
             return NextResponse.json({ error: 'Post does not have audio and image for video generation' }, { status: 400 });
         }
 
-        // ── Check cache ──
+        // ── Check cache (skip if ?refresh=1) ──
         const videoPath = `videos/${postId}.mp4`;
         const file = storage.bucket().file(videoPath);
         const [exists] = await file.exists();
-        if (exists) {
+        if (exists && !forceRefresh) {
             console.log('[Video] Serving from cache');
             const [cachedBuffer] = await file.download();
             return new NextResponse(new Uint8Array(cachedBuffer), {
@@ -65,6 +67,10 @@ export async function GET(
                     'Content-Length': String(cachedBuffer.length),
                 },
             });
+        }
+        // If refreshing, delete old cached version
+        if (exists && forceRefresh) {
+            await file.delete().catch(() => {});
         }
 
         // ── Download assets to /tmp ──
@@ -174,100 +180,93 @@ export async function GET(
         const fontBold = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-bold-webfont.ttf');
         const fontRegular = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-regular-webfont.ttf');
 
-        // Build drawtext filter chain
+        // Build drawtext filter chain — designed to match the site's short card UI
         const filters: string[] = [];
 
-        // Scale image to 1080x1350 (4:5) and set pixel format
+        // Scale image to 1080x1350 (4:5 portrait) and set pixel format
         filters.push('[0:v]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,format=yuv420p[bg]');
 
-        // Build overlay chain — start with [bg], apply each filter sequentially
         let currentLabel = 'bg';
         let labelIndex = 0;
 
-        // ── Gradient overlays FIRST (behind text) ──
+        // ── Top gradient: dark fade from top (matching site's from-black/70 via-transparent) ──
+        // Use a solid box but only 280px — it reads as a gradient at the boundary
         const nextLabelTopGrad = `v${labelIndex++}`;
-        filters.push(
-            `[${currentLabel}]drawbox=x=0:y=0:w=iw:h=300:color=black@0.6:t=fill[${nextLabelTopGrad}]`
-        );
+        filters.push(`[${currentLabel}]drawbox=x=0:y=0:w=iw:h=280:color=black@0.65:t=fill[${nextLabelTopGrad}]`);
         currentLabel = nextLabelTopGrad;
 
+        // ── Bottom gradient: dark fade from bottom (matching site's to-black/80) ──
         const nextLabelBottomGrad = `v${labelIndex++}`;
-        filters.push(
-            `[${currentLabel}]drawbox=x=0:y=h-280:w=iw:h=280:color=black@0.5:t=fill[${nextLabelBottomGrad}]`
-        );
+        filters.push(`[${currentLabel}]drawbox=x=0:y=h-320:w=iw:h=320:color=black@0.75:t=fill[${nextLabelBottomGrad}]`);
         currentLabel = nextLabelBottomGrad;
 
-        // ── Title at top — word-wrapped across multiple lines ──
-        const MAX_TITLE_CHARS = 30;
+        // ── Title: LEFT-ALIGNED at top, matching site card (x=40, y=110 — below author area) ──
+        // Word-wrap at ~32 chars so lines stay within the 1080px frame
+        const MAX_TITLE_CHARS = 32;
         const titleWords = titleText.split(' ');
         const titleLines: string[] = [];
-        let currentLine = '';
+        let currentTitleLine = '';
         for (const word of titleWords) {
-            if (currentLine.length + word.length + 1 > MAX_TITLE_CHARS && currentLine.length > 0) {
-                titleLines.push(currentLine.trim());
-                currentLine = word;
+            if (currentTitleLine.length + word.length + 1 > MAX_TITLE_CHARS && currentTitleLine.length > 0) {
+                titleLines.push(currentTitleLine.trim());
+                currentTitleLine = word;
             } else {
-                currentLine += (currentLine ? ' ' : '') + word;
+                currentTitleLine += (currentTitleLine ? ' ' : '') + word;
             }
         }
-        if (currentLine) titleLines.push(currentLine.trim());
+        if (currentTitleLine) titleLines.push(currentTitleLine.trim());
 
-        const titleFontSize = 34;
-        const titleLineHeight = titleFontSize + 10;
-        const titleStartY = 50;
+        const titleFontSize = 46;
+        const titleLineHeight = titleFontSize + 8;
+        const titleStartY = 110; // leaves room for author avatar/name above
+        const titleX = 40;       // left-aligned with padding, matching site's p-4
 
         for (let i = 0; i < titleLines.length; i++) {
             const escapedLine = escapeDrawText(titleLines[i]);
             const nextLabel = `v${labelIndex++}`;
             filters.push(
                 `[${currentLabel}]drawtext=text='${escapedLine}':fontfile='${fontBold}':fontsize=${titleFontSize}:fontcolor=white:` +
-                `x=(w-tw)/2:y=${titleStartY + i * titleLineHeight}:shadowcolor=black@0.7:shadowx=2:shadowy=2[${nextLabel}]`
+                `x=${titleX}:y=${titleStartY + i * titleLineHeight}:shadowcolor=black@0.8:shadowx=2:shadowy=2[${nextLabel}]`
             );
             currentLabel = nextLabel;
         }
 
-        // ── Phase label (LETTER / RESPONSE) — small text above subtitles ──
-        const nextLabelLetterPhase = `v${labelIndex++}`;
-        filters.push(
-            `[${currentLabel}]drawtext=text='LETTER':fontfile='${fontBold}':fontsize=22:fontcolor=white@0.5:` +
-            `x=(w-tw)/2:y=h-240:enable='between(t,0,${letterDuration.toFixed(2)})':` +
-            `shadowcolor=black@0.5:shadowx=1:shadowy=1[${nextLabelLetterPhase}]`
-        );
-        currentLabel = nextLabelLetterPhase;
+        // ── Subtitles: TWO tiers matching the site exactly ──
+        // Current chunk: 15px white (rendered as ~36px at 1080 res)
+        // Next chunk preview: 13px white/40 (rendered as ~30px, alpha 0.4)
+        for (let i = 0; i < subtitles.length; i++) {
+            const sub = subtitles[i];
+            const nextSub = subtitles[i + 1];
+            const escapedCurrent = escapeDrawText(sub.text);
+            const tStart = sub.startTime.toFixed(2);
+            const tEnd = sub.endTime.toFixed(2);
 
-        if (responseDuration > 0) {
-            const nextLabelRespPhase = `v${labelIndex++}`;
-            filters.push(
-                `[${currentLabel}]drawtext=text='RESPONSE':fontfile='${fontBold}':fontsize=22:fontcolor=white@0.5:` +
-                `x=(w-tw)/2:y=h-240:enable='between(t,${letterDuration.toFixed(2)},${totalDuration.toFixed(2)})':` +
-                `shadowcolor=black@0.5:shadowx=1:shadowy=1[${nextLabelRespPhase}]`
-            );
-            currentLabel = nextLabelRespPhase;
-        }
-
-        // ── Subtitle chunks — each appears for its timed window at the bottom ──
-        for (const sub of subtitles) {
-            const escapedText = escapeDrawText(sub.text);
+            // Current subtitle line — bright white, 36px
             const nextLabel = `v${labelIndex++}`;
             filters.push(
-                `[${currentLabel}]drawtext=text='${escapedText}':fontfile='${fontRegular}':fontsize=36:fontcolor=white:` +
-                `x=(w-tw)/2:y=h-180:line_spacing=8:` +
-                `enable='between(t,${sub.startTime.toFixed(2)},${sub.endTime.toFixed(2)})':` +
-                `shadowcolor=black@0.8:shadowx=2:shadowy=2[${nextLabel}]`
+                `[${currentLabel}]drawtext=text='${escapedCurrent}':fontfile='${fontRegular}':fontsize=36:fontcolor=white:` +
+                `x=40:y=h-210:` +
+                `enable='between(t,${tStart},${tEnd})':` +
+                `shadowcolor=black@0.9:shadowx=2:shadowy=2[${nextLabel}]`
             );
             currentLabel = nextLabel;
-        }
 
-        // (Progress bar removed because drawbox width does not support dynamic time expressions)
+            // Next subtitle preview — dimmer, 30px, white@0.4 (only if there's a next chunk)
+            if (nextSub) {
+                const escapedNext = escapeDrawText(nextSub.text);
+                const nextLabel2 = `v${labelIndex++}`;
+                filters.push(
+                    `[${currentLabel}]drawtext=text='${escapedNext}':fontfile='${fontRegular}':fontsize=30:fontcolor=white@0.4:` +
+                    `x=40:y=h-162:` +
+                    `enable='between(t,${tStart},${tEnd})':` +
+                    `shadowcolor=black@0.5:shadowx=1:shadowy=1[${nextLabel2}]`
+                );
+                currentLabel = nextLabel2;
+            }
+        }
 
         // ── Run ffmpeg ──
         const filterComplex = filters.join(';');
-
-        // Debug: dump filter for manual inspection
-        const filterDebugPath = pathMod.join(workDir, 'filter_debug.txt');
-        await fs.writeFile(filterDebugPath, filterComplex);
-        console.log('[Video] Filter debug file:', filterDebugPath);
-        console.log('[Video] Filter first 300 chars:', filterComplex.substring(0, 300));
 
         console.log('[Video] Running ffmpeg...');
         const ffmpegResult = spawnSync(ffmpegPath, [
