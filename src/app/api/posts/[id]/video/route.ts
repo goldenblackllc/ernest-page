@@ -93,17 +93,23 @@ export async function GET(
             await fs.writeFile(responseAudioPath, Buffer.from(await responseAudioRes.arrayBuffer()));
         }
 
-        // ── Get audio durations via ffprobe ──
+        // ── Get audio durations via ffmpeg ──
         const ffmpegPath = require('ffmpeg-static') as string;
-        const ffprobePath = ffmpegPath.replace(/ffmpeg$/, 'ffprobe');
 
         const getDuration = async (filePath: string): Promise<number> => {
             const { execSync } = require('child_process');
-            const result = execSync(
-                `"${ffprobePath}" -v error -show_entries format=duration -of csv=p=0 "${filePath}"`,
-                { encoding: 'utf8' }
-            ).trim();
-            return parseFloat(result) || 0;
+            try {
+                // ffmpeg -i prints duration info to stderr, then errors (no output specified) — that's fine
+                execSync(`"${ffmpegPath}" -i "${filePath}" -f null -`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+            } catch (e: any) {
+                // ffmpeg always exits non-zero with -f null, parse stderr for duration
+                const stderr = e.stderr || '';
+                const match = stderr.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
+                if (match) {
+                    return parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]) + parseInt(match[4]) / 100;
+                }
+            }
+            return 0;
         };
 
         const letterDuration = await getDuration(letterAudioPath);
