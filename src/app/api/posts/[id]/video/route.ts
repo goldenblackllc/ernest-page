@@ -99,12 +99,11 @@ export async function GET(
         const getDuration = async (filePath: string): Promise<number> => {
             const { execSync } = require('child_process');
             try {
-                // ffmpeg -i prints duration info to stderr, then errors (no output specified) — that's fine
-                execSync(`"${ffmpegPath}" -i "${filePath}" -f null -`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+                // ffmpeg -i with no output always exits non-zero, printing duration to stderr
+                execSync(`"${ffmpegPath}" -i "${filePath}" 2>&1`, { encoding: 'utf8' });
             } catch (e: any) {
-                // ffmpeg always exits non-zero with -f null, parse stderr for duration
-                const stderr = e.stderr || '';
-                const match = stderr.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
+                const output = (e.stderr || '') + (e.stdout || '');
+                const match = output.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
                 if (match) {
                     return parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]) + parseInt(match[4]) / 100;
                 }
