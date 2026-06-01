@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2, Share2 } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2, Share2, Download, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -73,6 +73,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [localVisibility, setLocalVisibility] = useState<'private' | 'community' | 'public'>(post.visibility || (post.is_public ? 'community' : 'private'));
+    const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+    const [videoToast, setVideoToast] = useState<string | null>(null);
     const t = useTranslations('feed');
     const locale = useLocale();
 
@@ -713,8 +715,60 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         </button>
                     )}
 
-                    {/* Right: delete + share */}
+                    {/* Right: download + delete + share */}
                     <div className="flex items-center gap-2">
+                        {/* MP4 Download — author only */}
+                        {isAuthor && canPlayShort && (
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (isGeneratingVideo || !user) return;
+                                    setIsGeneratingVideo(true);
+                                    setVideoToast(null);
+                                    try {
+                                        const idToken = await user.getIdToken();
+                                        const res = await fetch(`/api/posts/${post.id}/video`, {
+                                            headers: { Authorization: `Bearer ${idToken}` },
+                                        });
+                                        if (!res.ok) throw new Error('Failed to generate video');
+                                        const { url } = await res.json();
+
+                                        // Try native share (iOS saves to camera roll)
+                                        if (navigator.share && /iPhone|iPad/i.test(navigator.userAgent)) {
+                                            const blob = await (await fetch(url)).blob();
+                                            const file = new File([blob], `earnest-page-${post.id}.mp4`, { type: 'video/mp4' });
+                                            await navigator.share({ files: [file] });
+                                        } else {
+                                            // Desktop / Android — direct download
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `earnest-page-${post.id}.mp4`;
+                                            a.click();
+                                        }
+                                        setVideoToast('Video ready!');
+                                        setTimeout(() => setVideoToast(null), 3000);
+                                    } catch (err) {
+                                        console.error('Video download failed:', err);
+                                        setVideoToast('Failed');
+                                        setTimeout(() => setVideoToast(null), 3000);
+                                    } finally {
+                                        setIsGeneratingVideo(false);
+                                    }
+                                }}
+                                className="text-zinc-400 hover:text-white transition-colors relative"
+                                title="Download video"
+                                disabled={isGeneratingVideo}
+                            >
+                                {isGeneratingVideo ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Download className="w-4 h-4" />
+                                )}
+                                {videoToast && (
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">{videoToast}</span>
+                                )}
+                            </button>
+                        )}
                         {user?.uid === post.uid && (
                             <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
                                 <Trash2 className="w-4 h-4" />
