@@ -208,9 +208,11 @@ export async function GET(
         // Resolve font path — use the TTF files in public/fonts
         const fontBold = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-bold-webfont.ttf');
         const fontRegular = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-regular-webfont.ttf');
-        const { existsSync: existsSyncFonts } = require('fs');
-        console.log(`[Video] fontBold exists: ${existsSyncFonts(fontBold)} at ${fontBold}`);
-        console.log(`[Video] fontRegular exists: ${existsSyncFonts(fontRegular)} at ${fontRegular}`);
+        const { existsSync: existsSyncFonts, statSync: statSyncFonts } = require('fs');
+        const boldExists = existsSyncFonts(fontBold);
+        const regExists = existsSyncFonts(fontRegular);
+        console.log(`[Video] fontBold exists: ${boldExists} (size: ${boldExists ? statSyncFonts(fontBold).size : 0}) at ${fontBold}`);
+        console.log(`[Video] fontRegular exists: ${regExists} (size: ${regExists ? statSyncFonts(fontRegular).size : 0}) at ${fontRegular}`);
 
         // Build drawtext filter chain — designed to match the site's short card UI
         const filters: string[] = [];
