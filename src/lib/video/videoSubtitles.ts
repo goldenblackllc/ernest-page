@@ -24,27 +24,19 @@ function chunkText(text: string, wordsPerChunk = 12): string[] {
 }
 
 /**
- * Escape text for ffmpeg drawtext filter — produces output safe to use
- * WITHOUT single-quote wrapping (i.e. text=VALUE not text='VALUE').
- *
- * Escapes all ffmpeg filter graph special characters with backslash:
- *   \ : ; ' [ ]
- * Also handles drawtext's % expansion (% → %%) and strips control chars.
+ * Escape text for ffmpeg drawtext filter.
+ * Inside single-quoted values in ffmpeg filter graphs:
+ *   \\ → literal \
+ *   '' → literal ' (two consecutive quotes = literal quote)
+ * Everything else is literal (colons, semicolons, brackets don't need escaping inside quotes).
+ * Additionally, drawtext interprets %{...} as dynamic text, so % must become %%.
  */
 export function escapeDrawText(text: string): string {
-    // 1. Strip control characters (CR, LF, tabs, null, etc.)
-    let s = text.replace(/[\x00-\x1f\x7f]/g, ' ');
-    // 2. Escape backslash first (so later replacements don't double-escape)
-    s = s.split('\\').join('\\\\');
-    // 3. Escape filter graph special characters
-    s = s.split("'").join('\u2019');  // ' → \u2019 (Unicode right single quote — NOT ASCII 0x27, invisible to ffmpeg option parser)
-    s = s.split(':').join('\\:');
-    s = s.split(';').join('\\;');
-    s = s.split('[').join('\\[');
-    s = s.split(']').join('\\]');
-    // 4. Escape drawtext percent expansion
-    s = s.split('%').join('%%');
-    return s;
+    return text
+        .replace(/[\x00-\x1f\x7f]/g, ' ') // strip ALL control chars
+        .replace(/\\/g, '\\\\')             // backslash → escaped backslash
+        .replace(/'/g, '\u2018\u2019')      // ' → '' (two consecutive single quotes = literal quote in ffmpeg)
+        .replace(/%/g, '%%');               // percent → escaped percent
 }
 
 /**

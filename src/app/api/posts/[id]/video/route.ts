@@ -254,7 +254,7 @@ export async function GET(
         // "Me" label — matches site's text-sm font-semibold text-white/90
         const meLabel = `v${labelIndex++}`;
         filters.push(
-            `[${currentLabel}]drawtext=text=Me:fontfile=${fontBold}:fontsize=34:fontcolor=white@0.9:` +
+            `[${currentLabel}]drawtext=text='Me':fontfile='${fontBold}':fontsize=34:fontcolor=white@0.9:` +
             `x=${authorTextX}:y=${authorRowY + 10}:shadowcolor=black@0.5:shadowx=1:shadowy=1[${meLabel}]`
         );
         currentLabel = meLabel;
@@ -272,7 +272,7 @@ export async function GET(
         const timeAgo = formatDistanceToNow(createdDate, { addSuffix: true });
         const timeLabel = `v${labelIndex++}`;
         filters.push(
-            `[${currentLabel}]drawtext=text=${escapeDrawText(timeAgo)}:fontfile=${fontRegular}:fontsize=24:fontcolor=white@0.5:` +
+            `[${currentLabel}]drawtext=text='${escapeDrawText(timeAgo)}':fontfile='${fontRegular}':fontsize=24:fontcolor=white@0.5:` +
             `x=${authorTextX}:y=${authorRowY + 50}:shadowcolor=black@0.3:shadowx=1:shadowy=1[${timeLabel}]`
         );
         currentLabel = timeLabel;
@@ -302,44 +302,24 @@ export async function GET(
             const escapedLine = escapeDrawText(titleLines[i]);
             const nextLabel = `v${labelIndex++}`;
             filters.push(
-                `[${currentLabel}]drawtext=text=${escapedLine}:fontfile=${fontBold}:fontsize=${titleFontSize}:fontcolor=white:` +
+                `[${currentLabel}]drawtext=text='${escapedLine}':fontfile='${fontBold}':fontsize=${titleFontSize}:fontcolor=white:` +
                 `x=${titleX}:y=${titleStartY + i * titleLineHeight}:shadowcolor=black@0.8:shadowx=2:shadowy=2[${nextLabel}]`
             );
             currentLabel = nextLabel;
         }
 
-        // ── Subtitles: TWO tiers matching the site exactly ──
-        // Current chunk: 15px white (rendered as ~36px at 1080 res)
-        // Next chunk preview: 13px white/40 (rendered as ~30px, alpha 0.4)
+        // ── Subtitles: single tier (matching original working approach) ──
         for (let i = 0; i < subtitles.length; i++) {
             const sub = subtitles[i];
-            const nextSub = subtitles[i + 1];
-            const escapedCurrent = escapeDrawText(sub.text);
-            const tStart = sub.startTime.toFixed(2);
-            const tEnd = sub.endTime.toFixed(2);
-
-            // Current subtitle line — bright white, 36px
+            const escapedText = escapeDrawText(sub.text);
             const nextLabel = `v${labelIndex++}`;
             filters.push(
-                `[${currentLabel}]drawtext=text=${escapedCurrent}:fontfile=${fontRegular}:fontsize=36:fontcolor=white:` +
+                `[${currentLabel}]drawtext=text='${escapedText}':fontfile='${fontRegular}':fontsize=36:fontcolor=white:` +
                 `x=40:y=h-210:` +
-                `enable=between(t\\,${tStart}\\,${tEnd}):` +
+                `enable='between(t,${sub.startTime.toFixed(2)},${sub.endTime.toFixed(2)})':` +
                 `shadowcolor=black@0.9:shadowx=2:shadowy=2[${nextLabel}]`
             );
             currentLabel = nextLabel;
-
-            // Next subtitle preview — dimmer, 30px, white@0.4 (only if there's a next chunk)
-            if (nextSub) {
-                const escapedNext = escapeDrawText(nextSub.text);
-                const nextLabel2 = `v${labelIndex++}`;
-                filters.push(
-                    `[${currentLabel}]drawtext=text=${escapedNext}:fontfile=${fontRegular}:fontsize=30:fontcolor=white@0.4:` +
-                    `x=40:y=h-162:` +
-                    `enable=between(t\\,${tStart}\\,${tEnd}):` +
-                    `shadowcolor=black@0.5:shadowx=1:shadowy=1[${nextLabel2}]`
-                );
-                currentLabel = nextLabel2;
-            }
         }
 
         // ── Run ffmpeg ──
