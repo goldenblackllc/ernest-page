@@ -332,8 +332,13 @@ export async function GET(
         // Diagnostic logging
         const quoteCount = (filterComplex.match(/'/g) || []).length;
         console.log(`[Video] filter_complex: ${filterComplex.length} chars, ${quoteCount} single quotes (even: ${quoteCount % 2 === 0})`);
-        console.log(`[Video] filter_complex HEAD: ${filterComplex.substring(0, 400)}`);
-        console.log(`[Video] filter_complex TAIL: ${filterComplex.substring(filterComplex.length - 400)}`);
+        console.log(`[Video] filter count: ${filters.length}`);
+        // Log each filter entry so we can identify bad ones
+        filters.forEach((f, i) => {
+            if (f.includes('drawtext') || i < 3) {
+                console.log(`[Video] filter[${i}]: ${f.substring(0, 200)}`);
+            }
+        });
         console.log('[Video] Running ffmpeg...');
         const ffmpegArgs: string[] = [
             '-y',
@@ -358,7 +363,7 @@ export async function GET(
             '-pix_fmt', 'yuv420p',
             outputPath,
         );
-        const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, { timeout: 90000 });
+        const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, { timeout: 90000, maxBuffer: 50 * 1024 * 1024 });
 
         if (ffmpegResult.status !== 0) {
             const fullStderr = (ffmpegResult.stderr || '').toString();
