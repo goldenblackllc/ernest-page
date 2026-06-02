@@ -34,8 +34,14 @@ function chunkText(text: string, wordsPerChunk = 12): string[] {
 export function escapeDrawText(text: string): string {
     return text
         .replace(/[\x00-\x1f\x7f]/g, ' ') // strip ALL control chars
+        // Normalize common Unicode punctuation to ASCII equivalents
+        .replace(/[\u2018\u2019\u201a\u201b]/g, "'") // curly single quotes → '
+        .replace(/[\u201c\u201d\u201e\u201f]/g, '"') // curly double quotes → "
+        .replace(/[\u2013\u2014\u2015]/g, '-')        // en/em dash → hyphen
+        .replace(/\u2026/g, '...')                     // ellipsis → ...
+        .replace(/[^\x00-\x7f]/g, '')                 // strip remaining non-ASCII
         .replace(/\\/g, '\\\\')             // backslash → escaped backslash
-        .replace(/'/g, '\u2018\u2019')      // ' → '' (two consecutive single quotes = literal quote in ffmpeg)
+        .replace(/'/g, '\u2019')            // remaining ' → Unicode right single quote (not ASCII 0x27)
         .replace(/%/g, '%%');               // percent → escaped percent
 }
 
