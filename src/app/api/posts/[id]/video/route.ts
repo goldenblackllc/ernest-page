@@ -210,11 +210,11 @@ export async function GET(
         console.log(`[Video] fontBold exists: ${boldExists} (size: ${boldExists ? statSyncFonts(fontBold).size : 0}) at ${fontBold}`);
         console.log(`[Video] fontRegular exists: ${regExists} (size: ${regExists ? statSyncFonts(fontRegular).size : 0}) at ${fontRegular}`);
 
-        // Build drawtext filter chain — MINIMAL TEST
+        // Build filter chain — NO drawtext (not available in this ffmpeg build)
         const filters: string[] = [];
         filters.push('[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[bg]');
-        filters.push('[bg]drawbox=x=0:y=h-280:w=iw:h=280:color=black@0.5:t=fill[v0]');
-        filters.push(`[v0]drawtext=text=Hello:fontfile=${fontBold}:fontsize=48:fontcolor=white:x=40:y=40[v1]`);
+        filters.push('[bg]drawbox=x=0:y=0:w=iw:h=300:color=black@0.6:t=fill[v0]');
+        filters.push('[v0]drawbox=x=0:y=h-280:w=iw:h=280:color=black@0.5:t=fill[v1]');
         const currentLabel = 'v1';
 
         // ── Run ffmpeg ──
@@ -236,13 +236,12 @@ export async function GET(
         });
         console.log('[Video] Checking ffmpeg capabilities...');
         const capCheck = spawnSync(ffmpegPath, ['-filters'], { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 });
-        const hasDrawtext = (capCheck.stdout || '').includes('drawtext');
-        console.log(`[Video] drawtext filter available: ${hasDrawtext}`);
-        if (!hasDrawtext) {
-            // Log all filters containing 'draw'
-            const drawFilters = (capCheck.stdout || '').split('\n').filter((l: string) => l.includes('draw'));
-            console.log(`[Video] draw-related filters: ${JSON.stringify(drawFilters)}`);
-        }
+        const filterList = capCheck.stdout || '';
+        const hasDrawtext = filterList.includes('drawtext');
+        const hasAss = filterList.includes(' ass ') || filterList.includes('T.. ass');
+        const hasSubtitles = filterList.includes('subtitles');
+        const hasOverlay = filterList.includes('overlay');
+        console.log(`[Video] filters: drawtext=${hasDrawtext} ass=${hasAss} subtitles=${hasSubtitles} overlay=${hasOverlay}`);
         // Log ffmpeg build config
         const configCheck = spawnSync(ffmpegPath, ['-version'], { encoding: 'utf8' });
         const configLine = (configCheck.stdout || '').split('\n').find((l: string) => l.includes('configuration:'));
