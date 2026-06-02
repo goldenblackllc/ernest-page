@@ -1,22 +1,21 @@
 /**
- * Video Subtitle Timing — calculates timed subtitle entries for ffmpeg drawtext filters.
+ * Subtitle generation for Earnest Page video shorts.
  *
- * Splits letter and response text into ~12-word chunks (matching the web player)
- * and distributes them evenly across their respective audio durations.
+ * Produces timed subtitle entries that ffmpeg draws onto each frame.
  */
 
 export interface SubtitleEntry {
     text: string;
-    startTime: number; // seconds from video start
-    endTime: number;   // seconds from video start
+    startTime: number;
+    endTime: number;
     phase: 'letter' | 'response';
 }
 
 /**
- * Split text into chunks of roughly `wordsPerChunk` words.
+ * Break text into word-based chunks for subtitle display.
  */
 function chunkText(text: string, wordsPerChunk = 12): string[] {
-    const words = text.replace(/\n+/g, ' ').split(/\s+/).filter(w => w);
+    const words = text.split(/\s+/).filter(Boolean);
     const chunks: string[] = [];
     for (let i = 0; i < words.length; i += wordsPerChunk) {
         chunks.push(words.slice(i, i + wordsPerChunk).join(' '));
@@ -25,19 +24,27 @@ function chunkText(text: string, wordsPerChunk = 12): string[] {
 }
 
 /**
- * Escape text for ffmpeg drawtext filter (filter_complex_script context, no shell).
- * Inside single-quoted values in ffmpeg filter graphs:
- *   \\ → literal \
- *   \' → literal '
- * Everything else is literal (colons, semicolons, brackets don't need escaping inside quotes).
- * Additionally, drawtext interprets %{...} as dynamic text, so % must become %%.
+ * Escape text for ffmpeg drawtext filter — produces output safe to use
+ * WITHOUT single-quote wrapping (i.e. text=VALUE not text='VALUE').
+ *
+ * Escapes all ffmpeg filter graph special characters with backslash:
+ *   \ : ; ' [ ]
+ * Also handles drawtext's % expansion (% → %%) and strips control chars.
  */
 export function escapeDrawText(text: string): string {
-    return text
-        .replace(/\\/g, () => '\\\\')        // backslash → literal backslash
-        .replace(/'/g, '\u2019')             // apostrophe → Unicode right single quote (avoids ffmpeg filter quoting issues)
-        .replace(/%/g, () => '%%')           // percent → escaped percent (drawtext expansion)
-        .replace(/[\x00-\x1f\x7f]/g, ' '); // ALL control chars (→ space) — \r, \n, \t, null, etc.
+    // 1. Strip control characters (CR, LF, tabs, null, etc.)
+    let s = text.replace(/[\x00-\x1f\x7f]/g, ' ');
+    // 2. Escape backslash first (so later replacements don't double-escape)
+    s = s.split('\\').join('\\\\');
+    // 3. Escape filter graph special characters
+    s = s.split("'").join("\\'");
+    s = s.split(':').join('\\:');
+    s = s.split(';').join('\\;');
+    s = s.split('[').join('\\[');
+    s = s.split(']').join('\\]');
+    // 4. Escape drawtext percent expansion
+    s = s.split('%').join('%%');
+    return s;
 }
 
 /**
@@ -47,6 +54,7 @@ export function escapeDrawText(text: string): string {
  * @param responseText The response body text
  * @param letterDuration  Duration of letter audio in seconds
  * @param responseDuration Duration of response audio in seconds (0 if none)
+ * @param wordsPerChunk Number of words per subtitle chunk (default 12)
  * @returns Array of subtitle entries with timing
  */
 export function generateSubtitles(
