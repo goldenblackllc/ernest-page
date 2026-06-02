@@ -345,9 +345,13 @@ export async function GET(
         // ── Run ffmpeg ──
         const filterComplex = filters.join(';');
 
+        // Write filter graph to file — avoids ffmpeg argument parser limits
+        const filterScriptPath = join(workDir, 'filter_complex.txt');
+        await fs.writeFile(filterScriptPath, filterComplex, 'utf-8');
+
         // Diagnostic logging
         const quoteCount = (filterComplex.match(/'/g) || []).length;
-        console.log(`[Video] filter_complex: ${filterComplex.length} chars, ${quoteCount} single quotes (should be even: ${quoteCount % 2 === 0})`);
+        console.log(`[Video] filter_complex: ${filterComplex.length} chars, ${quoteCount} single quotes (even: ${quoteCount % 2 === 0})`);
         console.log(`[Video] filter_complex HEAD: ${filterComplex.substring(0, 400)}`);
         console.log(`[Video] filter_complex TAIL: ${filterComplex.substring(filterComplex.length - 400)}`);
         console.log('[Video] Running ffmpeg...');
@@ -361,7 +365,7 @@ export async function GET(
             ffmpegArgs.push('-loop', '1', '-i', avatarPath); // [2:v] avatar
         }
         ffmpegArgs.push(
-            '-filter_complex', filterComplex,
+            '-filter_complex_script', filterScriptPath,
             '-map', `[${currentLabel}]`,
             '-map', '1:a',
             '-c:v', 'libx264',
