@@ -217,14 +217,13 @@ export async function GET(
         // Build drawtext filter chain — designed to match the site's short card UI
         const filters: string[] = [];
 
-        // Scale image to 1080x1920 (9:16 portrait — standard for TikTok/Reels/Shorts) and set pixel format
+        // Scale image to 1080x1920 (9:16 portrait)
         filters.push('[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[bg]');
 
         let currentLabel = 'bg';
         let labelIndex = 0;
 
         // ── Gradient overlay using drawbox strips (40px each) ──
-        // Top: y=0→350, black fading from 70%→0% opacity
         const topH = 350;
         const topStripH = 40;
         for (let y = 0; y < topH; y += topStripH) {
@@ -234,7 +233,6 @@ export async function GET(
             filters.push(`[${currentLabel}]drawbox=x=0:y=${y}:w=iw:h=${topStripH}:color=black@${alpha.toFixed(3)}:t=fill[${nextLabel}]`);
             currentLabel = nextLabel;
         }
-        // Bottom: y=1600→1920, black fading from 0%→80% opacity
         const botStart = 1600;
         const botH = 320;
         for (let y = botStart; y < 1920; y += topStripH) {
@@ -245,13 +243,12 @@ export async function GET(
             currentLabel = nextLabel;
         }
 
-        // ── Author row: avatar + "Me" + timestamp (matching the site's short card header) ──
-        const avatarSize = 90;          // site's w-9 (36px) × 2.57 scale ≈ 93 → round to 90
-        const authorRowY = 42;          // site's p-4 (16px) × 2.57 ≈ 41 → use 42
-        let authorTextX = 40;           // default if no avatar
+        // ── Author row ──
+        const avatarSize = 90;
+        const authorRowY = 42;
+        let authorTextX = 40;
 
         if (hasAvatar) {
-            // Square avatar overlay (keeps it simple and avoids geq compatibility issues)
             filters.push(
                 `[2:v]scale=${avatarSize}:${avatarSize}:force_original_aspect_ratio=increase,` +
                 `crop=${avatarSize}:${avatarSize},format=yuva420p[avatar_sq]`
@@ -259,18 +256,22 @@ export async function GET(
             const nextLabel = `v${labelIndex++}`;
             filters.push(`[${currentLabel}][avatar_sq]overlay=40:${authorRowY}[${nextLabel}]`);
             currentLabel = nextLabel;
-            authorTextX = 40 + avatarSize + 26; // right of avatar with gap (site's gap-2.5 × 2.57)
+            authorTextX = 40 + avatarSize + 26;
         }
 
-        // "Me" label — matches site's text-sm font-semibold text-white/90
+        // NOTE: NO single-quote wrapping anywhere below — use backslash escaping only.
+        // Single-quote wrapping is broken on the Linux static ffmpeg 7.0.2 build when
+        // text contains commas (treated as filter separators by the option parser).
+
+        // "Me" label
         const meLabel = `v${labelIndex++}`;
         filters.push(
-            `[${currentLabel}]drawtext=text='Me':fontfile='${fontBold}':fontsize=34:fontcolor=white@0.9:` +
+            `[${currentLabel}]drawtext=text=Me:fontfile=${fontBold}:fontsize=34:fontcolor=white@0.9:` +
             `x=${authorTextX}:y=${authorRowY + 10}:shadowcolor=black@0.5:shadowx=1:shadowy=1[${meLabel}]`
         );
         currentLabel = meLabel;
 
-        // Timestamp — matches site's text-[10px] text-white/50
+        // Timestamp
         const postCreatedAt = post.created_at;
         let createdDate: Date;
         if (postCreatedAt?.toDate) {
@@ -283,13 +284,12 @@ export async function GET(
         const timeAgo = formatDistanceToNow(createdDate, { addSuffix: true });
         const timeLabel = `v${labelIndex++}`;
         filters.push(
-            `[${currentLabel}]drawtext=text='${escapeDrawText(timeAgo)}':fontfile='${fontRegular}':fontsize=24:fontcolor=white@0.5:` +
+            `[${currentLabel}]drawtext=text=${escapeDrawText(timeAgo)}:fontfile=${fontRegular}:fontsize=24:fontcolor=white@0.5:` +
             `x=${authorTextX}:y=${authorRowY + 50}:shadowcolor=black@0.3:shadowx=1:shadowy=1[${timeLabel}]`
         );
         currentLabel = timeLabel;
 
-        // ── Title: LEFT-ALIGNED below author row, matching site card ──
-        // Word-wrap at ~52 chars so wrapping matches the site's 2-line layout at 1080px
+        // ── Title ──
         const MAX_TITLE_CHARS = 52;
         const titleWords = titleText.split(' ');
         const titleLines: string[] = [];
@@ -304,30 +304,30 @@ export async function GET(
         }
         if (currentTitleLine) titleLines.push(currentTitleLine.trim());
 
-        const titleFontSize = 38;          // decreased to match site's visual weight (HK Grotesk Bold renders larger)
-        const titleLineHeight = Math.round(titleFontSize * 1.25); // site's leading-tight (1.25)
-        const titleStartY = authorRowY + avatarSize + 28; // below author row with gap matching site's mb-3
-        const titleX = 40;                 // left-aligned with padding, matching site's p-4
+        const titleFontSize = 38;
+        const titleLineHeight = Math.round(titleFontSize * 1.25);
+        const titleStartY = authorRowY + avatarSize + 28;
 
         for (let i = 0; i < titleLines.length; i++) {
             const escapedLine = escapeDrawText(titleLines[i]);
             const nextLabel = `v${labelIndex++}`;
             filters.push(
-                `[${currentLabel}]drawtext=text='${escapedLine}':fontfile='${fontBold}':fontsize=${titleFontSize}:fontcolor=white:` +
-                `x=${titleX}:y=${titleStartY + i * titleLineHeight}:shadowcolor=black@0.8:shadowx=2:shadowy=2[${nextLabel}]`
+                `[${currentLabel}]drawtext=text=${escapedLine}:fontfile=${fontBold}:fontsize=${titleFontSize}:fontcolor=white:` +
+                `x=40:y=${titleStartY + i * titleLineHeight}:shadowcolor=black@0.8:shadowx=2:shadowy=2[${nextLabel}]`
             );
             currentLabel = nextLabel;
         }
 
-        // ── Subtitles: single tier (matching original working approach) ──
+        // ── Subtitles — commas in enable= are backslash-escaped, no quote wrapping ──
         for (let i = 0; i < subtitles.length; i++) {
             const sub = subtitles[i];
             const escapedText = escapeDrawText(sub.text);
+            const tStart = sub.startTime.toFixed(2);
+            const tEnd = sub.endTime.toFixed(2);
             const nextLabel = `v${labelIndex++}`;
             filters.push(
-                `[${currentLabel}]drawtext=text='${escapedText}':fontfile='${fontRegular}':fontsize=36:fontcolor=white:` +
-                `x=40:y=h-210:` +
-                `enable='between(t,${sub.startTime.toFixed(2)},${sub.endTime.toFixed(2)})':` +
+                `[${currentLabel}]drawtext=text=${escapedText}:fontfile=${fontRegular}:fontsize=36:fontcolor=white:` +
+                `x=40:y=h-210:enable=between(t\\,${tStart}\\,${tEnd}):` +
                 `shadowcolor=black@0.9:shadowx=2:shadowy=2[${nextLabel}]`
             );
             currentLabel = nextLabel;
