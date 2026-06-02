@@ -202,9 +202,7 @@ export async function GET(
 
         const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration, 8);
 
-        // ── Render static frame with sharp (replaces drawtext which isn't available) ──
-        const fontBold = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-bold-webfont.ttf');
-        const fontRegular = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-regular-webfont.ttf');
+        // ── Render background frame with sharp (hero + gradients + avatar, no text) ──
         const fontsDir = join(process.cwd(), 'public/fonts/hkgrotesk');
 
         // Compute timestamp text
@@ -224,20 +222,15 @@ export async function GET(
         const frameBuffer = await renderFrame({
             heroPath,
             avatarPath: hasAvatar ? avatarPath : undefined,
-            title: titleText,
-            authorName: 'Me',
-            timestamp: timeAgo,
-            fontBoldPath: fontBold,
-            fontRegularPath: fontRegular,
         });
         await fs.writeFile(framePath, frameBuffer);
         console.log(`[Video] Frame rendered: ${frameBuffer.length} bytes`);
 
-        // ── Generate ASS subtitle file ──
-        const assContent = generateAssSubtitles(subtitles, totalDuration);
+        // ── Generate ASS subtitle file (ALL text — title, author, timestamp + timed subs) ──
+        const assContent = generateAssSubtitles(subtitles, totalDuration, titleText, 'Me', timeAgo, hasAvatar);
         const assPath = join(workDir, 'subtitles.ass');
         await fs.writeFile(assPath, assContent, 'utf-8');
-        console.log(`[Video] ASS subtitles written: ${subtitles.length} entries`);
+        console.log(`[Video] ASS subtitles written: ${subtitles.length} timed entries + 3 static`);
 
         // ── Create fontconfig config for Lambda (no system fontconfig) ──
         const fontconfigPath = join(workDir, 'fonts.conf');

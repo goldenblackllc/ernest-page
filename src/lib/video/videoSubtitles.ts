@@ -124,11 +124,19 @@ function formatAssTime(seconds: number): string {
 export function generateAssSubtitles(
     entries: SubtitleEntry[],
     totalDuration: number,
+    title: string,
+    authorName: string,
+    timestamp: string,
+    hasAvatar: boolean,
 ): string {
-    // ASS uses PlayResX/PlayResY for layout coordinates
-    // We use 1080x1920 to match the video resolution
+    const totalEnd = formatAssTime(totalDuration);
+    // Author text x-position depends on avatar presence (avatar is 80px + 20px gap)
+    const authorMarginL = hasAvatar ? 140 : 40;
+
+    // ASS uses PlayResX/PlayResY for layout coordinates — match 1080×1920 video
+    // Alignment codes: 7=top-left, 8=top-center, 9=top-right, 1=bot-left, 2=bot-center
     const header = `[Script Info]
-Title: Earnest Page Subtitles
+Title: Earnest Page Video
 ScriptType: v4.00+
 PlayResX: 1080
 PlayResY: 1920
@@ -136,21 +144,40 @@ WrapStyle: 0
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Sub,HK Grotesk,54,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,210
+Style: Author,HK Grotesk,34,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,0,2,7,${authorMarginL},40,60
+Style: Timestamp,HK Grotesk,24,&H80FFFFFF,&H80FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,1,7,${authorMarginL},40,95
+Style: Title,HK Grotesk,38,&H00FFFFFF,&H00FFFFFF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,0,3,7,40,40,160
+Style: Sub,HK Grotesk,54,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,180
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
 
-    const events = entries.map(entry => {
+    const events: string[] = [];
+
+    // Static text — visible for entire video
+    const escapedAuthor = escapeAss(authorName);
+    const escapedTimestamp = escapeAss(timestamp);
+    const escapedTitle = escapeAss(title);
+
+    events.push(`Dialogue: 0,0:00:00.00,${totalEnd},Author,,0,0,0,,${escapedAuthor}`);
+    events.push(`Dialogue: 0,0:00:00.00,${totalEnd},Timestamp,,0,0,0,,${escapedTimestamp}`);
+    events.push(`Dialogue: 0,0:00:00.00,${totalEnd},Title,,0,0,0,,${escapedTitle}`);
+
+    // Timed subtitles
+    for (const entry of entries) {
         const start = formatAssTime(entry.startTime);
         const end = formatAssTime(entry.endTime);
-        // Escape ASS special characters
-        const text = entry.text
-            .replace(/\\/g, '\\\\')
-            .replace(/\{/g, '\\{')
-            .replace(/\}/g, '\\}');
-        return `Dialogue: 0,${start},${end},Sub,,0,0,0,,${text}`;
-    });
+        const text = escapeAss(entry.text);
+        events.push(`Dialogue: 0,${start},${end},Sub,,0,0,0,,${text}`);
+    }
 
     return header + '\n' + events.join('\n') + '\n';
+}
+
+/** Escape ASS special characters */
+function escapeAss(text: string): string {
+    return text
+        .replace(/\\/g, '\\\\')
+        .replace(/\{/g, '\\{')
+        .replace(/\}/g, '\\}');
 }
