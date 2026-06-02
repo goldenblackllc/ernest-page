@@ -119,12 +119,18 @@ export async function GET(
                     if (avatarRes.ok) {
                         await fs.writeFile(avatarPath, Buffer.from(await avatarRes.arrayBuffer()));
                         hasAvatar = true;
+                        const avatarStat = await fs.stat(avatarPath);
+                        console.log(`[Video] Avatar downloaded: ${avatarStat.size} bytes`);
                     }
                 }
             } catch (e: any) {
                 console.log('[Video] Failed to download avatar:', e.message);
             }
         }
+        // TEMP: force no avatar to binary-search ffmpeg failure
+        console.log(`[Video] hasAvatar before override: ${hasAvatar}`);
+        hasAvatar = false;
+        console.log('[Video] hasAvatar forced to false for diagnostic');
 
         // ── Get audio durations via ffmpeg ──
         // Turbopack rewrites require() and require.resolve() paths at bundle time.
