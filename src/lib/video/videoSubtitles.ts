@@ -37,7 +37,7 @@ export function escapeDrawText(text: string): string {
     // 2. Escape backslash first (so later replacements don't double-escape)
     s = s.split('\\').join('\\\\');
     // 3. Escape filter graph special characters
-    s = s.split("'").join("\\'");
+    s = s.split("'").join('\u2019');  // ' → \u2019 (Unicode right single quote — NOT ASCII 0x27, invisible to ffmpeg option parser)
     s = s.split(':').join('\\:');
     s = s.split(';').join('\\;');
     s = s.split('[').join('\\[');
