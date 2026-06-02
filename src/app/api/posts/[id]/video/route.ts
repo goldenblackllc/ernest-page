@@ -212,19 +212,27 @@ export async function GET(
         let currentLabel = 'bg';
         let labelIndex = 0;
 
-        // ── Smooth gradient overlay (matching site's from-black/70 via-transparent to-black/80) ──
-        // Single geq expression computes per-pixel alpha — no banding.
-        //   Top (y 0→350):    black at 70% → 0% opacity
-        //   Middle:           fully transparent
-        //   Bottom (y 1600→1920): black at 0% → 80% opacity
-        filters.push(
-            'color=black:s=1080x1920,format=yuva420p,' +
-            'geq=lum=0:cb=128:cr=128:' +
-            'a=if(lt(Y\\,350)\\,178*(350-Y)/350\\,if(gt(Y\\,1600)\\,204*(Y-1600)/320\\,0))[grad]'
-        );
-        const gradLabel = `v${labelIndex++}`;
-        filters.push(`[${currentLabel}][grad]overlay=0:0:format=auto[${gradLabel}]`);
-        currentLabel = gradLabel;
+        // ── Smooth gradient overlay using fine drawbox strips (15px each) ──
+        // Top: y=0→350, black fading from 70%→0% opacity
+        const topH = 350;
+        const topStripH = 15;
+        for (let y = 0; y < topH; y += topStripH) {
+            const alpha = 0.70 * (1 - y / topH);
+            if (alpha < 0.01) break;
+            const nextLabel = `v${labelIndex++}`;
+            filters.push(`[${currentLabel}]drawbox=x=0:y=${y}:w=iw:h=${topStripH}:color=black@${alpha.toFixed(3)}:t=fill[${nextLabel}]`);
+            currentLabel = nextLabel;
+        }
+        // Bottom: y=1600→1920, black fading from 0%→80% opacity
+        const botStart = 1600;
+        const botH = 320;
+        for (let y = botStart; y < 1920; y += topStripH) {
+            const alpha = 0.80 * ((y - botStart) / botH);
+            if (alpha < 0.01) continue;
+            const nextLabel = `v${labelIndex++}`;
+            filters.push(`[${currentLabel}]drawbox=x=0:y=${y}:w=iw:h=${topStripH}:color=black@${alpha.toFixed(3)}:t=fill[${nextLabel}]`);
+            currentLabel = nextLabel;
+        }
 
         // ── Author row: avatar + "Me" + timestamp (matching the site's short card header) ──
         const avatarSize = 90;          // site's w-9 (36px) × 2.57 scale ≈ 93 → round to 90
@@ -232,17 +240,13 @@ export async function GET(
         let authorTextX = 40;           // default if no avatar
 
         if (hasAvatar) {
-            // Circular avatar: scale + crop to square, convert to yuva, mask with circle via geq
-            const ac = avatarSize / 2;   // center = 45
-            const ar2 = (ac - 1) * (ac - 1); // radius² = 44² = 1936 (1px inset for clean edge)
+            // Square avatar overlay (keeps it simple and avoids geq compatibility issues)
             filters.push(
                 `[2:v]scale=${avatarSize}:${avatarSize}:force_original_aspect_ratio=increase,` +
-                `crop=${avatarSize}:${avatarSize},format=yuva420p,` +
-                'geq=lum=lum(X\\,Y):cb=cb(X\\,Y):cr=cr(X\\,Y):' +
-                'a=if(lt((X-' + ac + ')*(X-' + ac + ')+(Y-' + ac + ')*(Y-' + ac + ')\\,' + ar2 + ')\\,255\\,0)[avatar_circle]'
+                `crop=${avatarSize}:${avatarSize},format=yuva420p[avatar_sq]`
             );
             const nextLabel = `v${labelIndex++}`;
-            filters.push(`[${currentLabel}][avatar_circle]overlay=40:${authorRowY}[${nextLabel}]`);
+            filters.push(`[${currentLabel}][avatar_sq]overlay=40:${authorRowY}[${nextLabel}]`);
             currentLabel = nextLabel;
             authorTextX = 40 + avatarSize + 26; // right of avatar with gap (site's gap-2.5 × 2.57)
         }
@@ -341,6 +345,11 @@ export async function GET(
         // ── Run ffmpeg ──
         const filterComplex = filters.join(';');
 
+        // Diagnostic logging
+        const quoteCount = (filterComplex.match(/'/g) || []).length;
+        console.log(`[Video] filter_complex: ${filterComplex.length} chars, ${quoteCount} single quotes (should be even: ${quoteCount % 2 === 0})`);
+        console.log(`[Video] filter_complex HEAD: ${filterComplex.substring(0, 400)}`);
+        console.log(`[Video] filter_complex TAIL: ${filterComplex.substring(filterComplex.length - 400)}`);
         console.log('[Video] Running ffmpeg...');
         const ffmpegArgs: string[] = [
             '-y',
