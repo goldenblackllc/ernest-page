@@ -35,7 +35,7 @@ function chunkText(text: string, wordsPerChunk = 12): string[] {
 export function escapeDrawText(text: string): string {
     return text
         .replace(/\\/g, () => '\\\\')        // backslash → literal backslash
-        .replace(/'/g, () => "'\\''")        // single quote → break string, escaped quote, resume string ('\'')
+        .replace(/'/g, '\u2019')             // apostrophe → Unicode right single quote (avoids ffmpeg filter quoting issues)
         .replace(/%/g, () => '%%')           // percent → escaped percent (drawtext expansion)
         .replace(/\n/g, () => ' ');          // newlines → space
 }
@@ -53,12 +53,13 @@ export function generateSubtitles(
     letterText: string,
     responseText: string,
     letterDuration: number,
-    responseDuration: number
+    responseDuration: number,
+    wordsPerChunk = 12
 ): SubtitleEntry[] {
     const entries: SubtitleEntry[] = [];
 
     // Letter subtitles
-    const letterChunks = chunkText(letterText);
+    const letterChunks = chunkText(letterText, wordsPerChunk);
     if (letterChunks.length > 0 && letterDuration > 0) {
         const chunkDuration = letterDuration / letterChunks.length;
         for (let i = 0; i < letterChunks.length; i++) {
@@ -72,7 +73,7 @@ export function generateSubtitles(
     }
 
     // Response subtitles — offset by letter duration
-    const responseChunks = chunkText(responseText.replace(/^THE COUNSEL:\s*/i, ''));
+    const responseChunks = chunkText(responseText.replace(/^THE COUNSEL:\s*/i, ''), wordsPerChunk);
     if (responseChunks.length > 0 && responseDuration > 0) {
         const offset = letterDuration;
         const chunkDuration = responseDuration / responseChunks.length;

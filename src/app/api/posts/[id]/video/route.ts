@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { generateSubtitles, escapeDrawText } from '@/lib/video/videoSubtitles';
+import { formatDistanceToNow } from 'date-fns';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -103,6 +104,28 @@ export async function GET(
             await fs.writeFile(responseAudioPath, Buffer.from(await responseAudioRes.arrayBuffer()));
         }
 
+        // ── Download author avatar from user profile doc ──
+        // author_avatar_url doesn't exist on the post document — it's fetched
+        // from the user's profile at query time by the feed/post APIs.
+        const avatarPath = join(workDir, 'avatar.jpg');
+        let hasAvatar = false;
+        const authorId = post.authorId || post.uid;
+        if (authorId) {
+            try {
+                const authorDoc = await db.collection('users').doc(authorId).get();
+                const avatarUrl = authorDoc.data()?.character_bible?.compiled_output?.avatar_url;
+                if (avatarUrl) {
+                    const avatarRes = await fetch(avatarUrl);
+                    if (avatarRes.ok) {
+                        await fs.writeFile(avatarPath, Buffer.from(await avatarRes.arrayBuffer()));
+                        hasAvatar = true;
+                    }
+                }
+            } catch (e: any) {
+                console.log('[Video] Failed to download avatar:', e.message);
+            }
+        }
+
         // ── Get audio durations via ffmpeg ──
         // Turbopack rewrites require() and require.resolve() paths at bundle time.
         // Construct the real path manually from process.cwd().
@@ -174,7 +197,7 @@ export async function GET(
         const responseText = post.public_post?.response || post.response || '';
         const titleText = post.public_post?.title || post.title || '';
 
-        const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration);
+        const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration, 8);
 
         // Resolve font path — use the TTF files in public/fonts
         const fontBold = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-bold-webfont.ttf');
@@ -183,26 +206,76 @@ export async function GET(
         // Build drawtext filter chain — designed to match the site's short card UI
         const filters: string[] = [];
 
-        // Scale image to 1080x1350 (4:5 portrait) and set pixel format
-        filters.push('[0:v]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,format=yuv420p[bg]');
+        // Scale image to 1080x1920 (9:16 portrait — standard for TikTok/Reels/Shorts) and set pixel format
+        filters.push('[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[bg]');
 
         let currentLabel = 'bg';
         let labelIndex = 0;
 
-        // ── Top gradient: dark fade from top (matching site's from-black/70 via-transparent) ──
-        // Use a solid box but only 280px — it reads as a gradient at the boundary
-        const nextLabelTopGrad = `v${labelIndex++}`;
-        filters.push(`[${currentLabel}]drawbox=x=0:y=0:w=iw:h=280:color=black@0.65:t=fill[${nextLabelTopGrad}]`);
-        currentLabel = nextLabelTopGrad;
+        // ── Smooth gradient overlay (matching site's from-black/70 via-transparent to-black/80) ──
+        // Single geq expression computes per-pixel alpha — no banding.
+        //   Top (y 0→350):    black at 70% → 0% opacity
+        //   Middle:           fully transparent
+        //   Bottom (y 1600→1920): black at 0% → 80% opacity
+        filters.push(
+            'color=black:s=1080x1920,format=yuva420p,' +
+            'geq=lum=0:cb=128:cr=128:' +
+            'a=if(lt(Y\\,350)\\,178*(350-Y)/350\\,if(gt(Y\\,1600)\\,204*(Y-1600)/320\\,0))[grad]'
+        );
+        const gradLabel = `v${labelIndex++}`;
+        filters.push(`[${currentLabel}][grad]overlay=0:0:format=auto[${gradLabel}]`);
+        currentLabel = gradLabel;
 
-        // ── Bottom gradient: dark fade from bottom (matching site's to-black/80) ──
-        const nextLabelBottomGrad = `v${labelIndex++}`;
-        filters.push(`[${currentLabel}]drawbox=x=0:y=h-320:w=iw:h=320:color=black@0.75:t=fill[${nextLabelBottomGrad}]`);
-        currentLabel = nextLabelBottomGrad;
+        // ── Author row: avatar + "Me" + timestamp (matching the site's short card header) ──
+        const avatarSize = 90;          // site's w-9 (36px) × 2.57 scale ≈ 93 → round to 90
+        const authorRowY = 42;          // site's p-4 (16px) × 2.57 ≈ 41 → use 42
+        let authorTextX = 40;           // default if no avatar
 
-        // ── Title: LEFT-ALIGNED at top, matching site card (x=40, y=110 — below author area) ──
-        // Word-wrap at ~32 chars so lines stay within the 1080px frame
-        const MAX_TITLE_CHARS = 32;
+        if (hasAvatar) {
+            // Circular avatar: scale + crop to square, convert to yuva, mask with circle via geq
+            const ac = avatarSize / 2;   // center = 45
+            const ar2 = (ac - 1) * (ac - 1); // radius² = 44² = 1936 (1px inset for clean edge)
+            filters.push(
+                `[2:v]scale=${avatarSize}:${avatarSize}:force_original_aspect_ratio=increase,` +
+                `crop=${avatarSize}:${avatarSize},format=yuva420p,` +
+                'geq=lum=lum(X\\,Y):cb=cb(X\\,Y):cr=cr(X\\,Y):' +
+                'a=if(lt((X-' + ac + ')*(X-' + ac + ')+(Y-' + ac + ')*(Y-' + ac + ')\\,' + ar2 + ')\\,255\\,0)[avatar_circle]'
+            );
+            const nextLabel = `v${labelIndex++}`;
+            filters.push(`[${currentLabel}][avatar_circle]overlay=40:${authorRowY}[${nextLabel}]`);
+            currentLabel = nextLabel;
+            authorTextX = 40 + avatarSize + 26; // right of avatar with gap (site's gap-2.5 × 2.57)
+        }
+
+        // "Me" label — matches site's text-sm font-semibold text-white/90
+        const meLabel = `v${labelIndex++}`;
+        filters.push(
+            `[${currentLabel}]drawtext=text='Me':fontfile='${fontBold}':fontsize=34:fontcolor=white@0.9:` +
+            `x=${authorTextX}:y=${authorRowY + 10}:shadowcolor=black@0.5:shadowx=1:shadowy=1[${meLabel}]`
+        );
+        currentLabel = meLabel;
+
+        // Timestamp — matches site's text-[10px] text-white/50
+        const postCreatedAt = post.created_at;
+        let createdDate: Date;
+        if (postCreatedAt?.toDate) {
+            createdDate = postCreatedAt.toDate();
+        } else if (postCreatedAt?._seconds) {
+            createdDate = new Date(postCreatedAt._seconds * 1000);
+        } else {
+            createdDate = new Date();
+        }
+        const timeAgo = formatDistanceToNow(createdDate, { addSuffix: true });
+        const timeLabel = `v${labelIndex++}`;
+        filters.push(
+            `[${currentLabel}]drawtext=text='${escapeDrawText(timeAgo)}':fontfile='${fontRegular}':fontsize=24:fontcolor=white@0.5:` +
+            `x=${authorTextX}:y=${authorRowY + 50}:shadowcolor=black@0.3:shadowx=1:shadowy=1[${timeLabel}]`
+        );
+        currentLabel = timeLabel;
+
+        // ── Title: LEFT-ALIGNED below author row, matching site card ──
+        // Word-wrap at ~52 chars so wrapping matches the site's 2-line layout at 1080px
+        const MAX_TITLE_CHARS = 52;
         const titleWords = titleText.split(' ');
         const titleLines: string[] = [];
         let currentTitleLine = '';
@@ -216,10 +289,10 @@ export async function GET(
         }
         if (currentTitleLine) titleLines.push(currentTitleLine.trim());
 
-        const titleFontSize = 46;
-        const titleLineHeight = titleFontSize + 8;
-        const titleStartY = 110; // leaves room for author avatar/name above
-        const titleX = 40;       // left-aligned with padding, matching site's p-4
+        const titleFontSize = 38;          // decreased to match site's visual weight (HK Grotesk Bold renders larger)
+        const titleLineHeight = Math.round(titleFontSize * 1.25); // site's leading-tight (1.25)
+        const titleStartY = authorRowY + avatarSize + 28; // below author row with gap matching site's mb-3
+        const titleX = 40;                 // left-aligned with padding, matching site's p-4
 
         for (let i = 0; i < titleLines.length; i++) {
             const escapedLine = escapeDrawText(titleLines[i]);
@@ -269,11 +342,16 @@ export async function GET(
         const filterComplex = filters.join(';');
 
         console.log('[Video] Running ffmpeg...');
-        const ffmpegResult = spawnSync(ffmpegPath, [
+        const ffmpegArgs: string[] = [
             '-y',
             '-loop', '1',
-            '-i', heroPath,
-            '-i', combinedAudioPath,
+            '-i', heroPath,          // [0:v] hero image
+            '-i', combinedAudioPath, // [1:a] audio
+        ];
+        if (hasAvatar) {
+            ffmpegArgs.push('-loop', '1', '-i', avatarPath); // [2:v] avatar
+        }
+        ffmpegArgs.push(
             '-filter_complex', filterComplex,
             '-map', `[${currentLabel}]`,
             '-map', '1:a',
@@ -286,7 +364,8 @@ export async function GET(
             '-movflags', '+faststart',
             '-pix_fmt', 'yuv420p',
             outputPath,
-        ], { timeout: 90000 });
+        );
+        const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, { timeout: 90000 });
 
         if (ffmpegResult.status !== 0) {
             const fullStderr = (ffmpegResult.stderr || '').toString();
