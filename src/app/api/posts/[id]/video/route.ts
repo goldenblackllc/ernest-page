@@ -234,6 +234,19 @@ export async function GET(
                 console.log(`[Video] filter[${i}]: ${f.substring(0, 200)}`);
             }
         });
+        console.log('[Video] Checking ffmpeg capabilities...');
+        const capCheck = spawnSync(ffmpegPath, ['-filters'], { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 });
+        const hasDrawtext = (capCheck.stdout || '').includes('drawtext');
+        console.log(`[Video] drawtext filter available: ${hasDrawtext}`);
+        if (!hasDrawtext) {
+            // Log all filters containing 'draw'
+            const drawFilters = (capCheck.stdout || '').split('\n').filter((l: string) => l.includes('draw'));
+            console.log(`[Video] draw-related filters: ${JSON.stringify(drawFilters)}`);
+        }
+        // Log ffmpeg build config
+        const configCheck = spawnSync(ffmpegPath, ['-version'], { encoding: 'utf8' });
+        const configLine = (configCheck.stdout || '').split('\n').find((l: string) => l.includes('configuration:'));
+        console.log(`[Video] ffmpeg config: ${configLine}`);
         console.log('[Video] Running ffmpeg...');
         const ffmpegArgs: string[] = [
             '-y',
