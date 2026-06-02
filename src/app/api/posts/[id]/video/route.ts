@@ -210,124 +210,12 @@ export async function GET(
         console.log(`[Video] fontBold exists: ${boldExists} (size: ${boldExists ? statSyncFonts(fontBold).size : 0}) at ${fontBold}`);
         console.log(`[Video] fontRegular exists: ${regExists} (size: ${regExists ? statSyncFonts(fontRegular).size : 0}) at ${fontRegular}`);
 
-        // Build drawtext filter chain — designed to match the site's short card UI
+        // Build drawtext filter chain — MINIMAL TEST
         const filters: string[] = [];
-
-        // Scale image to 1080x1920 (9:16 portrait)
         filters.push('[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[bg]');
-
-        let currentLabel = 'bg';
-        let labelIndex = 0;
-
-        // ── Gradient overlay using drawbox strips (40px each) ──
-        const topH = 350;
-        const topStripH = 40;
-        for (let y = 0; y < topH; y += topStripH) {
-            const alpha = 0.70 * (1 - y / topH);
-            if (alpha < 0.01) break;
-            const nextLabel = `v${labelIndex++}`;
-            filters.push(`[${currentLabel}]drawbox=x=0:y=${y}:w=iw:h=${topStripH}:color=black@${alpha.toFixed(3)}:t=fill[${nextLabel}]`);
-            currentLabel = nextLabel;
-        }
-        const botStart = 1600;
-        const botH = 320;
-        for (let y = botStart; y < 1920; y += topStripH) {
-            const alpha = 0.80 * ((y - botStart) / botH);
-            if (alpha < 0.01) continue;
-            const nextLabel = `v${labelIndex++}`;
-            filters.push(`[${currentLabel}]drawbox=x=0:y=${y}:w=iw:h=${topStripH}:color=black@${alpha.toFixed(3)}:t=fill[${nextLabel}]`);
-            currentLabel = nextLabel;
-        }
-
-        // ── Author row ──
-        const avatarSize = 90;
-        const authorRowY = 42;
-        let authorTextX = 40;
-
-        if (hasAvatar) {
-            filters.push(
-                `[2:v]scale=${avatarSize}:${avatarSize}:force_original_aspect_ratio=increase,` +
-                `crop=${avatarSize}:${avatarSize},format=yuva420p[avatar_sq]`
-            );
-            const nextLabel = `v${labelIndex++}`;
-            filters.push(`[${currentLabel}][avatar_sq]overlay=40:${authorRowY}[${nextLabel}]`);
-            currentLabel = nextLabel;
-            authorTextX = 40 + avatarSize + 26;
-        }
-
-        // NOTE: NO single-quote wrapping anywhere below — use backslash escaping only.
-        // Single-quote wrapping is broken on the Linux static ffmpeg 7.0.2 build when
-        // text contains commas (treated as filter separators by the option parser).
-
-        // "Me" label
-        const meLabel = `v${labelIndex++}`;
-        filters.push(
-            `[${currentLabel}]drawtext=text=Me:fontfile=${fontBold}:fontsize=34:fontcolor=white@0.9:` +
-            `x=${authorTextX}:y=${authorRowY + 10}:shadowcolor=black@0.5:shadowx=1:shadowy=1[${meLabel}]`
-        );
-        currentLabel = meLabel;
-
-        // Timestamp
-        const postCreatedAt = post.created_at;
-        let createdDate: Date;
-        if (postCreatedAt?.toDate) {
-            createdDate = postCreatedAt.toDate();
-        } else if (postCreatedAt?._seconds) {
-            createdDate = new Date(postCreatedAt._seconds * 1000);
-        } else {
-            createdDate = new Date();
-        }
-        const timeAgo = formatDistanceToNow(createdDate, { addSuffix: true });
-        const timeLabel = `v${labelIndex++}`;
-        filters.push(
-            `[${currentLabel}]drawtext=text=${escapeDrawText(timeAgo)}:fontfile=${fontRegular}:fontsize=24:fontcolor=white@0.5:` +
-            `x=${authorTextX}:y=${authorRowY + 50}:shadowcolor=black@0.3:shadowx=1:shadowy=1[${timeLabel}]`
-        );
-        currentLabel = timeLabel;
-
-        // ── Title ──
-        const MAX_TITLE_CHARS = 52;
-        const titleWords = titleText.split(' ');
-        const titleLines: string[] = [];
-        let currentTitleLine = '';
-        for (const word of titleWords) {
-            if (currentTitleLine.length + word.length + 1 > MAX_TITLE_CHARS && currentTitleLine.length > 0) {
-                titleLines.push(currentTitleLine.trim());
-                currentTitleLine = word;
-            } else {
-                currentTitleLine += (currentTitleLine ? ' ' : '') + word;
-            }
-        }
-        if (currentTitleLine) titleLines.push(currentTitleLine.trim());
-
-        const titleFontSize = 38;
-        const titleLineHeight = Math.round(titleFontSize * 1.25);
-        const titleStartY = authorRowY + avatarSize + 28;
-
-        for (let i = 0; i < titleLines.length; i++) {
-            const escapedLine = escapeDrawText(titleLines[i]);
-            const nextLabel = `v${labelIndex++}`;
-            filters.push(
-                `[${currentLabel}]drawtext=text=${escapedLine}:fontfile=${fontBold}:fontsize=${titleFontSize}:fontcolor=white:` +
-                `x=40:y=${titleStartY + i * titleLineHeight}:shadowcolor=black@0.8:shadowx=2:shadowy=2[${nextLabel}]`
-            );
-            currentLabel = nextLabel;
-        }
-
-        // ── Subtitles — commas in enable= are backslash-escaped, no quote wrapping ──
-        for (let i = 0; i < subtitles.length; i++) {
-            const sub = subtitles[i];
-            const escapedText = escapeDrawText(sub.text);
-            const tStart = sub.startTime.toFixed(2);
-            const tEnd = sub.endTime.toFixed(2);
-            const nextLabel = `v${labelIndex++}`;
-            filters.push(
-                `[${currentLabel}]drawtext=text=${escapedText}:fontfile=${fontRegular}:fontsize=36:fontcolor=white:` +
-                `x=40:y=h-210:enable=between(t\\,${tStart}\\,${tEnd}):` +
-                `shadowcolor=black@0.9:shadowx=2:shadowy=2[${nextLabel}]`
-            );
-            currentLabel = nextLabel;
-        }
+        filters.push('[bg]drawbox=x=0:y=h-280:w=iw:h=280:color=black@0.5:t=fill[v0]');
+        filters.push(`[v0]drawtext=text=Hello:fontfile=${fontBold}:fontsize=48:fontcolor=white:x=40:y=40[v1]`);
+        const currentLabel = 'v1';
 
         // ── Run ffmpeg ──
         const filterComplex = filters.join(';');
