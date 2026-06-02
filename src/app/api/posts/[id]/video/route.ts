@@ -261,7 +261,7 @@ export async function GET(
             '-map', `[${currentLabel}]`,
             '-map', '1:a',
             '-c:v', 'libx264',
-            '-preset', 'fast',
+            '-preset', 'ultrafast',
             '-crf', '23',
             '-c:a', 'aac',
             '-b:a', '128k',
@@ -270,7 +270,7 @@ export async function GET(
             '-pix_fmt', 'yuv420p',
             outputPath,
         );
-        const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, { timeout: 90000, maxBuffer: 50 * 1024 * 1024 });
+        const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, { timeout: 110000, maxBuffer: 50 * 1024 * 1024 });
 
         if (ffmpegResult.status !== 0) {
             const fullStderr = (ffmpegResult.stderr || '').toString();
