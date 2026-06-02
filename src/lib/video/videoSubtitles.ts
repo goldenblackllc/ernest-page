@@ -99,3 +99,58 @@ export function generateSubtitles(
 
     return entries;
 }
+
+/**
+ * Format seconds as ASS timestamp: H:MM:SS.CC (centiseconds)
+ */
+function formatAssTime(seconds: number): string {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const cs = Math.round((seconds % 1) * 100);
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+}
+
+/**
+ * Generate ASS (Advanced SubStation Alpha) subtitle file content.
+ * 
+ * Uses ffmpeg's `ass` filter (confirmed available) instead of `drawtext`
+ * (which is NOT available in the ffmpeg-static Linux binary on Vercel).
+ *
+ * @param entries Subtitle entries from generateSubtitles()
+ * @param totalDuration Total video duration in seconds
+ * @returns ASS file content as a string
+ */
+export function generateAssSubtitles(
+    entries: SubtitleEntry[],
+    totalDuration: number,
+): string {
+    // ASS uses PlayResX/PlayResY for layout coordinates
+    // We use 1080x1920 to match the video resolution
+    const header = `[Script Info]
+Title: Earnest Page Subtitles
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Sub,HK Grotesk,36,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,210
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
+
+    const events = entries.map(entry => {
+        const start = formatAssTime(entry.startTime);
+        const end = formatAssTime(entry.endTime);
+        // Escape ASS special characters
+        const text = entry.text
+            .replace(/\\/g, '\\\\')
+            .replace(/\{/g, '\\{')
+            .replace(/\}/g, '\\}');
+        return `Dialogue: 0,${start},${end},Sub,,0,0,0,,${text}`;
+    });
+
+    return header + '\n' + events.join('\n') + '\n';
+}

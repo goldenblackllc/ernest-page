@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
-import { generateSubtitles, escapeDrawText } from '@/lib/video/videoSubtitles';
+import { generateSubtitles, generateAssSubtitles } from '@/lib/video/videoSubtitles';
+import { renderFrame } from '@/lib/video/renderFrame';
 import { formatDistanceToNow } from 'date-fns';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
@@ -194,71 +195,62 @@ export async function GET(
             await fs.copyFile(letterAudioPath, combinedAudioPath);
         }
 
-        // ── Build subtitle drawtext filters ──
+        // ── Prepare text content ──
         const letterText = post.public_post?.letter || post.letter || '';
         const responseText = post.public_post?.response || post.response || '';
         const titleText = post.public_post?.title || post.title || '';
 
         const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration, 8);
 
-        // Resolve font path — use the TTF files in public/fonts
+        // ── Render static frame with sharp (replaces drawtext which isn't available) ──
         const fontBold = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-bold-webfont.ttf');
         const fontRegular = join(process.cwd(), 'public/fonts/hkgrotesk/hkgrotesk-regular-webfont.ttf');
-        const { existsSync: existsSyncFonts, statSync: statSyncFonts } = require('fs');
-        const boldExists = existsSyncFonts(fontBold);
-        const regExists = existsSyncFonts(fontRegular);
-        console.log(`[Video] fontBold exists: ${boldExists} (size: ${boldExists ? statSyncFonts(fontBold).size : 0}) at ${fontBold}`);
-        console.log(`[Video] fontRegular exists: ${regExists} (size: ${regExists ? statSyncFonts(fontRegular).size : 0}) at ${fontRegular}`);
+        const fontsDir = join(process.cwd(), 'public/fonts/hkgrotesk');
 
-        // Build filter chain — NO drawtext (not available in this ffmpeg build)
-        const filters: string[] = [];
-        filters.push('[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[bg]');
-        filters.push('[bg]drawbox=x=0:y=0:w=iw:h=300:color=black@0.6:t=fill[v0]');
-        filters.push('[v0]drawbox=x=0:y=h-280:w=iw:h=280:color=black@0.5:t=fill[v1]');
-        const currentLabel = 'v1';
+        // Compute timestamp text
+        const postCreatedAt = post.created_at;
+        let createdDate: Date;
+        if (postCreatedAt?.toDate) {
+            createdDate = postCreatedAt.toDate();
+        } else if (postCreatedAt?._seconds) {
+            createdDate = new Date(postCreatedAt._seconds * 1000);
+        } else {
+            createdDate = new Date();
+        }
+        const timeAgo = formatDistanceToNow(createdDate, { addSuffix: true });
+
+        console.log('[Video] Rendering frame with sharp...');
+        const framePath = join(workDir, 'frame.png');
+        const frameBuffer = await renderFrame({
+            heroPath,
+            avatarPath: hasAvatar ? avatarPath : undefined,
+            title: titleText,
+            authorName: 'Me',
+            timestamp: timeAgo,
+            fontBoldPath: fontBold,
+            fontRegularPath: fontRegular,
+        });
+        await fs.writeFile(framePath, frameBuffer);
+        console.log(`[Video] Frame rendered: ${frameBuffer.length} bytes`);
+
+        // ── Generate ASS subtitle file ──
+        const assContent = generateAssSubtitles(subtitles, totalDuration);
+        const assPath = join(workDir, 'subtitles.ass');
+        await fs.writeFile(assPath, assContent, 'utf-8');
+        console.log(`[Video] ASS subtitles written: ${subtitles.length} entries`);
 
         // ── Run ffmpeg ──
-        const filterComplex = filters.join(';');
-
-        // Write filter graph to file — avoids ffmpeg argument parser limits
-        const filterScriptPath = join(workDir, 'filter_complex.txt');
-        await fs.writeFile(filterScriptPath, filterComplex, 'utf-8');
-
-        // Diagnostic logging
-        const quoteCount = (filterComplex.match(/'/g) || []).length;
-        console.log(`[Video] filter_complex: ${filterComplex.length} chars, ${quoteCount} single quotes (even: ${quoteCount % 2 === 0})`);
-        console.log(`[Video] filter count: ${filters.length}`);
-        // Log each filter entry so we can identify bad ones
-        filters.forEach((f, i) => {
-            if (f.includes('drawtext') || i < 3) {
-                console.log(`[Video] filter[${i}]: ${f.substring(0, 200)}`);
-            }
-        });
-        console.log('[Video] Checking ffmpeg capabilities...');
-        const capCheck = spawnSync(ffmpegPath, ['-filters'], { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 });
-        const filterList = capCheck.stdout || '';
-        const hasDrawtext = filterList.includes('drawtext');
-        const hasAss = filterList.includes(' ass ') || filterList.includes('T.. ass');
-        const hasSubtitles = filterList.includes('subtitles');
-        const hasOverlay = filterList.includes('overlay');
-        console.log(`[Video] filters: drawtext=${hasDrawtext} ass=${hasAss} subtitles=${hasSubtitles} overlay=${hasOverlay}`);
-        // Log ffmpeg build config
-        const configCheck = spawnSync(ffmpegPath, ['-version'], { encoding: 'utf8' });
-        const configLine = (configCheck.stdout || '').split('\n').find((l: string) => l.includes('configuration:'));
-        console.log(`[Video] ffmpeg config: ${configLine}`);
+        // Input: pre-rendered frame (looped) + audio
+        // Filter: ass subtitles burned in
+        // No drawtext — all static text is baked into the frame by sharp
         console.log('[Video] Running ffmpeg...');
         const ffmpegArgs: string[] = [
             '-y',
             '-loop', '1',
-            '-i', heroPath,          // [0:v] hero image
-            '-i', combinedAudioPath, // [1:a] audio
-        ];
-        if (hasAvatar) {
-            ffmpegArgs.push('-loop', '1', '-i', avatarPath); // [2:v] avatar
-        }
-        ffmpegArgs.push(
-            '-filter_complex', filterComplex,
-            '-map', `[${currentLabel}]`,
+            '-i', framePath,             // [0:v] pre-rendered frame with text
+            '-i', combinedAudioPath,     // [1:a] audio
+            '-filter_complex', `[0:v]ass=${assPath}:fontsdir=${fontsDir}[vout]`,
+            '-map', '[vout]',
             '-map', '1:a',
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
@@ -269,7 +261,7 @@ export async function GET(
             '-movflags', '+faststart',
             '-pix_fmt', 'yuv420p',
             outputPath,
-        );
+        ];
         const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, { timeout: 110000, maxBuffer: 50 * 1024 * 1024 });
 
         if (ffmpegResult.status !== 0) {
