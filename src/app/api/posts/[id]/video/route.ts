@@ -254,14 +254,16 @@ export async function GET(
         const ffmpegArgs: string[] = [
             '-y',
             '-loop', '1',
-            '-i', framePath,             // [0:v] pre-rendered frame with text
-            '-i', combinedAudioPath,     // [1:a] audio
+            '-framerate', '2',               // low input fps (static image)
+            '-i', framePath,                 // [0:v] pre-rendered frame with text
+            '-i', combinedAudioPath,         // [1:a] audio
             '-filter_complex', `[0:v]ass=${assPath}:fontsdir=${fontsDir}[vout]`,
             '-map', '[vout]',
             '-map', '1:a',
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-crf', '23',
+            '-r', '15',                      // output 15fps (smooth enough for subtitle changes)
             '-c:a', 'aac',
             '-b:a', '128k',
             '-t', totalDuration.toFixed(2),
