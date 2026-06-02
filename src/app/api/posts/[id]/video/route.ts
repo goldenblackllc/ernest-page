@@ -239,10 +239,17 @@ export async function GET(
         await fs.writeFile(assPath, assContent, 'utf-8');
         console.log(`[Video] ASS subtitles written: ${subtitles.length} entries`);
 
+        // ── Create fontconfig config for Lambda (no system fontconfig) ──
+        const fontconfigPath = join(workDir, 'fonts.conf');
+        await fs.writeFile(fontconfigPath, `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>${fontsDir}</dir>
+  <cachedir>${workDir}/fc-cache</cachedir>
+</fontconfig>`, 'utf-8');
+        await fs.mkdir(join(workDir, 'fc-cache'), { recursive: true });
+
         // ── Run ffmpeg ──
-        // Input: pre-rendered frame (looped) + audio
-        // Filter: ass subtitles burned in
-        // No drawtext — all static text is baked into the frame by sharp
         console.log('[Video] Running ffmpeg...');
         const ffmpegArgs: string[] = [
             '-y',
@@ -262,7 +269,11 @@ export async function GET(
             '-pix_fmt', 'yuv420p',
             outputPath,
         ];
-        const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, { timeout: 110000, maxBuffer: 50 * 1024 * 1024 });
+        const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, {
+            timeout: 110000,
+            maxBuffer: 50 * 1024 * 1024,
+            env: { ...process.env, FONTCONFIG_FILE: fontconfigPath },
+        });
 
         if (ffmpegResult.status !== 0) {
             const fullStderr = (ffmpegResult.stderr || '').toString();
