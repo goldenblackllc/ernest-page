@@ -42,7 +42,10 @@ export function escapeDrawText(text: string): string {
         .replace(/[^\x00-\x7f]/g, '')                            // strip remaining non-ASCII
         .replace(/\\/g, '\\\\')             // backslash → \\
         .replace(/:/g, '\\:')               // colon → \: (ffmpeg option separator)
+        .replace(/;/g, '\\;')               // semicolon → \; (ffmpeg chain separator)
         .replace(/,/g, '\\,')               // comma → \, (ffmpeg filter separator)
+        .replace(/\[/g, '\\[')              // [ → \[ (ffmpeg stream label)
+        .replace(/]/g, '\\]')               // ] → \] (ffmpeg stream label)
         .replace(/%/g, '%%');               // % → %%
 }
 
