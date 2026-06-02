@@ -37,7 +37,7 @@ export function escapeDrawText(text: string): string {
         .replace(/\\/g, () => '\\\\')        // backslash → literal backslash
         .replace(/'/g, '\u2019')             // apostrophe → Unicode right single quote (avoids ffmpeg filter quoting issues)
         .replace(/%/g, () => '%%')           // percent → escaped percent (drawtext expansion)
-        .replace(/\n/g, () => ' ');          // newlines → space
+        .replace(/[\x00-\x1f\x7f]/g, ' '); // ALL control chars (→ space) — \r, \n, \t, null, etc.
 }
 
 /**

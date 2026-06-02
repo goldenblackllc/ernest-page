@@ -212,10 +212,10 @@ export async function GET(
         let currentLabel = 'bg';
         let labelIndex = 0;
 
-        // ── Smooth gradient overlay using fine drawbox strips (15px each) ──
+        // ── Gradient overlay using drawbox strips (40px each) ──
         // Top: y=0→350, black fading from 70%→0% opacity
         const topH = 350;
-        const topStripH = 15;
+        const topStripH = 40;
         for (let y = 0; y < topH; y += topStripH) {
             const alpha = 0.70 * (1 - y / topH);
             if (alpha < 0.01) break;
@@ -365,7 +365,7 @@ export async function GET(
             ffmpegArgs.push('-loop', '1', '-i', avatarPath); // [2:v] avatar
         }
         ffmpegArgs.push(
-            '-filter_complex_script', filterScriptPath,
+            '-filter_complex', filterComplex,
             '-map', `[${currentLabel}]`,
             '-map', '1:a',
             '-c:v', 'libx264',
