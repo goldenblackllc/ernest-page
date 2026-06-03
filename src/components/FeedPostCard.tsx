@@ -737,16 +737,38 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         const blobUrl = URL.createObjectURL(blob);
                                         const filename = `earnest-page-${post.id}.mp4`;
 
-                                        // Try native share (iOS saves to camera roll)
-                                        if (navigator.share && /iPhone|iPad/i.test(navigator.userAgent)) {
-                                            const file = new File([blob], filename, { type: 'video/mp4' });
-                                            await navigator.share({ files: [file] });
-                                        } else {
-                                            // Desktop / Android — direct download
-                                            const a = document.createElement('a');
-                                            a.href = blobUrl;
-                                            a.download = filename;
-                                            a.click();
+                                        const isIOS = /iPhone|iPad/i.test(navigator.userAgent);
+                                        let shared = false;
+
+                                        // Try native share with file (iOS can save to camera roll)
+                                        if (isIOS && navigator.share) {
+                                            try {
+                                                const file = new File([blob], filename, { type: 'video/mp4' });
+                                                if (navigator.canShare?.({ files: [file] })) {
+                                                    await navigator.share({ files: [file] });
+                                                    shared = true;
+                                                }
+                                            } catch (shareErr: any) {
+                                                // AbortError = user cancelled share sheet, still counts as handled
+                                                if (shareErr?.name === 'AbortError') {
+                                                    shared = true;
+                                                } else {
+                                                    console.warn('Native share failed, using fallback:', shareErr);
+                                                }
+                                            }
+                                        }
+
+                                        if (!shared) {
+                                            if (isIOS) {
+                                                // iOS ignores <a download> — open in new tab so user can long-press to save
+                                                window.open(blobUrl, '_blank');
+                                            } else {
+                                                // Desktop / Android — programmatic download
+                                                const a = document.createElement('a');
+                                                a.href = blobUrl;
+                                                a.download = filename;
+                                                a.click();
+                                            }
                                         }
                                         setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
                                         setVideoToast('Video ready!');

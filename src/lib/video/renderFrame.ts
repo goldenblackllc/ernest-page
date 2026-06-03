@@ -31,9 +31,9 @@ export async function renderFrame(opts: RenderFrameOptions): Promise<Buffer> {
             const avatarB64 = avatarBuf.toString('base64');
             avatarSvg = `
                 <clipPath id="avatarClip">
-                    <circle cx="80" cy="100" r="40"/>
+                    <circle cx="80" cy="140" r="40"/>
                 </clipPath>
-                <image href="data:image/png;base64,${avatarB64}" x="40" y="60" width="80" height="80" clip-path="url(#avatarClip)"/>
+                <image href="data:image/png;base64,${avatarB64}" x="40" y="100" width="80" height="80" clip-path="url(#avatarClip)"/>
             `;
         } catch (e) {
             console.log('[Video] Avatar embed failed, skipping');
