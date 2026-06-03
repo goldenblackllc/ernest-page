@@ -183,9 +183,19 @@ async function processUserChats(
                 languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in PORTUGUESE (Português).";
             }
 
+            // ══════════════════════════════════════════════════════════════
+            // TWO-PASS GHOST-WRITING PIPELINE
+            //
+            // Pass 1: Extract the user's opening tension and write the LETTER.
+            //         The letter is frozen at the user's unresolved state.
+            //         Also: editorial judgment, title, pseudonym, image prompt.
+            //
+            // Pass 2: Write Earnest's RESPONSE, given the generated letter.
+            //         The response delivers the resolution from the conversation.
+            // ══════════════════════════════════════════════════════════════
 
-            // ── Call 1: Post Synthesis (Sonnet — creative writing) ──
-            const postPrompt = `You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received this raw chat transcript between a user (Character B) and their Ideal Self (Character A).
+            // ── Pass 1: Letter + Editorial Judgment + Image (Sonnet) ──
+            const letterPrompt = `You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received this raw chat transcript between a user (Character B) and their Ideal Self (Character A).
 ${languageCommand}
 
 CHARACTER BIBLE:
@@ -199,38 +209,29 @@ Determine if this transcript has "Editorial Value."
 * Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where Character A never draws out a real struggle. If the user never reveals what they actually want or what's in the way, there is no story.
 * Valuable (is_publishable: true): The conversation contains a dramatic arc — the user arrives with a desire or problem, an obstacle surfaces through the dialogue (often the user doesn't even know it's there until they say it), and Character A delivers a reframe or insight. The reader must be able to feel the tension in under 60 seconds.
 
-STEP 2: THE DRAMATIC ARC (If Publishable)
-These conversations follow a specific structure. Before writing anything, identify the three acts:
+STEP 2: WRITE THE LETTER (If Publishable)
+Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
 
-ACT 1 — THE INTENTION: What did the user come in wanting? This is usually in their first 1-2 messages. It is often vague ("I want to be happy", "I don't know what to do about my marriage"). That vagueness is the hook — do NOT resolve it.
+Identify the user's opening state:
+- INTENTION: What did they want? This comes from their first 1-2 messages. It is often vague, muddy, inarticulate — people don't arrive saying "I want happiness but don't know how." They arrive saying "I'm feeling weird today, I don't know, just kind of off."
+- OBSTACLE: What was in the way? This often surfaces in the MIDDLE of the conversation, drawn out by Character A's questioning. Look for the moment the user says something raw or specific that they didn't plan to say.
 
-ACT 2 — THE OBSTACLE: What is actually in the way? This often surfaces in the MIDDLE of the conversation, drawn out by Character A's questioning. The user frequently does not know the obstacle when they arrive — it reveals itself through honest dialogue. Look for the moment the user says something raw or specific that they didn't plan to say. THAT is the obstacle.
+YOUR EDITORIAL MANDATE: Crystallize the user's messy opening into the letter they WOULD have written if they could articulate it that clearly. This is not invention — it is editorial work. Dear Abby letters are edited too. Take the confused, stream-of-consciousness opening and render it as a clean, emotionally honest letter. Preserve the confusion and tension they came in with. Do NOT resolve it.
 
-ACT 3 — THE RESOLUTION: What reframe, insight, or challenge did Character A deliver? This is the turn — the moment the conversation changes the user's understanding.
-
-Output these three acts in the structured fields:
-- act1_intention: One sentence capturing the user's opening desire or problem.
-- act2_obstacle: One sentence capturing the real obstacle that surfaced through dialogue.
-- act3_resolution: One sentence capturing Character A's reframe or insight.
-
-STEP 3: THE SYNTHESIS
-These posts will be read aloud as 60-second audio shorts for TikTok, Instagram Reels, and YouTube Shorts. Every word must earn its place.
-
-- title: Write a curiosity-driven hook title (8-15 words). The viewer should NEED to hear the answer. Combine ACT 1 (intention) and ACT 2 (obstacle) as either a tension statement or a question. The title must present UNRESOLVED tension — NEVER include the resolution. Never use second person. Examples: 'I Want To Be a Good Father But I Keep Choosing Work', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I Don't Like Who I've Become', 'I Want To Be Happy But I Keep Forcing Myself To Show Up'. The title should make someone stop scrolling.
+- title: Write a curiosity-driven hook title (8-15 words). Combine INTENTION and OBSTACLE as unresolved tension. The title must NEVER include the resolution. Never use second person. Examples: 'I Want To Be a Good Father But I Keep Choosing Work', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I Don't Like Who I've Become', 'I Want To Be Happy But I Keep Forcing Myself To Show Up'. The title should make someone stop scrolling.
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
-PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter, response):
+PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 Replace ALL of the following with generic relationship or role labels — NEVER include them verbatim:
   • Real first names, last names, or nicknames of any person → replace with their relationship role (e.g., "Max" → "my friend", "Iris" → "my sister", "John at work" → "my colleague")
   • Specific company or employer names → "my company" or "my workplace"
   • Specific place names (cities, neighborhoods, schools, venues) → "my city", "my school", "my neighborhood"
   • Any identifying details (addresses, phone numbers, email addresses, social media handles)
-If you are unsure whether something is PII, err on the side of removing it. The post must be fully anonymous — a stranger reading it should have no way to identify any real person.
+If you are unsure whether something is PII, err on the side of removing it. The post must be fully anonymous.
 
-- letter: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the letter will be read aloud in ~30 seconds. THE LETTER IS ACTS 1 AND 2 — NEVER ACT 3. STRUCTURE: One sentence stating what the person wants (from act1_intention). Two-three sentences on what's blocking them (from act2_obstacle). One closing line of raw emotional honesty. The letter must present the struggle as UNRESOLVED. The reader should feel the tension and NEED to hear the response. If you include the resolution, reframe, or insight in the letter, you have destroyed the dramatic arc. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
-- response: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the response will be read aloud in ~30 seconds. THE RESPONSE IS ACT 3 — THE RESOLUTION. STRUCTURE: One sentence acknowledging the tension from the letter. Two-three sentences delivering the reframe or insight (from act3_resolution). One closing line with a direct instruction or challenge. The response is the PAYOFF — it only works because the letter set up unresolved tension. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ' followed by the pseudonym and a comma (e.g., 'Dear Curious Creator,\n\n'). Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
+- letter: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the letter will be read aloud in ~30 seconds. STRUCTURE: One sentence stating what the person wants (INTENTION). Two-three sentences on what's blocking them (OBSTACLE). One closing line of raw emotional honesty. The letter must present the struggle as UNRESOLVED — as if the conversation hasn't happened yet. If you include ANY resolution, reframe, or insight, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
 
-STEP 4: THE ART DIRECTOR (Image Generation)
+STEP 3: THE ART DIRECTOR (Image Generation)
 You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
 
 CHARACTER IDENTITY CONTEXT — use this to inform the world, environment, and energy of the image:
@@ -252,7 +253,6 @@ ${recentScaleHint}${demographicHint}
 - imagen_prompt: Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
-            // ── Call 2: Dossier Rewrite (Opus — precision reasoning) ──
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
 
 The following chat transcript is the new session data to incorporate.
@@ -260,35 +260,30 @@ The following chat transcript is the new session data to incorporate.
 CHAT TRANSCRIPT:
 ${transcript}`;
 
-            // ── Call 3: Session Recap (Opus — quality continuity) ──
             const recapPrompt = `Write a 2-3 sentence recap of this session for continuity. What was discussed? What was the emotional tone? What was the outcome or takeaway? Write from the consultant's perspective. Keep it concise — this will be shown to the character at the start of the next session for context.
 
 CHAT TRANSCRIPT:
 ${transcript}`;
 
             try {
-                // Fire all three calls in parallel
-                const [postResult, dossierResult, recapResult] = await Promise.all([
-                    // Call 1: Post Synthesis — Sonnet
+                // ── PARALLEL BATCH: Pass 1 (letter) + Dossier + Recap ──
+                const [letterResult, dossierResult, recapResult] = await Promise.all([
+                    // Pass 1: Letter + editorial judgment + image prompt
                     generateWithFallback({
                         primaryModelId: SONNET_MODEL,
                         schema: z.object({
                             is_publishable: z.boolean(),
-                            act1_intention: z.string().optional().describe("One sentence: the user's opening desire or problem"),
-                            act2_obstacle: z.string().optional().describe("One sentence: the real obstacle that surfaced through dialogue"),
-                            act3_resolution: z.string().optional().describe("One sentence: Character A's reframe or insight"),
                             title: z.string().optional(),
                             pseudonym: z.string().optional(),
                             letter: z.string().optional(),
-                            response: z.string().optional(),
                             photo_vibe: z.string().optional(),
                             photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
                             imagen_prompt: z.string().optional(),
                             language: z.string().optional(),
                         }),
-                        prompt: postPrompt,
+                        prompt: letterPrompt,
                     }),
-                    // Call 2: Dossier Rewrite — Opus
+                    // Dossier Rewrite — Opus
                     generateWithFallback({
                         primaryModelId: OPUS_MODEL,
                         fallbackModelId: OPUS_FALLBACK,
@@ -297,7 +292,7 @@ ${transcript}`;
                         }),
                         prompt: dossierRewritePrompt,
                     }),
-                    // Call 3: Session Recap — Opus
+                    // Session Recap — Opus
                     generateWithFallback({
                         primaryModelId: OPUS_MODEL,
                         fallbackModelId: OPUS_FALLBACK,
@@ -308,9 +303,51 @@ ${transcript}`;
                     }),
                 ]);
 
-                const post = postResult.object as any;
+                const pass1 = letterResult.object as any;
                 const dossier = dossierResult.object as any;
                 const recap = recapResult.object as any;
+
+                // ── Pass 2: Response (sequential — needs the letter from Pass 1) ──
+                let post: any;
+                if (pass1.is_publishable && pass1.letter && pass1.pseudonym) {
+                    const responsePrompt = `You are writing as Earnest Page — an advice columnist. You have just received the following letter. Now write your response.
+${languageCommand}
+
+CHARACTER BIBLE (this is Earnest Page's voice and worldview — write in this voice):
+${JSON.stringify(compiledBible)}
+
+THE LETTER:
+${pass1.letter}
+
+CHAT TRANSCRIPT (for context — the resolution that emerged in this conversation):
+${transcript}
+
+YOUR JOB: Write Earnest Page's response to this letter. The letter captures the user's unresolved tension. The conversation transcript shows how it was resolved. Your response delivers that resolution — warm, specific, in Character A's exact voice.
+
+PII SCRUBBING — THIS IS NON-NEGOTIABLE:
+Replace ALL real names with relationship roles, all specific places/companies with generic labels. The response must be fully anonymous.
+
+- response: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the response will be read aloud in ~30 seconds. STRUCTURE: One sentence acknowledging the tension from the letter. Two-three sentences delivering the reframe or insight that emerged in the conversation. One closing line with a direct instruction or challenge. The response is the PAYOFF — it only works because the letter set up unresolved tension. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ${pass1.pseudonym},\n\n'. Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
+
+                    const responseResult = await generateWithFallback({
+                        primaryModelId: SONNET_MODEL,
+                        schema: z.object({
+                            response: z.string(),
+                        }),
+                        prompt: responsePrompt,
+                    });
+
+                    const pass2 = responseResult.object as any;
+
+                    // Merge Pass 1 + Pass 2 into unified post object
+                    post = {
+                        ...pass1,
+                        response: pass2.response,
+                    };
+                } else {
+                    // Not publishable — pass through as-is
+                    post = pass1;
+                }
 
                 // ─── DOSSIER + RECAPS WRITE (runs in parallel with image gen below) ───
                 const dossierPromise = identity
