@@ -87,6 +87,17 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         audio_url: string | null;
     } | null>(null);
     const monologueAudioRef = useRef<HTMLAudioElement | null>(null);
+
+    // ═══ REWRITE TEST STATE ═══
+    const [isTestingRewrite, setIsTestingRewrite] = useState(false);
+    const [rewriteResult, setRewriteResult] = useState<{
+        title: string;
+        pseudonym: string;
+        letter: string;
+        response: string;
+        audio_url: string | null;
+    } | null>(null);
+    const rewriteAudioRef = useRef<HTMLAudioElement | null>(null);
     const t = useTranslations('feed');
     const locale = useLocale();
 
@@ -896,6 +907,49 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         )}
                                     </button>
                                 )}
+                                {post.content_raw && (
+                                    <button
+                                        onClick={async () => {
+                                            if (isTestingRewrite || !user) return;
+                                            setIsTestingRewrite(true);
+                                            try {
+                                                const idToken = await user.getIdToken();
+                                                const res = await fetch('/api/admin/test-rewrite', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${idToken}`,
+                                                    },
+                                                    body: JSON.stringify({ postId: post.id }),
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                    setRewriteResult(data);
+                                                    if (data.audio_url) {
+                                                        const audio = new Audio(data.audio_url);
+                                                        rewriteAudioRef.current = audio;
+                                                        audio.play().catch(() => {});
+                                                    }
+                                                } else {
+                                                    console.error('[Rewrite]', data.error);
+                                                }
+                                            } catch (err) {
+                                                console.error('[Rewrite] Failed:', err);
+                                            } finally {
+                                                setIsTestingRewrite(false);
+                                            }
+                                        }}
+                                        className="text-blue-500/60 hover:text-blue-400 transition-colors"
+                                        title="Test two-pass rewrite"
+                                        disabled={isTestingRewrite}
+                                    >
+                                        {isTestingRewrite ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <RefreshCw className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                )}
                                 <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1595,6 +1649,91 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         }
                                     }}
                                     className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                                >
+                                    <Volume2 className="w-4 h-4" />
+                                    Play / Pause Audio
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ REWRITE TEST MODAL ═══ */}
+            {rewriteResult && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                    onClick={() => {
+                        rewriteAudioRef.current?.pause();
+                        rewriteAudioRef.current = null;
+                        setRewriteResult(null);
+                    }}
+                >
+                    <div
+                        className="bg-zinc-900 border border-white/10 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto p-6 space-y-4 shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between">
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-blue-500/60 font-bold">
+                                Two-Pass Rewrite Test
+                            </p>
+                            <button
+                                onClick={() => {
+                                    rewriteAudioRef.current?.pause();
+                                    rewriteAudioRef.current = null;
+                                    setRewriteResult(null);
+                                }}
+                                className="text-zinc-500 hover:text-white transition-colors text-sm"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-white leading-tight">
+                            {rewriteResult.title}
+                        </h3>
+
+                        {/* Letter */}
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase tracking-[0.15em] text-zinc-500">Letter</p>
+                            <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                {rewriteResult.letter}
+                            </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-white/10" />
+
+                        {/* Response */}
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase tracking-[0.15em] text-zinc-500">Response</p>
+                            <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                {rewriteResult.response}
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-zinc-500 italic text-right">
+                            — {rewriteResult.pseudonym}
+                        </p>
+
+                        {rewriteResult.audio_url && (
+                            <div className="flex items-center gap-3 pt-2 border-t border-white/5">
+                                <button
+                                    onClick={() => {
+                                        const audio = rewriteAudioRef.current;
+                                        if (audio) {
+                                            if (audio.paused) {
+                                                audio.play().catch(() => {});
+                                            } else {
+                                                audio.pause();
+                                            }
+                                        } else {
+                                            const newAudio = new Audio(rewriteResult.audio_url!);
+                                            rewriteAudioRef.current = newAudio;
+                                            newAudio.play().catch(() => {});
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
                                 >
                                     <Volume2 className="w-4 h-4" />
                                     Play / Pause Audio
