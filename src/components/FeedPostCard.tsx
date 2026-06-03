@@ -58,6 +58,8 @@ interface FeedPostProps {
         like_count?: number;
         author_avatar_url?: string;
         comments?: number;
+        audio_url?: string;
+        audio_letter_ratio?: number;
         letter_audio_url?: string;
         response_audio_url?: string;
         translations?: Record<string, any>;
@@ -86,7 +88,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const cardRef = useRef<HTMLDivElement>(null);
     const hasAutoPlayed = useRef(false);
 
-    const hasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
+    // Support both unified (audio_url) and legacy (letter_audio_url + response_audio_url) formats
+    const unifiedAudioUrl = post.audio_url;
+    const legacyHasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
+    const hasAudio = Boolean(unifiedAudioUrl) || legacyHasAudio;
     const heroUrl = post.public_post?.imagen_url || post.imagen_url;
     const canPlayShort = hasAudio && Boolean(heroUrl);
 
@@ -106,8 +111,22 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         } catch { /* user cancelled share sheet */ }
     }, [post.id, post.public_post?.title]);
 
-    // Play/pause toggle
+    // Compute letter word ratio for phase boundary estimation
+    const letterText = post.public_post?.letter || post.letter || post.tension || '';
+    const responseText = post.public_post?.response || post.response || post.counsel || '';
+    const computedLetterRatio = (() => {
+        if (post.audio_letter_ratio != null) return post.audio_letter_ratio;
+        const lw = letterText.split(/\s+/).filter(Boolean).length;
+        const rw = responseText.split(/\s+/).filter(Boolean).length;
+        const total = lw + rw;
+        return total > 0 ? lw / total : 0.5;
+    })();
+
+    // Audio toggle handler — supports both unified and legacy formats
     const toggleAudio = useCallback(() => {
+        if (!hasAudio) return;
+
+        // If already playing, pause
         if (isPlaying && audioRef.current) {
             audioRef.current.pause();
             setIsPlaying(false);
@@ -116,55 +135,81 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         // Start from the beginning if idle
         if (audioPhase === 'idle' || !audioRef.current) {
-            if (!post.letter_audio_url) return;
-            const audio = new Audio(post.letter_audio_url);
-            audioRef.current = audio;
-            setAudioPhase('letter');
+            if (unifiedAudioUrl) {
+                // ── UNIFIED FORMAT: single audio file ──
+                const audio = new Audio(unifiedAudioUrl);
+                audioRef.current = audio;
+                setAudioPhase('letter');
 
-            audio.ontimeupdate = () => {
-                if (audio.duration) {
-                    setAudioProgress(audio.currentTime / audio.duration);
-                }
-            };
+                audio.ontimeupdate = () => {
+                    if (audio.duration) {
+                        const progress = audio.currentTime / audio.duration;
+                        setAudioProgress(progress);
+                        // Estimate phase from letter word ratio
+                        const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
+                        setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
+                    }
+                };
 
-            audio.onended = () => {
-                // Letter finished — play response
-                if (post.response_audio_url) {
-                    const responseAudio = new Audio(post.response_audio_url);
-                    audioRef.current = responseAudio;
-                    setAudioPhase('response');
-                    setAudioProgress(0);
-
-                    responseAudio.ontimeupdate = () => {
-                        if (responseAudio.duration) {
-                            setAudioProgress(responseAudio.currentTime / responseAudio.duration);
-                        }
-                    };
-
-                    responseAudio.onended = () => {
-                        setIsPlaying(false);
-                        setAudioPhase('idle');
-                        setAudioProgress(0);
-                        audioRef.current = null;
-                    };
-
-                    responseAudio.play().catch(() => setIsPlaying(false));
-                } else {
+                audio.onended = () => {
                     setIsPlaying(false);
                     setAudioPhase('idle');
                     setAudioProgress(0);
                     audioRef.current = null;
-                }
-            };
+                };
 
-            audio.play().catch(() => setIsPlaying(false));
-            setIsPlaying(true);
+                audio.play().catch(() => setIsPlaying(false));
+                setIsPlaying(true);
+            } else if (post.letter_audio_url) {
+                // ── LEGACY FORMAT: two separate audio files ──
+                const audio = new Audio(post.letter_audio_url);
+                audioRef.current = audio;
+                setAudioPhase('letter');
+
+                audio.ontimeupdate = () => {
+                    if (audio.duration) {
+                        setAudioProgress(audio.currentTime / audio.duration);
+                    }
+                };
+
+                audio.onended = () => {
+                    if (post.response_audio_url) {
+                        const responseAudio = new Audio(post.response_audio_url);
+                        audioRef.current = responseAudio;
+                        setAudioPhase('response');
+                        setAudioProgress(0);
+
+                        responseAudio.ontimeupdate = () => {
+                            if (responseAudio.duration) {
+                                setAudioProgress(responseAudio.currentTime / responseAudio.duration);
+                            }
+                        };
+
+                        responseAudio.onended = () => {
+                            setIsPlaying(false);
+                            setAudioPhase('idle');
+                            setAudioProgress(0);
+                            audioRef.current = null;
+                        };
+
+                        responseAudio.play().catch(() => setIsPlaying(false));
+                    } else {
+                        setIsPlaying(false);
+                        setAudioPhase('idle');
+                        setAudioProgress(0);
+                        audioRef.current = null;
+                    }
+                };
+
+                audio.play().catch(() => setIsPlaying(false));
+                setIsPlaying(true);
+            }
         } else {
             // Resume paused audio
             audioRef.current.play().catch(() => setIsPlaying(false));
             setIsPlaying(true);
         }
-    }, [isPlaying, audioPhase, post.letter_audio_url, post.response_audio_url]);
+    }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio]);
 
     // Autoplay when card scrolls into view (TikTok/Reels behavior)
     useEffect(() => {

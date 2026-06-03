@@ -205,8 +205,8 @@ async function generateDigestCard(user: {
                 user.voiceId,
                 `digest_${user.uid}_${Date.now()}`,
             );
-            if (audioResult?.letterAudioUrl) {
-                audioUrl = audioResult.letterAudioUrl;
+            if (audioResult?.audioUrl) {
+                audioUrl = audioResult.audioUrl;
                 console.log(`[Daily Digest] Audio generated for ${user.uid}`);
             }
         } catch (audioErr) {

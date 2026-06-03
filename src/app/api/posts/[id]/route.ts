@@ -24,6 +24,9 @@ export async function GET(
             id: postDoc.id,
             public_post: data.public_post || {},
             imagen_url: data.imagen_url || null,
+            audio_url: data.audio_url || null,
+            audio_letter_ratio: data.audio_letter_ratio ?? null,
+            // Legacy two-file format for backward compat with old posts
             letter_audio_url: data.letter_audio_url || null,
             response_audio_url: data.response_audio_url || null,
             photo_vibe: data.photo_vibe || null,

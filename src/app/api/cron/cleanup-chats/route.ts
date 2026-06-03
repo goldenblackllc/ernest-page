@@ -196,14 +196,27 @@ ${transcript}
 
 STEP 1: THE EDITORIAL JUDGMENT
 Determine if this transcript has "Editorial Value."
-* Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where you cannot identify a clear INTENTION (what the person wants) and OBSTACLE (what's in the way). Vague chats produce weak shorts.
-* Valuable (is_publishable: true): Contains a clear intention AND obstacle — a psychological struggle, a request for advice, OR a specific lifestyle question. The reader must be able to feel the tension in under 60 seconds.
+* Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where Character A never draws out a real struggle. If the user never reveals what they actually want or what's in the way, there is no story.
+* Valuable (is_publishable: true): The conversation contains a dramatic arc — the user arrives with a desire or problem, an obstacle surfaces through the dialogue (often the user doesn't even know it's there until they say it), and Character A delivers a reframe or insight. The reader must be able to feel the tension in under 60 seconds.
 
-STEP 2: THE SYNTHESIS (If Publishable)
+STEP 2: THE DRAMATIC ARC (If Publishable)
+These conversations follow a specific structure. Before writing anything, identify the three acts:
+
+ACT 1 — THE INTENTION: What did the user come in wanting? This is usually in their first 1-2 messages. It is often vague ("I want to be happy", "I don't know what to do about my marriage"). That vagueness is the hook — do NOT resolve it.
+
+ACT 2 — THE OBSTACLE: What is actually in the way? This often surfaces in the MIDDLE of the conversation, drawn out by Character A's questioning. The user frequently does not know the obstacle when they arrive — it reveals itself through honest dialogue. Look for the moment the user says something raw or specific that they didn't plan to say. THAT is the obstacle.
+
+ACT 3 — THE RESOLUTION: What reframe, insight, or challenge did Character A deliver? This is the turn — the moment the conversation changes the user's understanding.
+
+Output these three acts in the structured fields:
+- act1_intention: One sentence capturing the user's opening desire or problem.
+- act2_obstacle: One sentence capturing the real obstacle that surfaced through dialogue.
+- act3_resolution: One sentence capturing Character A's reframe or insight.
+
+STEP 3: THE SYNTHESIS
 These posts will be read aloud as 60-second audio shorts for TikTok, Instagram Reels, and YouTube Shorts. Every word must earn its place.
 
-If the transcript is valuable, populate the post fields:
-- title: Write a curiosity-driven hook title (8-15 words). The viewer should NEED to hear the answer. Use INTENTION + OBSTACLE as either a tension statement or a question. Never use second person. Examples: 'I Want To Be a Good Father But I Keep Choosing Work', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I Don't Like Who I've Become'. The title should make someone stop scrolling.
+- title: Write a curiosity-driven hook title (8-15 words). The viewer should NEED to hear the answer. Combine ACT 1 (intention) and ACT 2 (obstacle) as either a tension statement or a question. The title must present UNRESOLVED tension — NEVER include the resolution. Never use second person. Examples: 'I Want To Be a Good Father But I Keep Choosing Work', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I Don't Like Who I've Become', 'I Want To Be Happy But I Keep Forcing Myself To Show Up'. The title should make someone stop scrolling.
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter, response):
@@ -214,10 +227,10 @@ Replace ALL of the following with generic relationship or role labels — NEVER 
   • Any identifying details (addresses, phone numbers, email addresses, social media handles)
 If you are unsure whether something is PII, err on the side of removing it. The post must be fully anonymous — a stranger reading it should have no way to identify any real person.
 
-- letter: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the letter will be read aloud in ~30 seconds. STRUCTURE: One sentence stating what the person wants (INTENTION). Two-three sentences on what's blocking them (OBSTACLE). One closing line of raw emotional honesty. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
-- response: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the response will be read aloud in ~30 seconds. STRUCTURE: One sentence acknowledging the tension. Two-three sentences delivering the core insight or reframe. One closing line with a direct instruction or challenge. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ' followed by the pseudonym and a comma (e.g., 'Dear Curious Creator,\n\n'). Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
+- letter: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the letter will be read aloud in ~30 seconds. THE LETTER IS ACTS 1 AND 2 — NEVER ACT 3. STRUCTURE: One sentence stating what the person wants (from act1_intention). Two-three sentences on what's blocking them (from act2_obstacle). One closing line of raw emotional honesty. The letter must present the struggle as UNRESOLVED. The reader should feel the tension and NEED to hear the response. If you include the resolution, reframe, or insight in the letter, you have destroyed the dramatic arc. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
+- response: LENGTH: 60-80 words MAXIMUM. This is non-negotiable — the response will be read aloud in ~30 seconds. THE RESPONSE IS ACT 3 — THE RESOLUTION. STRUCTURE: One sentence acknowledging the tension from the letter. Two-three sentences delivering the reframe or insight (from act3_resolution). One closing line with a direct instruction or challenge. The response is the PAYOFF — it only works because the letter set up unresolved tension. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ' followed by the pseudonym and a comma (e.g., 'Dear Curious Creator,\n\n'). Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
 
-STEP 3: THE ART DIRECTOR (Image Generation)
+STEP 4: THE ART DIRECTOR (Image Generation)
 You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
 
 CHARACTER IDENTITY CONTEXT — use this to inform the world, environment, and energy of the image:
@@ -261,6 +274,9 @@ ${transcript}`;
                         primaryModelId: SONNET_MODEL,
                         schema: z.object({
                             is_publishable: z.boolean(),
+                            act1_intention: z.string().optional().describe("One sentence: the user's opening desire or problem"),
+                            act2_obstacle: z.string().optional().describe("One sentence: the real obstacle that surfaced through dialogue"),
+                            act3_resolution: z.string().optional().describe("One sentence: Character A's reframe or insight"),
                             title: z.string().optional(),
                             pseudonym: z.string().optional(),
                             letter: z.string().optional(),
@@ -402,8 +418,8 @@ ${transcript}`;
                             );
                             if (audioResult) {
                                 await postDocRef.update({
-                                    letter_audio_url: audioResult.letterAudioUrl,
-                                    response_audio_url: audioResult.responseAudioUrl,
+                                    audio_url: audioResult.audioUrl,
+                                    audio_letter_ratio: audioResult.letterWordRatio,
                                 });
                                 console.log(`[Cron] Audio attached to post ${postDocRef.id}`);
                             }

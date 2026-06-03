@@ -35,8 +35,9 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
     // Audio toggle
     const toggleAudio = useCallback(() => {
         if (!post) return;
-        const hasAudio = post.letter_audio_url && post.response_audio_url;
-        if (!hasAudio) return;
+        const unifiedUrl = post.audio_url;
+        const hasLegacyAudio = post.letter_audio_url && post.response_audio_url;
+        if (!unifiedUrl && !hasLegacyAudio) return;
 
         if (isPlaying && audioRef.current) {
             audioRef.current.pause();
@@ -48,28 +49,58 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
         audioRef.current = audio;
 
         if (audioPhase === 'idle' || audioPhase === 'response') {
-            audio.src = post.letter_audio_url;
+            if (unifiedUrl) {
+                audio.src = unifiedUrl;
+            } else {
+                audio.src = post.letter_audio_url;
+            }
             setAudioPhase('letter');
         }
 
-        audio.ontimeupdate = () => {
-            if (audio.duration) {
-                setAudioProgress(audio.currentTime / audio.duration);
-            }
-        };
+        // Compute letter ratio for phase boundary
+        const letterRatio = post.audio_letter_ratio ?? (() => {
+            const letter = post.public_post?.letter || '';
+            const response = post.public_post?.response || '';
+            const lw = letter.split(/\s+/).filter(Boolean).length;
+            const rw = response.split(/\s+/).filter(Boolean).length;
+            return (lw + rw) > 0 ? lw / (lw + rw) : 0.5;
+        })();
 
-        audio.onended = () => {
-            if (audioPhase === 'letter' || audio.src.includes('_letter')) {
-                audio.src = post.response_audio_url;
-                setAudioPhase('response');
-                setAudioProgress(0);
-                audio.play();
-            } else {
+        if (unifiedUrl) {
+            // Unified: single audio, estimate phase from ratio
+            audio.ontimeupdate = () => {
+                if (audio.duration) {
+                    const progress = audio.currentTime / audio.duration;
+                    setAudioProgress(progress);
+                    const newPhase = progress < letterRatio ? 'letter' : 'response';
+                    setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
+                }
+            };
+            audio.onended = () => {
                 setIsPlaying(false);
                 setAudioPhase('idle');
                 setAudioProgress(0);
-            }
-        };
+            };
+        } else {
+            // Legacy: two files
+            audio.ontimeupdate = () => {
+                if (audio.duration) {
+                    setAudioProgress(audio.currentTime / audio.duration);
+                }
+            };
+            audio.onended = () => {
+                if (audioPhase === 'letter' || audio.src.includes('_letter')) {
+                    audio.src = post.response_audio_url;
+                    setAudioPhase('response');
+                    setAudioProgress(0);
+                    audio.play();
+                } else {
+                    setIsPlaying(false);
+                    setAudioPhase('idle');
+                    setAudioProgress(0);
+                }
+            };
+        }
 
         audio.play();
         setIsPlaying(true);
@@ -124,7 +155,7 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
     const publicLetter = post.public_post?.letter;
     const publicResponse = post.public_post?.response;
     const heroUrl = post.imagen_url || post.public_post?.imagen_url;
-    const hasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
+    const hasAudio = Boolean(post.audio_url || (post.letter_audio_url && post.response_audio_url));
 
     // Subtitle chunks
     const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {

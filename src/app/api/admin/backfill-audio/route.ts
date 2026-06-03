@@ -37,13 +37,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
-        // Check if audio already exists
-        if (postData.letter_audio_url && postData.response_audio_url) {
+        // Check if audio already exists (new unified format or legacy two-file format)
+        if (postData.audio_url || (postData.letter_audio_url && postData.response_audio_url)) {
             return NextResponse.json({
                 success: true,
                 message: 'Audio already exists',
-                letter_audio_url: postData.letter_audio_url,
-                response_audio_url: postData.response_audio_url,
+                audio_url: postData.audio_url || postData.letter_audio_url,
             });
         }
 
@@ -72,18 +71,18 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Audio generation failed' }, { status: 500 });
         }
 
-        // Update the post document
+        // Update the post document with new unified fields
         await postDoc.ref.update({
-            letter_audio_url: audioResult.letterAudioUrl,
-            response_audio_url: audioResult.responseAudioUrl,
+            audio_url: audioResult.audioUrl,
+            audio_letter_ratio: audioResult.letterWordRatio,
         });
 
         console.log(`[BackfillAudio] Audio attached to post ${postId}`);
 
         return NextResponse.json({
             success: true,
-            letter_audio_url: audioResult.letterAudioUrl,
-            response_audio_url: audioResult.responseAudioUrl,
+            audio_url: audioResult.audioUrl,
+            audio_letter_ratio: audioResult.letterWordRatio,
         });
     } catch (error: any) {
         console.error('[BackfillAudio] Error:', error);

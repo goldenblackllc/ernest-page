@@ -3,13 +3,10 @@ import { storage } from '@/lib/firebase/admin';
 /**
  * Generate TTS audio for a Dear Earnest post using ElevenLabs.
  *
- * Produces two audio files:
- *   1. Letter audio — the user's anonymous letter read in the character's voice
- *   2. Response audio — the Ideal Self's response read in the character's voice
+ * Produces a SINGLE audio file containing the letter + response read
+ * continuously in one ElevenLabs call, ensuring seamless prosodic flow.
  *
- * Both are stored in Firebase Storage and public URLs are returned.
- *
- * The character's own voice_id is used for both tracks, maintaining the
+ * The character's own voice_id is used, maintaining the
  * Ideal Self's sonic identity across the entire post.
  */
 
@@ -69,6 +66,13 @@ function cleanTextForTTS(text: string): string {
         .replace(/\n{2,}/g, '. ')
         .replace(/\n/g, ' ')
         .trim();
+}
+
+/**
+ * Count words in a text string.
+ */
+function wordCount(text: string): number {
+    return text.split(/\s+/).filter(Boolean).length;
 }
 
 /**
@@ -152,18 +156,21 @@ async function uploadAudio(buffer: Buffer, path: string): Promise<string> {
 /**
  * Generate TTS audio for a complete Dear Earnest post.
  *
+ * Combines letter + response into a single ElevenLabs call so the voice
+ * maintains natural prosody across both sections (no choppy seam).
+ *
  * @param letterText  The anonymous letter text
  * @param responseText  The Ideal Self's response text
  * @param voiceId  ElevenLabs voice ID (from character bible)
  * @param postId  Post document ID (used for storage path)
- * @returns Object with audio URLs, or null if generation fails
+ * @returns Object with combined audio URL and letter word ratio, or null if generation fails
  */
 export async function generatePostAudio(
     letterText: string,
     responseText: string,
     voiceId: string,
     postId: string,
-): Promise<{ letterAudioUrl: string; responseAudioUrl: string } | null> {
+): Promise<{ audioUrl: string; letterWordRatio: number } | null> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
         console.error('[PostTTS] ELEVENLABS_API_KEY not configured');
@@ -176,27 +183,32 @@ export async function generatePostAudio(
     }
 
     try {
-        // Generate audio tracks — response may be empty (e.g. digest narration)
-        const [letterBuffer, responseBuffer] = await Promise.all([
-            generateTTSAudio(letterText, voiceId, apiKey),
-            responseText ? generateTTSAudio(responseText, voiceId, apiKey) : Promise.resolve(null),
-        ]);
+        // Combine letter + response into a single text for one continuous TTS pass.
+        // The letter ends with "Sincerely, X" and the response starts with "Dear X,"
+        // which naturally cues a prosodic pause in the voice.
+        const cleanLetter = cleanTextForTTS(letterText);
+        const cleanResponse = responseText ? cleanTextForTTS(responseText) : '';
+        const combinedText = cleanResponse
+            ? `${cleanLetter} ... ${cleanResponse}`
+            : cleanLetter;
 
-        if (!letterBuffer) {
-            console.error('[PostTTS] Failed to generate letter audio track');
+        // Calculate letter word ratio for phase boundary estimation during playback
+        const letterWords = wordCount(cleanLetter);
+        const totalWords = letterWords + (cleanResponse ? wordCount(cleanResponse) : 0);
+        const letterWordRatio = totalWords > 0 ? letterWords / totalWords : 1;
+
+        const audioBuffer = await generateTTSAudio(combinedText, voiceId, apiKey);
+
+        if (!audioBuffer) {
+            console.error('[PostTTS] Failed to generate combined audio track');
             return null;
         }
 
-        // Upload tracks — skip response if not generated
-        const letterAudioUrl = await uploadAudio(letterBuffer, `post-audio/${postId}_letter.mp3`);
-        let responseAudioUrl: string | undefined;
+        // Upload single combined file
+        const audioUrl = await uploadAudio(audioBuffer, `post-audio/${postId}.mp3`);
 
-        if (responseBuffer) {
-            responseAudioUrl = await uploadAudio(responseBuffer, `post-audio/${postId}_response.mp3`);
-        }
-
-        console.log(`[PostTTS] Audio generated for post ${postId}`);
-        return { letterAudioUrl, responseAudioUrl: responseAudioUrl || '' };
+        console.log(`[PostTTS] Audio generated for post ${postId} (letter ratio: ${letterWordRatio.toFixed(2)})`);
+        return { audioUrl, letterWordRatio };
     } catch (err) {
         console.error('[PostTTS] Audio generation failed:', err);
         return null;

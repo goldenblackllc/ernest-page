@@ -49,9 +49,10 @@ export async function GET(
         }
 
         // Must have audio + image
+        const unifiedAudioUrl = post.audio_url;
         const letterAudioUrl = post.letter_audio_url;
         const heroUrl = post.public_post?.imagen_url || post.imagen_url || post.imageUrl;
-        if (!letterAudioUrl || !heroUrl) {
+        if ((!unifiedAudioUrl && !letterAudioUrl) || !heroUrl) {
             return NextResponse.json({ error: 'Post does not have audio and image for video generation' }, { status: 400 });
         }
 
@@ -80,8 +81,6 @@ export async function GET(
         await fs.mkdir(workDir, { recursive: true });
 
         const heroPath = join(workDir, 'hero.jpg');
-        const letterAudioPath = join(workDir, 'letter.mp3');
-        const responseAudioPath = join(workDir, 'response.mp3');
         const combinedAudioPath = join(workDir, 'combined.mp3');
         const outputPath = join(workDir, 'output.mp4');
 
@@ -91,18 +90,50 @@ export async function GET(
         const heroBuffer = Buffer.from(await heroRes.arrayBuffer());
         await fs.writeFile(heroPath, heroBuffer);
 
-        // Download letter audio
-        const letterAudioRes = await fetch(letterAudioUrl);
-        if (!letterAudioRes.ok) throw new Error(`Failed to download letter audio: ${letterAudioRes.status}`);
-        await fs.writeFile(letterAudioPath, Buffer.from(await letterAudioRes.arrayBuffer()));
+        if (unifiedAudioUrl) {
+            // ── UNIFIED FORMAT: single audio file — download directly ──
+            const audioRes = await fetch(unifiedAudioUrl);
+            if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`);
+            await fs.writeFile(combinedAudioPath, Buffer.from(await audioRes.arrayBuffer()));
+        } else {
+            // ── LEGACY FORMAT: two separate audio files — download + concatenate ──
+            const letterAudioPath = join(workDir, 'letter.mp3');
+            const responseAudioPath = join(workDir, 'response.mp3');
 
-        // Download response audio (if exists)
-        const responseAudioUrl = post.response_audio_url;
-        const hasResponseAudio = !!responseAudioUrl;
-        if (hasResponseAudio) {
-            const responseAudioRes = await fetch(responseAudioUrl);
-            if (!responseAudioRes.ok) throw new Error(`Failed to download response audio: ${responseAudioRes.status}`);
-            await fs.writeFile(responseAudioPath, Buffer.from(await responseAudioRes.arrayBuffer()));
+            // Download letter audio
+            const letterAudioRes = await fetch(letterAudioUrl);
+            if (!letterAudioRes.ok) throw new Error(`Failed to download letter audio: ${letterAudioRes.status}`);
+            await fs.writeFile(letterAudioPath, Buffer.from(await letterAudioRes.arrayBuffer()));
+
+            // Download response audio (if exists)
+            const responseAudioUrl = post.response_audio_url;
+            const hasResponseAudio = !!responseAudioUrl;
+            if (hasResponseAudio) {
+                const responseAudioRes = await fetch(responseAudioUrl);
+                if (!responseAudioRes.ok) throw new Error(`Failed to download response audio: ${responseAudioRes.status}`);
+                await fs.writeFile(responseAudioPath, Buffer.from(await responseAudioRes.arrayBuffer()));
+            }
+
+            // Concatenate audio if we have response (legacy path only)
+            if (hasResponseAudio) {
+                const concatListPath = join(workDir, 'concat.txt');
+                await fs.writeFile(concatListPath, `file '${letterAudioPath}'\nfile '${responseAudioPath}'\n`);
+
+                // Need ffmpeg for concat — resolve path early
+                const { existsSync: existsSyncEarly } = require('fs');
+                const { execSync: execSyncEarly, spawnSync: spawnSyncEarly } = require('child_process');
+                const pathModEarly = require('path');
+                let ffmpegEarly = pathModEarly.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+                if (!existsSyncEarly(ffmpegEarly)) {
+                    try { ffmpegEarly = execSyncEarly('which ffmpeg', { encoding: 'utf8' }).trim(); } catch { throw new Error('ffmpeg not found'); }
+                }
+                spawnSyncEarly(ffmpegEarly, [
+                    '-y', '-f', 'concat', '-safe', '0',
+                    '-i', concatListPath, '-c', 'copy', combinedAudioPath,
+                ], { timeout: 30000 });
+            } else {
+                await fs.copyFile(letterAudioPath, combinedAudioPath);
+            }
         }
 
         // ── Download author avatar from user profile doc ──
@@ -129,7 +160,7 @@ export async function GET(
             }
         }
 
-        // ── Get audio durations via ffmpeg ──
+        // ── Get audio duration via ffmpeg ──
         // Turbopack rewrites require() and require.resolve() paths at bundle time.
         // Construct the real path manually from process.cwd().
         const { existsSync } = require('fs');
@@ -173,32 +204,27 @@ export async function GET(
             return 0;
         };
 
-        const letterDuration = await getDuration(letterAudioPath);
-        const responseDuration = hasResponseAudio ? await getDuration(responseAudioPath) : 0;
-        const totalDuration = letterDuration + responseDuration;
-        console.log(`[Video] Letter: ${letterDuration}s, Response: ${responseDuration}s, Total: ${totalDuration}s`);
+        // Get total duration from the combined audio file
+        const totalDuration = await getDuration(combinedAudioPath);
+        console.log(`[Video] Total audio duration: ${totalDuration}s`);
 
         if (totalDuration <= 0) {
             throw new Error('Could not determine audio duration');
         }
 
-        // ── Concatenate audio if we have response ──
-        if (hasResponseAudio) {
-            // Create concat list file
-            const concatListPath = join(workDir, 'concat.txt');
-            await fs.writeFile(concatListPath, `file '${letterAudioPath}'\nfile '${responseAudioPath}'\n`);
-            spawnSync(ffmpegPath, [
-                '-y', '-f', 'concat', '-safe', '0',
-                '-i', concatListPath, '-c', 'copy', combinedAudioPath,
-            ], { timeout: 30000 });
-        } else {
-            await fs.copyFile(letterAudioPath, combinedAudioPath);
-        }
-
-        // ── Prepare text content ──
+        // Estimate letter/response durations from word ratio
         const letterText = post.public_post?.letter || post.letter || '';
         const responseText = post.public_post?.response || post.response || '';
         const titleText = post.public_post?.title || post.title || '';
+
+        const letterWordRatio = post.audio_letter_ratio ?? (() => {
+            const lw = letterText.split(/\s+/).filter(Boolean).length;
+            const rw = responseText.split(/\s+/).filter(Boolean).length;
+            return (lw + rw) > 0 ? lw / (lw + rw) : 0.5;
+        })();
+        const letterDuration = totalDuration * letterWordRatio;
+        const responseDuration = totalDuration * (1 - letterWordRatio);
+        console.log(`[Video] Letter: ${letterDuration.toFixed(2)}s, Response: ${responseDuration.toFixed(2)}s (ratio: ${letterWordRatio.toFixed(2)})`);
 
         const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration, 8);
 
