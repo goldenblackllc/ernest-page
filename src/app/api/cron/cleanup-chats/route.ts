@@ -145,6 +145,7 @@ async function processUserChats(
 
         if (messages.length > 0) {
             // Claim this chat to prevent duplicate processing by concurrent cron runs
+            const imageRetries = chatData.imageRetries || 0;
             await chatDoc.ref.update({ processing: true, processingStartedAt: Date.now() });
 
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
@@ -266,50 +267,59 @@ CHAT TRANSCRIPT:
 ${transcript}`;
 
             try {
-                // ── PARALLEL BATCH: Pass 1 (letter) + Dossier + Recap ──
-                const [letterResult, dossierResult, recapResult] = await Promise.all([
-                    // Pass 1: Letter + editorial judgment + image prompt
-                    generateWithFallback({
-                        primaryModelId: SONNET_MODEL,
-                        schema: z.object({
-                            is_publishable: z.boolean(),
-                            title: z.string().optional(),
-                            pseudonym: z.string().optional(),
-                            letter: z.string().optional(),
-                            photo_vibe: z.string().optional(),
-                            photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
-                            imagen_prompt: z.string().optional(),
-                            language: z.string().optional(),
-                        }),
-                        prompt: letterPrompt,
-                    }),
-                    // Dossier Rewrite — Opus
-                    generateWithFallback({
-                        primaryModelId: OPUS_MODEL,
-                        fallbackModelId: OPUS_FALLBACK,
-                        schema: z.object({
-                            updated_dossier: z.string(),
-                        }),
-                        prompt: dossierRewritePrompt,
-                    }),
-                    // Session Recap — Opus
-                    generateWithFallback({
-                        primaryModelId: OPUS_MODEL,
-                        fallbackModelId: OPUS_FALLBACK,
-                        schema: z.object({
-                            session_recap: z.string().describe("2-3 sentence recap of this session for continuity"),
-                        }),
-                        prompt: recapPrompt,
-                    }),
-                ]);
+                // ── Check for cached AI results from a previous image-retry run ──
+                const cachedPost = chatData.cachedPost;
 
-                const pass1 = letterResult.object as any;
-                const dossier = dossierResult.object as any;
-                const recap = recapResult.object as any;
+                // ── PARALLEL BATCH: Pass 1 (letter) + Dossier + Recap ──
+                // Skip AI generation if we already have cached results from a prior run
+                const [letterResult, dossierResult, recapResult] = cachedPost
+                    ? [null, null, null]
+                    : await Promise.all([
+                        // Pass 1: Letter + editorial judgment + image prompt
+                        generateWithFallback({
+                            primaryModelId: SONNET_MODEL,
+                            schema: z.object({
+                                is_publishable: z.boolean(),
+                                title: z.string().optional(),
+                                pseudonym: z.string().optional(),
+                                letter: z.string().optional(),
+                                photo_vibe: z.string().optional(),
+                                photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
+                                imagen_prompt: z.string().optional(),
+                                language: z.string().optional(),
+                            }),
+                            prompt: letterPrompt,
+                        }),
+                        // Dossier Rewrite — Opus
+                        generateWithFallback({
+                            primaryModelId: OPUS_MODEL,
+                            fallbackModelId: OPUS_FALLBACK,
+                            schema: z.object({
+                                updated_dossier: z.string(),
+                            }),
+                            prompt: dossierRewritePrompt,
+                        }),
+                        // Session Recap — Opus
+                        generateWithFallback({
+                            primaryModelId: OPUS_MODEL,
+                            fallbackModelId: OPUS_FALLBACK,
+                            schema: z.object({
+                                session_recap: z.string().describe("2-3 sentence recap of this session for continuity"),
+                            }),
+                            prompt: recapPrompt,
+                        }),
+                    ]);
+
+                const pass1 = cachedPost || (letterResult!.object as any);
+                const dossier = cachedPost ? null : (dossierResult!.object as any);
+                const recap = cachedPost ? null : (recapResult!.object as any);
 
                 // ── Pass 2: Response (sequential — needs the letter from Pass 1) ──
+                // Skip Pass 2 on image-retry runs — cachedPost already includes the response.
                 let post: any;
-                if (pass1.is_publishable && pass1.letter && pass1.pseudonym) {
+                if (cachedPost) {
+                    post = cachedPost;
+                } else if (pass1.is_publishable && pass1.letter && pass1.pseudonym) {
                     const responsePrompt = `You are writing as Earnest Page — an advice columnist. You have just received the following letter. Now write your response.
 ${languageCommand}
 
@@ -350,7 +360,8 @@ Replace ALL real names with relationship roles, all specific places/companies wi
                 }
 
                 // ─── DOSSIER + RECAPS WRITE (runs in parallel with image gen below) ───
-                const dossierPromise = identity
+                // Skip dossier/recap writes on image-retry runs (already written on first pass)
+                const dossierPromise = (identity && dossier && recap)
                     ? (async () => {
                         // Build the new session_recaps array (keep last 3)
                         const existingRecaps = userData?.session_recaps || [];
@@ -376,6 +387,7 @@ Replace ALL real names with relationship roles, all specific places/companies wi
                     : Promise.resolve();
 
                 // ─── POST CREATION (with parallel image gen) ───
+                const MAX_IMAGE_RETRIES = 5;
                 if (post.is_publishable && post.title) {
                     const postDocRef = db.collection('posts').doc();
 
@@ -386,6 +398,25 @@ Replace ALL real names with relationship roles, all specific places/companies wi
                     ]);
 
                     const imagen_url = imageResult.status === 'fulfilled' ? imageResult.value : null;
+
+                    // ─── IMAGE RETRY QUEUE ───
+                    // If image generation failed and we haven't exhausted retries,
+                    // release the chat back into the queue for the next cron run.
+                    if (!imagen_url && imageRetries < MAX_IMAGE_RETRIES) {
+                        console.log(`[Cron] Image failed for user ${uid} (attempt ${imageRetries + 1}/${MAX_IMAGE_RETRIES}) — re-queuing`);
+                        await chatDoc.ref.update({
+                            processing: false,
+                            processingStartedAt: FieldValue.delete(),
+                            imageRetries: imageRetries + 1,
+                            // Cache the AI results so we don't re-generate them on retry
+                            cachedPost: post,
+                        });
+                        continue; // skip deletion — chat stays in queue
+                    }
+
+                    if (!imagen_url) {
+                        console.warn(`[Cron] Image failed after ${MAX_IMAGE_RETRIES} retries for user ${uid} — saving as private`);
+                    }
 
                     // Match sponsor from imagen prompt
                     const sponsor = matchSponsor(post.imagen_prompt);

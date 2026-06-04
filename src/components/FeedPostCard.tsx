@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Sparkles, Play, Pause, Volume2, Share2, Download, Loader2 } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, Share2, Download, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -78,26 +78,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
     const [videoToast, setVideoToast] = useState<string | null>(null);
 
-    // ═══ MONOLOGUE TEST STATE ═══
-    const [isTestingMonologue, setIsTestingMonologue] = useState(false);
-    const [monologueResult, setMonologueResult] = useState<{
-        title: string;
-        pseudonym: string;
-        monologue: string;
-        audio_url: string | null;
-    } | null>(null);
-    const monologueAudioRef = useRef<HTMLAudioElement | null>(null);
 
-    // ═══ REWRITE TEST STATE ═══
-    const [isTestingRewrite, setIsTestingRewrite] = useState(false);
-    const [rewriteResult, setRewriteResult] = useState<{
-        title: string;
-        pseudonym: string;
-        letter: string;
-        response: string;
-        audio_url: string | null;
-    } | null>(null);
-    const rewriteAudioRef = useRef<HTMLAudioElement | null>(null);
     const t = useTranslations('feed');
     const locale = useLocale();
 
@@ -863,93 +844,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         )}
                         {user?.uid === post.uid && (
                             <>
-                                {post.content_raw && (
-                                    <button
-                                        onClick={async () => {
-                                            if (isTestingMonologue || !user) return;
-                                            setIsTestingMonologue(true);
-                                            try {
-                                                const idToken = await user.getIdToken();
-                                                const res = await fetch('/api/admin/test-monologue', {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'Content-Type': 'application/json',
-                                                        Authorization: `Bearer ${idToken}`,
-                                                    },
-                                                    body: JSON.stringify({ postId: post.id }),
-                                                });
-                                                const data = await res.json();
-                                                if (data.success) {
-                                                    setMonologueResult(data);
-                                                    // Auto-play audio if available
-                                                    if (data.audio_url) {
-                                                        const audio = new Audio(data.audio_url);
-                                                        monologueAudioRef.current = audio;
-                                                        audio.play().catch(() => {});
-                                                    }
-                                                } else {
-                                                    console.error('[Monologue]', data.error);
-                                                }
-                                            } catch (err) {
-                                                console.error('[Monologue] Failed:', err);
-                                            } finally {
-                                                setIsTestingMonologue(false);
-                                            }
-                                        }}
-                                        className="text-amber-500/60 hover:text-amber-400 transition-colors"
-                                        title="Test monologue format"
-                                        disabled={isTestingMonologue}
-                                    >
-                                        {isTestingMonologue ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Sparkles className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                )}
-                                {post.content_raw && (
-                                    <button
-                                        onClick={async () => {
-                                            if (isTestingRewrite || !user) return;
-                                            setIsTestingRewrite(true);
-                                            try {
-                                                const idToken = await user.getIdToken();
-                                                const res = await fetch('/api/admin/test-rewrite', {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'Content-Type': 'application/json',
-                                                        Authorization: `Bearer ${idToken}`,
-                                                    },
-                                                    body: JSON.stringify({ postId: post.id }),
-                                                });
-                                                const data = await res.json();
-                                                if (data.success) {
-                                                    setRewriteResult(data);
-                                                    if (data.audio_url) {
-                                                        const audio = new Audio(data.audio_url);
-                                                        rewriteAudioRef.current = audio;
-                                                        audio.play().catch(() => {});
-                                                    }
-                                                } else {
-                                                    console.error('[Rewrite]', data.error);
-                                                }
-                                            } catch (err) {
-                                                console.error('[Rewrite] Failed:', err);
-                                            } finally {
-                                                setIsTestingRewrite(false);
-                                            }
-                                        }}
-                                        className="text-blue-500/60 hover:text-blue-400 transition-colors"
-                                        title="Test two-pass rewrite"
-                                        disabled={isTestingRewrite}
-                                    >
-                                        {isTestingRewrite ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <RefreshCw className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                )}
                                 <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1589,160 +1483,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 )}
             </div>
 
-            {/* ═══ MONOLOGUE TEST MODAL ═══ */}
-            {monologueResult && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-                    onClick={() => {
-                        monologueAudioRef.current?.pause();
-                        monologueAudioRef.current = null;
-                        setMonologueResult(null);
-                    }}
-                >
-                    <div
-                        className="bg-zinc-900 border border-white/10 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto p-6 space-y-4 shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between">
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/60 font-bold">
-                                Monologue Test
-                            </p>
-                            <button
-                                onClick={() => {
-                                    monologueAudioRef.current?.pause();
-                                    monologueAudioRef.current = null;
-                                    setMonologueResult(null);
-                                }}
-                                className="text-zinc-500 hover:text-white transition-colors text-sm"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <h3 className="text-lg font-bold text-white leading-tight">
-                            {monologueResult.title}
-                        </h3>
-
-                        <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                            {monologueResult.monologue}
-                        </div>
-
-                        <p className="text-xs text-zinc-500 italic text-right">
-                            — {monologueResult.pseudonym}
-                        </p>
-
-                        {monologueResult.audio_url && (
-                            <div className="flex items-center gap-3 pt-2 border-t border-white/5">
-                                <button
-                                    onClick={() => {
-                                        const audio = monologueAudioRef.current;
-                                        if (audio) {
-                                            if (audio.paused) {
-                                                audio.play().catch(() => {});
-                                            } else {
-                                                audio.pause();
-                                            }
-                                        } else {
-                                            const newAudio = new Audio(monologueResult.audio_url!);
-                                            monologueAudioRef.current = newAudio;
-                                            newAudio.play().catch(() => {});
-                                        }
-                                    }}
-                                    className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors"
-                                >
-                                    <Volume2 className="w-4 h-4" />
-                                    Play / Pause Audio
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* ═══ REWRITE TEST MODAL ═══ */}
-            {rewriteResult && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-                    onClick={() => {
-                        rewriteAudioRef.current?.pause();
-                        rewriteAudioRef.current = null;
-                        setRewriteResult(null);
-                    }}
-                >
-                    <div
-                        className="bg-zinc-900 border border-white/10 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto p-6 space-y-4 shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between">
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-blue-500/60 font-bold">
-                                Two-Pass Rewrite Test
-                            </p>
-                            <button
-                                onClick={() => {
-                                    rewriteAudioRef.current?.pause();
-                                    rewriteAudioRef.current = null;
-                                    setRewriteResult(null);
-                                }}
-                                className="text-zinc-500 hover:text-white transition-colors text-sm"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <h3 className="text-lg font-bold text-white leading-tight">
-                            {rewriteResult.title}
-                        </h3>
-
-                        {/* Letter */}
-                        <div className="space-y-1">
-                            <p className="text-[10px] uppercase tracking-[0.15em] text-zinc-500">Letter</p>
-                            <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                                {rewriteResult.letter}
-                            </div>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="border-t border-white/10" />
-
-                        {/* Response */}
-                        <div className="space-y-1">
-                            <p className="text-[10px] uppercase tracking-[0.15em] text-zinc-500">Response</p>
-                            <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                                {rewriteResult.response}
-                            </div>
-                        </div>
-
-                        <p className="text-xs text-zinc-500 italic text-right">
-                            — {rewriteResult.pseudonym}
-                        </p>
-
-                        {rewriteResult.audio_url && (
-                            <div className="flex items-center gap-3 pt-2 border-t border-white/5">
-                                <button
-                                    onClick={() => {
-                                        const audio = rewriteAudioRef.current;
-                                        if (audio) {
-                                            if (audio.paused) {
-                                                audio.play().catch(() => {});
-                                            } else {
-                                                audio.pause();
-                                            }
-                                        } else {
-                                            const newAudio = new Audio(rewriteResult.audio_url!);
-                                            rewriteAudioRef.current = newAudio;
-                                            newAudio.play().catch(() => {});
-                                        }
-                                    }}
-                                    className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                                >
-                                    <Volume2 className="w-4 h-4" />
-                                    Play / Pause Audio
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
 
         </div>
     );
