@@ -125,8 +125,6 @@ export function generateAssSubtitles(
     entries: SubtitleEntry[],
     totalDuration: number,
     title: string,
-    authorName: string,
-    timestamp: string,
 ): string {
     const totalEnd = formatAssTime(totalDuration);
 
@@ -134,10 +132,10 @@ export function generateAssSubtitles(
     // Alignment codes: 7=top-left, 8=top-center, 9=top-right, 1=bot-left, 2=bot-center
     //
     // SOCIAL MEDIA SAFE ZONES (9:16 / 1080×1920):
-    //   Top ~300px: platform headers (profile, navigation, title) — TikTok, IG, YouTube
-    //   Bottom ~350px: platform footers (caption, buttons, subscribe bar)
+    //   Top ~500px: platform headers (profile pic, username, search, navigation)
+    //   Bottom ~480px: platform footers (username, caption, action buttons, nav bar)
     //   Right ~120px: action buttons (like, comment, share)
-    // Title pushed to MarginV=380 (below headers), Subs to MarginV=340 (above footers).
+    // Author/Timestamp removed — every platform shows its own attribution.
     const header = `[Script Info]
 Title: Earnest Page Video
 ScriptType: v4.00+
@@ -147,10 +145,8 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Author,HK Grotesk,34,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,0,2,7,40,40,310
-Style: Timestamp,HK Grotesk,24,&H80FFFFFF,&H80FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,1,7,40,40,345
-Style: Title,HK Grotesk,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,0,4,7,40,40,380
-Style: Sub,HK Grotesk,60,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,340
+Style: Title,HK Grotesk,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,0,4,7,40,40,520
+Style: Sub,HK Grotesk,60,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,480
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
@@ -158,12 +154,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
     const events: string[] = [];
 
     // Static text — visible for entire video
-    const escapedAuthor = escapeAss(authorName);
-    const escapedTimestamp = escapeAss(timestamp);
     const escapedTitle = escapeAss(title);
 
-    events.push(`Dialogue: 0,0:00:00.00,${totalEnd},Author,,0,0,0,,${escapedAuthor}`);
-    events.push(`Dialogue: 0,0:00:00.00,${totalEnd},Timestamp,,0,0,0,,${escapedTimestamp}`);
     events.push(`Dialogue: 0,0:00:00.00,${totalEnd},Title,,0,0,0,,${escapedTitle}`);
 
     // Timed subtitles

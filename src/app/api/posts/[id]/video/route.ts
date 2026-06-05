@@ -230,7 +230,7 @@ export async function GET(
         console.log(`[Video] Frame rendered: ${frameBuffer.length} bytes`);
 
         // ── Generate ASS subtitle file (ALL text — title, author, timestamp + timed subs) ──
-        const assContent = generateAssSubtitles(subtitles, totalDuration, titleText, 'Me', timeAgo);
+        const assContent = generateAssSubtitles(subtitles, totalDuration, titleText);
         const assPath = join(workDir, 'subtitles.ass');
         await fs.writeFile(assPath, assContent, 'utf-8');
         console.log(`[Video] ASS subtitles written: ${subtitles.length} timed entries + 3 static`);
