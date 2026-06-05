@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, Share2, Download, Loader2 } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, Share2, Download, Loader2, FileText, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -77,6 +77,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [localVisibility, setLocalVisibility] = useState<'private' | 'community' | 'public'>(post.visibility || (post.is_public ? 'community' : 'private'));
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
     const [videoToast, setVideoToast] = useState<string | null>(null);
+    const [isTextView, setIsTextView] = useState(false);
+    const [copiedField, setCopiedField] = useState<string | null>(null);
 
 
     const t = useTranslations('feed');
@@ -746,21 +748,38 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         )}
                     </div>
 
-                    {/* Center: transcript toggle — only for author */}
-                    {isAuthor && hasPrivateData && (
+                    {/* Center: view mode toggles */}
+                    <div className="flex items-center gap-1.5">
+                        {/* Text toggle — visible to all users */}
                         <button
-                            onClick={() => { setIsFlipped(!isFlipped); setIsResponseExpanded(false); }}
+                            onClick={() => { setIsTextView(!isTextView); if (!isTextView) setIsFlipped(false); }}
                             className={cn(
                                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200",
-                                isFlipped
-                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                isTextView
+                                    ? "bg-white/10 border-white/30 text-white"
                                     : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
                             )}
                         >
-                            <RefreshCw className={cn("w-3.5 h-3.5 transition-transform duration-500", isFlipped && "rotate-180")} />
-                            {isFlipped ? 'Post' : 'Chat'}
+                            <FileText className="w-3.5 h-3.5" />
+                            {isTextView ? 'Short' : 'Text'}
                         </button>
-                    )}
+
+                        {/* Chat toggle — author only */}
+                        {isAuthor && hasPrivateData && (
+                            <button
+                                onClick={() => { setIsFlipped(!isFlipped); if (!isFlipped) setIsTextView(false); setIsResponseExpanded(false); }}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200",
+                                    isFlipped
+                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                        : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+                                )}
+                            >
+                                <RefreshCw className={cn("w-3.5 h-3.5 transition-transform duration-500", isFlipped && "rotate-180")} />
+                                {isFlipped ? 'Post' : 'Chat'}
+                            </button>
+                        )}
+                    </div>
 
                     {/* Right: download + delete + share */}
                     <div className="flex items-center gap-2">
@@ -861,6 +880,94 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         </button>
                     </div>
                 </div>
+
+                {/* Text view — readable post content with copyable title */}
+                {isTextView && (
+                    <div className="border-t border-white/5 bg-zinc-950">
+                        <div className="p-4 space-y-4">
+                            {/* Title with copy button */}
+                            {publicTitle && (
+                                <div className="flex items-start gap-2">
+                                    <h3 className="text-base font-bold text-white leading-tight flex-1">{publicTitle}</h3>
+                                    <button
+                                        onClick={async () => {
+                                            await navigator.clipboard.writeText(publicTitle);
+                                            setCopiedField('title');
+                                            setTimeout(() => setCopiedField(null), 2000);
+                                        }}
+                                        className="shrink-0 p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-all"
+                                        title="Copy title"
+                                    >
+                                        {copiedField === 'title' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Letter */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Letter</span>
+                                    <button
+                                        onClick={async () => {
+                                            await navigator.clipboard.writeText(publicLetter || '');
+                                            setCopiedField('letter');
+                                            setTimeout(() => setCopiedField(null), 2000);
+                                        }}
+                                        className="p-1 rounded text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
+                                        title="Copy letter"
+                                    >
+                                        {copiedField === 'letter' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                    </button>
+                                </div>
+                                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{publicLetter}</p>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-white/5" />
+
+                            {/* Response */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Response</span>
+                                    <button
+                                        onClick={async () => {
+                                            await navigator.clipboard.writeText(publicResponse || '');
+                                            setCopiedField('response');
+                                            setTimeout(() => setCopiedField(null), 2000);
+                                        }}
+                                        className="p-1 rounded text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
+                                        title="Copy response"
+                                    >
+                                        {copiedField === 'response' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                    </button>
+                                </div>
+                                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{publicResponse}</p>
+                            </div>
+
+                            {/* Copy all as caption */}
+                            <button
+                                onClick={async () => {
+                                    const caption = `${publicTitle || ''}\n\n${publicLetter || ''}\n\n${publicResponse || ''}`;
+                                    await navigator.clipboard.writeText(caption.trim());
+                                    setCopiedField('all');
+                                    setTimeout(() => setCopiedField(null), 2000);
+                                }}
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all duration-200",
+                                    copiedField === 'all'
+                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                        : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+                                )}
+                            >
+                                {copiedField === 'all' ? (
+                                    <><Check className="w-3.5 h-3.5" /> Copied!</>
+                                ) : (
+                                    <><Copy className="w-3.5 h-3.5" /> Copy Full Caption</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Comment section (reused) */}
                 {isCommentOpen && (

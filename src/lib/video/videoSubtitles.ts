@@ -127,14 +127,17 @@ export function generateAssSubtitles(
     title: string,
     authorName: string,
     timestamp: string,
-    hasAvatar: boolean,
 ): string {
     const totalEnd = formatAssTime(totalDuration);
-    // Author text x-position depends on avatar presence (avatar is 80px + 20px gap)
-    const authorMarginL = hasAvatar ? 140 : 40;
 
     // ASS uses PlayResX/PlayResY for layout coordinates — match 1080×1920 video
     // Alignment codes: 7=top-left, 8=top-center, 9=top-right, 1=bot-left, 2=bot-center
+    //
+    // SOCIAL MEDIA SAFE ZONES (9:16 / 1080×1920):
+    //   Top ~300px: platform headers (profile, navigation, title) — TikTok, IG, YouTube
+    //   Bottom ~350px: platform footers (caption, buttons, subscribe bar)
+    //   Right ~120px: action buttons (like, comment, share)
+    // Title pushed to MarginV=380 (below headers), Subs to MarginV=340 (above footers).
     const header = `[Script Info]
 Title: Earnest Page Video
 ScriptType: v4.00+
@@ -144,10 +147,10 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Author,HK Grotesk,34,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,0,2,7,${authorMarginL},40,100
-Style: Timestamp,HK Grotesk,24,&H80FFFFFF,&H80FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,1,7,${authorMarginL},40,135
-Style: Title,HK Grotesk,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,0,4,7,40,40,210
-Style: Sub,HK Grotesk,54,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,180
+Style: Author,HK Grotesk,34,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,0,2,7,40,40,310
+Style: Timestamp,HK Grotesk,24,&H80FFFFFF,&H80FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,1,7,40,40,345
+Style: Title,HK Grotesk,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,0,4,7,40,40,380
+Style: Sub,HK Grotesk,60,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,340
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;

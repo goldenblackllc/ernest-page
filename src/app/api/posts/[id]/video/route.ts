@@ -136,29 +136,7 @@ export async function GET(
             }
         }
 
-        // ── Download author avatar from user profile doc ──
-        // author_avatar_url doesn't exist on the post document — it's fetched
-        // from the user's profile at query time by the feed/post APIs.
-        const avatarPath = join(workDir, 'avatar.jpg');
-        let hasAvatar = false;
-        const authorId = post.authorId || post.uid;
-        if (authorId) {
-            try {
-                const authorDoc = await db.collection('users').doc(authorId).get();
-                const avatarUrl = authorDoc.data()?.character_bible?.compiled_output?.avatar_url;
-                if (avatarUrl) {
-                    const avatarRes = await fetch(avatarUrl);
-                    if (avatarRes.ok) {
-                        await fs.writeFile(avatarPath, Buffer.from(await avatarRes.arrayBuffer()));
-                        hasAvatar = true;
-                        const avatarStat = await fs.stat(avatarPath);
-                        console.log(`[Video] Avatar downloaded: ${avatarStat.size} bytes`);
-                    }
-                }
-            } catch (e: any) {
-                console.log('[Video] Failed to download avatar:', e.message);
-            }
-        }
+
 
         // ── Get audio duration via ffmpeg ──
         // Turbopack rewrites require() and require.resolve() paths at bundle time.
@@ -247,13 +225,12 @@ export async function GET(
         const framePath = join(workDir, 'frame.png');
         const frameBuffer = await renderFrame({
             heroPath,
-            avatarPath: hasAvatar ? avatarPath : undefined,
         });
         await fs.writeFile(framePath, frameBuffer);
         console.log(`[Video] Frame rendered: ${frameBuffer.length} bytes`);
 
         // ── Generate ASS subtitle file (ALL text — title, author, timestamp + timed subs) ──
-        const assContent = generateAssSubtitles(subtitles, totalDuration, titleText, 'Me', timeAgo, hasAvatar);
+        const assContent = generateAssSubtitles(subtitles, totalDuration, titleText, 'Me', timeAgo);
         const assPath = join(workDir, 'subtitles.ass');
         await fs.writeFile(assPath, assContent, 'utf-8');
         console.log(`[Video] ASS subtitles written: ${subtitles.length} timed entries + 3 static`);

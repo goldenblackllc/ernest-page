@@ -143,6 +143,9 @@ export async function GET(req: Request) {
 }
 
 // ─── Generate a single digest card (image + write) ───────────────────────────
+const MAX_IMAGE_ATTEMPTS = 3;
+const IMAGE_RETRY_DELAY_MS = 2000;
+
 async function generateDigestCard(user: {
     uid: string;
     title: string;
@@ -153,52 +156,92 @@ async function generateDigestCard(user: {
     identityTitle: string;
     voiceId: string | null;
 }): Promise<boolean> {
-    let imageUrl: string | null = null;
+    // ─── IDEMPOTENCY CHECK ───
+    // If this user already has a complete digest card for today, skip.
+    // This allows the cron to run multiple times (4 AM / 6 AM / 8 AM)
+    // and only retry users whose card is missing image or audio.
+    const today = new Date().toISOString().split('T')[0];
+    const userDoc = await user.ref.get();
+    const existingDigest = userDoc.data()?.daily_digest;
 
-    try {
-        const contentSnippet = user.content.substring(0, 200).replace(/[*#_]/g, '');
+    if (existingDigest?.date === today) {
+        const hasImage = Boolean(existingDigest.image_url);
+        const hasAudio = Boolean(existingDigest.audio_url) || !user.voiceId; // audio not needed if no voice
+
+        if (hasImage && hasAudio) {
+            console.log(`[Daily Digest] Skipping ${user.uid} — today's card is complete`);
+            return false; // Already complete, skip
+        }
+        console.log(`[Daily Digest] Re-running ${user.uid} — missing: ${!hasImage ? 'image' : ''} ${!hasAudio ? 'audio' : ''}`);
+    }
+
+    // Use existing content if re-running, otherwise use newly picked content
+    const title = existingDigest?.date === today ? existingDigest.title : user.title;
+    const content = existingDigest?.date === today ? existingDigest.content : user.content;
+
+    // ─── IMAGE GENERATION (with retry) ───
+    let imageUrl: string | null = existingDigest?.date === today ? (existingDigest.image_url || null) : null;
+
+    if (!imageUrl) {
+        const contentSnippet = content.substring(0, 200).replace(/[*#_]/g, '');
         const identityContext = (user.archetype || user.identityTitle)
             ? ` The user's identity: archetype "${user.archetype}", roles "${user.identityTitle}". Let this inform the visual world — setting, objects, and atmosphere should reflect who this person is.`
             : '';
         const imagenPrompt = `Create an image inspired by this passage: "${contentSnippet}". Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text.${identityContext}${user.demographicHint} ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.`;
 
-        const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                instances: [{ prompt: imagenPrompt }],
-                parameters: { sampleCount: 1, aspectRatio: "16:9" }
-            })
-        });
-
-        if (imagenRes.ok) {
-            const data = await imagenRes.json();
-            if (data.predictions?.[0]?.bytesBase64Encoded) {
-                const buffer = Buffer.from(data.predictions[0].bytesBase64Encoded, 'base64');
-                const bucket = storage.bucket();
-                const fileName = `digest-images/${user.uid}_${Date.now()}.jpg`;
-                const file = bucket.file(fileName);
-
-                await file.save(buffer, {
-                    metadata: { contentType: 'image/jpeg' },
-                    public: true
+        for (let attempt = 1; attempt <= MAX_IMAGE_ATTEMPTS; attempt++) {
+            try {
+                const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        instances: [{ prompt: imagenPrompt }],
+                        parameters: { sampleCount: 1, aspectRatio: "16:9" }
+                    })
                 });
 
-                imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                if (imagenRes.ok) {
+                    const data = await imagenRes.json();
+                    if (data.predictions?.[0]?.bytesBase64Encoded) {
+                        const buffer = Buffer.from(data.predictions[0].bytesBase64Encoded, 'base64');
+                        const bucket = storage.bucket();
+                        const fileName = `digest-images/${user.uid}_${Date.now()}.jpg`;
+                        const file = bucket.file(fileName);
+
+                        await file.save(buffer, {
+                            metadata: { contentType: 'image/jpeg' },
+                            public: true
+                        });
+
+                        imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                        console.log(`[Daily Digest] Image generated for ${user.uid} on attempt ${attempt}`);
+                        break; // Success — exit retry loop
+                    }
+                } else {
+                    console.error(`[Daily Digest] Imagen error (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, await imagenRes.text());
+                }
+            } catch (imgErr) {
+                console.error(`[Daily Digest] Image generation failed (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, imgErr);
             }
-        } else {
-            console.error('[Daily Digest] Imagen error:', await imagenRes.text());
+
+            // Wait before retrying (skip delay on last attempt)
+            if (attempt < MAX_IMAGE_ATTEMPTS) {
+                await new Promise(resolve => setTimeout(resolve, IMAGE_RETRY_DELAY_MS));
+            }
         }
-    } catch (imgErr) {
-        console.error('[Daily Digest] Image generation failed:', imgErr);
+
+        if (!imageUrl) {
+            console.warn(`[Daily Digest] Image failed after ${MAX_IMAGE_ATTEMPTS} attempts for ${user.uid} — will retry on next cron run`);
+        }
     }
 
     // ─── TTS Audio Generation ───
-    let audioUrl: string | null = null;
-    if (user.voiceId) {
+    let audioUrl: string | null = existingDigest?.date === today ? (existingDigest.audio_url || null) : null;
+
+    if (!audioUrl && user.voiceId) {
         try {
             // Narrate as: "About me and my life. [Title]. [Content]"
-            const narrationText = `About me and my life. ${user.title}. ${user.content}`;
+            const narrationText = `About me and my life. ${title}. ${content}`;
             const audioResult = await generatePostAudio(
                 narrationText,
                 '',  // No response — single narration track
@@ -215,15 +258,16 @@ async function generateDigestCard(user: {
     }
 
     const digestCard = {
-        title: user.title,
-        content: user.content,
-        full_content: user.content,
+        title,
+        content,
+        full_content: content,
         image_url: imageUrl,
         audio_url: audioUrl,
-        date: new Date().toISOString().split('T')[0],
+        date: today,
         updated_at: new Date().toISOString(),
     };
 
     await user.ref.set({ daily_digest: digestCard }, { merge: true });
     return true;
 }
+
