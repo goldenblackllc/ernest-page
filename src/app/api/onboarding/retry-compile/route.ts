@@ -54,6 +54,16 @@ export async function POST(req: Request) {
                 character_bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() }
             }, { merge: true });
 
+            // Fire avatar generation independently — non-blocking, errors handled by avatar route
+            fetch(`${origin}/api/character/avatar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-key': process.env.CRON_SECRET || '',
+                },
+                body: JSON.stringify({ uid }),
+            }).catch(err => console.error(`[RetryCompile] Avatar trigger failed (non-fatal):`, err.message));
+
             console.log(`[RetryCompile] Complete for ${uid}`);
         } catch (err: any) {
             console.error(`[RetryCompile] Error for ${uid}:`, err.message);

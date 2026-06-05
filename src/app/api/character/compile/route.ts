@@ -281,26 +281,14 @@ export async function POST(req: Request) {
 
             // Save bible + increment compile counters atomically
             await userDocRef.set({
-                character_bible: updatedBible,
+                character_bible: {
+                    ...updatedBible,
+                    avatar_status: 'pending',
+                },
                 compile_count: compilesToday + 1,
                 compile_count_date: today,
                 last_compile_at: Date.now(),
             }, { merge: true });
-        }
-
-        // Generate avatar — awaited so the client knows everything is ready
-        const origin = new URL(req.url).origin;
-        try {
-            await fetch(`${origin}/api/character/avatar`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-internal-key': process.env.CRON_SECRET || '',
-                },
-                body: JSON.stringify({ uid }),
-            });
-        } catch (err) {
-            console.error('[Compile] Avatar generation failed (non-fatal):', err);
         }
 
         return Response.json({

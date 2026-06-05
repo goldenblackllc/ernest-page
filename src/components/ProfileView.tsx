@@ -198,30 +198,50 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
         setError(null);
 
         try {
-            const idToken = await user.getIdToken();
-            const res = await fetch('/api/onboarding/process', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({
-                    rant: data.rant.trim(),
+            // Save identity fields directly to Firestore (fast, <1s)
+            const { doc, setDoc } = await import('firebase/firestore');
+            await setDoc(doc(db, 'users', user.uid), {
+                identity: {
+                    dream_rant: data.rant.trim(),
                     gender: data.gender.trim(),
                     age: data.age.trim(),
                     ethnicity: data.ethnicity.trim(),
                     important_people: data.people.trim(),
                     things_i_enjoy: data.enjoyments.trim(),
                     character_name: data.character_name.trim(),
-                }),
-            });
-            const result = await res.json();
-            if (!res.ok) throw new Error(result.message || result.error || 'Processing failed.');
+                },
+                character_bible: {
+                    status: 'compiling',
+                    last_updated: Date.now(),
+                    // Preserve character_name in bible too
+                    ...(data.character_name.trim() ? { character_name: data.character_name.trim() } : {}),
+                },
+            }, { merge: true });
 
-            // Process API kicks off bible+avatar generation in background.
-            // Navigate to dashboard where the status card shows progress.
+            // Navigate to feed immediately — user sees the "compiling" status card
             onClose();
             window.location.href = '/';
+
+            // Fire the full process API in the background (fire-and-forget)
+            // This handles AI enrichment (title, dream_self) + bible compilation + avatar
+            user.getIdToken().then(idToken => {
+                fetch('/api/onboarding/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`,
+                    },
+                    body: JSON.stringify({
+                        rant: data.rant.trim(),
+                        gender: data.gender.trim(),
+                        age: data.age.trim(),
+                        ethnicity: data.ethnicity.trim(),
+                        important_people: data.people.trim(),
+                        things_i_enjoy: data.enjoyments.trim(),
+                        character_name: data.character_name.trim(),
+                    }),
+                }).catch(err => console.error('[Edit] Background process error:', err));
+            }).catch(err => console.error('[Edit] Token error:', err));
         } catch (err: any) {
             setError(err.message || 'Something went wrong.');
             setIsProcessing(false);

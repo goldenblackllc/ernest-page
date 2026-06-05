@@ -1,4 +1,5 @@
 import { db, storage } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
 import sharp from 'sharp';
@@ -6,10 +7,11 @@ import sharp from 'sharp';
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+    let uid: string | undefined;
     try {
         if (!verifyInternalAuth(req)) return unauthorizedResponse();
 
-        const { uid } = await req.json();
+        ({ uid } = await req.json());
 
         if (!uid) {
             return Response.json({ error: 'Missing uid' }, { status: 400 });
@@ -84,6 +86,14 @@ export async function POST(req: Request) {
         console.log(`[Avatar] Generating for ${uid}: "${title}"`);
         console.log(`[Avatar] Prompt: ${prompt}`);
 
+        // Mark avatar as generating
+        await db.collection('users').doc(uid).set({
+            character_bible: {
+                avatar_status: 'generating',
+                avatar_last_attempt: Date.now(),
+            }
+        }, { merge: true });
+
         // Call Imagen 4
         const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
         const imagenRes = await fetch(
@@ -101,12 +111,34 @@ export async function POST(req: Request) {
         if (!imagenRes.ok) {
             const errText = await imagenRes.text();
             console.error('[Avatar] Imagen API error:', errText);
+            try {
+                await db.collection('users').doc(uid).set({
+                    character_bible: {
+                        avatar_status: 'failed',
+                        avatar_attempt_count: FieldValue.increment(1),
+                        avatar_error: errText.substring(0, 500),
+                    }
+                }, { merge: true });
+            } catch (e) {
+                console.error('[Avatar] Failed to write error status:', e);
+            }
             return Response.json({ error: 'Image generation failed', detail: errText }, { status: 502 });
         }
 
         const imagenData = await imagenRes.json();
         if (!imagenData.predictions?.[0]?.bytesBase64Encoded) {
             console.error('[Avatar] No image data in response');
+            try {
+                await db.collection('users').doc(uid).set({
+                    character_bible: {
+                        avatar_status: 'failed',
+                        avatar_attempt_count: FieldValue.increment(1),
+                        avatar_error: 'No image returned from Imagen',
+                    }
+                }, { merge: true });
+            } catch (e) {
+                console.error('[Avatar] Failed to write error status:', e);
+            }
             return Response.json({ error: 'No image returned from Imagen' }, { status: 502 });
         }
 
@@ -145,6 +177,9 @@ export async function POST(req: Request) {
                     ...(currentBible.compiled_output || {}),
                     avatar_url: avatarUrl,
                 },
+                avatar_status: 'ready',
+                avatar_attempt_count: FieldValue.increment(1),
+                avatar_error: null,
             },
         }, { merge: true });
 
@@ -152,6 +187,19 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[Avatar] Error:', error);
+        if (uid) {
+            try {
+                await db.collection('users').doc(uid).set({
+                    character_bible: {
+                        avatar_status: 'failed',
+                        avatar_attempt_count: FieldValue.increment(1),
+                        avatar_error: (error.message || 'Avatar generation failed').substring(0, 500),
+                    }
+                }, { merge: true });
+            } catch (e) {
+                console.error('[Avatar] Failed to write error status:', e);
+            }
+        }
         return Response.json({ error: error.message || 'Avatar generation failed' }, { status: 500 });
     }
 }
