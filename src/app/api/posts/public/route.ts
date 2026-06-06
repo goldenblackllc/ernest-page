@@ -52,6 +52,8 @@ export async function GET() {
                 letter: data.public_post?.letter || data.letter || data.tension || null,
                 response: data.public_post?.response || data.response || data.counsel || null,
                 imagen_url: data.public_post?.imagen_url || data.imagen_url || null,
+                audio_url: data.audio_url || null,
+                audio_letter_ratio: data.audio_letter_ratio ?? null,
                 directive_title: data.directive_title || null,
                 unexpected_yield: data.unexpected_yield || null,
                 author_avatar_url: avatarMap[data.authorId || data.uid] || null,
