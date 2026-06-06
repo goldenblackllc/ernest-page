@@ -3,7 +3,7 @@
 // Goal: Instant cold-open by serving cached assets before network.
 // ═══════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'ep-v4';
+const CACHE_VERSION = 'ep-v5';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -64,32 +64,27 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Strategy 1: Cache-first for static assets (fonts, images, _next/static)
-    if (url.pathname.startsWith('/_next/static/') ||
-        url.pathname.startsWith('/fonts/') ||
+    // Strategy 1: Network-first for ALL _next/ paths (JS bundles + RSC data)
+    // JS bundles have content hashes so cache-first is safe in theory,
+    // but RSC/data payloads under _next/ carry dynamic page data that must
+    // not be served stale. Using network-first for the entire _next/ subtree
+    // avoids ordering bugs where static sub-paths shadow JS-specific rules.
+    if (url.pathname.startsWith('/_next/')) {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
+    // Strategy 2: Cache-first for truly static assets (fonts, images, icons)
+    if (url.pathname.startsWith('/fonts/') ||
         url.pathname.startsWith('/icons/') ||
         url.pathname.match(/\.(woff2?|ttf|eot|png|jpg|jpeg|gif|webp|svg|ico|css)$/)) {
         event.respondWith(cacheFirst(request));
         return;
     }
 
-    // Strategy 2: Network-first for JS bundles — always fetch fresh, fallback to cache offline
-    if (url.pathname.startsWith('/_next/') && url.pathname.endsWith('.js')) {
-        event.respondWith(networkFirst(request));
-        return;
-    }
-
     // Strategy 3: Network-first for navigation (HTML pages)
     // Serves cached shell instantly if network is slow/offline
     if (request.mode === 'navigate') {
-        event.respondWith(networkFirst(request));
-        return;
-    }
-
-    // Strategy 4: Network-first for RSC/data payloads from Next.js
-    // These are same-origin fetches to /_next/ paths (not .js) that carry
-    // dynamic page data — must not be served stale.
-    if (url.pathname.startsWith('/_next/')) {
         event.respondWith(networkFirst(request));
         return;
     }
