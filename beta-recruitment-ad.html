@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earnest Page — Beta Recruitment Campaign</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      gap: 24px;
+    }
+
+    /* ── VARIANT PICKER (preview tool only) ── */
+    .picker {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .picker-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.35);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .picker-btn:hover, .picker-btn.active {
+      border-color: rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .picker-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.15);
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+
+    /* ── CAPTION PREVIEW ── */
+    .caption-bar {
+      max-width: 540px;
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .caption-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 8px;
+    }
+
+    .caption-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+      white-space: pre-line;
+    }
+
+    .caption-text .hashtags {
+      color: rgba(255,255,255,0.25);
+    }
+
+    /* ──────────────────────────────────────────
+       TikTok Safe Zones:
+       - Right ~110px : profile, like, share, etc
+       - Bottom ~280px: caption, music, CTA
+       - Top ~60px    : status bar
+    ────────────────────────────────────────── */
+    .card {
+      width: 540px;
+      height: 960px;
+      background: #000000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Grain texture */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── SAFE CONTENT ZONE ── */
+    .content {
+      position: relative;
+      z-index: 1;
+      padding: 76px 130px 0 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* ── TOP EYEBROW ── */
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.20);
+      margin-bottom: 36px;
+    }
+
+    /* ── PROBLEM STATEMENT ── */
+    .problem {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      color: #ffffff;
+    }
+
+    .problem .dim {
+      color: rgba(255,255,255,0.32);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 36px;
+      height: 2px;
+      background: rgba(255,255,255,0.12);
+      margin: 36px 0;
+    }
+
+    /* ── TAGLINE BLOCK ── */
+    .tagline {
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.95);
+    }
+
+    .tagline .deliverable {
+      display: block;
+      font-size: 19px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.38);
+      letter-spacing: -0.01em;
+      margin-top: 12px;
+      line-height: 1.45;
+    }
+
+    .tagline .price {
+      display: block;
+      font-size: 20px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.20);
+      letter-spacing: -0.01em;
+      margin-top: 4px;
+    }
+
+    /* ── BRAND ── */
+    .brand {
+      position: absolute;
+      z-index: 1;
+      bottom: 296px;
+      left: 44px;
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.13);
+      text-transform: uppercase;
+    }
+
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+      position: absolute;
+      z-index: 1;
+      bottom: 280px;
+      left: 44px;
+      font-size: 7.5px;
+      color: rgba(255,255,255,0.07);
+    }
+
+    /* ── TIKTOK UI CHROME (preview only) ── */
+    .tiktok-right {
+      position: absolute;
+      right: 14px;
+      bottom: 330px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      z-index: 10;
+    }
+
+    .tt-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      margin-bottom: 4px;
+    }
+
+    .tt-icon-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tt-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.025);
+    }
+
+    .tt-count {
+      font-size: 9px;
+      color: rgba(255,255,255,0.15);
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .tiktok-caption {
+      position: absolute;
+      bottom: 36px;
+      left: 16px;
+      right: 80px;
+      z-index: 10;
+    }
+
+    .tt-handle {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.13);
+      margin-bottom: 5px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .tt-caption-text {
+      font-size: 12px;
+      color: rgba(255,255,255,0.10);
+      line-height: 1.4;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* ── TRANSITION ── */
+    .problem, .tagline, .divider, .eyebrow {
+      transition: opacity 0.25s ease;
+    }
+
+    .card.switching .problem,
+    .card.switching .tagline,
+    .card.switching .divider,
+    .card.switching .eyebrow {
+      opacity: 0;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Preview variant picker -->
+  <div class="picker">
+    <span class="picker-label">Healing</span>
+    <button class="picker-btn active" onclick="setVariant(0)">01</button>
+    <button class="picker-btn" onclick="setVariant(1)">02</button>
+    <button class="picker-btn" onclick="setVariant(2)">03</button>
+    <button class="picker-btn" onclick="setVariant(3)">04</button>
+    <button class="picker-btn" onclick="setVariant(4)">05</button>
+    <button class="picker-btn" onclick="setVariant(5)">06</button>
+    <button class="picker-btn" onclick="setVariant(6)">07</button>
+    <span class="picker-label" style="margin-left: 12px;">Growth</span>
+    <button class="picker-btn" onclick="setVariant(7)">08</button>
+    <button class="picker-btn" onclick="setVariant(8)">09</button>
+    <button class="picker-btn" onclick="setVariant(9)">10</button>
+    <button class="picker-btn" onclick="setVariant(10)">11</button>
+    <button class="picker-btn" onclick="setVariant(11)">12</button>
+    <button class="picker-btn" onclick="setVariant(12)">13</button>
+    <button class="picker-btn" onclick="setVariant(13)">14</button>
+    <span class="picker-label" style="margin-left: 12px;">Lifestyle</span>
+    <button class="picker-btn" onclick="setVariant(14)">15</button>
+    <button class="picker-btn" onclick="setVariant(15)">16</button>
+    <button class="picker-btn" onclick="setVariant(16)">17</button>
+    <button class="picker-btn" onclick="setVariant(17)">18</button>
+    <button class="picker-btn" onclick="setVariant(18)">19</button>
+  </div>
+
+  <div class="card" id="card">
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="content">
+
+      <div class="eyebrow" id="eyebrow-text">Earnest Page</div>
+
+      <div class="problem" id="problem-text">
+        He didn't<br>
+        love you<br>
+        <span class="dim">no matter what.</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- TAGLINE — updated for beta recruitment -->
+      <div class="tagline" id="tagline-text">
+        Talk to the<br>version of you<br>who left.
+        <span class="deliverable">Looking for 5 people to test this — free access + compensation.</span>
+        <span class="price">Apply — link in bio</span>
+      </div>
+
+    </div>
+
+    <!-- Brand + disclaimer -->
+    <div class="brand">Earnest Page</div>
+    <div class="disclaimer">AI-powered personal development · not a licensed therapy service</div>
+
+    <!-- TikTok chrome (preview only) -->
+    <div class="tiktok-right">
+      <div class="tt-avatar"></div>
+      <div class="tt-icon-group">
+        <div class="tt-icon"></div>
+        <div class="tt-count">0</div>
+      </div>
+      <div class="tt-icon-group">
+        <div class="tt-icon"></div>
+        <div class="tt-count">0</div>
+      </div>
+      <div class="tt-icon-group">
+        <div class="tt-icon"></div>
+        <div class="tt-count">0</div>
+      </div>
+    </div>
+
+    <div class="tiktok-caption">
+      <div class="tt-handle">@earnestpage</div>
+      <div class="tt-caption-text">Looking for 5 people to test this · free access + paid · apply in bio</div>
+    </div>
+
+  </div>
+
+  <!-- Caption preview -->
+  <div class="caption-bar">
+    <div class="caption-label">TikTok Caption</div>
+    <div class="caption-text" id="caption-text"></div>
+  </div>
+
+  <script>
+    /*
+      ═══════════════════════════════════════════════════════
+      BETA RECRUITMENT CAMPAIGN VARIANTS
+
+      Each variant has:
+        - lines: the headline text
+        - tagline: the response/CTA block
+        - caption: the TikTok caption text
+
+      01-07: HEALING   — emotional pain, relationships, identity
+      08-14: GROWTH    — money, career, school, ambition
+      15-19: LIFESTYLE — style, dating, body image, confidence
+      ═══════════════════════════════════════════════════════
+    */
+    const variants = [
+      {
+        // AD 01 — unrequited love / "he didn't love me"
+        lines: [
+          "He didn't",
+          "love you",
+          { text: "no matter what.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who left.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `That feeling when you gave everything and it still wasn't enough.
+
+You don't need him to love you. You need to hear what the version of you who already walked away would say.
+
+Earnest Page lets you talk to your ideal self — the one who figured it out. Not a chatbot. Not therapy. Something different.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #healing #breakup #selflove #lettinggo #toxicrelationship #movingon`
+      },
+      {
+        // AD 02 — invisibility / "no one sees me"
+        lines: [
+          "No one",
+          "actually",
+          { text: "sees you.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to<br>someone<br>who does.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You show up for everyone. You hold it together. And no one asks how you're doing.
+
+Not because they don't care. Because you taught them not to.
+
+Earnest Page is a conversation with a version of you that actually gets it. It sees the pattern. It talks back.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #invisible #mentalhealth #emotionalhealth #selfworth #seen #healing`
+      },
+      {
+        // AD 03 — loneliness / "I'm alone"
+        lines: [
+          "You have",
+          "people around",
+          { text: "and feel alone.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>one person<br>who gets it.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `Full contacts list. Group chats. "Friends." And you still feel completely alone.
+
+Because no one knows the real version. The one you don't post about.
+
+Earnest Page lets you talk to the version of yourself that already figured this out. It's not advice. It's a mirror.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #lonely #alone #mentalhealth #realones #healing #innerwork`
+      },
+      {
+        // AD 04 — family pain / "my family stinks"
+        lines: [
+          "Your family",
+          "was supposed",
+          { text: "to be safe.", dim: true }
+        ],
+        tagline: {
+          main: "Build the<br>version of you<br>they couldn't.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `They were supposed to protect you. Instead they became the thing you need protection from.
+
+You can't change your family. But you can stop letting their version of you run the show.
+
+Earnest Page is a conversation with your ideal self. The one your family never met. The one you're becoming.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #familytrauma #toxicfamily #healing #boundaries #generationaltrauma #selfworth`
+      },
+      {
+        // AD 05 — purposelessness / "why live" (SOFTENED — redirected toward meaning)
+        lines: [
+          "You're still",
+          "here and",
+          { text: "that matters.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who found why.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `Some days you don't know why you keep going. But you do. You're still here.
+
+That's not nothing. That's everything.
+
+Earnest Page lets you talk to the version of yourself who found the reason. Not motivation. Not a pep talk. A real conversation.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+If you're in crisis right now, text HOME to 741741 or call 988.
+
+#earnestpage #mentalhealth #purpose #keepgoing #youmatter #healing #selfworth`
+      },
+      {
+        // AD 06 — performing / masking
+        lines: [
+          "Everyone",
+          "thinks you're",
+          { text: "fine.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to<br>someone you<br>can't fool.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You're the strong one. The reliable one. The one who never falls apart.
+
+Except you do. Just never where anyone can see.
+
+Earnest Page is a conversation with the version of you that sees through it. The one you can't perform for. The one that knows.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #mentalhealth #highfunctioning #masking #anxiety #healing #realtalks`
+      },
+      {
+        // AD 07 — relationship pattern / proven original
+        lines: [
+          "You keep",
+          "choosing the",
+          { text: "wrong one.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who stopped.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `Same type. Same red flags. Same ending. Every time.
+
+It's not bad luck. It's a belief running in the background that you haven't looked at yet.
+
+Earnest Page lets you talk to the version of yourself that broke the cycle. Not a therapist. Not a chatbot. Your ideal self.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #toxicrelationships #datingpatterns #selflove #healing #breakup #attachment`
+      },
+
+      // ═══════════════════════════════════════════════════════
+      // GROWTH ADS (08–14) — Ambition, money, career, school
+      // ═══════════════════════════════════════════════════════
+
+      {
+        // AD 08 — money / wanting more
+        lines: [
+          "You weren't",
+          "built to be",
+          { text: "broke.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who built it.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You know you're capable of more. You can feel it. But something keeps you stuck in the same cycle — same paycheck, same ceiling, same excuses.
+
+It's not a money problem. It's a belief problem.
+
+Earnest Page lets you talk to the version of yourself that already built the life you're imagining. Not a coach. Not a course. A conversation with who you're becoming.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #money #ambition #wealth #mindset #success #levelup #entrepreneur`
+      },
+      {
+        // AD 09 — career / stuck at work
+        lines: [
+          "You're too",
+          "good for",
+          { text: "that job.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who quit.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You show up every day knowing this isn't it. You're overqualified, undervalued, and running out of patience.
+
+But you stay. Because the next move isn't clear yet.
+
+Earnest Page lets you talk to the version of yourself that already made the leap. The one who figured out what's next. Not a career coach — your ideal self.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #career #quityourjob #purpose #ambition #careerchange #growth #nextchapter`
+      },
+      {
+        // AD 10 — school / academic pressure
+        lines: [
+          "You're not",
+          "stupid. You're",
+          { text: "lost.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who found it.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `Everyone around you seems to have it figured out. The major, the plan, the motivation. And you're sitting there pretending you do too.
+
+You're not falling behind. You just haven't found YOUR direction yet.
+
+Earnest Page lets you talk to the version of yourself that figured out what they actually want — not what everyone else expects.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #college #school #student #findyourpath #motivation #genz #growth #purpose`
+      },
+      {
+        // AD 11 — comparison / social media
+        lines: [
+          "Their highlight",
+          "reel is not",
+          { text: "your life.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who logged off.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `Everyone's winning. Everyone's traveling. Everyone's in love. Everyone's got it figured out. At least that's what it looks like from your screen.
+
+And you know it's fake. But it still gets to you.
+
+Earnest Page lets you talk to the version of yourself that stopped comparing. The one who built a life instead of watching everyone else's.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #comparison #socialmedia #mentalhealth #fomo #reallife #genz #selfworth #growth`
+      },
+      {
+        // AD 12 — ambition / knowing you're meant for more
+        lines: [
+          "You know",
+          "you're meant",
+          { text: "for more.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who got there.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `That feeling that won't go away. The one that says this isn't your final form. You're meant for something bigger but you can't see the path yet.
+
+That feeling is a signal. Not a fantasy.
+
+Earnest Page lets you talk to the version of yourself that's already living the life you keep imagining. Not motivation. A real conversation.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #purpose #dreambig #ambition #manifestation #mindset #growth #futureself`
+      },
+      {
+        // AD 13 — creative dreams / side hustle
+        lines: [
+          "You have",
+          "something the",
+          { text: "world needs.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who shipped it.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `The idea. The project. The business. The art. It's been in your head for months. Maybe years. And it's still just... in your head.
+
+Not because you can't do it. Because something's in the way.
+
+Earnest Page lets you talk to the version of yourself that actually built the thing. The one who stopped waiting for permission.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #creator #entrepreneur #sidehustle #justdoit #dreams #startup #creative #build`
+      },
+      {
+        // AD 14 — general self-improvement / leveling up
+        lines: [
+          "Same year.",
+          "Different",
+          { text: "calendar.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>that changed.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `New year, same habits. New month, same excuses. You keep planning to change and then... nothing.
+
+It's not discipline you're missing. It's clarity on who you're actually becoming.
+
+Earnest Page lets you talk to your ideal self — the version of you that already made the change. It's not a planner. It's not a chatbot. It's a conversation with who you could be.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #selfimprovement #levelup #growth #discipline #habits #newyear #glowup #betterme`
+      },
+
+      // ═══════════════════════════════════════════════════════
+      // LIFESTYLE ADS (15–19) — Style, dating, confidence
+      // ═══════════════════════════════════════════════════════
+
+      {
+        // AD 15 — style / fashion / identity
+        lines: [
+          "You dress",
+          "like you don't",
+          { text: "know who you are.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>with the closet.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You stand in front of your closet every morning and nothing feels right. Not because you don't have clothes — because you don't know what you're going for.
+
+Style isn't about trends. It's about knowing who you are and dressing like it.
+
+Earnest Page lets you talk to the version of yourself that already figured out their look — the one who walks in and people notice.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #style #fashion #personalstyle #ootd #confidence #genz #glowup #aesthetic`
+      },
+      {
+        // AD 16 — dating / finding a date / confidence
+        lines: [
+          "You're not",
+          "bad at dating.",
+          { text: "You're scared.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who shot their shot.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You swipe. You draft texts and delete them. You see someone and think about saying something but you don't. Every time.
+
+It's not that you don't know what to say. It's that you don't believe they'd want to hear it.
+
+Earnest Page lets you talk to the version of yourself that has the confidence you keep faking. Not dating tips. Not pickup lines. Just clarity on who you are.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #dating #confidence #selflove #relationships #rizz #genz #datingadvice #growth`
+      },
+      {
+        // AD 17 — body image / self-perception (ORGANIC ONLY — don't boost)
+        lines: [
+          "You avoid",
+          "mirrors. That's",
+          { text: "not normal.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who looks back.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You check your phone camera but never a mirror. You untag yourself in photos. You cancel plans because of how you feel about how you look.
+
+The problem was never your body. It's the story you tell yourself about it.
+
+Earnest Page lets you talk to the version of yourself that actually likes what they see. Not a fitness app. Not a filter. A conversation with who you're becoming.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #bodyimage #selflove #confidence #mentalhealth #bodypositive #genz #healing #growth`
+      },
+      {
+        // AD 18 — social confidence / making friends
+        lines: [
+          "You have",
+          "1,000 followers",
+          { text: "and zero friends.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>people want around.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You can text anyone but can't call anyone. You're in group chats but never get invited. You know how to perform social but not how to actually connect.
+
+It's not a personality flaw. It's a wall you built and forgot about.
+
+Earnest Page lets you talk to the version of yourself that people gravitate toward. The one who stopped performing and started being real.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #socialanxiety #makingfriends #confidence #introvert #genz #connection #growth #realfriends`
+      },
+      {
+        // AD 19 — fitness / discipline / becoming that person
+        lines: [
+          "You keep",
+          "starting Monday.",
+          { text: "It's Thursday.", dim: true }
+        ],
+        tagline: {
+          main: "Talk to the<br>version of you<br>who didn't quit.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You downloaded the app. You bought the shoes. You set the alarm. And by Wednesday you're back on the couch.
+
+The problem isn't motivation. It's that you haven't met the version of yourself that actually follows through.
+
+Earnest Page lets you talk to that version. The one who shows up. Not a fitness coach — a conversation with who you're becoming.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #fitness #gym #discipline #motivation #gymtok #consistency #glowup #betterme`
+      }
+    ];
+
+    let current = 0;
+
+    function renderVariant(v) {
+      // Headline
+      const el = document.getElementById('problem-text');
+      el.innerHTML = v.lines.map((line, i) => {
+        const isLast = i === v.lines.length - 1;
+        const text = typeof line === 'string' ? line : line.text;
+        const dim = typeof line === 'object' && line.dim;
+        return `<span class="${dim ? 'dim' : ''}">${text}</span>${isLast ? '' : '<br>'}`;
+      }).join('');
+
+      // Tagline
+      const tl = document.getElementById('tagline-text');
+      tl.innerHTML = `
+        ${v.tagline.main}
+        <span class="deliverable">${v.tagline.deliverable}</span>
+        <span class="price">${v.tagline.price}</span>
+      `;
+
+      // Caption
+      const cl = document.getElementById('caption-text');
+      cl.textContent = v.caption;
+    }
+
+    function setVariant(index) {
+      const card = document.getElementById('card');
+      current = index;
+
+      // Update picker buttons
+      document.querySelectorAll('.picker-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === index);
+      });
+
+      // Fade out → swap → fade in
+      card.classList.add('switching');
+      setTimeout(() => {
+        renderVariant(variants[index]);
+        card.classList.remove('switching');
+      }, 250);
+    }
+
+    // Keyboard nav: left/right arrows
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') setVariant((current + 1) % variants.length);
+      if (e.key === 'ArrowLeft')  setVariant((current - 1 + variants.length) % variants.length);
+    });
+
+    // Init
+    renderVariant(variants[0]);
+  </script>
+
+</body>
+</html>

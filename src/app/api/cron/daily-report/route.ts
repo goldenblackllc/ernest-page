@@ -84,6 +84,64 @@ export async function GET(req: Request) {
             }
         }
 
+        // ── Beta Tester Engagement ─────────────────────────────────
+        interface BetaTesterRow {
+            name: string;
+            tiktok: string;
+            cohort: string;
+            sessions: number;
+            postCount: number;
+            lastActive: string;
+            daysLeft: number;
+            inactive: boolean;
+        }
+
+        const betaTesters: BetaTesterRow[] = [];
+        const betaTesterUids: string[] = [];
+
+        for (const userDoc of allUsers) {
+            const data = userDoc.data();
+            if (data?.beta_tester) {
+                betaTesterUids.push(userDoc.id);
+                const bt = data.beta_tester;
+                const sub = data.subscription;
+                const subEnd = sub?.subscribedUntil || sub?.currentPeriodEnd;
+                const daysLeft = subEnd ? Math.max(0, Math.ceil((new Date(subEnd).getTime() - now.getTime()) / (24 * 60 * 60 * 1000))) : 0;
+
+                // Determine last active date
+                const lastSessionDate = data.sessions_today_date || '';
+                const lastUpdated = data.updatedAt?.toDate?.()?.toISOString?.()?.split('T')[0]
+                    || (data.updatedAt ? new Date(data.updatedAt).toISOString().split('T')[0] : '');
+                const lastActive = lastSessionDate || lastUpdated || 'never';
+
+                // Check if inactive 3+ days
+                let inactive = true;
+                if (lastActive && lastActive !== 'never') {
+                    const daysSince = Math.floor((now.getTime() - new Date(lastActive).getTime()) / (24 * 60 * 60 * 1000));
+                    inactive = daysSince >= 3;
+                }
+
+                betaTesters.push({
+                    name: bt.name || '—',
+                    tiktok: bt.tiktok_handle || '—',
+                    cohort: bt.cohort || '—',
+                    sessions: data.identity?.session_count || 0,
+                    postCount: 0, // filled below
+                    lastActive,
+                    daysLeft,
+                    inactive,
+                });
+            }
+        }
+
+        // Fetch post counts for beta testers
+        for (let i = 0; i < betaTesterUids.length; i++) {
+            const postsSnap = await db.collection('posts')
+                .where('authorId', '==', betaTesterUids[i])
+                .get();
+            betaTesters[i].postCount = postsSnap.size;
+        }
+
         // ── Format Report ─────────────────────────────────────────
         const dateStr = now.toLocaleDateString('en-US', {
             weekday: 'long',
@@ -145,6 +203,40 @@ export async function GET(req: Request) {
             </tr>
         </table>
     </div>
+
+    ${betaTesters.length > 0 ? `
+    <div style="margin: 20px 0 0 0; padding: 16px; border: 1px solid #27272a; border-radius: 10px;">
+        <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 12px 0;">Beta Testers (${betaTesters.length})</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <tr style="border-bottom: 1px solid #27272a;">
+                <td style="padding: 6px 4px; color: #52525b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;">Name</td>
+                <td style="padding: 6px 4px; color: #52525b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;">TikTok</td>
+                <td style="padding: 6px 4px; color: #52525b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; text-align: center;">Sessions</td>
+                <td style="padding: 6px 4px; color: #52525b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; text-align: center;">Posts</td>
+                <td style="padding: 6px 4px; color: #52525b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; text-align: center;">Payout</td>
+                <td style="padding: 6px 4px; color: #52525b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; text-align: center;">Last Active</td>
+                <td style="padding: 6px 4px; color: #52525b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; text-align: center;">Days Left</td>
+            </tr>
+            ${betaTesters.map(bt => {
+                // Payout milestones: $50 at 1 post, $50 at 3 posts
+                let payout = '';
+                if (bt.postCount >= 3) payout = '\u2705 $100 done';
+                else if (bt.postCount >= 1) payout = '\u2705 $50 · <span style="color: #fbbf24;">$50 at 3 posts</span>';
+                else payout = '<span style="color: #52525b;">$50 at 1st post</span>';
+                return `
+            <tr style="border-bottom: 1px solid #18181b;">
+                <td style="padding: 8px 4px; color: ${bt.inactive ? '#f87171' : '#d4d4d8'}; font-weight: 500;">${bt.inactive ? '\u26a0\ufe0f ' : ''}${bt.name}</td>
+                <td style="padding: 8px 4px; color: #a1a1aa;">${bt.tiktok}</td>
+                <td style="padding: 8px 4px; color: ${bt.sessions > 0 ? '#34d399' : '#52525b'}; font-weight: 600; text-align: center;">${bt.sessions}</td>
+                <td style="padding: 8px 4px; color: ${bt.postCount > 0 ? '#34d399' : '#52525b'}; font-weight: 600; text-align: center;">${bt.postCount}</td>
+                <td style="padding: 8px 4px; text-align: center; font-size: 11px;">${payout}</td>
+                <td style="padding: 8px 4px; color: ${bt.inactive ? '#f87171' : '#a1a1aa'}; text-align: center; font-size: 11px;">${bt.lastActive}</td>
+                <td style="padding: 8px 4px; color: ${bt.daysLeft <= 5 ? '#fbbf24' : '#a1a1aa'}; font-weight: 600; text-align: center;">${bt.daysLeft}d</td>
+            </tr>`;
+            }).join('')}
+        </table>
+    </div>
+    ` : ''}
 
     <p style="font-size: 10px; color: #3f3f46; text-transform: uppercase; letter-spacing: 0.2em; text-align: center; margin: 24px 0 0 0;">Automated Report — Earnest Page</p>
 </div>`;

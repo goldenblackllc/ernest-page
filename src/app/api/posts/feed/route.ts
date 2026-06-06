@@ -240,6 +240,8 @@ export async function GET(req: Request) {
             posts: sanitized,
             following: followingMap,
             needsTranslation: shouldTranslate ? needsTranslation : [],
+        }, {
+            headers: { 'Cache-Control': 'no-store, max-age=0' },
         });
     } catch (error: any) {
         console.error("Feed API Error:", error);

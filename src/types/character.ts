@@ -116,6 +116,14 @@ export interface CharacterProfile {
         date: string;
         updated_at: string;
     };
+    beta_tester?: {
+        cohort: string;           // e.g., "tiktok-june-2026"
+        enrolled_at: string;      // ISO date
+        invite_code: string;      // The code they redeemed
+        source: string;           // e.g., "tiktok", "instagram", "direct"
+        tiktok_handle?: string;   // From the apply form (if provided)
+        name?: string;            // From the apply form (if provided)
+    };
 }
 
 export interface Directive {

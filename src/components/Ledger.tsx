@@ -83,6 +83,7 @@ export function Ledger() {
 
             const res = await fetch(`/api/posts/feed?locale=${locale}`, {
                 headers: { 'Authorization': `Bearer ${idToken}` },
+                cache: 'no-store',
             });
 
             if (!res.ok) throw new Error(`Feed API returned ${res.status}`);
@@ -142,9 +143,15 @@ export function Ledger() {
     }, [user, locale]);
 
 
-    // Initial load
+    // Initial load + stale-while-revalidate
+    // When we have cached data, render it instantly but always fetch fresh data.
     useEffect(() => {
-        if (user && loading) {
+        if (!user) return;
+        if (loading) {
+            // No cache — full load with skeleton
+            fetchFeed();
+        } else {
+            // Cache hit — background refresh (stale-while-revalidate)
             fetchFeed();
         }
     }, [user, loading, fetchFeed]);
@@ -163,6 +170,7 @@ export function Ledger() {
 
                 const res = await fetch(`/api/posts/feed?${params.toString()}`, {
                     headers: { 'Authorization': `Bearer ${idToken}` },
+                    cache: 'no-store',
                 });
 
                 if (res.ok) {
