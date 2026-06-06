@@ -3,7 +3,7 @@
 // Goal: Instant cold-open by serving cached assets before network.
 // ═══════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'ep-v3';
+const CACHE_VERSION = 'ep-v4';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -48,10 +48,16 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET requests (POST to API, etc.)
     if (request.method !== 'GET') return;
 
-    // Skip API routes, auth, and tracking — always network
-    if (url.pathname.startsWith('/api/') ||
-        url.pathname.startsWith('/__/') ||
-        url.hostname.includes('firebaseapp.com') ||
+    // API routes — ALWAYS network, never cache.
+    // Using explicit respondWith(fetch()) instead of bare return to prevent
+    // the browser's HTTP cache from serving stale API responses.
+    if (url.pathname.startsWith('/api/')) {
+        event.respondWith(fetch(request));
+        return;
+    }
+
+    // Skip external auth/tracking domains — always network
+    if (url.hostname.includes('firebaseapp.com') ||
         url.hostname.includes('googleapis.com') ||
         url.hostname.includes('firebaseinstallations') ||
         url.hostname.includes('identitytoolkit')) {
@@ -76,6 +82,14 @@ self.addEventListener('fetch', (event) => {
     // Strategy 3: Network-first for navigation (HTML pages)
     // Serves cached shell instantly if network is slow/offline
     if (request.mode === 'navigate') {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
+    // Strategy 4: Network-first for RSC/data payloads from Next.js
+    // These are same-origin fetches to /_next/ paths (not .js) that carry
+    // dynamic page data — must not be served stale.
+    if (url.pathname.startsWith('/_next/')) {
         event.respondWith(networkFirst(request));
         return;
     }

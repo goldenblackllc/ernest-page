@@ -219,7 +219,7 @@ Identify the user's opening state:
 
 YOUR EDITORIAL MANDATE: Crystallize the user's messy opening into the letter they WOULD have written if they could articulate it that clearly. This is not invention — it is editorial work. Dear Abby letters are edited too. Take the confused, stream-of-consciousness opening and render it as a clean, emotionally honest letter. Preserve the confusion and tension they came in with. Do NOT resolve it.
 
-- title: Write a curiosity-driven hook title (8-15 words). Combine INTENTION and OBSTACLE as unresolved tension. The title must NEVER include the resolution. Never use second person. Examples: 'I Want To Be a Good Father But I Keep Choosing Work', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I Don't Like Who I've Become', 'I Want To Be Happy But I Keep Forcing Myself To Show Up'. The title should make someone stop scrolling.
+- title: Write a curiosity-driven hook title (6-10 words, max 75 characters). Combine INTENTION and OBSTACLE as unresolved tension. The title must NEVER include the resolution. Never use second person. Think "confession overheard in a bar" — punchy, raw, scroll-stopping. Examples: 'I Keep Choosing Work Over My Kids', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I've Disappeared', 'I'm Successful and Completely Empty'. Shorter is stronger.
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
@@ -280,7 +280,7 @@ ${transcript}`;
                             primaryModelId: SONNET_MODEL,
                             schema: z.object({
                                 is_publishable: z.boolean(),
-                                title: z.string().optional(),
+                                title: z.string().max(75).optional(),
                                 pseudonym: z.string().optional(),
                                 letter: z.string().optional(),
                                 photo_vibe: z.string().optional(),
