@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, Share2, Download, Loader2, FileText, Copy, Check } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, VolumeX, Share2, Download, Loader2, FileText, Copy, Check } from "lucide-react";
+import { useAudioMute } from "@/context/AudioMuteContext";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -84,6 +85,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const t = useTranslations('feed');
     const locale = useLocale();
 
+    // ═══ GLOBAL MUTE STATE ═══
+    const { isMuted, toggleMute } = useAudioMute();
+
     // ═══ AUDIO PLAYBACK STATE ═══
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -142,6 +146,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             if (unifiedAudioUrl) {
                 // ── UNIFIED FORMAT: single audio file ──
                 const audio = new Audio(unifiedAudioUrl);
+                audio.muted = isMuted;
                 audioRef.current = audio;
                 setAudioPhase('letter');
 
@@ -167,6 +172,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             } else if (post.letter_audio_url) {
                 // ── LEGACY FORMAT: two separate audio files ──
                 const audio = new Audio(post.letter_audio_url);
+                audio.muted = isMuted;
                 audioRef.current = audio;
                 setAudioPhase('letter');
 
@@ -179,6 +185,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 audio.onended = () => {
                     if (post.response_audio_url) {
                         const responseAudio = new Audio(post.response_audio_url);
+                        responseAudio.muted = isMuted;
                         audioRef.current = responseAudio;
                         setAudioPhase('response');
                         setAudioProgress(0);
@@ -213,7 +220,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             audioRef.current.play().catch(() => setIsPlaying(false));
             setIsPlaying(true);
         }
-    }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio]);
+    }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio, isMuted]);
 
     // Autoplay when card scrolls into view (TikTok/Reels behavior)
     useEffect(() => {
@@ -237,6 +244,13 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         observer.observe(cardRef.current);
         return () => observer.disconnect();
     }, [canPlayShort, toggleAudio, isPlaying]);
+
+    // Sync global mute state to active audio element
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.muted = isMuted;
+        }
+    }, [isMuted]);
 
     // Cleanup audio on unmount
     useEffect(() => {
@@ -611,14 +625,33 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 </div>
                                 <span className="text-[10px] text-white/50">{timeAgo}</span>
                             </div>
-                            {/* Phase indicator */}
+                            {/* Mute toggle + phase indicator */}
                             {isPlaying && (
-                                <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10">
-                                    <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
+                                >
+                                    {isMuted ? (
+                                        <VolumeX className="w-3 h-3 text-white/70" />
+                                    ) : (
+                                        <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                                    )}
                                     <span className="text-[10px] font-bold text-white uppercase tracking-wider">
                                         {audioPhase === 'letter' ? 'Letter' : 'Response'}
                                     </span>
-                                </div>
+                                </button>
+                            )}
+                            {!isPlaying && canPlayShort && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
+                                >
+                                    {isMuted ? (
+                                        <VolumeX className="w-3.5 h-3.5 text-white/50" />
+                                    ) : (
+                                        <Volume2 className="w-3.5 h-3.5 text-white/50" />
+                                    )}
+                                </button>
                             )}
                             {/* Visibility control */}
                             {user?.uid === post.uid && (

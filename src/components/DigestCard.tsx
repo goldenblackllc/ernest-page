@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Play, Pause, Volume2 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { useAudioMute } from "@/context/AudioMuteContext";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 
@@ -16,6 +17,9 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
     const t = useTranslations('feed');
     // Strip bold lead-ins like "**The Home:** " from content
     const cleanContent = content.replace(/^\*\*[^*]+:\*\*\s*/gm, '');
+
+    // ═══ GLOBAL MUTE STATE ═══
+    const { isMuted, toggleMute } = useAudioMute();
 
     // Audio state
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -38,6 +42,7 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
         const audio = audioRef.current || new Audio();
         audioRef.current = audio;
         audio.src = audioUrl;
+        audio.muted = isMuted;
 
         audio.ontimeupdate = () => {
             if (audio.duration) setAudioProgress(audio.currentTime / audio.duration);
@@ -50,7 +55,7 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
 
         audio.play().catch(() => setIsPlaying(false));
         setIsPlaying(true);
-    }, [audioUrl, isPlaying]);
+    }, [audioUrl, isPlaying, isMuted]);
 
     // Autoplay when scrolled into view
     useEffect(() => {
@@ -82,6 +87,13 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
             }
         };
     }, []);
+
+    // Sync global mute state to active audio element
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.muted = isMuted;
+        }
+    }, [isMuted]);
 
     // Subtitle chunks for synced text
     const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {
@@ -122,10 +134,29 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
                             {title}
                         </h2>
                         {isPlaying && (
-                            <div className="flex items-center gap-1.5 mt-2 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 w-fit">
-                                <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                            <button
+                                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                className="flex items-center gap-1.5 mt-2 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 w-fit transition-all duration-200 active:scale-95"
+                            >
+                                {isMuted ? (
+                                    <VolumeX className="w-3 h-3 text-white/70" />
+                                ) : (
+                                    <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                                )}
                                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">Playing</span>
-                            </div>
+                            </button>
+                        )}
+                        {!isPlaying && canPlayShort && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                className="flex items-center gap-1.5 mt-2 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 w-fit transition-all duration-200 active:scale-95"
+                            >
+                                {isMuted ? (
+                                    <VolumeX className="w-3.5 h-3.5 text-white/50" />
+                                ) : (
+                                    <Volume2 className="w-3.5 h-3.5 text-white/50" />
+                                )}
+                            </button>
                         )}
                     </div>
 

@@ -2,6 +2,7 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { LockedProvider } from "@/context/LockedContext";
+import { AudioMuteProvider } from "@/context/AudioMuteContext";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -22,10 +23,12 @@ export default async function LocaleLayout({ children, params }: Props) {
       <ServiceWorkerRegistration />
       <NextIntlClientProvider locale={locale}>
         <AuthProvider>
-          <LockedProvider>
-            {children}
-            <CookieConsent />
-          </LockedProvider>
+          <AudioMuteProvider>
+            <LockedProvider>
+              {children}
+              <CookieConsent />
+            </LockedProvider>
+          </AudioMuteProvider>
         </AuthProvider>
       </NextIntlClientProvider>
     </>

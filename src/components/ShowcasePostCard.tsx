@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { User, Heart, MessageCircle, Clock, Play, Pause, Volume2, RotateCcw } from "lucide-react";
+import { User, Heart, MessageCircle, Clock, Play, Pause, Volume2, VolumeX, RotateCcw } from "lucide-react";
+import { useAudioMute } from "@/context/AudioMuteContext";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -48,6 +49,9 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
     const isRealityShift = post.post_type === 'reality_shift';
     const title = post.title || post.directive_title;
 
+    // ═══ GLOBAL MUTE STATE ═══
+    const { isMuted, toggleMute } = useAudioMute();
+
     // ═══ SHORT-FORM DETECTION ═══
     const hasAudio = Boolean(post.audio_url);
     const heroUrl = post.imagen_url;
@@ -86,6 +90,7 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
 
         if (audioPhase === 'idle' || !audioRef.current) {
             const audio = new Audio(post.audio_url!);
+            audio.muted = isMuted;
             audioRef.current = audio;
             setAudioPhase('letter');
 
@@ -111,7 +116,7 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
             audioRef.current.play().catch(() => setIsPlaying(false));
             setIsPlaying(true);
         }
-    }, [isPlaying, audioPhase, post.audio_url, computedLetterRatio, hasAudio]);
+    }, [isPlaying, audioPhase, post.audio_url, computedLetterRatio, hasAudio, isMuted]);
 
     // Autoplay when card scrolls into view
     useEffect(() => {
@@ -143,6 +148,13 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
             }
         };
     }, []);
+
+    // Sync global mute state to active audio element
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.muted = isMuted;
+        }
+    }, [isMuted]);
 
     // Parse letter: extract greeting and body
     let greeting: string | null = null;
@@ -227,14 +239,33 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
                                     <span className="text-[10px] text-white/50">{timestamp}</span>
                                 )}
                             </div>
-                            {/* Phase indicator */}
+                            {/* Mute toggle + phase indicator */}
                             {isPlaying && (
-                                <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10">
-                                    <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
+                                >
+                                    {isMuted ? (
+                                        <VolumeX className="w-3 h-3 text-white/70" />
+                                    ) : (
+                                        <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                                    )}
                                     <span className="text-[10px] font-bold text-white uppercase tracking-wider">
                                         {audioPhase === 'letter' ? 'Letter' : 'Response'}
                                     </span>
-                                </div>
+                                </button>
+                            )}
+                            {!isPlaying && canPlayShort && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
+                                >
+                                    {isMuted ? (
+                                        <VolumeX className="w-3.5 h-3.5 text-white/50" />
+                                    ) : (
+                                        <Volume2 className="w-3.5 h-3.5 text-white/50" />
+                                    )}
+                                </button>
                             )}
                         </div>
 
