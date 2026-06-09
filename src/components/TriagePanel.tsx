@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
 import { MessageCircle, Home, User as UserIcon, BookOpen, Heart, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from 'next-intl';
+import { useAudioMute } from "@/context/AudioMuteContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { getMostRecentActiveChat } from "@/lib/firebase/chat";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
@@ -24,11 +25,18 @@ export function TriagePanel() {
     const { user } = useAuth();
     const pathname = usePathname();
     const t = useTranslations();
+    const { pauseAll } = useAudioMute();
 
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
     const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
     const [isDailyCapHit, setIsDailyCapHit] = useState(false);
     const [initialContext, setInitialContext] = useState<string | null>(null);
+
+    /** Pause all background audio, then open the mirror chat overlay. */
+    const openMirror = useCallback(() => {
+        pauseAll();
+        setIsMirrorOpen(true);
+    }, [pauseAll]);
 
     // Data for Mirror Chat
     const [bible, setBible] = useState<CharacterBible | null>(null);
@@ -80,7 +88,7 @@ export function TriagePanel() {
 
     // Listen for 'open-mirror-chat' custom event (e.g. from Ledger first-session card)
     useEffect(() => {
-        const handleOpen = () => setIsMirrorOpen(true);
+        const handleOpen = () => openMirror();
         window.addEventListener('open-mirror-chat', handleOpen);
         return () => window.removeEventListener('open-mirror-chat', handleOpen);
     }, []);
@@ -174,7 +182,7 @@ export function TriagePanel() {
         try {
             const existingSession = await getMostRecentActiveChat(user!.uid);
             if (existingSession) {
-                setIsMirrorOpen(true);
+                openMirror();
                 return;
             }
         } catch {
@@ -204,10 +212,10 @@ export function TriagePanel() {
                 return;
             }
 
-            setIsMirrorOpen(true);
+            openMirror();
         } catch {
             // Network error — try opening anyway, server will catch on next API call
-            setIsMirrorOpen(true);
+            openMirror();
         }
     };
 
@@ -233,7 +241,7 @@ export function TriagePanel() {
                 }
 
                 if (data.canStart) {
-                    setIsMirrorOpen(true);
+                    openMirror();
                     return;
                 }
 
@@ -249,7 +257,7 @@ export function TriagePanel() {
         }
 
         // All retries exhausted — open anyway, mirror route will re-check
-        setIsMirrorOpen(true);
+        openMirror();
     };
 
     return (

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
-import { useAudioMute } from "@/context/AudioMuteContext";
+import { useAudioMute, PAUSE_ALL_AUDIO_EVENT } from "@/context/AudioMuteContext";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 
@@ -86,6 +86,18 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
                 audioRef.current = null;
             }
         };
+    }, []);
+
+    // Pause when a global pause-all signal is dispatched (e.g. MirrorChat opens)
+    useEffect(() => {
+        const handlePauseAll = () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+            }
+        };
+        window.addEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
+        return () => window.removeEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
     }, []);
 
     // Sync global mute state to active audio element

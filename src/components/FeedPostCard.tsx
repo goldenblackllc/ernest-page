@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, VolumeX, Share2, Download, Loader2, FileText, Copy, Check } from "lucide-react";
-import { useAudioMute } from "@/context/AudioMuteContext";
+import { useAudioMute, PAUSE_ALL_AUDIO_EVENT } from "@/context/AudioMuteContext";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
@@ -260,6 +260,18 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 audioRef.current = null;
             }
         };
+    }, []);
+
+    // Pause when a global pause-all signal is dispatched (e.g. MirrorChat opens)
+    useEffect(() => {
+        const handlePauseAll = () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+            }
+        };
+        window.addEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
+        return () => window.removeEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
     }, []);
 
     const [translatedData, setTranslatedData] = useState<any>(post._translated || post.translations?.[locale] || null);
@@ -545,9 +557,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // ═══ SHORT-FORM VIDEO MODE ═══
     // When a post has audio and a hero image, render as a vertical "short"
     if (canPlayShort) {
-        // Split text into ~12-word chunks for subtitle display.
-        // Equal word counts ≈ equal speaking durations, giving better sync.
-        const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {
+        // Split text into ~4-word chunks for TikTok-native subtitle pacing.
+        // Fewer words per chunk keeps the viewer's eye anchored center-screen.
+        const chunkText = (text: string, wordsPerChunk: number = 4): string[] => {
             const words = text.replace(/\n+/g, ' ').split(/\s+/).filter(w => w);
             const chunks: string[] = [];
             for (let i = 0; i < words.length; i += wordsPerChunk) {
@@ -566,13 +578,32 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             const lines = audioPhase === 'response' ? responseChunks : letterChunks;
             if (lines.length === 0) return null;
 
-            // Map progress (0-1) to line index
+            // Normalize progress within the current phase (0→1)
+            let phaseProgress: number;
+            if (unifiedAudioUrl) {
+                // Unified audio: progress is 0→1 over entire file.
+                // Letter phase occupies 0→letterRatio, response occupies letterRatio→1
+                if (audioPhase === 'letter') {
+                    phaseProgress = computedLetterRatio > 0
+                        ? Math.min(audioProgress / computedLetterRatio, 1)
+                        : 0;
+                } else {
+                    const responseRange = 1 - computedLetterRatio;
+                    phaseProgress = responseRange > 0
+                        ? Math.min((audioProgress - computedLetterRatio) / responseRange, 1)
+                        : 0;
+                }
+            } else {
+                // Legacy (two separate files): progress is already 0→1 per phase
+                phaseProgress = audioProgress;
+            }
+
+            // Map normalized phase progress to line index
             const lineIndex = Math.min(
-                Math.floor(audioProgress * lines.length),
+                Math.floor(phaseProgress * lines.length),
                 lines.length - 1
             );
 
-            // Show current line and next line for context
             const current = lines[lineIndex] || '';
             const next = lines[lineIndex + 1] || '';
             return { current, next, lineIndex, totalLines: lines.length };
@@ -686,39 +717,21 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         </div>
                     )}
 
-                    {/* Bottom: Subtitle text */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 z-10">
+                    {/* Center: Subtitle text — TikTok-native centered captions */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
                         {subtitle ? (
-                            <div className="space-y-1.5">
-                                <p className="text-[15px] font-medium text-white leading-snug drop-shadow-lg transition-all duration-300">
+                            <div className="text-center">
+                                <p className="text-xl sm:text-2xl font-bold text-white leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-all duration-200">
                                     {subtitle.current}
                                 </p>
-                                {subtitle.next && (
-                                    <p className="text-[13px] text-white/40 leading-snug drop-shadow-lg transition-all duration-300">
-                                        {subtitle.next}
-                                    </p>
-                                )}
-                                {/* Line progress dots */}
-                                <div className="flex items-center gap-0.5 pt-2">
-                                    {Array.from({ length: Math.min(subtitle.totalLines, 20) }).map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={cn(
-                                                "h-0.5 rounded-full transition-all duration-200",
-                                                i <= subtitle.lineIndex ? "bg-white/80" : "bg-white/20",
-                                                i === subtitle.lineIndex ? "flex-[2]" : "flex-1"
-                                            )}
-                                        />
-                                    ))}
-                                </div>
                             </div>
                         ) : (
                             /* Static preview when not playing */
-                            <div>
-                                <p className="text-[13px] text-white/60 leading-snug drop-shadow-lg line-clamp-2">
+                            <div className="text-center">
+                                <p className="text-lg text-white/60 leading-snug drop-shadow-lg">
                                     {letterChunks[0]}
                                 </p>
-                                <p className="text-[11px] text-white/30 mt-1.5 uppercase tracking-widest font-bold">
+                                <p className="text-[11px] text-white/30 mt-2 uppercase tracking-widest font-bold">
                                     Tap to listen
                                 </p>
                             </div>

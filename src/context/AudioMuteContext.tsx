@@ -4,14 +4,20 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 
 const MUTE_KEY = 'ep-audio-muted';
 
+/** Custom event name used to signal all audio-playing components to pause. */
+export const PAUSE_ALL_AUDIO_EVENT = 'ep-pause-all-audio';
+
 interface AudioMuteContextType {
     isMuted: boolean;
     toggleMute: () => void;
+    /** Dispatch a global pause signal — all audio-playing components should stop playback. */
+    pauseAll: () => void;
 }
 
 const AudioMuteContext = createContext<AudioMuteContextType>({
     isMuted: true,
     toggleMute: () => {},
+    pauseAll: () => {},
 });
 
 export const useAudioMute = () => useContext(AudioMuteContext);
@@ -41,8 +47,12 @@ export const AudioMuteProvider = ({ children }: { children: React.ReactNode }) =
         });
     }, []);
 
+    const pauseAll = useCallback(() => {
+        window.dispatchEvent(new Event(PAUSE_ALL_AUDIO_EVENT));
+    }, []);
+
     return (
-        <AudioMuteContext.Provider value={{ isMuted, toggleMute }}>
+        <AudioMuteContext.Provider value={{ isMuted, toggleMute, pauseAll }}>
             {children}
         </AudioMuteContext.Provider>
     );
