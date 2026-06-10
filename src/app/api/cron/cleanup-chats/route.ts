@@ -586,8 +586,22 @@ async function generatePostImage(prompt: string, postId: string): Promise<string
 
         if (imagenRes.ok) {
             const data = await imagenRes.json();
-            if (data.predictions?.[0]?.bytesBase64Encoded) {
-                const buffer = Buffer.from(data.predictions[0].bytesBase64Encoded, 'base64');
+
+            // Log safety metadata — Imagen returns raiFilteredReason on silent filters
+            const prediction = data.predictions?.[0];
+            if (prediction?.raiFilteredReason) {
+                console.warn(`[Cron] Imagen RAI filter for post ${postId}:`, prediction.raiFilteredReason);
+            }
+            if (prediction?.safetyAttributes) {
+                console.log(`[Cron] Imagen safety attributes for post ${postId}:`, JSON.stringify(prediction.safetyAttributes));
+            }
+            // Log if we got a prediction but no image (fully blocked)
+            if (data.predictions && !prediction?.bytesBase64Encoded) {
+                console.warn(`[Cron] Imagen returned prediction without image for post ${postId}:`, JSON.stringify(data.predictions[0]));
+            }
+
+            if (prediction?.bytesBase64Encoded) {
+                const buffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
                 const bucket = storage.bucket();
                 const fileName = `post-images/${postId}_imagen.jpg`;
                 const file = bucket.file(fileName);
