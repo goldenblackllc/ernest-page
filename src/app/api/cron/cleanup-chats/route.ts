@@ -225,10 +225,14 @@ YOUR EDITORIAL MANDATE: Crystallize the user's messy opening into the letter the
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 Replace ALL of the following with generic relationship or role labels — NEVER include them verbatim:
   • Real first names, last names, or nicknames of any person → replace with their relationship role (e.g., "Max" → "my friend", "Iris" → "my sister", "John at work" → "my colleague")
-  • Specific company or employer names → "my company" or "my workplace"
-  • Specific place names (cities, neighborhoods, schools, venues) → "my city", "my school", "my neighborhood"
+  • The user's employer, workplace, school, or client companies → "my company", "my workplace", "my school" (these reveal who the user IS)
+  • Specific place names (cities, neighborhoods, venues) → "my city", "my neighborhood"
   • Any identifying details (addresses, phone numbers, email addresses, social media handles)
-If you are unsure whether something is PII, err on the side of removing it. The post must be fully anonymous.
+KEEP the following — they do NOT identify the user and add value to the post:
+  • Brand and product names mentioned as recommendations or aspirations (e.g., "Hugo Boss", "Nike", "Tesla", "Jura")
+  • Public figures, authors, or cultural references mentioned in discussion
+  • Generic industry or category names (e.g., "tech", "finance", "healthcare")
+If you are unsure whether something identifies the USER personally, err on the side of removing it. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
 - letter: LENGTH: 85-115 words. This is non-negotiable — the letter will be read aloud in ~40-45 seconds. STRUCTURE: One-two sentences stating what the person wants (INTENTION). Three-four sentences on what's blocking them (OBSTACLE) — include specific details, internal contradictions, or a moment of raw honesty that makes the reader FEEL it. One closing line of raw emotional honesty. The letter must present the struggle as UNRESOLVED — as if the conversation hasn't happened yet. If you include ANY resolution, reframe, or insight, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
 
@@ -347,7 +351,7 @@ ${transcript}
 YOUR JOB: Write Earnest Page's response to this letter. The letter captures the user's unresolved tension. The conversation transcript shows how it was resolved. Your response delivers that resolution — warm, specific, in Character A's exact voice.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE:
-Replace ALL real names with relationship roles, all specific places/companies with generic labels. The response must be fully anonymous.
+Replace ALL real names of people the user knows with relationship roles. Replace the user's employer, school, or client companies with generic labels. KEEP brand names, product recommendations, public figures, and cultural references — these add value and do not identify the user. The response must be fully anonymous (the reader cannot determine WHO wrote it), but not stripped of useful content.
 
 - response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: One sentence acknowledging the tension from the letter. Three-five sentences delivering the reframe or insight that emerged in the conversation — go deeper, give the reader something they can use, not just a platitude. One closing line with a direct instruction or challenge. The response is the PAYOFF — it only works because the letter set up unresolved tension. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ${pass1.pseudonym},\n\n'. Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
 
