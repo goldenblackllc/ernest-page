@@ -278,16 +278,28 @@ ${transcript}`;
                         // Pass 1: Letter + editorial judgment + image prompt
                         generateWithFallback({
                             primaryModelId: SONNET_MODEL,
-                            schema: z.object({
-                                is_publishable: z.boolean(),
-                                title: z.string().max(75).optional(),
-                                pseudonym: z.string().optional(),
-                                letter: z.string().optional(),
-                                photo_vibe: z.string().optional(),
-                                photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
-                                imagen_prompt: z.string().optional(),
-                                language: z.string().optional(),
-                            }),
+                            schema: z.discriminatedUnion('is_publishable', [
+                                z.object({
+                                    is_publishable: z.literal(true),
+                                    title: z.string().max(75),
+                                    pseudonym: z.string(),
+                                    letter: z.string(),
+                                    photo_vibe: z.string(),
+                                    photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
+                                    imagen_prompt: z.string(),
+                                    language: z.string().optional(),
+                                }),
+                                z.object({
+                                    is_publishable: z.literal(false),
+                                    title: z.string().max(75).optional(),
+                                    pseudonym: z.string().optional(),
+                                    letter: z.string().optional(),
+                                    photo_vibe: z.string().optional(),
+                                    photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
+                                    imagen_prompt: z.string().optional(),
+                                    language: z.string().optional(),
+                                }),
+                            ]),
                             prompt: letterPrompt,
                         }),
                         // Dossier Rewrite — Opus
@@ -391,6 +403,42 @@ Replace ALL real names with relationship roles, all specific places/companies wi
                 if (post.is_publishable && post.title) {
                     const postDocRef = db.collection('posts').doc();
 
+                    // Guard: verify imagen_prompt exists before calling Imagen API
+                    if (!post.imagen_prompt || post.imagen_prompt.trim().length === 0) {
+                        console.warn(`[Cron] Publishable post for user ${uid} is missing imagen_prompt — saving as private`);
+                        await dossierPromise;
+                        await postDocRef.set({
+                            id: postDocRef.id,
+                            uid,
+                            authorId: uid,
+                            authorHash: null,
+                            region: userData?.region || null,
+                            author: userData?.displayName || "Anonymous",
+                            type: 'checkin',
+                            public_post: {
+                                title: post.title,
+                                pseudonym: post.pseudonym,
+                                letter: post.letter,
+                                response: post.response,
+                            },
+                            imagen_prompt: null,
+                            photo_vibe: post.photo_vibe || null,
+                            photo_scale: post.photo_scale || null,
+                            language: post.language || null,
+                            imagen_url: null,
+                            content_raw: transcript,
+                            status: "completed",
+                            created_at: new Date(),
+                            is_public: false,
+                            visibility: 'private',
+                            like_count: 0,
+                            comments: 0,
+                        });
+                        await chatDoc.ref.delete();
+                        processed++;
+                        continue;
+                    }
+
                     // Start image generation and dossier write concurrently
                     const [imageResult] = await Promise.allSettled([
                         generatePostImage(post.imagen_prompt, postDocRef.id),
@@ -468,7 +516,7 @@ Replace ALL real names with relationship roles, all specific places/companies wi
                         created_at: new Date(),
                         is_public: imagen_url ? (visibility !== 'private') : false,
                         visibility: imagen_url ? visibility : 'private',
-                        likes: 0,
+                        like_count: 0,
                         comments: 0
                     });
 
@@ -501,12 +549,19 @@ Replace ALL real names with relationship roles, all specific places/companies wi
                     // Not publishable — still need to await dossier write
                     await dossierPromise;
                 }
+                // Success — delete the processed chat session
+                await chatDoc.ref.delete();
             } catch (e) {
                 console.error(`[Cron] Processing failed for user ${uid}:`, e);
+                // Release the claim so the next cron run can retry — do NOT delete the chat
+                try {
+                    await chatDoc.ref.update({ processing: false, processingStartedAt: FieldValue.delete() });
+                } catch { /* silent — chat may already be gone */ }
+                continue;
             }
         }
 
-        // Delete the processed or empty chat session
+        // Delete empty chat sessions (no messages)
         await chatDoc.ref.delete();
     }
 
