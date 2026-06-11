@@ -207,24 +207,32 @@ ${transcript}
 
 STEP 1: THE EDITORIAL JUDGMENT
 Determine if this transcript has "Editorial Value."
-* Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where Character A never draws out a real struggle. If the user never reveals what they actually want or what's in the way, there is no story.
-* Valuable (is_publishable: true): The conversation contains a dramatic arc — the user arrives with a desire or problem, an obstacle surfaces through the dialogue (often the user doesn't even know it's there until they say it), and Character A delivers a reframe or insight. The reader must be able to feel the tension in under 60 seconds.
+* Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where the user never states what they want or how they feel. If there is no clear want or feeling, there is no story.
+* Valuable (is_publishable: true): The user arrives with either a WANT (something they are trying to do, get, or figure out) or a NEGATIVE FEELING (something that hurts, frustrates, confuses, or weighs on them), and Character A helps them understand their situation and offers real advice. The reader must be able to relate to the want or the feeling in under 60 seconds.
 
 STEP 2: WRITE THE LETTER (If Publishable)
 Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
 
-Identify the user's opening state:
-- INTENTION: What did they want? This comes from their first 1-2 messages. It is often vague, muddy, inarticulate — people don't arrive saying "I want happiness but don't know how." They arrive saying "I'm feeling weird today, I don't know, just kind of off."
-- OBSTACLE: What was in the way? This often surfaces in the MIDDLE of the conversation, drawn out by Character A's questioning. Look for the moment the user says something raw or specific that they didn't plan to say.
+HOW CONVERSATIONS WORK — understand this before writing:
+Every conversation follows the same two-phase structure:
+  Phase 1 — UNDERSTANDING: The user states what they want or how they feel. Character A asks clarifying questions. The situation becomes clear. This phase is about the user's reality.
+  Phase 2 — ADVICE: Character A delivers insight, recommendations, or a reframe. The user reacts, clarifies, and the advice gets refined. This phase is Character A's contribution.
+The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
 
-YOUR EDITORIAL MANDATE: Crystallize the user's messy opening into the letter they WOULD have written if they could articulate it that clearly. This is not invention — it is editorial work. Dear Abby letters are edited too. Take the confused, stream-of-consciousness opening and render it as a clean, emotionally honest letter. Preserve the confusion and tension they came in with. Do NOT resolve it.
+IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
+- WANT or FEELING: What did the user come in with? This is almost always stated in their first message or two. It is either a concrete want ("I need a new suit", "I want to lose weight", "I'm trying to decide whether to quit") or a negative feeling ("I feel off today", "I'm overwhelmed", "something isn't right in my relationship"). Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
+- SITUATION: What details emerged during Phase 1 that help a reader understand the context? Look for specifics the user shared — numbers, timelines, constraints, relationships, stakes.
 
-- title: Write a curiosity-driven hook title (6-10 words, max 75 characters). Combine INTENTION and OBSTACLE as unresolved tension. The title must NEVER include the resolution. Never use second person. Think "confession overheard in a bar" — punchy, raw, scroll-stopping. Examples: 'I Keep Choosing Work Over My Kids', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I've Disappeared', 'I'm Successful and Completely Empty'. Shorter is stronger.
+CRITICAL RULE: The user is a reliable narrator of their own state. If they say they want something, that is what they want — do not reinterpret it as uncertainty. If they say they feel confused, the confusion IS the story — do not diagnose a cause and present the cause as their real problem. Character A may explore, question, and probe — but Character A's framework is not the user's experience. The letter represents the USER, not Character A's interpretation of the user.
+
+YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: preserve what they actually wanted or felt, add the situation details that make it vivid, and stop. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after."
+
+- title: Write a curiosity-driven hook title (6-10 words, max 75 characters). The title should capture the user's WANT or FEELING as unresolved tension. The title must NEVER include the resolution or advice. Never use second person. Think "confession overheard in a bar" — punchy, raw, scroll-stopping. Examples: 'I Keep Choosing Work Over My Kids', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I've Disappeared', 'My Suit Doesn't Fit and My Son Graduates Thursday'. Shorter is stronger.
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 Replace ALL of the following with generic relationship or role labels — NEVER include them verbatim:
-  • Real first names, last names, or nicknames of any person → replace with their relationship role (e.g., "Max" → "my friend", "Iris" → "my sister", "John at work" → "my colleague")
+  • Real first names, last names, or nicknames of any person → replace with their relationship role (e.g., "Max" → "my son", "Iris" → "my sister", "John at work" → "my colleague")
   • The user's employer, workplace, school, or client companies → "my company", "my workplace", "my school" (these reveal who the user IS)
   • Specific place names (cities, neighborhoods, venues) → "my city", "my neighborhood"
   • Any identifying details (addresses, phone numbers, email addresses, social media handles)
@@ -234,7 +242,7 @@ KEEP the following — they do NOT identify the user and add value to the post:
   • Generic industry or category names (e.g., "tech", "finance", "healthcare")
 If you are unsure whether something identifies the USER personally, err on the side of removing it. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
-- letter: LENGTH: 85-115 words. This is non-negotiable — the letter will be read aloud in ~40-45 seconds. STRUCTURE: One-two sentences stating what the person wants (INTENTION). Three-four sentences on what's blocking them (OBSTACLE) — include specific details, internal contradictions, or a moment of raw honesty that makes the reader FEEL it. One closing line of raw emotional honesty. The letter must present the struggle as UNRESOLVED — as if the conversation hasn't happened yet. If you include ANY resolution, reframe, or insight, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
+- letter: LENGTH: 85-115 words. This is non-negotiable — the letter will be read aloud in ~40-45 seconds. STRUCTURE: One-two sentences stating the user's WANT or FEELING — in their terms, at their level of clarity. Three-four sentences on their SITUATION — the specific details, constraints, stakes, or context that make this real and relatable. One closing line of raw emotional honesty — what this actually feels like or why it matters to them. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
 
 STEP 3: THE ART DIRECTOR (Image Generation)
 You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
@@ -345,15 +353,18 @@ ${JSON.stringify(compiledBible)}
 THE LETTER:
 ${pass1.letter}
 
-CHAT TRANSCRIPT (for context — the resolution that emerged in this conversation):
+CHAT TRANSCRIPT (for context — the advice that emerged in this conversation):
 ${transcript}
 
-YOUR JOB: Write Earnest Page's response to this letter. The letter captures the user's unresolved tension. The conversation transcript shows how it was resolved. Your response delivers that resolution — warm, specific, in Character A's exact voice.
+HOW TO READ THE TRANSCRIPT:
+The conversation has two phases. Phase 1 is understanding — Character A asks questions and the user's situation becomes clear. Phase 2 is advice — Character A delivers insight, recommendations, or a concrete plan. The letter above captures Phase 1 (the user's want or feeling + their situation). Your response should deliver the substance of Phase 2 (the advice, the answer, the path forward).
+
+YOUR JOB: Write Earnest Page's response to this letter. The letter captures where the user arrived — what they wanted or how they felt. The conversation transcript shows the advice Character A gave. Your response delivers that advice — warm, specific, actionable, in Character A's exact voice. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE:
 Replace ALL real names of people the user knows with relationship roles. Replace the user's employer, school, or client companies with generic labels. KEEP brand names, product recommendations, public figures, and cultural references — these add value and do not identify the user. The response must be fully anonymous (the reader cannot determine WHO wrote it), but not stripped of useful content.
 
-- response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: One sentence acknowledging the tension from the letter. Three-five sentences delivering the reframe or insight that emerged in the conversation — go deeper, give the reader something they can use, not just a platitude. One closing line with a direct instruction or challenge. The response is the PAYOFF — it only works because the letter set up unresolved tension. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ${pass1.pseudonym},\n\n'. Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
+- response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: One sentence acknowledging the user's want or feeling from the letter. Three-five sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction, challenge, or reassurance. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ${pass1.pseudonym},\n\n'. Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: SONNET_MODEL,
