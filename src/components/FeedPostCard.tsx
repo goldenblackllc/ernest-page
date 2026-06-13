@@ -947,11 +947,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 )}
                             </button>
                         )}
-                            <>
-                                <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </>
+                        {user?.uid === post.uid && (
+                            <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
                         )}
                         <button
                             onClick={handleShare}
