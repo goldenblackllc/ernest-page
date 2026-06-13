@@ -29,14 +29,16 @@ export async function generateWithFallback(options: any) {
         return await generateObject({
             ...aiOptions,
             ...(abortSignal && { abortSignal }),
-            model: getProviderModel(primary)
+            model: getProviderModel(primary),
+            allowSystemInMessages: true,
         });
     } catch (error: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await generateObject({
             ...aiOptions,
             abortSignal: AbortSignal.timeout(150_000),
-            model: getProviderModel(fallback)
+            model: getProviderModel(fallback),
+            allowSystemInMessages: true,
         });
     }
 }
