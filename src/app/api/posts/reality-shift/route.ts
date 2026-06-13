@@ -97,7 +97,7 @@ Anonymize both the task title AND the report. Return JSON only.`,
             is_public: visibility !== 'private',
             visibility: visibility,
             created_at: FieldValue.serverTimestamp(),
-            likes: 0,
+            like_count: 0,
             comments: 0,
         };
 

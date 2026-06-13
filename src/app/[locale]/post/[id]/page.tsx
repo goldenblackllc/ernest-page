@@ -259,7 +259,7 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1.5 text-zinc-400">
                                     <Heart className="w-5 h-5" />
-                                    {post.likes > 0 && <span className="text-xs font-medium">{post.likes}</span>}
+                                    {post.like_count > 0 && <span className="text-xs font-medium">{post.like_count}</span>}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-zinc-400">
                                     <MessageCircle className="w-5 h-5" />

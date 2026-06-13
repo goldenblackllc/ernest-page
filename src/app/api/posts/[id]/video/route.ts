@@ -204,7 +204,7 @@ export async function GET(
         const responseDuration = totalDuration * (1 - letterWordRatio);
         console.log(`[Video] Letter: ${letterDuration.toFixed(2)}s, Response: ${responseDuration.toFixed(2)}s (ratio: ${letterWordRatio.toFixed(2)})`);
 
-        const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration, 8);
+        const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration, 4);
 
         // ── Render background frame with sharp (hero + gradients + avatar, no text) ──
         const fontsDir = join(process.cwd(), 'public/fonts/hkgrotesk');
@@ -229,11 +229,11 @@ export async function GET(
         await fs.writeFile(framePath, frameBuffer);
         console.log(`[Video] Frame rendered: ${frameBuffer.length} bytes`);
 
-        // ── Generate ASS subtitle file (ALL text — title, author, timestamp + timed subs) ──
+        // ── Generate ASS subtitle file ──
         const assContent = generateAssSubtitles(subtitles, totalDuration, titleText);
         const assPath = join(workDir, 'subtitles.ass');
         await fs.writeFile(assPath, assContent, 'utf-8');
-        console.log(`[Video] ASS subtitles written: ${subtitles.length} timed entries + 3 static`);
+        console.log(`[Video] ASS subtitles written: ${subtitles.length} timed entries + static title`);
 
         // ── Create fontconfig config for Lambda (no system fontconfig) ──
         const fontconfigPath = join(workDir, 'fonts.conf');
@@ -250,16 +250,16 @@ export async function GET(
         const ffmpegArgs: string[] = [
             '-y',
             '-loop', '1',
-            '-framerate', '2',               // low input fps (static image)
-            '-i', framePath,                 // [0:v] pre-rendered frame with text
-            '-i', combinedAudioPath,         // [1:a] audio
+            '-framerate', '2',
+            '-i', framePath,
+            '-i', combinedAudioPath,
             '-filter_complex', `[0:v]ass=${assPath}:fontsdir=${fontsDir}[vout]`,
             '-map', '[vout]',
             '-map', '1:a',
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-crf', '23',
-            '-r', '15',                      // output 15fps (smooth enough for subtitle changes)
+            '-r', '15',
             '-c:a', 'aac',
             '-b:a', '128k',
             '-t', totalDuration.toFixed(2),
@@ -272,13 +272,8 @@ export async function GET(
             maxBuffer: 50 * 1024 * 1024,
             env: { ...process.env, FONTCONFIG_FILE: fontconfigPath },
         });
-
         if (ffmpegResult.status !== 0) {
             const fullStderr = (ffmpegResult.stderr || '').toString();
-            const stderrDebugPath = pathMod.join(workDir, 'ffmpeg_stderr.txt');
-            await fs.writeFile(stderrDebugPath, fullStderr);
-            console.error('[Video] Full stderr at:', stderrDebugPath);
-            console.error('[Video] ffmpeg signal:', ffmpegResult.signal);
             console.error('[Video] ffmpeg stderr tail:', fullStderr.slice(-300));
             throw new Error(`ffmpeg exited with code ${ffmpegResult.status} signal ${ffmpegResult.signal}`);
         }
@@ -287,7 +282,6 @@ export async function GET(
         // ── Upload to Firebase Storage (cache) + stream directly to client ──
         const videoBuffer = await fs.readFile(outputPath);
 
-        // Cache in the background — don't await so we can stream immediately
         file.save(videoBuffer, {
             metadata: {
                 contentType: 'video/mp4',
@@ -298,7 +292,7 @@ export async function GET(
         // ── Cleanup /tmp ──
         await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
 
-        // Stream the MP4 directly — no signed URL, no Google login prompt
+        // Stream the MP4 directly
         return new NextResponse(new Uint8Array(videoBuffer), {
             headers: {
                 'Content-Type': 'video/mp4',

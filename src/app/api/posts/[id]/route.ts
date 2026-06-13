@@ -26,11 +26,12 @@ export async function GET(
             imagen_url: data.imagen_url || null,
             audio_url: data.audio_url || null,
             audio_letter_ratio: data.audio_letter_ratio ?? null,
+            audio_word_timestamps: data.audio_word_timestamps ?? null,
             // Legacy two-file format for backward compat with old posts
             letter_audio_url: data.letter_audio_url || null,
             response_audio_url: data.response_audio_url || null,
             photo_vibe: data.photo_vibe || null,
-            likes: data.likes || 0,
+            like_count: data.like_count || data.likes || 0,
             comments: data.comments || 0,
             language: data.language || null,
             sponsored_by: data.sponsored_by || null,

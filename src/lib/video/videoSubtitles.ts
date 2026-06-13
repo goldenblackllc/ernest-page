@@ -129,13 +129,13 @@ export function generateAssSubtitles(
     const totalEnd = formatAssTime(totalDuration);
 
     // ASS uses PlayResX/PlayResY for layout coordinates — match 1080×1920 video
-    // Alignment codes: 7=top-left, 8=top-center, 9=top-right, 1=bot-left, 2=bot-center
+    // Alignment codes: 2=bottom-center
     //
     // SOCIAL MEDIA SAFE ZONES (9:16 / 1080×1920):
     //   Top ~500px: platform headers (profile pic, username, search, navigation)
     //   Bottom ~480px: platform footers (username, caption, action buttons, nav bar)
     //   Right ~120px: action buttons (like, comment, share)
-    // Author/Timestamp removed — every platform shows its own attribution.
+    // Verdict text is baked into the background image — no title overlay needed.
     const header = `[Script Info]
 Title: Earnest Page Video
 ScriptType: v4.00+
@@ -145,20 +145,14 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Title,HK Grotesk,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,0,4,7,40,40,520
-Style: Sub,HK Grotesk,60,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,0,0,0,0,100,100,0,0,1,2,3,2,40,40,480
+Style: Sub,HK Grotesk,100,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,1,0,0,0,100,100,0,0,1,8,6,2,60,60,350
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
 
     const events: string[] = [];
 
-    // Static text — visible for entire video
-    const escapedTitle = escapeAss(title);
-
-    events.push(`Dialogue: 0,0:00:00.00,${totalEnd},Title,,0,0,0,,${escapedTitle}`);
-
-    // Timed subtitles
+    // Timed subtitles — bottom-center, synced to audio
     for (const entry of entries) {
         const start = formatAssTime(entry.startTime);
         const end = formatAssTime(entry.endTime);

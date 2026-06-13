@@ -182,11 +182,19 @@ export async function GET(req: Request) {
             }
         }
 
-        // 10. Sanitize & inline cached translations
+        // 10. Batch-check which posts the user has liked (subcollection lookup)
+        const likedRef = db.collection("users").doc(uid).collection("liked_posts");
+        const likedRefs = page.map((post: any) => likedRef.doc(post.id));
+        let likedSet = new Set<string>();
+        if (likedRefs.length > 0) {
+            const likedDocs = await db.getAll(...likedRefs);
+            likedSet = new Set(likedDocs.filter(d => d.exists).map(d => d.id));
+        }
+
+        // 11. Sanitize & inline cached translations
         const needsTranslation: string[] = [];
-        const sanitized = page.map((post) => {
-            const likedPosts: string[] = userData.liked_posts || [];
-            const isLikedByMe = likedPosts.includes(post.id);
+        const sanitized = page.map((post: any) => {
+            const isLikedByMe = likedSet.has(post.id);
 
             const clean: any = { ...post };
             clean.author_avatar_url = avatarMap[post.authorId || post.uid] || null;

@@ -17,16 +17,18 @@ export async function GET(req: Request) {
             return Response.json({ error: 'Invalid token' }, { status: 401 });
         }
 
-        // Get user's privately liked post IDs
-        const userDoc = await db.collection('users').doc(uid).get();
-        const likedPosts: string[] = userDoc.data()?.liked_posts || [];
+        // Get user's liked post IDs from subcollection
+        const likedSnap = await db.collection('users').doc(uid)
+            .collection('liked_posts')
+            .orderBy('liked_at', 'desc')
+            .limit(30)
+            .get();
 
-        if (likedPosts.length === 0) {
+        if (likedSnap.empty) {
             return Response.json({ posts: [] });
         }
 
-        // Fetch the liked posts (Firestore 'in' supports max 30)
-        const postIds = likedPosts.slice(-30).reverse(); // newest likes first
+        const postIds = likedSnap.docs.map(d => d.id);
         const posts: any[] = [];
 
         const postsSnap = await db.collection('posts')

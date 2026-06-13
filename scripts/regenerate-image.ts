@@ -5,20 +5,25 @@
  *   npx tsx scripts/regenerate-image.ts <postId> [--prompt "custom prompt"]
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
 // ─── Firebase init ──────────────────────────────────────────────────────────
+const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+if (!serviceAccountJson) {
+    console.error('❌ FIREBASE_SERVICE_ACCOUNT_KEY not found in .env.local');
+    process.exit(1);
+}
+
+const serviceAccount = JSON.parse(serviceAccountJson);
+
 if (!getApps().length) {
     initializeApp({
-        credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        credential: cert(serviceAccount),
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
 }
 
@@ -113,10 +118,15 @@ async function main() {
     const fileName = `post-images/${postId}_imagen.jpg`;
     const file = bucket.file(fileName);
 
-    await file.save(buffer, { metadata: { contentType: 'image/jpeg' } });
+    await file.save(buffer, {
+        metadata: {
+            contentType: 'image/jpeg',
+            cacheControl: 'public, max-age=300',
+        },
+    });
     try { await file.makePublic(); } catch { /* UBLA */ }
 
-    const imagen_url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    const imagen_url = `https://storage.googleapis.com/${bucket.name}/${fileName}?v=${Date.now()}`;
     console.log(`☁️  Uploaded: ${imagen_url}`);
 
     // 5. Update Firestore

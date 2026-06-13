@@ -8,13 +8,12 @@ export const maxDuration = 10;
  * Karma Pool Likes — "Send It to the Universe"
  * 
  * When a user taps the heart on a post:
- * 1. The postId is recorded privately on the USER's document (liked_posts array).
- *    This is the user's private record — only they can see it.
+ * 1. The postId is recorded as a document in the user's liked_posts subcollection.
+ *    Path: users/{uid}/liked_posts/{postId}  — private to the user.
  * 2. A random recent public post (not by the liker) receives +1 to its like_count.
  *    The karma goes to the universe, not the tapped post.
  * 
  * Privacy: No trace of the like exists on the post document itself.
- * The likedBy field on posts is NOT used — all like tracking lives on users/{uid}.
  */
 export async function POST(req: Request) {
     try {
@@ -36,11 +35,11 @@ export async function POST(req: Request) {
         // Read the postId the user tapped
         const { postId } = await req.json();
 
-        // 1. Record the like privately on the user's document
+        // 1. Record the like privately in the user's liked_posts subcollection
         if (postId) {
-            await db.collection("users").doc(uid).update({
-                liked_posts: FieldValue.arrayUnion(postId),
-            });
+            await db.collection("users").doc(uid)
+                .collection("liked_posts").doc(postId)
+                .set({ liked_at: FieldValue.serverTimestamp() });
         }
 
         // 2. Karma redistribution — send +1 to a random post

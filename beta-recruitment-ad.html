@@ -290,7 +290,7 @@
 
   <!-- Preview variant picker -->
   <div class="picker">
-    <span class="picker-label">Healing</span>
+    <span class="picker-label">Ad variant</span>
     <button class="picker-btn active" onclick="setVariant(0)">01</button>
     <button class="picker-btn" onclick="setVariant(1)">02</button>
     <button class="picker-btn" onclick="setVariant(2)">03</button>
@@ -298,20 +298,11 @@
     <button class="picker-btn" onclick="setVariant(4)">05</button>
     <button class="picker-btn" onclick="setVariant(5)">06</button>
     <button class="picker-btn" onclick="setVariant(6)">07</button>
-    <span class="picker-label" style="margin-left: 12px;">Growth</span>
     <button class="picker-btn" onclick="setVariant(7)">08</button>
     <button class="picker-btn" onclick="setVariant(8)">09</button>
     <button class="picker-btn" onclick="setVariant(9)">10</button>
     <button class="picker-btn" onclick="setVariant(10)">11</button>
     <button class="picker-btn" onclick="setVariant(11)">12</button>
-    <button class="picker-btn" onclick="setVariant(12)">13</button>
-    <button class="picker-btn" onclick="setVariant(13)">14</button>
-    <span class="picker-label" style="margin-left: 12px;">Lifestyle</span>
-    <button class="picker-btn" onclick="setVariant(14)">15</button>
-    <button class="picker-btn" onclick="setVariant(15)">16</button>
-    <button class="picker-btn" onclick="setVariant(16)">17</button>
-    <button class="picker-btn" onclick="setVariant(17)">18</button>
-    <button class="picker-btn" onclick="setVariant(18)">19</button>
   </div>
 
   <div class="card" id="card">
@@ -322,16 +313,16 @@
       <div class="eyebrow" id="eyebrow-text">Earnest Page</div>
 
       <div class="problem" id="problem-text">
-        He didn't<br>
-        love you<br>
-        <span class="dim">no matter what.</span>
+        Your bad<br>
+        feelings<br>
+        <span class="dim">are a gift.</span>
       </div>
 
       <div class="divider"></div>
 
-      <!-- TAGLINE — updated for beta recruitment -->
+      <!-- TAGLINE -->
       <div class="tagline" id="tagline-text">
-        Talk to the<br>version of you<br>who left.
+        Stop running.<br>Start listening.
         <span class="deliverable">Looking for 5 people to test this — free access + compensation.</span>
         <span class="price">Apply — link in bio</span>
       </div>
@@ -340,7 +331,7 @@
 
     <!-- Brand + disclaimer -->
     <div class="brand">Earnest Page</div>
-    <div class="disclaimer">AI-powered personal development · not a licensed therapy service</div>
+    <div class="disclaimer">AI-powered personal development · your feelings have something to tell you</div>
 
     <!-- TikTok chrome (preview only) -->
     <div class="tiktok-right">
@@ -361,7 +352,7 @@
 
     <div class="tiktok-caption">
       <div class="tt-handle">@earnestpage</div>
-      <div class="tt-caption-text">Looking for 5 people to test this · free access + paid · apply in bio</div>
+      <div class="tt-caption-text">Your feelings are a gift · come find out what they're saying · apply in bio</div>
     </div>
 
   </div>
@@ -375,448 +366,278 @@
   <script>
     /*
       ═══════════════════════════════════════════════════════
-      BETA RECRUITMENT CAMPAIGN VARIANTS
+      BETA RECRUITMENT CAMPAIGN — "Feelings Are Gifts"
 
-      Each variant has:
-        - lines: the headline text
-        - tagline: the response/CTA block
-        - caption: the TikTok caption text
-
-      01-07: HEALING   — emotional pain, relationships, identity
-      08-14: GROWTH    — money, career, school, ambition
-      15-19: LIFESTYLE — style, dating, body image, confidence
+      Philosophy: Negative feelings are superpowers. Nothing
+      is broken. There is no future. You already are. The
+      feeling is a gift telling you what you're deciding
+      right now.
       ═══════════════════════════════════════════════════════
     */
     const variants = [
       {
-        // AD 01 — unrequited love / "he didn't love me"
+        // AD 01 — Core brand statement
         lines: [
-          "He didn't",
-          "love you",
-          { text: "no matter what.", dim: true }
+          "Your bad",
+          "feelings",
+          { text: "are a gift.", dim: true }
         ],
         tagline: {
-          main: "Talk to the<br>version of you<br>who left.",
+          main: "Stop running.<br>Start listening.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `That feeling when you gave everything and it still wasn't enough.
+        caption: `What if the feeling you're trying to get rid of is the most helpful thing happening to you right now?
 
-You don't need him to love you. You need to hear what the version of you who already walked away would say.
+Every negative feeling is a signal. Not that something is wrong — that you're making a decision about this moment that doesn't match who you already are. The feeling is the gift. It's showing you exactly where to look.
 
-Earnest Page lets you talk to your ideal self — the one who figured it out. Not a chatbot. Not therapy. Something different.
+Earnest Page is a conversation with the part of you that already sees it. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-#earnestpage #healing #breakup #selflove #lettinggo #toxicrelationship #movingon`
+#earnestpage #feelings #mentalhealth #selfawareness #growth #mindset #emotionalintelligence #gift`
       },
       {
-        // AD 02 — invisibility / "no one sees me"
+        // AD 02 — Anxiety = excitement
         lines: [
-          "No one",
+          "That anxiety?",
+          "That's",
+          { text: "excitement.", dim: true }
+        ],
+        tagline: {
+          main: "Same feeling.<br>New permission.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `Your heart races. Your stomach tightens. You can't sit still. That's not fear. That's your whole body saying "something good is happening right now."
+
+You just called it the wrong name.
+
+Same sensation. Different label. Different life. Earnest Page is where you find out what your feelings are actually saying.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #anxiety #excitement #reframe #mentalhealth #mindset #growth #permission #genz`
+      },
+      {
+        // AD 03 — Wanting / desire
+        lines: [
+          "You only want",
+          "what you",
+          { text: "already have.", dim: true }
+        ],
+        tagline: {
+          main: "The wanting<br>is the proof.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You wouldn't miss it if you didn't already know what it feels like. The wanting isn't lack. It's recognition.
+
+You already have it — you just put a different label on it. The desire IS the evidence that it's already yours.
+
+Earnest Page is a conversation with the part of you that sees what's already here. Your feelings have something to tell you.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #abundance #wanting #desire #mindset #lawofattraction #youalreadyhaveit #growth`
+      },
+      {
+        // AD 04 — Money / enough
+        lines: [
+          "You already",
+          "have",
+          { text: "enough.", dim: true }
+        ],
+        tagline: {
+          main: "Look around.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `The feeling of "not enough" isn't about money. It's about a decision you're making right now about what's here.
+
+Change the decision, and everything you're looking at changes with it. Not the circumstances. The seeing.
+
+Earnest Page is where you find out what you're actually deciding. Your feelings have something to tell you.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #money #abundance #enough #mindset #wealth #gratitude #perspective #growth`
+      },
+      {
+        // AD 05 — Stress / capability
+        lines: [
+          "You can",
+          "handle this.",
+          { text: "You already are.", dim: true }
+        ],
+        tagline: {
+          main: "Right now.",
+          deliverable: "Looking for 5 people to test this — free access + compensation.",
+          price: "Apply — link in bio"
+        },
+        caption: `You're handling it right now. You're here. You're breathing. You're reading this.
+
+The stress is telling you you can't do the thing you're literally doing. That's the gift — it's showing you a decision that doesn't match reality.
+
+Earnest Page is a conversation with the part of you that already knows this. Your feelings have something to tell you.
+
+We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
+
+#earnestpage #stress #youcandothis #capability #strength #mindset #growth #calm #genz`
+      },
+      {
+        // AD 06 — Love / nothing missing
+        lines: [
+          "Nothing is",
           "actually",
-          { text: "sees you.", dim: true }
+          { text: "missing.", dim: true }
         ],
         tagline: {
-          main: "Talk to<br>someone<br>who does.",
+          main: "Especially<br>not love.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `You show up for everyone. You hold it together. And no one asks how you're doing.
+        caption: `You want love because you already are love. The wanting proves it's already in you. You didn't lose something. You're just not looking at what's here.
 
-Not because they don't care. Because you taught them not to.
+The feeling of missing something is itself the proof that you have it. You can't miss what you've never known.
 
-Earnest Page is a conversation with a version of you that actually gets it. It sees the pattern. It talks back.
+Earnest Page is where you stop searching and start seeing. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-#earnestpage #invisible #mentalhealth #emotionalhealth #selfworth #seen #healing`
+#earnestpage #love #selflove #relationships #wholeness #nothingmissing #youareit #growth`
       },
       {
-        // AD 03 — loneliness / "I'm alone"
+        // AD 07 — Self-worth / nothing wrong
         lines: [
-          "You have",
-          "people around",
-          { text: "and feel alone.", dim: true }
+          "Nothing is",
+          "wrong",
+          { text: "with you.", dim: true }
         ],
         tagline: {
-          main: "Talk to the<br>one person<br>who gets it.",
+          main: "Read that<br>again.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `Full contacts list. Group chats. "Friends." And you still feel completely alone.
+        caption: `Not "you can be fixed." Not "you'll get there someday." Nothing. Is. Wrong. With. You. Right now.
 
-Because no one knows the real version. The one you don't post about.
+That bad feeling isn't confirming that something's broken. It's a gift — it's telling you you're making a decision that doesn't match who you already are.
 
-Earnest Page lets you talk to the version of yourself that already figured this out. It's not advice. It's a mirror.
+Earnest Page is where you hear that clearly. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-#earnestpage #lonely #alone #mentalhealth #realones #healing #innerwork`
+#earnestpage #selfworth #nothingwrong #youareenough #mentalhealth #selflove #perfect #growth`
       },
       {
-        // AD 04 — family pain / "my family stinks"
+        // AD 08 — Fear / trust
         lines: [
-          "Your family",
-          "was supposed",
-          { text: "to be safe.", dim: true }
+          "Fear isn't",
+          "doubt. It's trust",
+          { text: "pointed somewhere else.", dim: true }
         ],
         tagline: {
-          main: "Build the<br>version of you<br>they couldn't.",
+          main: "Point it<br>somewhere you do.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `They were supposed to protect you. Instead they became the thing you need protection from.
+        caption: `You're not uncertain. You're completely certain — just in a direction that doesn't serve you. That's all fear is. Same trust, different direction.
 
-You can't change your family. But you can stop letting their version of you run the show.
+The feeling is the gift. It's telling you exactly where your trust is right now and giving you the chance to redirect it.
 
-Earnest Page is a conversation with your ideal self. The one your family never met. The one you're becoming.
+Earnest Page is a conversation with the part of you that already sees where to point it. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-#earnestpage #familytrauma #toxicfamily #healing #boundaries #generationaltrauma #selfworth`
+#earnestpage #fear #trust #courage #mindset #growth #direction #innerwork #genz`
       },
       {
-        // AD 05 — purposelessness / "why live" (SOFTENED — redirected toward meaning)
+        // AD 09 — Already here
         lines: [
-          "You're still",
-          "here and",
-          { text: "that matters.", dim: true }
+          "There's",
+          "nowhere",
+          { text: "to get to.", dim: true }
         ],
         tagline: {
-          main: "Talk to the<br>version of you<br>who found why.",
+          main: "You're<br>already here.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `Some days you don't know why you keep going. But you do. You're still here.
+        caption: `You're not behind. You're not off-track. There's no destination you're missing. Everything is right here, right now.
 
-That's not nothing. That's everything.
+The only thing making it feel wrong is a label. The feeling is the gift — it's showing you the label you're using on this moment.
 
-Earnest Page lets you talk to the version of yourself who found the reason. Not motivation. Not a pep talk. A real conversation.
+Earnest Page is where you find out what label you're using. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-If you're in crisis right now, text HOME to 741741 or call 988.
-
-#earnestpage #mentalhealth #purpose #keepgoing #youmatter #healing #selfworth`
+#earnestpage #present #rightnow #notlost #alreadyhere #mindset #growth #peace #genz`
       },
       {
-        // AD 06 — performing / masking
+        // AD 10 — The label
         lines: [
-          "Everyone",
-          "thinks you're",
-          { text: "fine.", dim: true }
+          "Same moment.",
+          "Different label.",
+          { text: "Different life.", dim: true }
         ],
         tagline: {
-          main: "Talk to<br>someone you<br>can't fool.",
+          main: "Your feelings show<br>which one<br>you picked.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `You're the strong one. The reliable one. The one who never falls apart.
+        caption: `Nothing has to change. Not your job. Not your relationship. Not your body. Not your bank account. Just the label you're putting on this moment right now.
 
-Except you do. Just never where anyone can see.
+That's it. That's the whole thing. The feeling is the gift — it tells you which label is active.
 
-Earnest Page is a conversation with the version of you that sees through it. The one you can't perform for. The one that knows.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #mentalhealth #highfunctioning #masking #anxiety #healing #realtalks`
-      },
-      {
-        // AD 07 — relationship pattern / proven original
-        lines: [
-          "You keep",
-          "choosing the",
-          { text: "wrong one.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who stopped.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `Same type. Same red flags. Same ending. Every time.
-
-It's not bad luck. It's a belief running in the background that you haven't looked at yet.
-
-Earnest Page lets you talk to the version of yourself that broke the cycle. Not a therapist. Not a chatbot. Your ideal self.
+Earnest Page is a conversation about the label. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-#earnestpage #toxicrelationships #datingpatterns #selflove #healing #breakup #attachment`
-      },
-
-      // ═══════════════════════════════════════════════════════
-      // GROWTH ADS (08–14) — Ambition, money, career, school
-      // ═══════════════════════════════════════════════════════
-
-      {
-        // AD 08 — money / wanting more
-        lines: [
-          "You weren't",
-          "built to be",
-          { text: "broke.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who built it.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `You know you're capable of more. You can feel it. But something keeps you stuck in the same cycle — same paycheck, same ceiling, same excuses.
-
-It's not a money problem. It's a belief problem.
-
-Earnest Page lets you talk to the version of yourself that already built the life you're imagining. Not a coach. Not a course. A conversation with who you're becoming.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #money #ambition #wealth #mindset #success #levelup #entrepreneur`
+#earnestpage #perspective #reframe #label #mindset #changeyourmind #growth #samemoment #genz`
       },
       {
-        // AD 09 — career / stuck at work
-        lines: [
-          "You're too",
-          "good for",
-          { text: "that job.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who quit.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `You show up every day knowing this isn't it. You're overqualified, undervalued, and running out of patience.
-
-But you stay. Because the next move isn't clear yet.
-
-Earnest Page lets you talk to the version of yourself that already made the leap. The one who figured out what's next. Not a career coach — your ideal self.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #career #quityourjob #purpose #ambition #careerchange #growth #nextchapter`
-      },
-      {
-        // AD 10 — school / academic pressure
+        // AD 11 — Career / right place
         lines: [
           "You're not",
-          "stupid. You're",
-          { text: "lost.", dim: true }
+          "in the",
+          { text: "wrong place.", dim: true }
         ],
         tagline: {
-          main: "Talk to the<br>version of you<br>who found it.",
+          main: "Look around.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `Everyone around you seems to have it figured out. The major, the plan, the motivation. And you're sitting there pretending you do too.
+        caption: `What if this is exactly where everything starts? Not somewhere else. Not after some change. Right here.
 
-You're not falling behind. You just haven't found YOUR direction yet.
+The feeling that says "this isn't it" is a gift — it's showing you a decision you're making about right now. Not a fact. A decision.
 
-Earnest Page lets you talk to the version of yourself that figured out what they actually want — not what everyone else expects.
+Earnest Page is where you hear what that decision actually is. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-#earnestpage #college #school #student #findyourpath #motivation #genz #growth #purpose`
+#earnestpage #career #purpose #rightplace #growth #mindset #perspective #work #genz`
       },
       {
-        // AD 11 — comparison / social media
+        // AD 12 — Permission
         lines: [
-          "Their highlight",
-          "reel is not",
-          { text: "your life.", dim: true }
+          "You're allowed",
+          "to enjoy",
+          { text: "this.", dim: true }
         ],
         tagline: {
-          main: "Talk to the<br>version of you<br>who logged off.",
+          main: "Right now.<br>Today. As is.",
           deliverable: "Looking for 5 people to test this — free access + compensation.",
           price: "Apply — link in bio"
         },
-        caption: `Everyone's winning. Everyone's traveling. Everyone's in love. Everyone's got it figured out. At least that's what it looks like from your screen.
+        caption: `Not when you earn more. Not when you lose weight. Not when you find the one. Right now. This version. This moment.
 
-And you know it's fake. But it still gets to you.
+You're allowed. The bad feeling is just you telling yourself you're not. That's the gift — it's showing you the permission you haven't given yourself.
 
-Earnest Page lets you talk to the version of yourself that stopped comparing. The one who built a life instead of watching everyone else's.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #comparison #socialmedia #mentalhealth #fomo #reallife #genz #selfworth #growth`
-      },
-      {
-        // AD 12 — ambition / knowing you're meant for more
-        lines: [
-          "You know",
-          "you're meant",
-          { text: "for more.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who got there.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `That feeling that won't go away. The one that says this isn't your final form. You're meant for something bigger but you can't see the path yet.
-
-That feeling is a signal. Not a fantasy.
-
-Earnest Page lets you talk to the version of yourself that's already living the life you keep imagining. Not motivation. A real conversation.
+Earnest Page is a conversation with the part of you that already gave yourself permission. Your feelings have something to tell you.
 
 We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
 
-#earnestpage #purpose #dreambig #ambition #manifestation #mindset #growth #futureself`
-      },
-      {
-        // AD 13 — creative dreams / side hustle
-        lines: [
-          "You have",
-          "something the",
-          { text: "world needs.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who shipped it.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `The idea. The project. The business. The art. It's been in your head for months. Maybe years. And it's still just... in your head.
-
-Not because you can't do it. Because something's in the way.
-
-Earnest Page lets you talk to the version of yourself that actually built the thing. The one who stopped waiting for permission.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #creator #entrepreneur #sidehustle #justdoit #dreams #startup #creative #build`
-      },
-      {
-        // AD 14 — general self-improvement / leveling up
-        lines: [
-          "Same year.",
-          "Different",
-          { text: "calendar.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>that changed.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `New year, same habits. New month, same excuses. You keep planning to change and then... nothing.
-
-It's not discipline you're missing. It's clarity on who you're actually becoming.
-
-Earnest Page lets you talk to your ideal self — the version of you that already made the change. It's not a planner. It's not a chatbot. It's a conversation with who you could be.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #selfimprovement #levelup #growth #discipline #habits #newyear #glowup #betterme`
-      },
-
-      // ═══════════════════════════════════════════════════════
-      // LIFESTYLE ADS (15–19) — Style, dating, confidence
-      // ═══════════════════════════════════════════════════════
-
-      {
-        // AD 15 — style / fashion / identity
-        lines: [
-          "You dress",
-          "like you don't",
-          { text: "know who you are.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>with the closet.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `You stand in front of your closet every morning and nothing feels right. Not because you don't have clothes — because you don't know what you're going for.
-
-Style isn't about trends. It's about knowing who you are and dressing like it.
-
-Earnest Page lets you talk to the version of yourself that already figured out their look — the one who walks in and people notice.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #style #fashion #personalstyle #ootd #confidence #genz #glowup #aesthetic`
-      },
-      {
-        // AD 16 — dating / finding a date / confidence
-        lines: [
-          "You're not",
-          "bad at dating.",
-          { text: "You're scared.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who shot their shot.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `You swipe. You draft texts and delete them. You see someone and think about saying something but you don't. Every time.
-
-It's not that you don't know what to say. It's that you don't believe they'd want to hear it.
-
-Earnest Page lets you talk to the version of yourself that has the confidence you keep faking. Not dating tips. Not pickup lines. Just clarity on who you are.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #dating #confidence #selflove #relationships #rizz #genz #datingadvice #growth`
-      },
-      {
-        // AD 17 — body image / self-perception (ORGANIC ONLY — don't boost)
-        lines: [
-          "You avoid",
-          "mirrors. That's",
-          { text: "not normal.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who looks back.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `You check your phone camera but never a mirror. You untag yourself in photos. You cancel plans because of how you feel about how you look.
-
-The problem was never your body. It's the story you tell yourself about it.
-
-Earnest Page lets you talk to the version of yourself that actually likes what they see. Not a fitness app. Not a filter. A conversation with who you're becoming.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #bodyimage #selflove #confidence #mentalhealth #bodypositive #genz #healing #growth`
-      },
-      {
-        // AD 18 — social confidence / making friends
-        lines: [
-          "You have",
-          "1,000 followers",
-          { text: "and zero friends.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>people want around.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `You can text anyone but can't call anyone. You're in group chats but never get invited. You know how to perform social but not how to actually connect.
-
-It's not a personality flaw. It's a wall you built and forgot about.
-
-Earnest Page lets you talk to the version of yourself that people gravitate toward. The one who stopped performing and started being real.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #socialanxiety #makingfriends #confidence #introvert #genz #connection #growth #realfriends`
-      },
-      {
-        // AD 19 — fitness / discipline / becoming that person
-        lines: [
-          "You keep",
-          "starting Monday.",
-          { text: "It's Thursday.", dim: true }
-        ],
-        tagline: {
-          main: "Talk to the<br>version of you<br>who didn't quit.",
-          deliverable: "Looking for 5 people to test this — free access + compensation.",
-          price: "Apply — link in bio"
-        },
-        caption: `You downloaded the app. You bought the shoes. You set the alarm. And by Wednesday you're back on the couch.
-
-The problem isn't motivation. It's that you haven't met the version of yourself that actually follows through.
-
-Earnest Page lets you talk to that version. The one who shows up. Not a fitness coach — a conversation with who you're becoming.
-
-We're looking for 5 people to test this for 30 days — free access + compensation for your feedback. Apply — link in bio.
-
-#earnestpage #fitness #gym #discipline #motivation #gymtok #consistency #glowup #betterme`
+#earnestpage #permission #enjoylife #rightnow #selflove #enough #gratitude #growth #genz`
       }
     ];
 

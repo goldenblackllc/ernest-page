@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, VolumeX, Share2, Download, Loader2, FileText, Copy, Check } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, VolumeX, Share2, Download, Loader2, FileText, Copy, Check, ImagePlus } from "lucide-react";
 import { useAudioMute, PAUSE_ALL_AUDIO_EVENT } from "@/context/AudioMuteContext";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
@@ -61,6 +61,7 @@ interface FeedPostProps {
         comments?: number;
         audio_url?: string;
         audio_letter_ratio?: number;
+        audio_word_timestamps?: { word: string; start: number; end: number }[];
         letter_audio_url?: string;
         response_audio_url?: string;
         translations?: Record<string, any>;
@@ -80,6 +81,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [videoToast, setVideoToast] = useState<string | null>(null);
     const [isTextView, setIsTextView] = useState(false);
     const [copiedField, setCopiedField] = useState<string | null>(null);
+    const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
+    const [regenToast, setRegenToast] = useState<string | null>(null);
+    const [regenStyleOpen, setRegenStyleOpen] = useState(false);
 
 
     const t = useTranslations('feed');
@@ -557,8 +561,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // ═══ SHORT-FORM VIDEO MODE ═══
     // When a post has audio and a hero image, render as a vertical "short"
     if (canPlayShort) {
-        // Split text into ~4-word chunks for TikTok-native subtitle pacing.
-        // Fewer words per chunk keeps the viewer's eye anchored center-screen.
+         // Split text into ~4-word chunks for subtitle pacing.
         const chunkText = (text: string, wordsPerChunk: number = 4): string[] => {
             const words = text.replace(/\n+/g, ' ').split(/\s+/).filter(w => w);
             const chunks: string[] = [];
@@ -571,18 +574,49 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         const letterChunks = chunkText(publicLetter || '');
         const responseChunks = chunkText((publicResponse || '').replace(/^THE COUNSEL:\s*/i, ''));
 
-        // Calculate which subtitle line to show based on audio progress and phase
+        // Build timestamp-based chunks if word timestamps are available
+        const wordTimestamps = post.audio_word_timestamps;
+        const timestampChunks: { text: string; start: number; end: number }[] | null = (() => {
+            if (!wordTimestamps || wordTimestamps.length === 0) return null;
+            const chunks: { text: string; start: number; end: number }[] = [];
+            const wordsPerChunk = 4;
+            for (let i = 0; i < wordTimestamps.length; i += wordsPerChunk) {
+                const group = wordTimestamps.slice(i, i + wordsPerChunk);
+                chunks.push({
+                    text: group.map(w => w.word).join(' '),
+                    start: group[0].start,
+                    end: group[group.length - 1].end,
+                });
+            }
+            return chunks;
+        })();
+
+        // Calculate which subtitle line to show based on audio progress
         const getCurrentSubtitle = () => {
             if (audioPhase === 'idle' && !isPlaying) return null;
 
+            // ── Timestamp-based sync (precise) ──
+            if (timestampChunks && audioRef.current) {
+                const currentTime = audioRef.current.currentTime;
+                let chunkIndex = 0;
+                for (let i = 0; i < timestampChunks.length; i++) {
+                    if (currentTime >= timestampChunks[i].start) {
+                        chunkIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+                const current = timestampChunks[chunkIndex]?.text || '';
+                const next = timestampChunks[chunkIndex + 1]?.text || '';
+                return { current, next, lineIndex: chunkIndex, totalLines: timestampChunks.length };
+            }
+
+            // ── Fallback: word-count-weighted estimate (for older posts) ──
             const lines = audioPhase === 'response' ? responseChunks : letterChunks;
             if (lines.length === 0) return null;
 
-            // Normalize progress within the current phase (0→1)
             let phaseProgress: number;
             if (unifiedAudioUrl) {
-                // Unified audio: progress is 0→1 over entire file.
-                // Letter phase occupies 0→letterRatio, response occupies letterRatio→1
                 if (audioPhase === 'letter') {
                     phaseProgress = computedLetterRatio > 0
                         ? Math.min(audioProgress / computedLetterRatio, 1)
@@ -594,15 +628,21 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         : 0;
                 }
             } else {
-                // Legacy (two separate files): progress is already 0→1 per phase
                 phaseProgress = audioProgress;
             }
 
-            // Map normalized phase progress to line index
-            const lineIndex = Math.min(
-                Math.floor(phaseProgress * lines.length),
-                lines.length - 1
-            );
+            const wordCounts = lines.map(l => l.split(/\s+/).length);
+            const totalWords = wordCounts.reduce((a, b) => a + b, 0);
+            let cumulative = 0;
+            let lineIndex = 0;
+            for (let i = 0; i < lines.length; i++) {
+                cumulative += wordCounts[i] / totalWords;
+                if (phaseProgress < cumulative) {
+                    lineIndex = i;
+                    break;
+                }
+                lineIndex = i;
+            }
 
             const current = lines[lineIndex] || '';
             const next = lines[lineIndex + 1] || '';
@@ -700,8 +740,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             )}
                         </div>
 
-                        {/* Title */}
-                        {publicTitle && (
+                        {/* Title — hidden when verdict is baked into the image */}
+                        {publicTitle && !(post as any).verdict && (
                             <h2 className="text-lg font-black text-white leading-tight drop-shadow-lg">
                                 {publicTitle}
                             </h2>
@@ -717,11 +757,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         </div>
                     )}
 
-                    {/* Center: Subtitle text — TikTok-native centered captions */}
-                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
+                    {/* Bottom: Subtitle text — positioned near bottom to avoid verdict overlap */}
+                    <div className="absolute inset-0 flex items-end justify-center z-10 pointer-events-none px-6 pb-16">
                         {subtitle ? (
                             <div className="text-center">
-                                <p className="text-xl sm:text-2xl font-bold text-white leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-all duration-200">
+                                <p className="text-2xl sm:text-3xl font-bold text-white leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] transition-all duration-200" style={{ WebkitTextStroke: '1px rgba(0,0,0,0.4)' }}>
                                     {subtitle.current}
                                 </p>
                             </div>
@@ -909,6 +949,55 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         )}
                         {user?.uid === post.uid && (
                             <>
+                                {/* Regenerate Image — author only */}
+                                <div className="relative">
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (!user || isRegeneratingImage) return;
+                                            setIsRegeneratingImage(true);
+                                            setRegenToast(null);
+                                            try {
+                                                const idToken = await user.getIdToken();
+                                                const res = await fetch('/api/admin/regenerate-image', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${idToken}`,
+                                                    },
+                                                    body: JSON.stringify({ postId: post.id }),
+                                                });
+                                                if (res.ok) {
+                                                    setRegenToast('✓ Regenerated');
+                                                    setTimeout(() => window.location.reload(), 1500);
+                                                } else {
+                                                    const err = await res.json();
+                                                    setRegenToast(err.error || 'Failed');
+                                                }
+                                            } catch (err) {
+                                                setRegenToast('Failed');
+                                            } finally {
+                                                setIsRegeneratingImage(false);
+                                                setTimeout(() => setRegenToast(null), 3000);
+                                            }
+                                        }}
+                                        className={cn(
+                                            "transition-colors relative",
+                                            isRegeneratingImage ? "text-amber-400" : "text-zinc-400 hover:text-amber-400"
+                                        )}
+                                        title="Regenerate image"
+                                        disabled={isRegeneratingImage}
+                                    >
+                                        {isRegeneratingImage ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <ImagePlus className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                    {regenToast && (
+                                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap z-50">{regenToast}</span>
+                                    )}
+                                </div>
                                 <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>

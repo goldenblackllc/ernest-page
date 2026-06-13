@@ -75,6 +75,7 @@ export async function POST(req: Request) {
         await postDoc.ref.update({
             audio_url: audioResult.audioUrl,
             audio_letter_ratio: audioResult.letterWordRatio,
+            audio_word_timestamps: audioResult.wordTimestamps,
         });
 
         console.log(`[BackfillAudio] Audio attached to post ${postId}`);

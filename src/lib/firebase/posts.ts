@@ -14,7 +14,6 @@ export interface CreatePostParams {
     // Optional structured data for extended display
     rant?: string;
     core_beliefs?: string[];
-    likedBy?: string[];
     // Geolocation for proximity filtering
     lat?: number;
     lng?: number;
@@ -52,8 +51,7 @@ export async function createPost(params: CreatePostParams) {
         ...geoFields,
 
         created_at: serverTimestamp(),
-        likes: 0,
-        likedBy: [],
+        like_count: 0,
         comments: 0
     };
 

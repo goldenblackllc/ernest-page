@@ -9,6 +9,7 @@ import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 import { generatePostAudio } from '@/lib/ai/postTTS';
+import { renderVerdictCard } from '@/lib/video/renderVerdictCard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -123,7 +124,7 @@ async function processUserChats(
         gender,
     ].filter(Boolean);
     const demographicHint = demographicParts.length > 0
-        ? `\nDEMOGRAPHIC CONTEXT (use ONLY when the "human" scale is chosen and a person appears in the image): The user is ${demographicParts.join(', ')}. Any human figure, silhouette, or body shown must plausibly match this description — skin tone, build, and age-appropriate appearance. Do NOT default to any other demographic. Remember: NEVER show faces.`
+        ? `\nDEMOGRAPHIC CONTEXT (use when "cinematic_human" style is chosen OR when a person appears in any style): The user is ${demographicParts.join(', ')}. Any human figure must plausibly match this description — skin tone, build, and age-appropriate appearance. Do NOT default to any other demographic.`
         : '';
 
     for (const chatDoc of chatDocs) {
@@ -150,8 +151,9 @@ async function processUserChats(
 
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
-            // Fetch recent posts to avoid repeating the same photo scale
+            // Fetch recent posts to avoid repeating the same photo style and scale
             let recentScales: string[] = [];
+            let recentStyles: string[] = [];
             try {
                 const recentSnap = await db.collection("posts")
                     .where("authorId", "==", uid)
@@ -161,10 +163,17 @@ async function processUserChats(
                 recentScales = recentSnap.docs
                     .map(d => d.data().photo_scale)
                     .filter(Boolean);
+                recentStyles = recentSnap.docs
+                    .map(d => d.data().photo_style)
+                    .filter(Boolean);
             } catch { /* ignore — index may not exist yet */ }
 
             const recentScaleHint = recentScales.length > 0
                 ? `\nThe user's last ${recentScales.length} post(s) used these photo scales: [${recentScales.join(', ')}]. Do NOT repeat the same scale. Choose a DIFFERENT scale for variety.`
+                : '';
+
+            const recentStyleHint = recentStyles.length > 0
+                ? `\nThe user's last ${recentStyles.length} post(s) used these visual styles: [${recentStyles.join(', ')}]. STRONGLY prefer a DIFFERENT style for variety. Mix it up.`
                 : '';
 
             const currentDossier = identity?.dossier || '';
@@ -244,26 +253,33 @@ If you are unsure whether something identifies the USER personally, err on the s
 
 - letter: LENGTH: 85-115 words. This is non-negotiable — the letter will be read aloud in ~40-45 seconds. STRUCTURE: One-two sentences stating the user's WANT or FEELING — in their terms, at their level of clarity. Three-four sentences on their SITUATION — the specific details, constraints, stakes, or context that make this real and relatable. One closing line of raw emotional honesty — what this actually feels like or why it matters to them. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
 
-STEP 3: THE ART DIRECTOR (Image Generation)
-You are composing a HERO MOMENT — a single frame that captures the emotional essence of this post. Think like a film director choosing a still frame, NOT a stock photographer. Every image must be Instagram-quality: sharp, high-contrast, saturated, scroll-stopping.
+STEP 3: THE VISUAL DIRECTOR (Image Strategy)
+Every post gets ONE image: a beautiful photo background with the post's VERDICT overlaid as bold text. This image must work standalone on any platform — Instagram, TikTok, Twitter, a screenshot in a group chat. Someone who sees only this image should understand the entire post without reading a word.
 
-CHARACTER IDENTITY CONTEXT — use this to inform the world, environment, and energy of the image:
-- Archetype: "${archetype}"
-- Identity roles: "${identity?.title || 'Unknown'}"
-These roles should influence the setting, objects, and atmosphere. A "Monk" evokes stillness and sacred spaces. An "Athlete" evokes motion and discipline. A "Mother" evokes warmth and domestic beauty. A "Businessman" evokes sharp suits and city skylines. Let the archetype shape the visual world — do NOT ignore it.
+PRIORITY #1 — VISUAL ATTRACTIVENESS: The image must be BEAUTIFUL and ATTRACTIVE on social media. Think: premium brand campaign, high-end fashion editorial. Rich colors, striking composition, professional lighting, warmth, and energy. "Would I double-tap this on Instagram?" If not, start over.
 
-First, read the emotional tone of the post and choose a VIBE — the feeling that should emanate from the image. Examples: luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration.
+YOUR TWO JOBS:
+1. Write the VERDICT — the text that goes on top of this post's Instagram image. Someone who only sees this text should understand what Earnest Page's advice was.
+   BAD (too vague, says nothing): "Be the Gentleman.", "Today Already Counts.", "Manners Are a Choice." — nobody knows what these mean.
+   GOOD (actually says the advice): "A gentleman isn't defined by his wardrobe — it's how he treats people when no one is watching.", "Don't invite your sister. Her presence will make your son's day about her drama, not his achievement."
+   Write it the way you'd text a friend the punchline of the article.
 
-Then choose a SCALE — the type of shot:
-- "macro": Sharp close-up of a specific object or texture. Cinematic lighting, extreme detail.
-- "lifestyle": A composed scene or environment that tells a story. Tabletop, room, workspace.
-- "wide": An aspirational landscape, cityscape, or architectural shot. Expansive, atmospheric.
-- "human": Faceless human presence — silhouettes, hands doing something, over-the-shoulder, person walking away. NEVER show faces.
+2. Write the IMAGEN_PROMPT — a prompt for a contextual background photo that SUPPORTS the verdict visually. This photo is the SETTING, not the star — the verdict text is the star.
+   The photo should represent the ASPIRATION or the CONTEXT of the post — what the person wants to become, or the world the advice lives in.
+   Examples: For "Be the Gentleman" → a well-dressed man adjusting cufflinks in warm light. For "Don't Invite Her" → a graduation ceremony with warm bokeh lights. For "Quit." → a sunrise over a city skyline.
+   The photo must be visually stunning, warm, aspirational. NEVER cold/blue/dark/sad. Think menswear ad, travel magazine, lifestyle brand.
+   IMPORTANT: The center of the image will have bold white text overlaid on it, so the composition should have visual interest but NOT be too busy in the center area. Slightly darker or blurred center areas work well.
 ${recentScaleHint}${demographicHint}
 
-- photo_vibe: One word capturing the emotional tone.
+CHARACTER IDENTITY CONTEXT — use this to inform the world, objects, and energy of the background photo:
+- Archetype: "${archetype}"
+- Identity roles: "${identity?.title || 'Unknown'}"
+
+OUTPUT FIELDS:
+- verdict: The text overlay for the Instagram image. Summarizes Earnest Page's actual advice.
+- photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
 - photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompt: Write a detailed prompt for Google Imagen to create this image. Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text. ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.
+- imagen_prompt: A prompt for Google Imagen to generate the BACKGROUND PHOTO. Visually stunning, warm, aspirational. Photorealistic. 9:16 portrait orientation (1080×1920). The photo should support the verdict text — provide context and beauty, not compete with it. NEVER include readable text or watermarks. NEVER use cold blue/teal tones. Keep the center area relatively simple (text will be overlaid there).
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -296,6 +312,7 @@ ${transcript}`;
                                     title: z.string().max(75),
                                     pseudonym: z.string(),
                                     letter: z.string(),
+                                    verdict: z.string().max(500),
                                     photo_vibe: z.string(),
                                     photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
                                     imagen_prompt: z.string(),
@@ -306,6 +323,7 @@ ${transcript}`;
                                     title: z.string().max(75).optional(),
                                     pseudonym: z.string().optional(),
                                     letter: z.string().optional(),
+                                    verdict: z.string().optional(),
                                     photo_vibe: z.string().optional(),
                                     photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
                                     imagen_prompt: z.string().optional(),
@@ -418,9 +436,9 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                 if (post.is_publishable && post.title) {
                     const postDocRef = db.collection('posts').doc();
 
-                    // Guard: verify imagen_prompt exists before calling Imagen API
+                    // ─── IMAGE ROUTING: Always Imagen background + verdict overlay ───
                     if (!post.imagen_prompt || post.imagen_prompt.trim().length === 0) {
-                        console.warn(`[Cron] Publishable post for user ${uid} is missing imagen_prompt — saving as private`);
+                        console.warn(`[Cron] Post for user ${uid} is missing imagen_prompt — saving as private`);
                         await dossierPromise;
                         await postDocRef.set({
                             id: postDocRef.id,
@@ -436,6 +454,7 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                                 letter: post.letter,
                                 response: post.response,
                             },
+                            verdict: post.verdict || null,
                             imagen_prompt: null,
                             photo_vibe: post.photo_vibe || null,
                             photo_scale: post.photo_scale || null,
@@ -455,8 +474,10 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                     }
 
                     // Start image generation and dossier write concurrently
+                    const imagePromise = generateVerdictImage(post.imagen_prompt!, post.verdict || post.title, postDocRef.id);
+
                     const [imageResult] = await Promise.allSettled([
-                        generatePostImage(post.imagen_prompt, postDocRef.id),
+                        imagePromise,
                         dossierPromise,
                     ]);
 
@@ -481,8 +502,8 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                         console.warn(`[Cron] Image failed after ${MAX_IMAGE_RETRIES} retries for user ${uid} — saving as private`);
                     }
 
-                    // Match sponsor from imagen prompt
-                    const sponsor = matchSponsor(post.imagen_prompt);
+                    // Match sponsor from imagen prompt (only for photo styles)
+                    const sponsor = post.imagen_prompt ? matchSponsor(post.imagen_prompt) : null;
 
                     // Compute author hash for Contact Firewall filtering
                     let authorHash: string | null = null;
@@ -517,7 +538,8 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                             letter: post.letter,
                             response: post.response,
                         },
-                        imagen_prompt: post.imagen_prompt,
+                        imagen_prompt: post.imagen_prompt || null,
+                        verdict: post.verdict || null,
                         photo_vibe: post.photo_vibe,
                         photo_scale: post.photo_scale,
                         language: post.language || null,
@@ -551,6 +573,7 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                                 await postDocRef.update({
                                     audio_url: audioResult.audioUrl,
                                     audio_letter_ratio: audioResult.letterWordRatio,
+                                    audio_word_timestamps: audioResult.wordTimestamps,
                                 });
                                 console.log(`[Cron] Audio attached to post ${postDocRef.id}`);
                             }
@@ -584,8 +607,9 @@ Replace ALL real names of people the user knows with relationship roles. Replace
 }
 
 // ─── Image generation helper ─────────────────────────────────────────────────
-async function generatePostImage(prompt: string, postId: string): Promise<string | null> {
+async function generateVerdictImage(prompt: string, verdict: string, postId: string): Promise<string | null> {
     try {
+        // Step 1: Generate the background photo via Imagen
         const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -593,48 +617,52 @@ async function generatePostImage(prompt: string, postId: string): Promise<string
                 instances: [{ prompt }],
                 parameters: {
                     sampleCount: 1,
-                    aspectRatio: "16:9",
+                    aspectRatio: "9:16",
                     personGeneration: "ALLOW_ADULT"
                 }
             })
         });
 
-        if (imagenRes.ok) {
-            const data = await imagenRes.json();
-
-            // Log safety metadata — Imagen returns raiFilteredReason on silent filters
-            const prediction = data.predictions?.[0];
-            if (prediction?.raiFilteredReason) {
-                console.warn(`[Cron] Imagen RAI filter for post ${postId}:`, prediction.raiFilteredReason);
-            }
-            if (prediction?.safetyAttributes) {
-                console.log(`[Cron] Imagen safety attributes for post ${postId}:`, JSON.stringify(prediction.safetyAttributes));
-            }
-            // Log if we got a prediction but no image (fully blocked)
-            if (data.predictions && !prediction?.bytesBase64Encoded) {
-                console.warn(`[Cron] Imagen returned prediction without image for post ${postId}:`, JSON.stringify(data.predictions[0]));
-            }
-
-            if (prediction?.bytesBase64Encoded) {
-                const buffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
-                const bucket = storage.bucket();
-                const fileName = `post-images/${postId}_imagen.jpg`;
-                const file = bucket.file(fileName);
-
-                await file.save(buffer, {
-                    metadata: { contentType: 'image/jpeg' },
-                });
-
-                // Try to make public; skip silently if Uniform Bucket-Level Access is on
-                try { await file.makePublic(); } catch { /* UBLA enabled — bucket-level rules apply */ }
-
-                return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-            }
-        } else {
-            console.error("Imagen API Error:", await imagenRes.text());
+        if (!imagenRes.ok) {
+            console.error("[Cron] Imagen API Error:", await imagenRes.text());
+            return null;
         }
+
+        const data = await imagenRes.json();
+        const prediction = data.predictions?.[0];
+
+        if (prediction?.raiFilteredReason) {
+            console.warn(`[Cron] Imagen RAI filter for post ${postId}:`, prediction.raiFilteredReason);
+        }
+
+        if (!prediction?.bytesBase64Encoded) {
+            console.warn(`[Cron] Imagen returned no image for post ${postId}:`, JSON.stringify(prediction));
+            return null;
+        }
+
+        const photoBuffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
+
+        // Step 2: Composite the verdict text over the photo
+        const finalBuffer = await renderVerdictCard(photoBuffer, verdict);
+
+        // Step 3: Upload to Cloud Storage with cache-busting filename
+        const bucket = storage.bucket();
+        const ts = Date.now();
+        const fileName = `post-images/${postId}_imagen_${ts}.png`;
+        const file = bucket.file(fileName);
+
+        await file.save(finalBuffer, {
+            metadata: { contentType: 'image/png' },
+        });
+
+        try { await file.makePublic(); } catch { /* UBLA enabled */ }
+
+        console.log(`[Cron] Verdict image generated for post ${postId}`);
+        return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
     } catch (err) {
-        console.error("[Cron] Image generation failed:", err);
+        console.error("[Cron] Verdict image generation failed:", err);
+        return null;
     }
-    return null;
 }
+
+
