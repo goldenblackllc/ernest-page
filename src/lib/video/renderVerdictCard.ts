@@ -1,29 +1,31 @@
 import sharp from 'sharp';
+import satori from 'satori';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import type { ReactNode } from 'react';
+import React from 'react';
 
 const WIDTH = 1080;
 const HEIGHT = 1920;
 
-// Load and base64-encode the font at module level (once)
-let fontBase64: string = '';
+// Load the font buffer once at module level
+let fontBuffer: Buffer;
 try {
-    const fontPath = join(process.cwd(), 'public', 'fonts', 'hkgrotesk', 'hkgrotesk-bold-webfont.woff2');
-    fontBase64 = readFileSync(fontPath).toString('base64');
-} catch (err) {
-    console.warn('[RenderVerdictCard] Could not load HK Grotesk Bold font:', err);
+    fontBuffer = readFileSync(join(process.cwd(), 'public', 'fonts', 'hkgrotesk', 'hkgrotesk-bold-webfont.ttf'));
+} catch {
+    try {
+        fontBuffer = readFileSync(join(__dirname, '..', '..', '..', '..', 'public', 'fonts', 'hkgrotesk', 'hkgrotesk-bold-webfont.ttf'));
+    } catch {
+        console.error('[RenderVerdictCard] Could not load HK Grotesk Bold font from any path');
+        fontBuffer = Buffer.alloc(0);
+    }
 }
 
 /**
  * Renders a verdict card: photo background + verdict text overlay.
  *
- * Embeds the HK Grotesk Bold font directly in the SVG via base64 @font-face
- * so it renders correctly on any server (including Vercel's Lambda).
- *
- * Triple-layer text for readability:
- *   1. Blurred black shadow
- *   2. Thick black stroke outline
- *   3. White fill
+ * Uses Satori to convert text to SVG paths (no system fonts needed),
+ * then composites onto the photo with sharp.
  */
 export async function renderVerdictCard(
     photoBuffer: Buffer,
@@ -33,92 +35,90 @@ export async function renderVerdictCard(
         .resize(WIDTH, HEIGHT, { fit: 'cover', position: 'center' })
         .toBuffer();
 
-    const { fontSize, maxChars, lineHeight } = getAdaptiveSizing(verdict.length);
-    const strokeWidth = Math.max(5, Math.round(fontSize / 6));
-    const lines = wrapText(verdict, maxChars);
-    const totalTextHeight = lines.length * lineHeight;
-    const textStartY = (HEIGHT * 0.40) - (totalTextHeight / 2) + (lineHeight / 2);
+    const { fontSize, lineHeight } = getAdaptiveSizing(verdict.length);
+    const strokePx = Math.max(4, Math.round(fontSize / 8));
 
-    // Font face declaration — embedded so it works on any server
-    const fontFace = fontBase64
-        ? `<style>
-            @font-face {
-                font-family: 'HK Grotesk';
-                src: url('data:font/woff2;base64,${fontBase64}') format('woff2');
-                font-weight: 700;
-                font-style: normal;
-            }
-        </style>`
-        : '';
+    // Build the JSX element for Satori
+    const element = React.createElement(
+        'div',
+        {
+            style: {
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column' as const,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingBottom: '200px',
+            },
+        },
+        // Verdict text
+        React.createElement(
+            'div',
+            {
+                style: {
+                    fontSize: `${fontSize}px`,
+                    fontWeight: 700,
+                    fontFamily: 'HK Grotesk',
+                    color: 'white',
+                    textAlign: 'center' as const,
+                    lineHeight: `${lineHeight}px`,
+                    textShadow: `0 0 ${Math.round(fontSize / 4)}px rgba(0,0,0,0.9), 0 0 ${Math.round(fontSize / 3)}px rgba(0,0,0,0.7), 0 0 ${fontSize}px rgba(0,0,0,0.5)`,
+                    padding: '0 60px',
+                    maxWidth: '100%',
+                },
+            },
+            verdict
+        ),
+        // Brand mark
+        React.createElement(
+            'div',
+            {
+                style: {
+                    position: 'absolute' as const,
+                    bottom: '100px',
+                    fontSize: '26px',
+                    fontWeight: 700,
+                    fontFamily: 'HK Grotesk',
+                    color: 'rgba(255,255,255,0.5)',
+                    letterSpacing: '3px',
+                    textShadow: '0 0 4px rgba(0,0,0,0.8)',
+                },
+            },
+            'EARNEST PAGE'
+        )
+    );
 
-    const fontFamily = fontBase64 ? 'HK Grotesk' : 'sans-serif';
+    // Satori converts text to SVG paths using the font buffer directly
+    const textSvg = await satori(
+        element as ReactNode,
+        {
+            width: WIDTH,
+            height: HEIGHT,
+            fonts: [
+                {
+                    name: 'HK Grotesk',
+                    data: fontBuffer,
+                    weight: 700,
+                    style: 'normal' as const,
+                },
+            ],
+        }
+    );
 
-    // Build text lines with three layers each: shadow, outline, fill
-    const textLines = lines.map((line, i) => {
-        const y = textStartY + (i * lineHeight);
-        const escaped = escapeXml(line);
-        const common = `x="${WIDTH / 2}" y="${y}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle"`;
-
-        const shadow = `<text ${common} fill="black" fill-opacity="0.8" filter="url(#shadow)">${escaped}</text>`;
-        const outline = `<text ${common} fill="black" stroke="black" stroke-width="${strokeWidth}" stroke-linejoin="round">${escaped}</text>`;
-        const fill = `<text ${common} fill="white">${escaped}</text>`;
-
-        return shadow + '\n' + outline + '\n' + fill;
-    }).join('\n');
-
-    // Brand mark
-    const brandY = HEIGHT - 100;
-    const brand = `<text x="${WIDTH / 2}" y="${brandY}" font-family="${fontFamily}" font-size="26" font-weight="700" fill="white" fill-opacity="0.5" stroke="black" stroke-width="2" stroke-linejoin="round" paint-order="stroke fill" text-anchor="middle" letter-spacing="3">EARNEST PAGE</text>`;
-
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">
-        <defs>
-            ${fontFace}
-            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="${Math.round(fontSize / 5)}"/>
-            </filter>
-        </defs>
-        ${textLines}
-        ${brand}
-    </svg>`;
-
+    // Composite the Satori SVG (text rendered as vector paths) over the photo
     return await sharp(resizedPhoto)
-        .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
+        .composite([{ input: Buffer.from(textSvg), top: 0, left: 0 }])
         .png()
         .toBuffer();
 }
 
 // ─── Adaptive sizing ─────────────────────────────────────────────────────────
-function getAdaptiveSizing(charCount: number): { fontSize: number; maxChars: number; lineHeight: number } {
-    if (charCount <= 40) return { fontSize: 108, maxChars: 14, lineHeight: 124 };
-    if (charCount <= 80) return { fontSize: 84, maxChars: 18, lineHeight: 100 };
-    if (charCount <= 120) return { fontSize: 72, maxChars: 22, lineHeight: 88 };
-    if (charCount <= 170) return { fontSize: 64, maxChars: 26, lineHeight: 78 };
-    if (charCount <= 250) return { fontSize: 56, maxChars: 28, lineHeight: 70 };
-    return { fontSize: 48, maxChars: 32, lineHeight: 62 };
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function wrapText(text: string, maxCharsPerLine: number): string[] {
-    const words = text.split(/\s+/);
-    const lines: string[] = [];
-    let currentLine = '';
-    for (const word of words) {
-        if (currentLine.length + word.length + 1 > maxCharsPerLine && currentLine.length > 0) {
-            lines.push(currentLine.trim());
-            currentLine = word;
-        } else {
-            currentLine += (currentLine ? ' ' : '') + word;
-        }
-    }
-    if (currentLine.trim()) lines.push(currentLine.trim());
-    return lines;
-}
-
-function escapeXml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
+function getAdaptiveSizing(charCount: number): { fontSize: number; lineHeight: number } {
+    if (charCount <= 40) return { fontSize: 108, lineHeight: 124 };
+    if (charCount <= 80) return { fontSize: 84, lineHeight: 100 };
+    if (charCount <= 120) return { fontSize: 72, lineHeight: 88 };
+    if (charCount <= 170) return { fontSize: 64, lineHeight: 78 };
+    if (charCount <= 250) return { fontSize: 56, lineHeight: 70 };
+    return { fontSize: 48, lineHeight: 62 };
 }
