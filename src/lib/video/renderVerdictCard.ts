@@ -3,100 +3,20 @@ import sharp from 'sharp';
 const WIDTH = 1080;
 const HEIGHT = 1920;
 
-let canvasAvailable = false;
-let createCanvas: any;
-let loadImage: any;
-
-// Try to load @napi-rs/canvas (works locally, not on Vercel)
-try {
-    const canvas = require('@napi-rs/canvas');
-    createCanvas = canvas.createCanvas;
-    loadImage = canvas.loadImage;
-    canvasAvailable = true;
-    console.log('[RenderVerdictCard] Using @napi-rs/canvas renderer');
-} catch {
-    console.log('[RenderVerdictCard] @napi-rs/canvas not available, using sharp+SVG fallback');
-}
-
 /**
  * Renders a verdict card: photo background + verdict text overlay.
- * 
- * Uses @napi-rs/canvas when available (local dev), falls back to
- * sharp with multiple SVG composite passes (Vercel serverless).
+ *
+ * Uses sharp with a triple-layer SVG composite for text readability:
+ *   1. Blurred black shadow (soft dark halo behind text)
+ *   2. Thick black stroke outline (crisp edge definition)
+ *   3. White fill on top (the visible letter)
+ *
+ * No gradient overlay — the photo shows through fully.
  */
 export async function renderVerdictCard(
     photoBuffer: Buffer,
     verdict: string,
 ): Promise<Buffer> {
-    if (canvasAvailable) {
-        return renderWithCanvas(photoBuffer, verdict);
-    }
-    return renderWithSharp(photoBuffer, verdict);
-}
-
-// ─── Canvas renderer (local dev) ─────────────────────────────────────────────
-async function renderWithCanvas(photoBuffer: Buffer, verdict: string): Promise<Buffer> {
-    const canvas = createCanvas(WIDTH, HEIGHT);
-    const ctx = canvas.getContext('2d');
-
-    const photo = await loadImage(photoBuffer);
-    const scale = Math.max(WIDTH / photo.width, HEIGHT / photo.height);
-    const scaledW = photo.width * scale;
-    const scaledH = photo.height * scale;
-    ctx.drawImage(photo, (WIDTH - scaledW) / 2, (HEIGHT - scaledH) / 2, scaledW, scaledH);
-
-    const { fontSize, maxChars, lineHeight } = getAdaptiveSizing(verdict.length);
-    const strokeWidth = Math.max(4, Math.round(fontSize / 8));
-    const shadowBlur = Math.round(fontSize / 4);
-    const lines = wrapText(verdict, maxChars);
-    const totalTextHeight = lines.length * lineHeight;
-    const textStartY = (HEIGHT * 0.40) - (totalTextHeight / 2) + (lineHeight / 2);
-
-    const fontSpec = `800 ${fontSize}px "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif`;
-    ctx.font = fontSpec;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Layer 1: Shadow glow
-    ctx.save();
-    ctx.shadowColor = 'black';
-    ctx.shadowBlur = shadowBlur;
-    ctx.fillStyle = 'rgba(0,0,0,0.9)';
-    for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], WIDTH / 2, textStartY + i * lineHeight);
-    ctx.restore();
-
-    // Layer 2: Thick stroke
-    ctx.save();
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = strokeWidth;
-    ctx.lineJoin = 'round';
-    for (let i = 0; i < lines.length; i++) ctx.strokeText(lines[i], WIDTH / 2, textStartY + i * lineHeight);
-    ctx.restore();
-
-    // Layer 3: White fill
-    ctx.fillStyle = 'white';
-    for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], WIDTH / 2, textStartY + i * lineHeight);
-
-    // Brand mark
-    ctx.save();
-    ctx.font = '500 26px "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.strokeText('EARNEST PAGE', WIDTH / 2, HEIGHT - 100);
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('EARNEST PAGE', WIDTH / 2, HEIGHT - 100);
-    ctx.restore();
-
-    return canvas.toBuffer('image/png');
-}
-
-// ─── Sharp+SVG renderer (Vercel fallback) ────────────────────────────────────
-// Renders text as multiple separate sharp composite passes to avoid
-// librsvg's poor stroke/shadow rendering.
-async function renderWithSharp(photoBuffer: Buffer, verdict: string): Promise<Buffer> {
     const resizedPhoto = await sharp(photoBuffer)
         .resize(WIDTH, HEIGHT, { fit: 'cover', position: 'center' })
         .toBuffer();
@@ -109,20 +29,14 @@ async function renderWithSharp(photoBuffer: Buffer, verdict: string): Promise<Bu
 
     const font = `"Helvetica Neue", Helvetica, Arial, sans-serif`;
 
-    // Build a single SVG with layered text for the best quality sharp can deliver:
-    // 1) Large blurred black text (shadow)
-    // 2) Thick stroked black text (outline)  
-    // 3) White filled text (visible letter)
+    // Build text lines with three layers each: shadow, outline, fill
     const textLines = lines.map((line, i) => {
         const y = textStartY + (i * lineHeight);
         const escaped = escapeXml(line);
         const common = `x="${WIDTH / 2}" y="${y}" font-family='${font}' font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle"`;
 
-        // Shadow: large black text with Gaussian blur
         const shadow = `<text ${common} fill="black" fill-opacity="0.8" filter="url(#shadow)">${escaped}</text>`;
-        // Outline: thick black stroke
         const outline = `<text ${common} fill="black" stroke="black" stroke-width="${strokeWidth}" stroke-linejoin="round">${escaped}</text>`;
-        // Fill: white on top
         const fill = `<text ${common} fill="white">${escaped}</text>`;
 
         return shadow + '\n' + outline + '\n' + fill;
