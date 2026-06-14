@@ -63,7 +63,8 @@ function cleanTextForTTS(text: string): string {
     return text
         .replace(/[#*_~`>]/g, '')
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        .replace(/\n{2,}/g, '. ')
+        .replace(/([.!?,;:…])\s*\n{2,}/g, '$1 ')  // punctuation already present — just collapse
+        .replace(/\n{2,}/g, '. ')                      // no punctuation — add period
         .replace(/\n/g, ' ')
         .trim();
 }
