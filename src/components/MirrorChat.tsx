@@ -778,6 +778,9 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     };
 
     const handleClose = async () => {
+        // Stop TTS audio IMMEDIATELY — before any async work
+        cleanupAudio();
+
         const userMessageCount = messages.filter(m => m.role === 'user').length;
 
         if (sessionId) {
@@ -817,7 +820,6 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         }
 
         // Wipe local state
-        cleanupAudio();
         setSessionId(null);
         setMessages([]);
         setInput("");
