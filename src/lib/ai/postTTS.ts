@@ -292,7 +292,7 @@ export async function generatePostAudio(
         const cleanLetter = cleanTextForTTS(letterText);
         const cleanResponse = responseText ? cleanTextForTTS(responseText) : '';
         const combinedText = cleanResponse
-            ? `${cleanLetter} ... ${cleanResponse}`
+            ? `${cleanLetter} ${cleanResponse}`
             : cleanLetter;
 
         // Calculate letter word ratio for phase boundary estimation during playback
@@ -308,7 +308,7 @@ export async function generatePostAudio(
         }
 
         // Upload single combined file
-        const audioUrl = await uploadAudio(audioResult.buffer, `post-audio/${postId}.mp3`);
+        const audioUrl = await uploadAudio(audioResult.buffer, `post-audio/${postId}_${Date.now()}.mp3`);
 
         console.log(`[PostTTS] Audio generated for post ${postId} (letter ratio: ${letterWordRatio.toFixed(2)}, words: ${audioResult.wordTimestamps.length})`);
         return { audioUrl, letterWordRatio, wordTimestamps: audioResult.wordTimestamps };

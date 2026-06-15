@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
-import { generateSubtitles, generateAssSubtitles } from '@/lib/video/videoSubtitles';
+import { generateSubtitles, generateAssSubtitles, buildChunksFromTimestamps } from '@/lib/video/videoSubtitles';
 import { renderFrame } from '@/lib/video/renderFrame';
 import { formatDistanceToNow } from 'date-fns';
 import { promises as fs } from 'fs';
@@ -204,7 +204,14 @@ export async function GET(
         const responseDuration = totalDuration * (1 - letterWordRatio);
         console.log(`[Video] Letter: ${letterDuration.toFixed(2)}s, Response: ${responseDuration.toFixed(2)}s (ratio: ${letterWordRatio.toFixed(2)})`);
 
-        const subtitles = generateSubtitles(letterText, responseText, letterDuration, responseDuration, 4);
+
+        // ── Build subtitle entries ──
+        // Prefer real ElevenLabs word-level timestamps for frame-accurate sync.
+        // Fall back to word-ratio estimation for older posts without timestamps.
+        const rawTimestamps = post.audio_word_timestamps as { word: string; start: number; end: number }[] | undefined;
+        const subtitles = (rawTimestamps && rawTimestamps.length > 0)
+            ? buildChunksFromTimestamps(rawTimestamps)
+            : generateSubtitles(letterText, responseText, letterDuration, responseDuration);
 
         // ── Render background frame with sharp (hero + gradients + avatar, no text) ──
         const fontsDir = join(process.cwd(), 'public/fonts/hkgrotesk');

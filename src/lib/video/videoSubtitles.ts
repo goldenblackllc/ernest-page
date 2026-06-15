@@ -12,14 +12,47 @@ export interface SubtitleEntry {
 }
 
 /**
- * Break text into word-based chunks for subtitle display.
+ * Break text into sentence-boundary chunks for subtitle display.
+ *
+ * Each chunk contains complete sentences, targeting approximately `targetWords`
+ * words. Chunks always end at a sentence boundary (., !, ?) so the viewer
+ * reads complete thoughts — never a dangling fragment like "a casual".
  */
-function chunkText(text: string, wordsPerChunk = 12): string[] {
-    const words = text.split(/\s+/).filter(Boolean);
-    const chunks: string[] = [];
-    for (let i = 0; i < words.length; i += wordsPerChunk) {
-        chunks.push(words.slice(i, i + wordsPerChunk).join(' '));
+function chunkText(text: string, targetWords = 35): string[] {
+    const cleaned = text.replace(/\n+/g, ' ').trim();
+    if (!cleaned) return [];
+
+    // Split into sentences — sequences ending with sentence-terminal punctuation
+    const sentencePattern = /[^.!?]*[.!?]+[\s]*/g;
+    const sentences = cleaned.match(sentencePattern);
+
+    // If no sentence boundaries found, return the whole text as one chunk
+    if (!sentences || sentences.length === 0) return [cleaned];
+
+    // Capture any trailing text after the last sentence boundary (e.g. no final period)
+    const matchedLength = sentences.reduce((sum, s) => sum + s.length, 0);
+    if (matchedLength < cleaned.length) {
+        sentences.push(cleaned.slice(matchedLength));
     }
+
+    const chunks: string[] = [];
+    let current = '';
+    let wordCount = 0;
+
+    for (const sentence of sentences) {
+        const sentenceWordCount = sentence.trim().split(/\s+/).filter(Boolean).length;
+
+        if (wordCount > 0 && wordCount + sentenceWordCount > targetWords) {
+            chunks.push(current.trim());
+            current = sentence;
+            wordCount = sentenceWordCount;
+        } else {
+            current += sentence;
+            wordCount += sentenceWordCount;
+        }
+    }
+
+    if (current.trim()) chunks.push(current.trim());
     return chunks;
 }
 
@@ -64,7 +97,7 @@ export function generateSubtitles(
     responseText: string,
     letterDuration: number,
     responseDuration: number,
-    wordsPerChunk = 12
+    wordsPerChunk = 30
 ): SubtitleEntry[] {
     const entries: SubtitleEntry[] = [];
 
@@ -94,6 +127,62 @@ export function generateSubtitles(
                 endTime: offset + (i + 1) * chunkDuration,
                 phase: 'response',
             });
+        }
+    }
+
+    return entries;
+}
+
+/**
+ * Build timed subtitle entries from ElevenLabs word-level timestamps,
+ * breaking at sentence boundaries.
+ *
+ * Accumulates words until both (a) we've reached ~targetWords and
+ * (b) the current word ends a sentence (., !, ?). This produces chunks
+ * that are complete thoughts with frame-accurate timing.
+ *
+ * @param wordTimestamps  Array of { word, start, end } from audio_word_timestamps
+ * @param targetWords     Minimum words before we'll break at the next sentence end (default 50)
+ * @returns Array of SubtitleEntry with real timing
+ */
+export function buildChunksFromTimestamps(
+    wordTimestamps: { word: string; start: number; end: number }[],
+    targetWords = 35,
+): SubtitleEntry[] {
+    if (wordTimestamps.length === 0) return [];
+
+    // Filter out ellipsis tokens that leak from TTS separators
+    const filtered = wordTimestamps.filter(w => w.word !== '...' && w.word !== '…');
+    if (filtered.length === 0) return [];
+
+    const entries: SubtitleEntry[] = [];
+    let chunkStart = 0;
+    const hardCeiling = Math.ceil(targetWords * 1.5); // never exceed this
+
+    for (let i = 0; i < filtered.length; i++) {
+        const wordCount = i - chunkStart + 1;
+        const word = filtered[i].word;
+        // Check for sentence-ending punctuation anywhere in the word
+        const isSentenceEnd = /[.!?]/.test(word);
+        // Check for comma/dash as a secondary break point
+        const isNaturalPause = /[,;—–\-]/.test(word);
+        const isLastWord = i === filtered.length - 1;
+
+        const shouldBreak =
+            (isSentenceEnd && wordCount >= targetWords) ||
+            (isNaturalPause && wordCount >= hardCeiling) ||
+            (wordCount >= hardCeiling) ||
+            isLastWord;
+
+        if (shouldBreak) {
+            const group = filtered.slice(chunkStart, i + 1);
+            entries.push({
+                text: group.map(w => w.word).join(' '),
+                startTime: group[0].start,
+                endTime: group[group.length - 1].end,
+                phase: 'letter',
+            });
+            chunkStart = i + 1;
         }
     }
 

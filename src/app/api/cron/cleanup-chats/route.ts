@@ -9,7 +9,7 @@ import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 import { generatePostAudio } from '@/lib/ai/postTTS';
-import { renderVerdictCard } from '@/lib/video/renderVerdictCard';
+import sharp from 'sharp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -251,7 +251,7 @@ KEEP the following — they do NOT identify the user and add value to the post:
   • Generic industry or category names (e.g., "tech", "finance", "healthcare")
 If you are unsure whether something identifies the USER personally, err on the side of removing it. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
-- letter: LENGTH: 85-115 words. This is non-negotiable — the letter will be read aloud in ~40-45 seconds. STRUCTURE: One-two sentences stating the user's WANT or FEELING — in their terms, at their level of clarity. Three-four sentences on their SITUATION — the specific details, constraints, stakes, or context that make this real and relatable. One closing line of raw emotional honesty — what this actually feels like or why it matters to them. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start exactly with 'Dear Earnest Page,\n\n'. Write the body. End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
+- letter: LENGTH: 60-115 words. This is a guide — a tight, vivid letter can be shorter than a complex situation that needs more room. The letter will be read aloud in ~25-45 seconds. STRUCTURE: One-two sentences stating the user's WANT or FEELING — in their terms, at their level of clarity. Three-four sentences on their SITUATION — the specific details, constraints, stakes, or context that make this real and relatable. One closing line of raw emotional honesty — what this actually feels like or why it matters to them. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the letter body (no salutation). End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
 
 STEP 3: THE VISUAL DIRECTOR (Image Strategy)
 Every post gets ONE image: a beautiful photo background with the post's VERDICT overlaid as bold text. This image must work standalone on any platform — Instagram, TikTok, Twitter, a screenshot in a group chat. Someone who sees only this image should understand the entire post without reading a word.
@@ -268,7 +268,6 @@ YOUR TWO JOBS:
    The photo should represent the ASPIRATION or the CONTEXT of the post — what the person wants to become, or the world the advice lives in.
    Examples: For "Be the Gentleman" → a well-dressed man adjusting cufflinks in warm light. For "Don't Invite Her" → a graduation ceremony with warm bokeh lights. For "Quit." → a sunrise over a city skyline.
    The photo must be visually stunning, warm, aspirational. NEVER cold/blue/dark/sad. Think menswear ad, travel magazine, lifestyle brand.
-   IMPORTANT: The center of the image will have bold white text overlaid on it, so the composition should have visual interest but NOT be too busy in the center area. Slightly darker or blurred center areas work well.
 ${recentScaleHint}${demographicHint}
 
 CHARACTER IDENTITY CONTEXT — use this to inform the world, objects, and energy of the background photo:
@@ -279,7 +278,7 @@ OUTPUT FIELDS:
 - verdict: The text overlay for the Instagram image. Summarizes Earnest Page's actual advice.
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
 - photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompt: A prompt for Google Imagen to generate the BACKGROUND PHOTO. Visually stunning, warm, aspirational. Photorealistic. 9:16 portrait orientation (1080×1920). The photo should support the verdict text — provide context and beauty, not compete with it. NEVER include readable text or watermarks. NEVER use cold blue/teal tones. Keep the center area relatively simple (text will be overlaid there).
+- imagen_prompt: A prompt for Google Imagen to generate the post's background photo. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar. THE IMAGE MUST: Show the world of the ANSWER, not the problem — the aspirational state, what life looks like when the advice has been taken. Unambiguously signal the topic (style posts → a beautifully dressed person; relationship posts → a meaningful human moment; career posts → someone in their element professionally; health posts → vitality, movement, the body at its best). Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (text overlays there during video playback).
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -474,7 +473,7 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                     }
 
                     // Start image generation and dossier write concurrently
-                    const imagePromise = generateVerdictImage(post.imagen_prompt!, post.verdict || post.title, postDocRef.id);
+                    const imagePromise = generateVerdictImage(post.imagen_prompt!, postDocRef.id);
 
                     const [imageResult] = await Promise.allSettled([
                         imagePromise,
@@ -607,7 +606,7 @@ Replace ALL real names of people the user knows with relationship roles. Replace
 }
 
 // ─── Image generation helper ─────────────────────────────────────────────────
-async function generateVerdictImage(prompt: string, verdict: string, postId: string): Promise<string | null> {
+async function generateVerdictImage(prompt: string, postId: string): Promise<string | null> {
     try {
         // Step 1: Generate the background photo via Imagen
         const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
@@ -642,8 +641,11 @@ async function generateVerdictImage(prompt: string, verdict: string, postId: str
 
         const photoBuffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
 
-        // Step 2: Composite the verdict text over the photo
-        const finalBuffer = await renderVerdictCard(photoBuffer, verdict);
+        // Resize to 1080×1920 — no text overlay; subtitles are the only text layer
+        const finalBuffer = await sharp(photoBuffer)
+            .resize(1080, 1920, { fit: 'cover', position: 'center' })
+            .png()
+            .toBuffer();
 
         // Step 3: Upload to Cloud Storage with cache-busting filename
         const bucket = storage.bucket();

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import { renderVerdictCard } from '@/lib/video/renderVerdictCard';
+import sharp from 'sharp';
 import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 
@@ -44,27 +44,23 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
-        const title = postData.public_post?.title || postData.title || 'Untitled';
         const letter = postData.public_post?.letter || '';
         const response = postData.public_post?.response || '';
 
-        // Determine the verdict and imagen_prompt
-        // If user provides overrides, use them. Otherwise, always generate fresh via AI.
-        let verdict = overrideVerdict;
+        // Determine the imagen_prompt — use override if provided, otherwise generate fresh via AI.
         let prompt = overridePrompt;
 
-        if (!verdict || !prompt) {
-            console.log(`[RegenerateImage] Generating fresh verdict + prompt for post ${postId}`);
-            const aiResult = await generateVerdictAndPrompt(title, letter, response);
-            verdict = verdict || aiResult.verdict;
-            prompt = prompt || aiResult.imagen_prompt;
+        if (!prompt) {
+            console.log(`[RegenerateImage] Generating fresh imagen_prompt for post ${postId}`);
+            const aiResult = await generateImagenPrompt(letter, response);
+            prompt = aiResult.imagen_prompt;
         }
 
         if (!prompt) {
             return NextResponse.json({ error: 'No imagen_prompt available and AI generation failed' }, { status: 400 });
         }
 
-        console.log(`[RegenerateImage] Generating image for post ${postId} (verdict: "${verdict}")`);
+        console.log(`[RegenerateImage] Generating clean background image for post ${postId}`);
 
         // Step 1: Generate background photo via Imagen
         const imagenRes = await fetch(
@@ -107,8 +103,11 @@ export async function POST(req: Request) {
 
         const photoBuffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
 
-        // Step 2: Composite verdict text over the photo
-        const finalBuffer = await renderVerdictCard(photoBuffer, verdict || title);
+        // Resize to 1080×1920 — no text overlay; subtitles are the text layer
+        const finalBuffer = await sharp(photoBuffer)
+            .resize(1080, 1920, { fit: 'cover', position: 'center' })
+            .png()
+            .toBuffer();
 
         // Step 3: Upload with cache-busting filename
         const bucket = storage.bucket();
@@ -125,16 +124,14 @@ export async function POST(req: Request) {
         await postDoc.ref.update({
             imagen_url,
             imagen_prompt: prompt,
-            verdict,
             is_public: postData.visibility !== 'private',
         });
 
-        console.log(`[RegenerateImage] Image updated for post ${postId}`);
+        console.log(`[RegenerateImage] Clean image updated for post ${postId}`);
 
         return NextResponse.json({
             success: true,
             imagen_url,
-            verdict,
             raiFilteredReason: prediction.raiFilteredReason || null,
         });
     } catch (error: any) {
@@ -143,37 +140,32 @@ export async function POST(req: Request) {
     }
 }
 
-// ─── Helper: Generate verdict + imagen_prompt via AI ───
-async function generateVerdictAndPrompt(
-    title: string, letter: string, response: string,
-): Promise<{ verdict: string; imagen_prompt: string }> {
+// ─── Helper: Generate imagen_prompt via AI ───
+async function generateImagenPrompt(
+    letter: string, response: string,
+): Promise<{ imagen_prompt: string }> {
     const result = await generateWithFallback({
         primaryModelId: SONNET_MODEL,
         schema: z.object({
-            verdict: z.string().max(500).describe('Text overlay for the Instagram image. Summarizes the actual advice.'),
             imagen_prompt: z.string().describe('A prompt for Google Imagen to generate the background photo.'),
         }),
-        prompt: `You are a Visual Director for an Instagram advice column called Earnest Page.
+        prompt: `You are a Visual Director for an advice column on social media.
+Your job: generate a background photo prompt for a post. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar.
 
-Given a post's title, letter, and response, generate:
-1. A VERDICT — the text that goes on top of this post's Instagram image. Someone who only sees this text should understand what the advice was.
-   BAD (too vague, says nothing): "Be the Gentleman.", "Today Already Counts."
-   GOOD (actually says the advice): "A gentleman isn't defined by his wardrobe — it's how he treats people when no one is watching.", "Don't invite your sister. Her presence will make your son's day about her drama, not his achievement."
-   Write it the way you'd text a friend the punchline of the article.
-2. An IMAGEN_PROMPT — for a beautiful background photo that provides visual context. Warm, aspirational, visually stunning. The center area will have text overlaid, so keep it relatively simple there.
-
-RULES:
-- The verdict must actually say the specific advice, not be a generic tagline
-- The photo must be visually stunning and attractive for social media
-- WARM color grading (golden, natural) — NEVER cold blue/teal
-- Photorealistic, 9:16 portrait, no text in the image
+THE IMAGE MUST:
+- Show the world of the ANSWER, not the problem. The aspirational state. What life looks like when the advice has been taken.
+- Unambiguously signal the topic. Style posts → a beautifully dressed person. Relationship posts → a meaningful human moment. Career posts → someone in their element professionally. Health posts → vitality, movement, the body at its best.
+- Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy.
+- Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated.
+- 9:16 portrait orientation (1080×1920). No text or watermarks in the image.
+- Keep the center area relatively uncluttered — text overlays there during video playback.
 
 POST:
-Title: ${title}
-Letter: ${letter.slice(0, 500)}
-Response: ${response.slice(0, 500)}`,
+Letter: ${letter}
+Response: ${response}`,
     });
 
     return result.object as any;
 }
+
 

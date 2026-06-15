@@ -90,7 +90,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const locale = useLocale();
 
     // ═══ GLOBAL MUTE STATE ═══
-    const { isMuted, toggleMute } = useAudioMute();
+    const { isMuted, toggleMute, pauseAll } = useAudioMute();
 
     // ═══ AUDIO PLAYBACK STATE ═══
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -98,7 +98,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [audioPhase, setAudioPhase] = useState<'idle' | 'letter' | 'response'>('idle');
     const [audioProgress, setAudioProgress] = useState(0);
     const cardRef = useRef<HTMLDivElement>(null);
-    const hasAutoPlayed = useRef(false);
 
     // Support both unified (audio_url) and legacy (letter_audio_url + response_audio_url) formats
     const unifiedAudioUrl = post.audio_url;
@@ -147,6 +146,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         // Start from the beginning if idle
         if (audioPhase === 'idle' || !audioRef.current) {
+            // Pause any other playing cards first
+            pauseAll();
             if (unifiedAudioUrl) {
                 // ── UNIFIED FORMAT: single audio file ──
                 const audio = new Audio(unifiedAudioUrl);
@@ -224,25 +225,30 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             audioRef.current.play().catch(() => setIsPlaying(false));
             setIsPlaying(true);
         }
-    }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio, isMuted]);
+    }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio, isMuted, pauseAll]);
 
-    // Autoplay when card scrolls into view (TikTok/Reels behavior)
+    // Auto-play when card scrolls into view, pause when it leaves (Instagram Reels behavior)
     useEffect(() => {
         if (!canPlayShort || !cardRef.current) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
-                if (entry.isIntersecting && !hasAutoPlayed.current) {
-                    // Card is visible — autoplay
-                    hasAutoPlayed.current = true;
-                    toggleAudio();
-                } else if (!entry.isIntersecting && isPlaying && audioRef.current) {
-                    // Card scrolled away — pause
+                if (entry.isIntersecting) {
+                    // Card visible — start playback from beginning
+                    if (!isPlaying) {
+                        toggleAudio();
+                    }
+                } else if (isPlaying && audioRef.current) {
+                    // Card scrolled away — pause and reset for next entry
                     audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                    audioRef.current = null;
                     setIsPlaying(false);
+                    setAudioPhase('idle');
+                    setAudioProgress(0);
                 }
             },
-            { threshold: 0.6 } // 60% visible triggers play
+            { threshold: 0.6 }
         );
 
         observer.observe(cardRef.current);
@@ -266,13 +272,17 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         };
     }, []);
 
-    // Pause when a global pause-all signal is dispatched (e.g. MirrorChat opens)
+    // Pause when a global pause-all signal is dispatched (e.g. another card starts playing)
     useEffect(() => {
         const handlePauseAll = () => {
             if (audioRef.current) {
                 audioRef.current.pause();
-                setIsPlaying(false);
+                audioRef.current.currentTime = 0;
+                audioRef.current = null;
             }
+            setIsPlaying(false);
+            setAudioPhase('idle');
+            setAudioProgress(0);
         };
         window.addEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
         return () => window.removeEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
@@ -561,32 +571,90 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // ═══ SHORT-FORM VIDEO MODE ═══
     // When a post has audio and a hero image, render as a vertical "short"
     if (canPlayShort) {
-         // Split text into ~4-word chunks for subtitle pacing.
-        const chunkText = (text: string, wordsPerChunk: number = 4): string[] => {
-            const words = text.replace(/\n+/g, ' ').split(/\s+/).filter(w => w);
-            const chunks: string[] = [];
-            for (let i = 0; i < words.length; i += wordsPerChunk) {
-                chunks.push(words.slice(i, i + wordsPerChunk).join(' '));
+        // Split text into sentence-boundary chunks — each chunk is a complete thought.
+        const chunkText = (text: string, targetWords: number = 35): string[] => {
+            const cleaned = text.replace(/\n+/g, ' ').trim();
+            if (!cleaned) return [''];
+
+            const sentencePattern = /[^.!?]*[.!?]+[\s]*/g;
+            const sentences = cleaned.match(sentencePattern);
+            if (!sentences || sentences.length === 0) return [cleaned];
+
+            // Capture trailing text after last sentence boundary
+            const matchedLength = sentences.reduce((sum, s) => sum + s.length, 0);
+            if (matchedLength < cleaned.length) {
+                sentences.push(cleaned.slice(matchedLength));
             }
+
+            const chunks: string[] = [];
+            let current = '';
+            let wordCount = 0;
+
+            for (const sentence of sentences) {
+                const sentenceWords = sentence.trim().split(/\s+/).filter(w => w).length;
+                if (wordCount > 0 && wordCount + sentenceWords > targetWords) {
+                    chunks.push(current.trim());
+                    current = sentence;
+                    wordCount = sentenceWords;
+                } else {
+                    current += sentence;
+                    wordCount += sentenceWords;
+                }
+            }
+            if (current.trim()) chunks.push(current.trim());
             return chunks.length > 0 ? chunks : [''];
         };
 
         const letterChunks = chunkText(publicLetter || '');
         const responseChunks = chunkText((publicResponse || '').replace(/^THE COUNSEL:\s*/i, ''));
 
-        // Build timestamp-based chunks if word timestamps are available
+        // Build timestamp-based chunks at sentence boundaries if word timestamps are available
         const wordTimestamps = post.audio_word_timestamps;
         const timestampChunks: { text: string; start: number; end: number }[] | null = (() => {
             if (!wordTimestamps || wordTimestamps.length === 0) return null;
+
+            // Filter out ellipsis tokens that leak from TTS separators
+            const filtered = wordTimestamps.filter((w: any) => w.word !== '...' && w.word !== '…');
+            if (filtered.length === 0) return null;
+
+            // Determine letter/response boundary from word ratio
+            const splitIndex = Math.round(filtered.length * computedLetterRatio);
+
             const chunks: { text: string; start: number; end: number }[] = [];
-            const wordsPerChunk = 4;
-            for (let i = 0; i < wordTimestamps.length; i += wordsPerChunk) {
-                const group = wordTimestamps.slice(i, i + wordsPerChunk);
-                chunks.push({
-                    text: group.map(w => w.word).join(' '),
-                    start: group[0].start,
-                    end: group[group.length - 1].end,
-                });
+            const targetWords = 35;
+            const hardCeiling = Math.ceil(targetWords * 1.5);
+            let chunkStart = 0;
+
+            for (let i = 0; i < filtered.length; i++) {
+                const wordCount = i - chunkStart + 1;
+                const word = filtered[i].word;
+                const isSentenceEnd = /[.!?]/.test(word);
+                const isNaturalPause = /[,;—–\-]/.test(word);
+                const isLastWord = i === filtered.length - 1;
+                // Force a break at the letter/response boundary
+                const isLetterEnd = splitIndex > 0 && i === splitIndex - 1;
+
+                const shouldBreak =
+                    (isSentenceEnd && wordCount >= targetWords) ||
+                    isLetterEnd ||
+                    (isNaturalPause && wordCount >= hardCeiling) ||
+                    (wordCount >= hardCeiling) ||
+                    isLastWord;
+
+                if (shouldBreak) {
+                    const group = filtered.slice(chunkStart, i + 1);
+                    let text = group.map((w: any) => w.word).join(' ');
+                    // Format sign-off: "Sincerely, Name" → "Sincerely,\nName"
+                    text = text.replace(/\b(Sincerely,)\s+/i, '$1\n');
+                    // Format greeting: "Dear Name," → "Dear Name,\n"
+                    text = text.replace(/^(Dear\s+[^,]+,)\s+/i, '$1\n');
+                    chunks.push({
+                        text,
+                        start: group[0].start,
+                        end: group[group.length - 1].end,
+                    });
+                    chunkStart = i + 1;
+                }
             }
             return chunks;
         })();
@@ -658,6 +726,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     className="relative w-full cursor-pointer overflow-hidden"
                     style={{ aspectRatio: '4 / 5' }}
                     onClick={toggleAudio}
+                    title="Tap to pause/resume"
                 >
                     {/* Hero image as full background */}
                     <img
@@ -666,11 +735,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         className="absolute inset-0 w-full h-full object-cover"
                     />
 
-                    {/* Dark gradient overlays for text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
+
 
                     {/* Top: Author + Title */}
-                    <div className="absolute top-0 left-0 right-0 p-4 z-10">
+                    <div className="absolute top-0 left-0 right-0 p-4 z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
                         {/* Author row */}
                         <div className="flex items-center gap-2.5 mb-3">
                             <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
@@ -696,34 +764,17 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 </div>
                                 <span className="text-[10px] text-white/50">{timeAgo}</span>
                             </div>
-                            {/* Mute toggle + phase indicator */}
-                            {isPlaying && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
-                                >
-                                    {isMuted ? (
-                                        <VolumeX className="w-3 h-3 text-white/70" />
-                                    ) : (
-                                        <Volume2 className="w-3 h-3 text-white animate-pulse" />
-                                    )}
-                                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                                        {audioPhase === 'letter' ? 'Letter' : 'Response'}
-                                    </span>
-                                </button>
-                            )}
-                            {!isPlaying && canPlayShort && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
-                                >
-                                    {isMuted ? (
-                                        <VolumeX className="w-3.5 h-3.5 text-white/50" />
-                                    ) : (
-                                        <Volume2 className="w-3.5 h-3.5 text-white/50" />
-                                    )}
-                                </button>
-                            )}
+                            {/* Mute toggle — always visible, like Instagram Reels */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
+                            >
+                                {isMuted ? (
+                                    <VolumeX className="w-3.5 h-3.5 text-white/70" />
+                                ) : (
+                                    <Volume2 className="w-3.5 h-3.5 text-white animate-pulse" />
+                                )}
+                            </button>
                             {/* Visibility control */}
                             {user?.uid === post.uid && (
                                 <select
@@ -748,31 +799,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         )}
                     </div>
 
-                    {/* Center: Play button (shown when paused) */}
-                    {!isPlaying && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-transform hover:scale-110">
-                                <Play className="w-7 h-7 text-white ml-1" />
-                            </div>
-                        </div>
-                    )}
 
-                    {/* Bottom: Subtitle text — positioned near bottom to avoid verdict overlap */}
-                    <div className="absolute inset-0 flex items-end justify-center z-10 pointer-events-none px-6 pb-16">
-                        {subtitle ? (
+
+                    {/* Subtitle text — centered, the primary content layer */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-8">
+                        {subtitle && (
                             <div className="text-center">
-                                <p className="text-2xl sm:text-3xl font-bold text-white leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] transition-all duration-200" style={{ WebkitTextStroke: '1px rgba(0,0,0,0.4)' }}>
+                                <p className="text-3xl font-bold text-white leading-snug transition-all duration-200" style={{ whiteSpace: 'pre-line', WebkitTextStroke: '1.5px rgba(0,0,0,0.7)', textShadow: '0 2px 12px rgba(0,0,0,1), 0 4px 24px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
                                     {subtitle.current}
-                                </p>
-                            </div>
-                        ) : (
-                            /* Static preview when not playing */
-                            <div className="text-center">
-                                <p className="text-lg text-white/60 leading-snug drop-shadow-lg">
-                                    {letterChunks[0]}
-                                </p>
-                                <p className="text-[11px] text-white/30 mt-2 uppercase tracking-widest font-bold">
-                                    Tap to listen
                                 </p>
                             </div>
                         )}
@@ -958,7 +992,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                             setRegenToast(null);
                                             try {
                                                 const idToken = await user.getIdToken();
-                                                const res = await fetch('/api/admin/regenerate-image', {
+                                                const res = await fetch('/api/admin/regenerate-post', {
                                                     method: 'POST',
                                                     headers: {
                                                         'Content-Type': 'application/json',
@@ -984,7 +1018,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                             "transition-colors relative",
                                             isRegeneratingImage ? "text-amber-400" : "text-zinc-400 hover:text-amber-400"
                                         )}
-                                        title="Regenerate image"
+                                        title="Regenerate post (letter, response, audio, image)"
                                         disabled={isRegeneratingImage}
                                     >
                                         {isRegeneratingImage ? (
