@@ -52,7 +52,30 @@ export async function POST(req: Request) {
 
         if (!prompt) {
             console.log(`[RegenerateImage] Generating fresh imagen_prompt for post ${postId}`);
-            const aiResult = await generateImagenPrompt(letter, response);
+            // Build appearance hint from user's identity for accurate human figures
+            const userDoc = await db.collection('users').doc(uid).get();
+            const userData = userDoc.exists ? userDoc.data() : null;
+            const identity = userData?.identity;
+            const gender = identity?.gender || '';
+            const ethnicity = identity?.ethnicity || '';
+            const birthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
+            const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+            const demographicParts = [
+                computedAge ? `approximately ${computedAge} years old` : '',
+                ethnicity,
+                gender,
+            ].filter(Boolean);
+            const stylePrefs = userData?.character_bible?.source_code?.things_i_enjoy || identity?.things_i_enjoy || '';
+            const dreamSelf = identity?.dream_self || '';
+            const appearanceParts = [
+                demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
+                dreamSelf ? `Self-description: "${dreamSelf}"` : '',
+                stylePrefs ? `Style & preferences: "${stylePrefs}"` : '',
+            ].filter(Boolean);
+            const appearanceHint = appearanceParts.length > 0
+                ? `\nAPPEARANCE & STYLE (when a person appears in the image): ${appearanceParts.join(' ')} Any human figure must plausibly match this description — skin tone, build, age, clothing style, and overall aesthetic.`
+                : '';
+            const aiResult = await generateImagenPrompt(letter, response, appearanceHint);
             prompt = aiResult.imagen_prompt;
         }
 
@@ -142,7 +165,7 @@ export async function POST(req: Request) {
 
 // ─── Helper: Generate imagen_prompt via AI ───
 async function generateImagenPrompt(
-    letter: string, response: string,
+    letter: string, response: string, appearanceHint: string = '',
 ): Promise<{ imagen_prompt: string }> {
     const result = await generateWithFallback({
         primaryModelId: SONNET_MODEL,
@@ -159,7 +182,7 @@ THE IMAGE MUST:
 - Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated.
 - 9:16 portrait orientation (1080×1920). No text or watermarks in the image.
 - Keep the center area relatively uncluttered — text overlays there during video playback.
-
+${appearanceHint}
 POST:
 Letter: ${letter}
 Response: ${response}`,

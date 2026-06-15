@@ -113,7 +113,7 @@ async function processUserChats(
     const identity = userData?.identity;
     const preferredLocale = userData?.preferred_locale || 'en';
 
-    // Build demographic hint for image generation so human figures match the user
+    // Build appearance hint for image generation so human figures match the user
     const gender = identity?.gender || '';
     const ethnicity = identity?.ethnicity || '';
     const birthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
@@ -123,8 +123,16 @@ async function processUserChats(
         ethnicity,
         gender,
     ].filter(Boolean);
-    const demographicHint = demographicParts.length > 0
-        ? `\nDEMOGRAPHIC CONTEXT (use when "cinematic_human" style is chosen OR when a person appears in any style): The user is ${demographicParts.join(', ')}. Any human figure must plausibly match this description — skin tone, build, and age-appropriate appearance. Do NOT default to any other demographic.`
+    // Style/appearance from character bible
+    const stylePrefs = userData?.character_bible?.source_code?.things_i_enjoy || identity?.things_i_enjoy || '';
+    const dreamSelf = identity?.dream_self || '';
+    const appearanceParts = [
+        demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
+        dreamSelf ? `Self-description: "${dreamSelf}"` : '',
+        stylePrefs ? `Style & preferences: "${stylePrefs}"` : '',
+    ].filter(Boolean);
+    const demographicHint = appearanceParts.length > 0
+        ? `\nAPPEARANCE & STYLE (when a person appears in the image): ${appearanceParts.join(' ')} Any human figure must plausibly match this description — skin tone, build, age, clothing style, and overall aesthetic. Do NOT default to any other demographic or style.`
         : '';
 
     for (const chatDoc of chatDocs) {

@@ -61,6 +61,27 @@ export async function POST(req: Request) {
         const identity = userData?.identity;
         const characterVoiceId = userData?.character_bible?.voice_id;
 
+        // Build appearance hint for image generation so human figures match the user
+        const gender = identity?.gender || '';
+        const ethnicity = identity?.ethnicity || '';
+        const birthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
+        const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+        const demographicParts = [
+            computedAge ? `approximately ${computedAge} years old` : '',
+            ethnicity,
+            gender,
+        ].filter(Boolean);
+        const stylePrefs = userData?.character_bible?.source_code?.things_i_enjoy || identity?.things_i_enjoy || '';
+        const dreamSelf = identity?.dream_self || '';
+        const appearanceParts = [
+            demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
+            dreamSelf ? `Self-description: "${dreamSelf}"` : '',
+            stylePrefs ? `Style & preferences: "${stylePrefs}"` : '',
+        ].filter(Boolean);
+        const appearanceHint = appearanceParts.length > 0
+            ? `\nAPPEARANCE & STYLE (when a person appears in the image): ${appearanceParts.join(' ')} Any human figure must plausibly match this description — skin tone, build, age, clothing style, and overall aesthetic. Do NOT default to any other demographic or style.`
+            : '';
+
         console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
 
         // ── STEP 1: Ghost-write letter (Pass 1) ──
@@ -105,6 +126,7 @@ Replace ALL real names of people the user knows with relationship roles. Replace
 DEMOGRAPHIC CONTEXT:
 - Archetype: "${archetype}"
 - Identity roles: "${identity?.title || 'Unknown'}"
+${appearanceHint}
 
 OUTPUT FIELDS:
 - is_publishable, title, pseudonym, letter, verdict, photo_vibe, photo_scale, imagen_prompt, language`;

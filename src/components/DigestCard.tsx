@@ -207,7 +207,7 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-8">
                         {subtitle && (
                             <div className="text-center">
-                                <p className="text-3xl font-bold text-white leading-snug transition-all duration-200" style={{ whiteSpace: 'pre-line', WebkitTextStroke: '1.5px rgba(0,0,0,0.7)', textShadow: '0 2px 12px rgba(0,0,0,1), 0 4px 24px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
+                                <p className="text-xl sm:text-3xl lg:text-4xl font-bold text-white leading-snug transition-all duration-200" style={{ whiteSpace: 'pre-line', WebkitTextStroke: '1px rgba(0,0,0,0.7)', textShadow: '0 2px 12px rgba(0,0,0,1), 0 4px 24px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
                                     {subtitle}
                                 </p>
                             </div>
