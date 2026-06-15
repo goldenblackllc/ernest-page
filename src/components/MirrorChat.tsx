@@ -11,6 +11,7 @@ import { Message } from "@ai-sdk/react";
 import { DEFAULT_TONE } from "@/lib/ai/engagementTones";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useTranslations } from 'next-intl';
+import { useAudioMute } from "@/context/AudioMuteContext";
 
 type SessionRouting = 'public' | 'private' | 'burn';
 
@@ -33,6 +34,16 @@ interface MirrorChatProps {
 export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialContext, defaultPostRouting, isUnlimited, onNeedsPurchase }: MirrorChatProps) {
     const { user: authUser } = useAuth();
     const t = useTranslations();
+    const { suppressAutoPlay, unsuppressAutoPlay } = useAudioMute();
+
+    // Suppress feed auto-play while MirrorChat is open
+    useEffect(() => {
+        if (isOpen) {
+            suppressAutoPlay();
+        } else {
+            unsuppressAutoPlay();
+        }
+    }, [isOpen, suppressAutoPlay, unsuppressAutoPlay]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -817,6 +828,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         setPlanConfirmation(null);
         setCreditConsumed(false);
 
+        unsuppressAutoPlay();
         onClose();
     };
 

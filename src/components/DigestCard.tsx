@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import { useAudioMute, PAUSE_ALL_AUDIO_EVENT } from "@/context/AudioMuteContext";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
@@ -19,56 +19,71 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
     const cleanContent = content.replace(/^\*\*[^*]+:\*\*\s*/gm, '');
 
     // ═══ GLOBAL MUTE STATE ═══
-    const { isMuted, toggleMute } = useAudioMute();
+    const { isMuted, toggleMute, pauseAll, isAutoPlaySuppressed } = useAudioMute();
 
     // Audio state
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioProgress, setAudioProgress] = useState(0);
     const cardRef = useRef<HTMLDivElement>(null);
-    const hasAutoPlayed = useRef(false);
 
     const canPlayShort = Boolean(audioUrl && imageUrl);
 
     const toggleAudio = useCallback(() => {
         if (!audioUrl) return;
 
+        // If already playing, pause
         if (isPlaying && audioRef.current) {
             audioRef.current.pause();
             setIsPlaying(false);
             return;
         }
 
-        const audio = audioRef.current || new Audio();
-        audioRef.current = audio;
-        audio.src = audioUrl;
-        audio.muted = isMuted;
+        // Start from the beginning if idle
+        if (!audioRef.current) {
+            // Pause any other playing cards first
+            pauseAll();
 
-        audio.ontimeupdate = () => {
-            if (audio.duration) setAudioProgress(audio.currentTime / audio.duration);
-        };
+            const audio = new Audio(audioUrl);
+            audio.muted = isMuted;
+            audioRef.current = audio;
 
-        audio.onended = () => {
-            setIsPlaying(false);
-            setAudioProgress(0);
-        };
+            audio.ontimeupdate = () => {
+                if (audio.duration) setAudioProgress(audio.currentTime / audio.duration);
+            };
 
-        audio.play().catch(() => setIsPlaying(false));
-        setIsPlaying(true);
-    }, [audioUrl, isPlaying, isMuted]);
+            audio.onended = () => {
+                setIsPlaying(false);
+                setAudioProgress(0);
+                audioRef.current = null;
+            };
 
-    // Autoplay when scrolled into view
+            audio.play().catch(() => setIsPlaying(false));
+            setIsPlaying(true);
+        } else {
+            // Resume paused audio
+            audioRef.current.play().catch(() => setIsPlaying(false));
+            setIsPlaying(true);
+        }
+    }, [audioUrl, isPlaying, isMuted, pauseAll]);
+
+    // Auto-play when card scrolls into view, pause when it leaves (Instagram Reels behavior)
     useEffect(() => {
         if (!canPlayShort || !cardRef.current) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
-                if (entry.isIntersecting && !hasAutoPlayed.current) {
-                    hasAutoPlayed.current = true;
-                    toggleAudio();
-                } else if (!entry.isIntersecting && isPlaying && audioRef.current) {
+                if (entry.isIntersecting) {
+                    if (!isPlaying && !isAutoPlaySuppressed) {
+                        toggleAudio();
+                    }
+                } else if (isPlaying && audioRef.current) {
+                    // Card scrolled away — pause and reset
                     audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                    audioRef.current = null;
                     setIsPlaying(false);
+                    setAudioProgress(0);
                 }
             },
             { threshold: 0.6 }
@@ -76,9 +91,9 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
 
         observer.observe(cardRef.current);
         return () => observer.disconnect();
-    }, [canPlayShort, toggleAudio, isPlaying]);
+    }, [canPlayShort, toggleAudio, isPlaying, isAutoPlaySuppressed]);
 
-    // Cleanup
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (audioRef.current) {
@@ -88,13 +103,16 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
         };
     }, []);
 
-    // Pause when a global pause-all signal is dispatched (e.g. MirrorChat opens)
+    // Pause when a global pause-all signal is dispatched (e.g. another card starts playing)
     useEffect(() => {
         const handlePauseAll = () => {
             if (audioRef.current) {
                 audioRef.current.pause();
-                setIsPlaying(false);
+                audioRef.current.currentTime = 0;
+                audioRef.current = null;
             }
+            setIsPlaying(false);
+            setAudioProgress(0);
         };
         window.addEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
         return () => window.removeEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
@@ -107,13 +125,36 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
         }
     }, [isMuted]);
 
-    // Subtitle chunks for synced text
-    const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {
-        const words = text.replace(/\n+/g, ' ').replace(/\*\*[^*]+:\*\*\s*/g, '').split(/\s+/).filter(w => w);
-        const chunks: string[] = [];
-        for (let i = 0; i < words.length; i += wordsPerChunk) {
-            chunks.push(words.slice(i, i + wordsPerChunk).join(' '));
+    // Sentence-boundary chunking — matches FeedPostCard behavior
+    const chunkText = (text: string, targetWords: number = 35): string[] => {
+        const cleaned = text.replace(/\n+/g, ' ').replace(/\*\*[^*]+:\*\*\s*/g, '').trim();
+        if (!cleaned) return [''];
+
+        const sentencePattern = /[^.!?]*[.!?]+[\s]*/g;
+        const sentences = cleaned.match(sentencePattern);
+        if (!sentences || sentences.length === 0) return [cleaned];
+
+        const matchedLength = sentences.reduce((sum, s) => sum + s.length, 0);
+        if (matchedLength < cleaned.length) {
+            sentences.push(cleaned.slice(matchedLength));
         }
+
+        const chunks: string[] = [];
+        let current = '';
+        let wordCount = 0;
+
+        for (const sentence of sentences) {
+            const sentenceWords = sentence.trim().split(/\s+/).filter(w => w).length;
+            if (wordCount > 0 && wordCount + sentenceWords > targetWords) {
+                chunks.push(current.trim());
+                current = sentence;
+                wordCount = sentenceWords;
+            } else {
+                current += sentence;
+                wordCount += sentenceWords;
+            }
+        }
+        if (current.trim()) chunks.push(current.trim());
         return chunks.length > 0 ? chunks : [''];
     };
 
@@ -129,71 +170,45 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
                     className="relative w-full cursor-pointer overflow-hidden"
                     style={{ aspectRatio: '4 / 5' }}
                     onClick={toggleAudio}
+                    title="Tap to pause/resume"
                 >
                     <img
                         src={imageUrl!}
                         alt={title}
                         className="absolute inset-0 w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
 
-                    {/* Top: Label + Title */}
-                    <div className="absolute top-0 left-0 right-0 p-4 z-10">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 font-bold mb-1">
-                            {t('digestLabel')}
-                        </p>
-                        <h2 className="text-lg font-black text-white leading-tight drop-shadow-lg">
-                            {title}
-                        </h2>
-                        {isPlaying && (
+                    {/* Top: Label + Title + Mute */}
+                    <div className="absolute top-0 left-0 right-0 p-4 z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-bold mb-1">
+                                    {t('digestLabel')}
+                                </p>
+                                <h2 className="text-lg font-black text-white leading-tight">
+                                    {title}
+                                </h2>
+                            </div>
+                            {/* Mute toggle — always visible */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                                className="flex items-center gap-1.5 mt-2 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 w-fit transition-all duration-200 active:scale-95"
+                                className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95 shrink-0 mt-1"
                             >
                                 {isMuted ? (
-                                    <VolumeX className="w-3 h-3 text-white/70" />
+                                    <VolumeX className="w-3.5 h-3.5 text-white/70" />
                                 ) : (
-                                    <Volume2 className="w-3 h-3 text-white animate-pulse" />
-                                )}
-                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Playing</span>
-                            </button>
-                        )}
-                        {!isPlaying && canPlayShort && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                                className="flex items-center gap-1.5 mt-2 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 w-fit transition-all duration-200 active:scale-95"
-                            >
-                                {isMuted ? (
-                                    <VolumeX className="w-3.5 h-3.5 text-white/50" />
-                                ) : (
-                                    <Volume2 className="w-3.5 h-3.5 text-white/50" />
+                                    <Volume2 className="w-3.5 h-3.5 text-white animate-pulse" />
                                 )}
                             </button>
-                        )}
+                        </div>
                     </div>
 
-                    {/* Center play button */}
-                    {!isPlaying && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                                <Play className="w-7 h-7 text-white ml-1" fill="white" />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Bottom: Subtitle */}
-                    <div className="absolute bottom-4 left-4 right-4 z-10">
-                        {isPlaying && subtitle ? (
-                            <p className="text-base text-white font-medium leading-relaxed drop-shadow-lg animate-[fadeInUp_0.3s_ease-out]" key={subtitle}>
-                                {subtitle}
-                            </p>
-                        ) : (
-                            <div>
-                                <p className="text-[13px] text-white/60 leading-snug drop-shadow-lg line-clamp-2">
-                                    {chunks[0]}
-                                </p>
-                                <p className="text-[11px] text-white/30 mt-1.5 uppercase tracking-widest font-bold">
-                                    Tap to listen
+                    {/* Subtitle text — centered */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-8">
+                        {subtitle && (
+                            <div className="text-center">
+                                <p className="text-3xl font-bold text-white leading-snug transition-all duration-200" style={{ whiteSpace: 'pre-line', WebkitTextStroke: '1.5px rgba(0,0,0,0.7)', textShadow: '0 2px 12px rgba(0,0,0,1), 0 4px 24px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
+                                    {subtitle}
                                 </p>
                             </div>
                         )}

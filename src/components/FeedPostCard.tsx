@@ -90,7 +90,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const locale = useLocale();
 
     // ═══ GLOBAL MUTE STATE ═══
-    const { isMuted, toggleMute, pauseAll } = useAudioMute();
+    const { isMuted, toggleMute, pauseAll, isAutoPlaySuppressed } = useAudioMute();
 
     // ═══ AUDIO PLAYBACK STATE ═══
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -234,8 +234,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    // Card visible — start playback from beginning
-                    if (!isPlaying) {
+                    // Card visible — start playback (unless suppressed by MirrorChat etc.)
+                    if (!isPlaying && !isAutoPlaySuppressed) {
                         toggleAudio();
                     }
                 } else if (isPlaying && audioRef.current) {
@@ -253,7 +253,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         observer.observe(cardRef.current);
         return () => observer.disconnect();
-    }, [canPlayShort, toggleAudio, isPlaying]);
+    }, [canPlayShort, toggleAudio, isPlaying, isAutoPlaySuppressed]);
 
     // Sync global mute state to active audio element
     useEffect(() => {
