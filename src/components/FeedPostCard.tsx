@@ -99,6 +99,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [audioProgress, setAudioProgress] = useState(0);
     const cardRef = useRef<HTMLDivElement>(null);
 
+    // Stable refs — prevent IntersectionObserver re-creation on every state change
+    const isPlayingRef = useRef(false);
+    const toggleAudioRef = useRef<() => void>(() => {});
+    const isAutoPlaySuppressedRef = useRef(false);
+    const hasCompletedRef = useRef(false);
+
     // Support both unified (audio_url) and legacy (letter_audio_url + response_audio_url) formats
     const unifiedAudioUrl = post.audio_url;
     const legacyHasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
@@ -170,6 +176,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     setAudioPhase('idle');
                     setAudioProgress(0);
                     audioRef.current = null;
+                    hasCompletedRef.current = true;
                 };
 
                 audio.play().catch(() => setIsPlaying(false));
@@ -206,6 +213,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             setAudioPhase('idle');
                             setAudioProgress(0);
                             audioRef.current = null;
+                            hasCompletedRef.current = true;
                         };
 
                         responseAudio.play().catch(() => setIsPlaying(false));
@@ -214,6 +222,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         setAudioPhase('idle');
                         setAudioProgress(0);
                         audioRef.current = null;
+                        hasCompletedRef.current = true;
                     }
                 };
 
@@ -227,33 +236,53 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         }
     }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio, isMuted, pauseAll]);
 
+    // Keep refs in sync so IntersectionObserver callback reads fresh values
+    useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+    useEffect(() => { toggleAudioRef.current = toggleAudio; }, [toggleAudio]);
+    useEffect(() => { isAutoPlaySuppressedRef.current = isAutoPlaySuppressed; }, [isAutoPlaySuppressed]);
+
     // Auto-play when card scrolls into view, pause when it leaves (Instagram Reels behavior)
+    // Deps only include stable values — refs prevent observer re-creation on play/pause
     useEffect(() => {
         if (!canPlayShort || !cardRef.current) return;
+
+        let pauseTimer: ReturnType<typeof setTimeout> | null = null;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    // Card visible — start playback (unless suppressed by MirrorChat etc.)
-                    if (!isPlaying && !isAutoPlaySuppressed) {
-                        toggleAudio();
+                    // Card scrolled back into view — cancel any pending pause
+                    if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
+                    // Start playback (unless suppressed, already playing, or already completed)
+                    if (!isPlayingRef.current && !isAutoPlaySuppressedRef.current && !hasCompletedRef.current) {
+                        toggleAudioRef.current();
                     }
-                } else if (isPlaying && audioRef.current) {
-                    // Card scrolled away — pause and reset for next entry
-                    audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
-                    audioRef.current = null;
-                    setIsPlaying(false);
-                    setAudioPhase('idle');
-                    setAudioProgress(0);
+                } else {
+                    // Debounce the pause — prevents flicker when card bounces near threshold
+                    if (pauseTimer) clearTimeout(pauseTimer);
+                    pauseTimer = setTimeout(() => {
+                        if (isPlayingRef.current && audioRef.current) {
+                            audioRef.current.pause();
+                            audioRef.current.currentTime = 0;
+                            audioRef.current = null;
+                            setIsPlaying(false);
+                            setAudioPhase('idle');
+                            setAudioProgress(0);
+                        }
+                        // Reset completion flag so re-scrolling to this card can auto-play again
+                        hasCompletedRef.current = false;
+                    }, 300);
                 }
             },
             { threshold: 0.6 }
         );
 
         observer.observe(cardRef.current);
-        return () => observer.disconnect();
-    }, [canPlayShort, toggleAudio, isPlaying, isAutoPlaySuppressed]);
+        return () => {
+            observer.disconnect();
+            if (pauseTimer) clearTimeout(pauseTimer);
+        };
+    }, [canPlayShort]);
 
     // Sync global mute state to active audio element
     useEffect(() => {
@@ -661,7 +690,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         // Calculate which subtitle line to show based on audio progress
         const getCurrentSubtitle = () => {
-            if (audioPhase === 'idle' && !isPlaying) return null;
+            // When not playing, show the first chunk as a readable preview
+            if (audioPhase === 'idle' && !isPlaying) {
+                if (timestampChunks && timestampChunks.length > 0) {
+                    return { current: timestampChunks[0].text, next: timestampChunks[1]?.text || '', lineIndex: 0, totalLines: timestampChunks.length };
+                }
+                if (letterChunks.length > 0) {
+                    return { current: letterChunks[0], next: letterChunks[1] || '', lineIndex: 0, totalLines: letterChunks.length };
+                }
+                return null;
+            }
 
             // ── Timestamp-based sync (precise) ──
             if (timestampChunks && audioRef.current) {
@@ -801,15 +839,13 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
 
 
-                    {/* Subtitle text — centered, the primary content layer */}
-                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-8">
-                        {subtitle && (
-                            <div className="text-center">
-                                <p className="text-xl sm:text-3xl lg:text-4xl font-bold text-white leading-snug transition-all duration-200" style={{ whiteSpace: 'pre-line', WebkitTextStroke: '1px rgba(0,0,0,0.7)', textShadow: '0 2px 12px rgba(0,0,0,1), 0 4px 24px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
-                                    {subtitle.current}
-                                </p>
-                            </div>
-                        )}
+                    {/* Subtitle text — always rendered, visibility via opacity to avoid DOM pop-in */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
+                        <div className={`text-center bg-black/45 backdrop-blur-[2px] rounded-2xl px-5 py-4 max-w-[92%] transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
+                            <p className="text-[1.35rem] sm:text-3xl lg:text-4xl font-bold text-white leading-tight" style={{ whiteSpace: 'pre-line', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+                                {subtitle?.current || '\u00A0'}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Progress bar */}

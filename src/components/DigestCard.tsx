@@ -27,6 +27,12 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
     const [audioProgress, setAudioProgress] = useState(0);
     const cardRef = useRef<HTMLDivElement>(null);
 
+    // Stable refs — prevent IntersectionObserver re-creation on every state change
+    const isPlayingRef = useRef(false);
+    const toggleAudioRef = useRef<() => void>(() => {});
+    const isAutoPlaySuppressedRef = useRef(false);
+    const hasCompletedRef = useRef(false);
+
     const canPlayShort = Boolean(audioUrl && imageUrl);
 
     const toggleAudio = useCallback(() => {
@@ -56,6 +62,7 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
                 setIsPlaying(false);
                 setAudioProgress(0);
                 audioRef.current = null;
+                hasCompletedRef.current = true;
             };
 
             audio.play().catch(() => setIsPlaying(false));
@@ -67,31 +74,50 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
         }
     }, [audioUrl, isPlaying, isMuted, pauseAll]);
 
+    // Keep refs in sync so IntersectionObserver callback reads fresh values
+    useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+    useEffect(() => { toggleAudioRef.current = toggleAudio; }, [toggleAudio]);
+    useEffect(() => { isAutoPlaySuppressedRef.current = isAutoPlaySuppressed; }, [isAutoPlaySuppressed]);
+
     // Auto-play when card scrolls into view, pause when it leaves (Instagram Reels behavior)
+    // Deps only include stable values — refs prevent observer re-creation on play/pause
     useEffect(() => {
         if (!canPlayShort || !cardRef.current) return;
+
+        let pauseTimer: ReturnType<typeof setTimeout> | null = null;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    if (!isPlaying && !isAutoPlaySuppressed) {
-                        toggleAudio();
+                    // Card scrolled back into view — cancel any pending pause
+                    if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
+                    if (!isPlayingRef.current && !isAutoPlaySuppressedRef.current && !hasCompletedRef.current) {
+                        toggleAudioRef.current();
                     }
-                } else if (isPlaying && audioRef.current) {
-                    // Card scrolled away — pause and reset
-                    audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
-                    audioRef.current = null;
-                    setIsPlaying(false);
-                    setAudioProgress(0);
+                } else {
+                    // Debounce the pause — prevents flicker when card bounces near threshold
+                    if (pauseTimer) clearTimeout(pauseTimer);
+                    pauseTimer = setTimeout(() => {
+                        if (isPlayingRef.current && audioRef.current) {
+                            audioRef.current.pause();
+                            audioRef.current.currentTime = 0;
+                            audioRef.current = null;
+                            setIsPlaying(false);
+                            setAudioProgress(0);
+                        }
+                        hasCompletedRef.current = false;
+                    }, 300);
                 }
             },
             { threshold: 0.6 }
         );
 
         observer.observe(cardRef.current);
-        return () => observer.disconnect();
-    }, [canPlayShort, toggleAudio, isPlaying, isAutoPlaySuppressed]);
+        return () => {
+            observer.disconnect();
+            if (pauseTimer) clearTimeout(pauseTimer);
+        };
+    }, [canPlayShort]);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -161,8 +187,23 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
     // ═══ SHORT-FORM MODE ═══
     if (canPlayShort) {
         const chunks = chunkText(cleanContent);
-        const lineIndex = Math.min(Math.floor(audioProgress * chunks.length), chunks.length - 1);
-        const subtitle = isPlaying ? chunks[lineIndex] : null;
+
+        // Word-count-weighted estimation — longer chunks get proportionally more time
+        const wordCounts = chunks.map(c => c.split(/\s+/).length);
+        const totalWords = wordCounts.reduce((a, b) => a + b, 0);
+        let cumulative = 0;
+        let lineIndex = 0;
+        for (let i = 0; i < chunks.length; i++) {
+            cumulative += wordCounts[i] / totalWords;
+            if (audioProgress < cumulative) {
+                lineIndex = i;
+                break;
+            }
+            lineIndex = i;
+        }
+
+        const subtitleText = isPlaying ? chunks[lineIndex] : chunks[0];
+        const showSubtitle = Boolean(subtitleText);
 
         return (
             <div ref={cardRef} className="bg-black border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-lg relative font-sans">
@@ -203,15 +244,13 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
                         </div>
                     </div>
 
-                    {/* Subtitle text — centered */}
-                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-8">
-                        {subtitle && (
-                            <div className="text-center">
-                                <p className="text-xl sm:text-3xl lg:text-4xl font-bold text-white leading-snug transition-all duration-200" style={{ whiteSpace: 'pre-line', WebkitTextStroke: '1px rgba(0,0,0,0.7)', textShadow: '0 2px 12px rgba(0,0,0,1), 0 4px 24px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
-                                    {subtitle}
-                                </p>
-                            </div>
-                        )}
+                    {/* Subtitle text — always rendered, visibility via opacity to avoid DOM pop-in */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
+                        <div className={`text-center bg-black/45 backdrop-blur-[2px] rounded-2xl px-5 py-4 max-w-[92%] transition-opacity duration-300 ${showSubtitle ? 'opacity-100' : 'opacity-0'}`}>
+                            <p className="text-[1.35rem] sm:text-3xl lg:text-4xl font-bold text-white leading-tight" style={{ whiteSpace: 'pre-line', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+                                {subtitleText || '\u00A0'}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Progress bar */}
