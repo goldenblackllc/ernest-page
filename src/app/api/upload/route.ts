@@ -13,7 +13,10 @@ export async function POST(req: NextRequest) {
 
         const buffer = Buffer.from(await file.arrayBuffer());
         const filename = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-        const path = `users/${userId}/visual_board/${filename}`;
+        const purpose = formData.get("purpose") as string || "visual_board";
+        const path = purpose === "post_photo"
+            ? `users/${userId}/post-photos/${filename}`
+            : `users/${userId}/visual_board/${filename}`;
 
         const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
         if (!bucketName) {

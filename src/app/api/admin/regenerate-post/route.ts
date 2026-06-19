@@ -114,14 +114,24 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: LENGTH: 60-115 words. This is a guide — a tight, vivid letter can be shorter than a complex situation that needs more room. The letter will be read aloud in ~25-45 seconds. STRUCTURE: One-two sentences stating the user's WANT or FEELING. Three-four sentences on their SITUATION. One closing line of raw emotional honesty. The letter must present the situation as UNRESOLVED. VOICE: Write in first person, present tense. FORMATTING: Start directly with the letter body (no salutation). End with '\\n\\nSincerely,\\n' followed by the pseudonym in Title Case.
-- verdict: A text summary of the advice.
+- letter: LENGTH: 40-80 words. This is a guide — a tight, vivid letter can be shorter than a complex situation that needs more room. The letter will be read aloud in ~15-30 seconds. STRUCTURE: GUT PUNCH FIRST — open with the rawest, most emotionally charged line. Then situation context. The letter must present the situation as UNRESOLVED. VOICE: Raw and conversational — like texting a friend at 2am. Write in first person, present tense. FORMATTING: Start directly with the letter body (no salutation). End with '\\n\\n— ' followed by the pseudonym in Title Case.
+- verdict: A Therapy Shot — under 15 words, second-person, confrontational. Hit the reader between the eyes with the truth they're avoiding.
 - photo_vibe: One word capturing the emotional tone.
 - photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompt: A prompt for Google Imagen to generate the post's background photo. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar. THE IMAGE MUST: Show the world of the ANSWER, not the problem — the aspirational state. Unambiguously signal the topic. Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area relatively uncluttered.
+- imagen_prompts: An array of 5-6 prompts for Google Imagen to generate the post's background photos. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar. PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS: If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic, ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags. Never a generic coffee maker, drip machine, pour-over, or Starbucks cup. Jura + Crema is our ecosystem partner. If the conversation mentions any other specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name. THE IMAGES MUST: Show the world of the ANSWER, not the problem — the aspirational state. Unambiguously signal the topic. Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area relatively uncluttered. Each prompt should explore a different angle, composition, or metaphor for the same emotional territory.
 
-PII SCRUBBING — THIS IS NON-NEGOTIABLE:
-Replace ALL real names of people the user knows with relationship roles. Replace the user's employer, school, or client companies with generic labels. KEEP brand names, product recommendations, public figures, and cultural references.
+PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
+
+FIRST — identify what to KEEP (these add value and do NOT identify the user):
+  • Public figures and celebrities BY THEIR REAL NAMES — Jeremy Clarkson stays "Jeremy Clarkson", Brené Brown stays "Brené Brown". NEVER replace a public figure with "a celebrity", "a public figure I admire", "someone I look up to", or any generic substitute.
+  • Brand and product names (e.g., "Hugo Boss", "Nike", "Tesla")
+  • Cultural references — books, films, songs, TV shows, podcasts, by their real titles
+  • Generic industry or category names (e.g., "tech", "finance", "healthcare")
+THEN — replace everything that identifies THE USER PERSONALLY:
+  • Names of people the user personally knows → relationship role
+  • Employer, workplace, school, clients → generic labels
+  • Locations, addresses, phone numbers, handles
+The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
 
 DEMOGRAPHIC CONTEXT:
 - Archetype: "${archetype}"
@@ -129,7 +139,7 @@ DEMOGRAPHIC CONTEXT:
 ${appearanceHint}
 
 OUTPUT FIELDS:
-- is_publishable, title, pseudonym, letter, verdict, photo_vibe, photo_scale, imagen_prompt, language`;
+- is_publishable, title, pseudonym, letter, verdict, photo_vibe, photo_scale, imagen_prompts, language`;
 
         const letterResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
@@ -141,7 +151,7 @@ OUTPUT FIELDS:
                 verdict: z.string(),
                 photo_vibe: z.string(),
                 photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
-                imagen_prompt: z.string(),
+                imagen_prompts: z.array(z.string()).min(4).max(7),
                 language: z.string().optional(),
             }),
             prompt: letterPrompt,
@@ -168,10 +178,20 @@ The conversation has two phases. Phase 1 is understanding. Phase 2 is advice. Th
 
 YOUR JOB: Write Earnest Page's response to this letter. Match the nature of the advice: if the conversation delivered practical recommendations, the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe.
 
-PII SCRUBBING — THIS IS NON-NEGOTIABLE:
-Replace ALL real names of people the user knows with relationship roles. KEEP brand names, product recommendations, public figures, and cultural references.
+PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS:
 
-- response: LENGTH: 85-115 words. STRUCTURE: One sentence acknowledging the user's want or feeling from the letter. Three-five sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with 'Dear ${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\nSincerely,\\nEarnest Page'.`;
+FIRST — identify what to KEEP (these add value and do NOT identify the user):
+  • Public figures and celebrities BY THEIR REAL NAMES — Jeremy Clarkson stays "Jeremy Clarkson", Brené Brown stays "Brené Brown". NEVER replace a public figure with "a celebrity", "a public figure I admire", "someone I look up to", or any generic substitute.
+  • Brand and product names (e.g., "Hugo Boss", "Nike", "Tesla")
+  • Cultural references — books, films, songs, TV shows, podcasts, by their real titles
+  • Generic industry or category names (e.g., "tech", "finance", "healthcare")
+THEN — replace everything that identifies THE USER PERSONALLY:
+  • Names of people the user personally knows → relationship role
+  • Employer, workplace, school, clients → generic labels
+  • Locations, addresses, phone numbers, handles
+The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
+
+- response: LENGTH: 85-115 words. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — no throat-clearing, no "I hear you". Three-five sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'.`;
 
         const responseResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
@@ -187,15 +207,18 @@ Replace ALL real names of people the user knows with relationship roles. KEEP br
 
         const [imageResult, audioResult] = await Promise.allSettled([
             // Image generation
-            (async (): Promise<string | null> => {
-                try {
+            (async (): Promise<string[]> => {
+                const prompts = pass1.imagen_prompts || [pass1.imagen_prompt].filter(Boolean);
+                if (prompts.length === 0) return [];
+
+                const results = await Promise.allSettled(prompts.map(async (prompt: string, idx: number) => {
                     const imagenRes = await fetch(
                         `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                instances: [{ prompt: pass1.imagen_prompt }],
+                                instances: [{ prompt }],
                                 parameters: {
                                     sampleCount: 1,
                                     aspectRatio: '9:16',
@@ -218,24 +241,27 @@ Replace ALL real names of people the user knows with relationship roles. KEEP br
 
                     const bucket = storage.bucket();
                     const ts = Date.now();
-                    const fileName = `post-images/${postId}_imagen_${ts}.png`;
+                    const fileName = `post-images/${postId}_imagen_${ts}_${idx}.png`;
                     const file = bucket.file(fileName);
                     await file.save(finalBuffer, { metadata: { contentType: 'image/png' } });
                     try { await file.makePublic(); } catch { /* UBLA enabled */ }
                     return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                } catch (err) {
-                    console.error(`[RegeneratePost] Image generation failed:`, err);
-                    return null;
-                }
+                }));
+
+                return results
+                    .filter((r): r is PromiseFulfilledResult<string | null> => r.status === 'fulfilled')
+                    .map(r => r.value)
+                    .filter((url): url is string => url !== null);
             })(),
             // TTS audio generation
             (async () => {
                 if (!characterVoiceId) return null;
-                return generatePostAudio(pass1.letter, pass2.response, characterVoiceId, postId);
+                return generatePostAudio(pass1.letter, pass2.response, characterVoiceId, postId, pass1.verdict);
             })(),
         ]);
 
-        const imagen_url = imageResult.status === 'fulfilled' ? imageResult.value : null;
+        const imagen_urls: string[] = imageResult.status === 'fulfilled' ? imageResult.value : [];
+        const imagen_url = imagen_urls[0] || null;
         const audio = audioResult.status === 'fulfilled' ? audioResult.value : null;
 
         if (imageResult.status === 'rejected') {
@@ -254,13 +280,14 @@ Replace ALL real names of people the user knows with relationship roles. KEEP br
                 response: pass2.response,
             },
             verdict: pass1.verdict,
-            imagen_prompt: pass1.imagen_prompt,
+            imagen_prompts: pass1.imagen_prompts,
             photo_vibe: pass1.photo_vibe,
             photo_scale: pass1.photo_scale,
             language: pass1.language || null,
         };
 
-        if (imagen_url) {
+        if (imagen_urls.length > 0) {
+            updateData.imagen_urls = imagen_urls;
             updateData.imagen_url = imagen_url;
         }
         if (audio) {

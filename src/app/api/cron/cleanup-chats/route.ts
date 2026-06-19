@@ -132,7 +132,7 @@ async function processUserChats(
         stylePrefs ? `Style & preferences: "${stylePrefs}"` : '',
     ].filter(Boolean);
     const demographicHint = appearanceParts.length > 0
-        ? `\nAPPEARANCE & STYLE (when a person appears in the image): ${appearanceParts.join(' ')} Any human figure must plausibly match this description — skin tone, build, age, clothing style, and overall aesthetic. Do NOT default to any other demographic or style.`
+        ? `\nUSER APPEARANCE (for the protagonist/letter-writer figure ONLY): ${appearanceParts.join(' ')} When the image features a person representing the USER, they should match this description. Other people in the scene (partners, friends, family, strangers) should match the STORY CONTEXT — a date night shows a couple, a family scene shows a family. Do NOT make every person in the image match the user's demographics.`
         : '';
 
     for (const chatDoc of chatDocs) {
@@ -248,45 +248,52 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
-Replace ALL of the following with generic relationship or role labels — NEVER include them verbatim:
-  • Real first names, last names, or nicknames of any person → replace with their relationship role (e.g., "Max" → "my son", "Iris" → "my sister", "John at work" → "my colleague")
-  • The user's employer, workplace, school, or client companies → "my company", "my workplace", "my school" (these reveal who the user IS)
-  • Specific place names (cities, neighborhoods, venues) → "my city", "my neighborhood"
-  • Any identifying details (addresses, phone numbers, email addresses, social media handles)
-KEEP the following — they do NOT identify the user and add value to the post:
+
+FIRST — identify what to KEEP (these add value and do NOT identify the user):
+  • Public figures and celebrities BY THEIR REAL NAMES — Jeremy Clarkson stays "Jeremy Clarkson", Brené Brown stays "Brené Brown". NEVER replace a public figure with "a celebrity", "a public figure I admire", "someone I look up to", or any generic substitute.
   • Brand and product names mentioned as recommendations or aspirations (e.g., "Hugo Boss", "Nike", "Tesla", "Jura")
-  • Public figures, authors, or cultural references mentioned in discussion
+  • Cultural references — books, films, songs, TV shows, podcasts, by their real titles
   • Generic industry or category names (e.g., "tech", "finance", "healthcare")
-If you are unsure whether something identifies the USER personally, err on the side of removing it. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
+THEN — replace everything that identifies THE USER PERSONALLY:
+  • Names of people the user PERSONALLY KNOWS → relationship role (e.g., "Max" → "my son", "Iris" → "my sister", "John at work" → "my colleague")
+  • The user's employer, workplace, school, or client companies → "my company", "my workplace", "my school"
+  • Specific locations tied to the user → "my city", "my neighborhood"
+  • Addresses, phone numbers, email addresses, social media handles
+The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
-- letter: LENGTH: 60-115 words. This is a guide — a tight, vivid letter can be shorter than a complex situation that needs more room. The letter will be read aloud in ~25-45 seconds. STRUCTURE: One-two sentences stating the user's WANT or FEELING — in their terms, at their level of clarity. Three-four sentences on their SITUATION — the specific details, constraints, stakes, or context that make this real and relatable. One closing line of raw emotional honesty — what this actually feels like or why it matters to them. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, writing this letter RIGHT NOW. TENSE: PRESENT TENSE only. NEVER use past tense to recap (WRONG: 'I came to you', RIGHT: 'I come to you'). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the letter body (no salutation). End with '\n\nSincerely,\n' followed by the pseudonym in Title Case (e.g., 'Sincerely,\nOverwhelmed Father'). Write strictly in the requested language.
+- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. This is the first thing a viewer reads as a subtitle. It must hook in under 5 words. (GOOD: "I keep going back." BAD: "I find myself increasingly torn between..."). Then 2-3 sentences of SITUATION — just enough context to understand. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, present tense. Raw and conversational — like texting a friend at 2am, not writing to a newspaper. NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the gut punch (no salutation). End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
 
-STEP 3: THE VISUAL DIRECTOR (Image Strategy)
-Every post gets ONE image: a beautiful photo background with the post's VERDICT overlaid as bold text. This image must work standalone on any platform — Instagram, TikTok, Twitter, a screenshot in a group chat. Someone who sees only this image should understand the entire post without reading a word.
+STEP 3: THE VISUAL DIRECTOR
+Every post gets MULTIPLE images — one per subtitle chunk — that visually narrate the post as it plays. The images crossfade as the subtitle text changes, creating a visual rhythm like B-roll in a documentary.
 
-PRIORITY #1 — VISUAL ATTRACTIVENESS: The image must be BEAUTIFUL and ATTRACTIVE on social media. Think: premium brand campaign, high-end fashion editorial. Rich colors, striking composition, professional lighting, warmth, and energy. "Would I double-tap this on Instagram?" If not, start over.
+YOUR THREE JOBS:
 
-YOUR TWO JOBS:
-1. Write the VERDICT — the text that goes on top of this post's Instagram image. Someone who only sees this text should understand what Earnest Page's advice was.
-   BAD (too vague, says nothing): "Be the Gentleman.", "Today Already Counts.", "Manners Are a Choice." — nobody knows what these mean.
-   GOOD (actually says the advice): "A gentleman isn't defined by his wardrobe — it's how he treats people when no one is watching.", "Don't invite your sister. Her presence will make your son's day about her drama, not his achievement."
-   Write it the way you'd text a friend the punchline of the article.
+1. Write the VERDICT — the opening hook that viewers see FIRST, before the letter begins. This is the scroll-stopper. It must read like the Therapy Shots campaign: short, second-person, confrontational, under 15 words.
+   BAD (too vague, aphoristic): "Be the Gentleman.", "Today Already Counts.", "Love is a choice."
+   GOOD (punchy, specific, accusatory): "You're not choosing him. You're avoiding yourself.", "Stop buying suits. Your son needs a present dad, not a well-dressed one.", "You already know how this ends."
+   Write it like you're texting someone the one line that would make them put their phone down and think.
 
-2. Write the IMAGEN_PROMPT — a prompt for a contextual background photo that SUPPORTS the verdict visually. This photo is the SETTING, not the star — the verdict text is the star.
-   The photo should represent the ASPIRATION or the CONTEXT of the post — what the person wants to become, or the world the advice lives in.
-   Examples: For "Be the Gentleman" → a well-dressed man adjusting cufflinks in warm light. For "Don't Invite Her" → a graduation ceremony with warm bokeh lights. For "Quit." → a sunrise over a city skyline.
-   The photo must be visually stunning, warm, aspirational. NEVER cold/blue/dark/sad. Think menswear ad, travel magazine, lifestyle brand.
+2. Write the IMAGEN_PROMPTS — an array of 5-6 prompts for Google Imagen, one per "beat" of the post. Each prompt generates a background photo for one subtitle chunk. Together they create a visual narrative.
+   - Prompt 1 (verdict): The emotional thesis as a striking image. Abstract or symbolic. Sets the tone.
+   - Prompts 2-3 (letter beats): The user's world — their situation, their reality. Grounded, specific.
+   - Prompts 4-6 (response beats): The aspirational state — what life looks like when the advice lands. Warm, resolved.
+   PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
+   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags. Never a generic coffee maker, drip machine, pour-over, or Starbucks cup. Jura + Crema is our ecosystem partner.
+   • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt. Imagen knows what branded products look like.
+   ALL prompts must follow these rules: Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
 ${recentScaleHint}${demographicHint}
 
-CHARACTER IDENTITY CONTEXT — use this to inform the world, objects, and energy of the background photo:
+3. Set photo_vibe and photo_scale for the overall post.
+
+CHARACTER IDENTITY CONTEXT — use this to inform the world, objects, and energy of the background photos:
 - Archetype: "${archetype}"
 - Identity roles: "${identity?.title || 'Unknown'}"
 
 OUTPUT FIELDS:
-- verdict: The text overlay for the Instagram image. Summarizes Earnest Page's actual advice.
+- verdict: The scroll-stopping opening hook. Under 15 words. Second person. Confrontational.
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
 - photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompt: A prompt for Google Imagen to generate the post's background photo. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar. THE IMAGE MUST: Show the world of the ANSWER, not the problem — the aspirational state, what life looks like when the advice has been taken. Unambiguously signal the topic (style posts → a beautifully dressed person; relationship posts → a meaningful human moment; career posts → someone in their element professionally; health posts → vitality, movement, the body at its best). Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (text overlays there during video playback).
+- imagen_prompts: An ARRAY of 5-6 image prompts (strings), one per beat of the post. Each prompt describes a specific scene for Google Imagen. The prompts should visually narrate the post from verdict → letter → response.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -319,10 +326,10 @@ ${transcript}`;
                                     title: z.string().max(75),
                                     pseudonym: z.string(),
                                     letter: z.string(),
-                                    verdict: z.string().max(500),
+                                    verdict: z.string().max(200),
                                     photo_vibe: z.string(),
                                     photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
-                                    imagen_prompt: z.string(),
+                                    imagen_prompts: z.array(z.string()).min(4).max(7),
                                     language: z.string().optional(),
                                 }),
                                 z.object({
@@ -333,7 +340,7 @@ ${transcript}`;
                                     verdict: z.string().optional(),
                                     photo_vibe: z.string().optional(),
                                     photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
-                                    imagen_prompt: z.string().optional(),
+                                    imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
                                 }),
                             ]),
@@ -387,9 +394,10 @@ The conversation has two phases. Phase 1 is understanding — Character A asks q
 YOUR JOB: Write Earnest Page's response to this letter. The letter captures where the user arrived — what they wanted or how they felt. The conversation transcript shows the advice Character A gave. Your response delivers that advice — warm, specific, actionable, in Character A's exact voice. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE:
-Replace ALL real names of people the user knows with relationship roles. Replace the user's employer, school, or client companies with generic labels. KEEP brand names, product recommendations, public figures, and cultural references — these add value and do not identify the user. The response must be fully anonymous (the reader cannot determine WHO wrote it), but not stripped of useful content.
+FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES (Jeremy Clarkson stays "Jeremy Clarkson", never "a celebrity" or "someone I admire"). Brand names, product recommendations, cultural references — keep them all verbatim.
+THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
-- response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: One sentence acknowledging the user's want or feeling from the letter. Three-five sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction, challenge, or reassurance. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with 'Dear ${pass1.pseudonym},\n\n'. Write the body. End with '\n\nSincerely,\nEarnest Page'. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
+- response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — the thing the user needs to hear. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the insight. Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction or challenge. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: SONNET_MODEL,
@@ -444,8 +452,9 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                     const postDocRef = db.collection('posts').doc();
 
                     // ─── IMAGE ROUTING: Always Imagen background + verdict overlay ───
-                    if (!post.imagen_prompt || post.imagen_prompt.trim().length === 0) {
-                        console.warn(`[Cron] Post for user ${uid} is missing imagen_prompt — saving as private`);
+                    const prompts = post.imagen_prompts || (post.imagen_prompt ? [post.imagen_prompt] : []);
+                    if (prompts.length === 0) {
+                        console.warn(`[Cron] Post for user ${uid} is missing imagen_prompts — saving as private`);
                         await dossierPromise;
                         await postDocRef.set({
                             id: postDocRef.id,
@@ -463,10 +472,12 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                             },
                             verdict: post.verdict || null,
                             imagen_prompt: null,
+                            imagen_prompts: [],
                             photo_vibe: post.photo_vibe || null,
                             photo_scale: post.photo_scale || null,
                             language: post.language || null,
                             imagen_url: null,
+                            imagen_urls: [],
                             content_raw: transcript,
                             status: "completed",
                             created_at: new Date(),
@@ -480,21 +491,28 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                         continue;
                     }
 
-                    // Start image generation and dossier write concurrently
-                    const imagePromise = generateVerdictImage(post.imagen_prompt!, postDocRef.id);
+                    // Start parallel image generation for all prompts + dossier write
+                    const imagePromises = prompts.map((prompt: string, i: number) =>
+                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`)
+                    );
 
-                    const [imageResult] = await Promise.allSettled([
-                        imagePromise,
+                    const [imageResults] = await Promise.allSettled([
+                        Promise.allSettled(imagePromises),
                         dossierPromise,
                     ]);
 
-                    const imagen_url = imageResult.status === 'fulfilled' ? imageResult.value : null;
+                    const imagen_urls = (imageResults.status === 'fulfilled'
+                        ? (imageResults.value as PromiseSettledResult<string | null>[])
+                            .map(r => r.status === 'fulfilled' ? r.value : null)
+                            .filter(Boolean) as string[]
+                        : []);
+                    const imagen_url = imagen_urls[0] || null;
 
                     // ─── IMAGE RETRY QUEUE ───
-                    // If image generation failed and we haven't exhausted retries,
+                    // If NO images succeeded and we haven't exhausted retries,
                     // release the chat back into the queue for the next cron run.
-                    if (!imagen_url && imageRetries < MAX_IMAGE_RETRIES) {
-                        console.log(`[Cron] Image failed for user ${uid} (attempt ${imageRetries + 1}/${MAX_IMAGE_RETRIES}) — re-queuing`);
+                    if (imagen_urls.length === 0 && imageRetries < MAX_IMAGE_RETRIES) {
+                        console.log(`[Cron] All images failed for user ${uid} (attempt ${imageRetries + 1}/${MAX_IMAGE_RETRIES}) — re-queuing`);
                         await chatDoc.ref.update({
                             processing: false,
                             processingStartedAt: FieldValue.delete(),
@@ -505,12 +523,14 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                         continue; // skip deletion — chat stays in queue
                     }
 
-                    if (!imagen_url) {
-                        console.warn(`[Cron] Image failed after ${MAX_IMAGE_RETRIES} retries for user ${uid} — saving as private`);
+                    if (imagen_urls.length === 0) {
+                        console.warn(`[Cron] All images failed after ${MAX_IMAGE_RETRIES} retries for user ${uid} — saving as private`);
+                    } else if (imagen_urls.length < prompts.length) {
+                        console.warn(`[Cron] ${imagen_urls.length}/${prompts.length} images succeeded for user ${uid} — proceeding with partial set`);
                     }
 
                     // Match sponsor from imagen prompt (only for photo styles)
-                    const sponsor = post.imagen_prompt ? matchSponsor(post.imagen_prompt) : null;
+                    const sponsor = prompts[0] ? matchSponsor(prompts[0]) : null;
 
                     // Compute author hash for Contact Firewall filtering
                     let authorHash: string | null = null;
@@ -530,6 +550,9 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                         geoFields.geohash = geohashForLocation([userData.home_lat, userData.home_lng]);
                     }
 
+                    // Read user photo from chat document (if user attached one)
+                    const userPhotoUrl = chatData.user_photo_url || null;
+
                     // Create Post in DB
                     await postDocRef.set({
                         id: postDocRef.id,
@@ -545,12 +568,16 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                             letter: post.letter,
                             response: post.response,
                         },
-                        imagen_prompt: post.imagen_prompt || null,
+                        imagen_prompt: prompts[0] || null,
+                        imagen_prompts: prompts,
                         verdict: post.verdict || null,
                         photo_vibe: post.photo_vibe,
                         photo_scale: post.photo_scale,
                         language: post.language || null,
                         imagen_url: imagen_url,
+                        imagen_urls: imagen_urls,
+                        user_photo_url: userPhotoUrl,
+                        hero_source: userPhotoUrl ? 'user' : 'imagen',
                         sponsored_by: sponsor?.name || null,
                         sponsored_link: sponsor?.link || null,
                         // Geolocation for proximity filtering
@@ -575,6 +602,7 @@ Replace ALL real names of people the user knows with relationship roles. Replace
                                 post.response,
                                 characterVoiceId,
                                 postDocRef.id,
+                                post.verdict,
                             );
                             if (audioResult) {
                                 await postDocRef.update({

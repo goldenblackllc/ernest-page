@@ -16,4 +16,5 @@ export interface ActiveChat {
     burnOnClose?: boolean; // Safety flag — cron skips ALL processing and deletes immediately
     creditConsumed?: boolean; // Whether a session credit was consumed for this session
     creditRefunded?: boolean; // Whether the credit was auto-refunded (0-message close)
+    user_photo_url?: string;
 }

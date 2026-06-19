@@ -48,6 +48,10 @@ interface FeedPostProps {
         };
         imageUrl?: string;
         imagen_url?: string;
+        imagen_urls?: string[];
+        user_photo_url?: string;
+        hero_source?: 'user' | 'imagen';
+        verdict?: string;
         sponsored_by?: string;
         sponsored_link?: string;
         region?: string;
@@ -109,8 +113,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const unifiedAudioUrl = post.audio_url;
     const legacyHasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
     const hasAudio = Boolean(unifiedAudioUrl) || legacyHasAudio;
-    const heroUrl = post.public_post?.imagen_url || post.imagen_url;
-    const canPlayShort = hasAudio && Boolean(heroUrl);
+    const heroUrl = post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
+    // Multi-image array: user photo first (if exists), then AI images, fallback to single
+    const imageUrls = (() => {
+        const aiImages = post.imagen_urls?.length ? post.imagen_urls : (post.imagen_url ? [post.imagen_url] : []);
+        if (post.user_photo_url) return [post.user_photo_url, ...aiImages];
+        return aiImages;
+    })();
+    const canPlayShort = hasAudio && (Boolean(heroUrl) || imageUrls.length > 0);
 
     // Share handler — Web Share API with clipboard fallback
     const [shareToast, setShareToast] = useState(false);
@@ -636,6 +646,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         const letterChunks = chunkText(publicLetter || '');
         const responseChunks = chunkText((publicResponse || '').replace(/^THE COUNSEL:\s*/i, ''));
+        const allChunks = [...letterChunks, ...responseChunks];
 
         // Build timestamp-based chunks at sentence boundaries if word timestamps are available
         const wordTimestamps = post.audio_word_timestamps;
@@ -693,10 +704,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             // When not playing, show the first chunk as a readable preview
             if (audioPhase === 'idle' && !isPlaying) {
                 if (timestampChunks && timestampChunks.length > 0) {
+                    // Timestamp chunks already include verdict words (prepended in TTS)
                     return { current: timestampChunks[0].text, next: timestampChunks[1]?.text || '', lineIndex: 0, totalLines: timestampChunks.length };
                 }
-                if (letterChunks.length > 0) {
-                    return { current: letterChunks[0], next: letterChunks[1] || '', lineIndex: 0, totalLines: letterChunks.length };
+                if (allChunks.length > 0) {
+                    return { current: allChunks[0], next: allChunks[1] || '', lineIndex: 0, totalLines: allChunks.length };
                 }
                 return null;
             }
@@ -752,10 +764,21 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
             const current = lines[lineIndex] || '';
             const next = lines[lineIndex + 1] || '';
-            return { current, next, lineIndex, totalLines: lines.length };
+            // lineIndex in the context of allChunks (for image mapping)
+            const globalLineIndex = (() => {
+                if (audioPhase === 'response') return letterChunks.length + lineIndex;
+                return lineIndex;
+            })();
+            return { current, next, lineIndex: globalLineIndex, totalLines: allChunks.length };
         };
 
         const subtitle = getCurrentSubtitle();
+
+        // Multi-image: map current subtitle chunk to an image
+        const currentImageIndex = imageUrls.length > 0
+            ? Math.min(subtitle?.lineIndex || 0, imageUrls.length - 1)
+            : 0;
+        const currentImageUrl = imageUrls[currentImageIndex] || heroUrl;
 
         return (
             <div ref={cardRef} className="bg-black border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-lg relative font-sans">
@@ -766,14 +789,26 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     onClick={toggleAudio}
                     title="Tap to pause/resume"
                 >
-                    {/* Hero image as full background */}
-                    <img
-                        src={heroUrl}
-                        alt={publicTitle || ""}
-                        className="absolute inset-0 w-full h-full object-cover"
-                    />
-
-
+                    {/* Hero image — crossfade between multi-image backgrounds */}
+                    {imageUrls.length > 1 ? (
+                        <>
+                            {imageUrls.map((url, i) => (
+                                <img
+                                    key={url}
+                                    src={url}
+                                    alt={publicTitle || ""}
+                                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+                                    style={{ opacity: i === currentImageIndex ? 1 : 0 }}
+                                />
+                            ))}
+                        </>
+                    ) : (
+                        <img
+                            src={currentImageUrl}
+                            alt={publicTitle || ""}
+                            className="absolute inset-0 w-full h-full object-cover"
+                        />
+                    )}
 
                     {/* Top: Author + Title */}
                     <div className="absolute top-0 left-0 right-0 p-4 z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>

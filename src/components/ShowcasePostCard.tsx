@@ -17,6 +17,7 @@ interface ShowcasePost {
     letter?: string | null;
     response?: string | null;
     imagen_url?: string | null;
+    user_photo_url?: string | null;
     audio_url?: string | null;
     audio_letter_ratio?: number | null;
     directive_title?: string | null;
@@ -54,7 +55,7 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
 
     // ═══ SHORT-FORM DETECTION ═══
     const hasAudio = Boolean(post.audio_url);
-    const heroUrl = post.imagen_url;
+    const heroUrl = post.user_photo_url || post.imagen_url;
     const canPlayShort = hasAudio && Boolean(heroUrl);
 
     // ═══ AUDIO PLAYBACK STATE ═══

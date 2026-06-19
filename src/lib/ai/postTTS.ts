@@ -263,6 +263,7 @@ async function uploadAudio(buffer: Buffer, path: string): Promise<string> {
  * maintains natural prosody across both sections (no choppy seam).
  *
  * @param letterText  The anonymous letter text
+ * @param verdict  Optional verdict/hook text to prepend (read aloud first)
  * @param responseText  The Ideal Self's response text
  * @param voiceId  ElevenLabs voice ID (from character bible)
  * @param postId  Post document ID (used for storage path)
@@ -273,6 +274,7 @@ export async function generatePostAudio(
     responseText: string,
     voiceId: string,
     postId: string,
+    verdict?: string,
 ): Promise<{ audioUrl: string; letterWordRatio: number; wordTimestamps: WordTimestamp[] } | null> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
@@ -287,15 +289,15 @@ export async function generatePostAudio(
 
     try {
         // Combine letter + response into a single text for one continuous TTS pass.
-        // The letter ends with "Sincerely, X" and the response starts with "Dear X,"
-        // which naturally cues a prosodic pause in the voice.
+        // The em-dash sign-offs (— Pseudonym / — Earnest Page) create natural prosodic
+        // pauses between the two sections.
         const cleanLetter = cleanTextForTTS(letterText);
         const cleanResponse = responseText ? cleanTextForTTS(responseText) : '';
-        const combinedText = cleanResponse
-            ? `${cleanLetter} ${cleanResponse}`
-            : cleanLetter;
+        const combinedText = [cleanLetter, cleanResponse]
+            .filter(Boolean)
+            .join(' ... ');
 
-        // Calculate letter word ratio for phase boundary estimation during playback
+        // Calculate letter word ratio for phase boundary estimation during playback.
         const letterWords = wordCount(cleanLetter);
         const totalWords = letterWords + (cleanResponse ? wordCount(cleanResponse) : 0);
         const letterWordRatio = totalWords > 0 ? letterWords / totalWords : 1;

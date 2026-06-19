@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
-import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X, Volume2, VolumeX, Play } from "lucide-react";
+import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X, Volume2, VolumeX, Play, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,6 +51,9 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const [sessionTone] = useState(DEFAULT_TONE);
     const [isRoutingOpen, setIsRoutingOpen] = useState(false);
     const routingRef = useRef<HTMLDivElement>(null);
+    const [postPhotoUrl, setPostPhotoUrl] = useState<string | null>(null);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const photoInputRef = useRef<HTMLInputElement>(null);
 
     // Layout measurement — three-zone keyboard-safe layout
     const headerRef = useRef<HTMLDivElement>(null);
@@ -243,6 +246,9 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             if (chat) {
                 setMessages(chat.messages || []);
                 setIsLoading(chat.status === "generating");
+                if (chat.user_photo_url) {
+                    setPostPhotoUrl(chat.user_photo_url);
+                }
             } else {
                 setMessages([]);
                 setIsLoading(false);
@@ -777,6 +783,40 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         }
     };
 
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !sessionId) return;
+
+        setIsUploadingPhoto(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', uid);
+            formData.append('purpose', 'post_photo');
+
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.url) {
+                setPostPhotoUrl(data.url);
+                await saveActiveChat(uid, { user_photo_url: data.url } as any, sessionId);
+            }
+        } catch (err) {
+            console.error('Photo upload failed:', err);
+        } finally {
+            setIsUploadingPhoto(false);
+            // Reset input so same file can be re-selected
+            if (photoInputRef.current) photoInputRef.current.value = '';
+        }
+    };
+
+    const handleRemovePhoto = async () => {
+        setPostPhotoUrl(null);
+        if (sessionId) {
+            await saveActiveChat(uid, { user_photo_url: null } as any, sessionId);
+        }
+    };
+
     const handleClose = async () => {
         // Stop TTS audio IMMEDIATELY — before any async work
         cleanupAudio();
@@ -788,6 +828,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                 // BURN PROTOCOL: Purge immediately — zero retention
                 try {
                     await deleteActiveChat(uid, sessionId);
+                    setPostPhotoUrl(null);
                 } catch (err) {
                     console.error("Burn protocol — failed to purge session:", err);
                 }
@@ -829,6 +870,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         hasManuallySetRouting.current = false;
         setPlanConfirmation(null);
         setCreditConsumed(false);
+        setPostPhotoUrl(null);
 
         unsuppressAutoPlay();
         onClose();
@@ -1059,61 +1101,107 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                     {sessionRouting === 'burn' && <Flame className="w-3 h-3 text-red-500" />}
                                 </div>
 
-                                {/* Settings icon → routing popover */}
-                                <div className="relative">
+                                {/* Right: photo + settings */}
+                                <div className="flex items-center gap-1.5">
+                                    {/* Photo upload */}
+                                    <input
+                                        ref={photoInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handlePhotoUpload}
+                                    />
                                     <button
-                                        onClick={() => setIsRoutingOpen(prev => !prev)}
-                                        className="w-7 h-7 flex items-center justify-center text-zinc-600 hover:text-zinc-400 transition-colors"
-                                        aria-label="Session routing settings"
-                                    >
-                                        <Settings className="w-3.5 h-3.5" />
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {isRoutingOpen && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 4, scale: 0.97 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                                                transition={{ duration: 0.15 }}
-                                                className="absolute bottom-full right-0 mb-2 z-20 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[220px]"
-                                            >
-                                                <div className="px-4 pt-3 pb-1">
-                                                    <p className="text-[10px] uppercase font-bold tracking-widest text-zinc-600">{t('mirrorChat.sessionRouting')}</p>
-                                                </div>
-                                                {(['public', 'private', 'burn'] as SessionRouting[]).map(option => (
-                                                    <button
-                                                        key={option}
-                                                        onClick={() => { setSessionRouting(option); hasManuallySetRouting.current = true; setIsRoutingOpen(false); }}
-                                                        className={cn(
-                                                            "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors",
-                                                            sessionRouting === option
-                                                                ? option === 'burn' ? "bg-red-950/40 text-red-400" : "bg-zinc-800 text-white"
-                                                                : option === 'burn' ? "text-zinc-500 hover:text-red-400 hover:bg-red-950/20" : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
-                                                        )}
-                                                    >
-                                                        {option === 'public' && <Globe className="w-3.5 h-3.5 shrink-0" />}
-                                                        {option === 'private' && <Lock className="w-3.5 h-3.5 shrink-0" />}
-                                                        {option === 'burn' && <Flame className="w-3.5 h-3.5 shrink-0" />}
-                                                        <span>
-                                                            {option === 'public' && t('mirrorChat.publicFeed')}
-                                                            {option === 'private' && t('mirrorChat.privateLedger')}
-                                                            {option === 'burn' && t('mirrorChat.burnOnClose')}
-                                                        </span>
-                                                        {sessionRouting === option && <span className="ml-auto text-[10px] text-zinc-500">✓</span>}
-                                                    </button>
-                                                ))}
-                                                {/* Burn microcopy */}
-                                                {sessionRouting === 'burn' && (
-                                                    <p className="text-[10px] text-red-500/70 font-medium tracking-wide px-4 pb-3">
-                                                        {t('mirrorChat.burnMicrocopy')}
-                                                    </p>
-                                                )}
-                                            </motion.div>
+                                        onClick={() => photoInputRef.current?.click()}
+                                        disabled={isUploadingPhoto || isSessionLimited}
+                                        className={cn(
+                                            "w-7 h-7 flex items-center justify-center transition-colors rounded-full",
+                                            postPhotoUrl
+                                                ? "text-emerald-400 hover:text-emerald-300"
+                                                : "text-zinc-600 hover:text-zinc-400",
+                                            (isUploadingPhoto || isSessionLimited) && "opacity-50 cursor-not-allowed"
                                         )}
-                                    </AnimatePresence>
+                                        aria-label="Attach photo to post"
+                                    >
+                                        {isUploadingPhoto ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <Camera className="w-3.5 h-3.5" />
+                                        )}
+                                    </button>
+                                    {/* Settings */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setIsRoutingOpen(prev => !prev)}
+                                            className="w-7 h-7 flex items-center justify-center text-zinc-600 hover:text-zinc-400 transition-colors"
+                                            aria-label="Session routing settings"
+                                        >
+                                            <Settings className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isRoutingOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="absolute bottom-full right-0 mb-2 z-20 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[220px]"
+                                                >
+                                                    <div className="px-4 pt-3 pb-1">
+                                                        <p className="text-[10px] uppercase font-bold tracking-widest text-zinc-600">{t('mirrorChat.sessionRouting')}</p>
+                                                    </div>
+                                                    {(['public', 'private', 'burn'] as SessionRouting[]).map(option => (
+                                                        <button
+                                                            key={option}
+                                                            onClick={() => { setSessionRouting(option); hasManuallySetRouting.current = true; setIsRoutingOpen(false); }}
+                                                            className={cn(
+                                                                "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors",
+                                                                sessionRouting === option
+                                                                    ? option === 'burn' ? "bg-red-950/40 text-red-400" : "bg-zinc-800 text-white"
+                                                                    : option === 'burn' ? "text-zinc-500 hover:text-red-400 hover:bg-red-950/20" : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                                                            )}
+                                                        >
+                                                            {option === 'public' && <Globe className="w-3.5 h-3.5 shrink-0" />}
+                                                            {option === 'private' && <Lock className="w-3.5 h-3.5 shrink-0" />}
+                                                            {option === 'burn' && <Flame className="w-3.5 h-3.5 shrink-0" />}
+                                                            <span>
+                                                                {option === 'public' && t('mirrorChat.publicFeed')}
+                                                                {option === 'private' && t('mirrorChat.privateLedger')}
+                                                                {option === 'burn' && t('mirrorChat.burnOnClose')}
+                                                            </span>
+                                                            {sessionRouting === option && <span className="ml-auto text-[10px] text-zinc-500">✓</span>}
+                                                        </button>
+                                                    ))}
+                                                    {/* Burn microcopy */}
+                                                    {sessionRouting === 'burn' && (
+                                                        <p className="text-[10px] text-red-500/70 font-medium tracking-wide px-4 pb-3">
+                                                            {t('mirrorChat.burnMicrocopy')}
+                                                        </p>
+                                                    )}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Photo preview */}
+                            {postPhotoUrl && (
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                        <img src={postPhotoUrl} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                    <span className="text-[10px] text-zinc-600 flex-1">Post photo attached</span>
+                                    <button
+                                        onClick={handleRemovePhoto}
+                                        className="w-5 h-5 flex items-center justify-center text-zinc-600 hover:text-red-400 transition-colors"
+                                        aria-label="Remove photo"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
 
                             {/* Session limit reached */}
                             {isSessionLimited && (
