@@ -246,8 +246,8 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
 
                     {/* Subtitle text — always rendered, visibility via opacity to avoid DOM pop-in */}
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
-                        <div className={`text-center bg-black/45 backdrop-blur-[2px] rounded-2xl px-5 py-4 max-w-[92%] transition-opacity duration-300 ${showSubtitle ? 'opacity-100' : 'opacity-0'}`}>
-                            <p className="text-[1.35rem] sm:text-3xl lg:text-4xl font-bold text-white leading-tight" style={{ whiteSpace: 'pre-line', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+                        <div className={`text-center max-w-[92%] transition-opacity duration-300 ${showSubtitle ? 'opacity-100' : 'opacity-0'}`}>
+                            <p className="text-[1.35rem] sm:text-3xl lg:text-4xl font-bold text-white leading-tight" style={{ whiteSpace: 'pre-line', textShadow: '-1px -1px 0 rgba(0,0,0,0.85), 1px -1px 0 rgba(0,0,0,0.85), -1px 1px 0 rgba(0,0,0,0.85), 1px 1px 0 rgba(0,0,0,0.85), 0 2px 4px rgba(0,0,0,0.4)' }}>
                                 {subtitleText || '\u00A0'}
                             </p>
                         </div>
