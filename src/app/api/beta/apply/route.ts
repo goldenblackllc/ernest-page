@@ -1,6 +1,9 @@
 import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { nanoid } from 'nanoid';
+import nodemailer from 'nodemailer';
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
 
 /**
  * POST /api/beta/apply
@@ -85,6 +88,40 @@ export async function POST(req: Request) {
         });
 
         console.log(`Beta apply: User ${uid} self-enrolled [cohort: ${cohort}, payment: ${paymentMethod}/${paymentHandle}]`);
+
+        // ── Send notification email ──
+        try {
+            if (process.env.GMAIL_APP_PASSWORD) {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: ADMIN_EMAIL,
+                        pass: process.env.GMAIL_APP_PASSWORD,
+                    },
+                });
+
+                await transporter.sendMail({
+                    from: `Earnest Page <${ADMIN_EMAIL}>`,
+                    to: ADMIN_EMAIL,
+                    subject: `🎉 New Beta Signup — ${paymentMethod} ${paymentHandle}`,
+                    html: `
+<div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 400px;">
+    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Beta Application</p>
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr><td style="padding: 8px 0; color: #71717a;">User ID</td><td style="padding: 8px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 12px;">${uid}</td></tr>
+        <tr><td style="padding: 8px 0; color: #71717a;">Payment</td><td style="padding: 8px 0; text-align: right; color: #34d399; font-weight: 600;">${paymentMethod} — ${paymentHandle}</td></tr>
+        <tr><td style="padding: 8px 0; color: #71717a;">Source</td><td style="padding: 8px 0; text-align: right; color: #e4e4e7;">${source}</td></tr>
+        <tr><td style="padding: 8px 0; color: #71717a;">Cohort</td><td style="padding: 8px 0; text-align: right; color: #e4e4e7;">${cohort}</td></tr>
+        <tr><td style="padding: 8px 0; color: #71717a;">Expires</td><td style="padding: 8px 0; text-align: right; color: #e4e4e7;">${subscribedUntil.split('T')[0]}</td></tr>
+    </table>
+    <p style="font-size: 10px; color: #3f3f46; text-align: center; margin: 20px 0 0 0;">Check beta_applications in Firebase for full details.</p>
+</div>`,
+                });
+            }
+        } catch (emailErr) {
+            // Don't fail the signup if email fails
+            console.error('Beta apply notification email failed:', emailErr);
+        }
 
         return Response.json({
             success: true,
