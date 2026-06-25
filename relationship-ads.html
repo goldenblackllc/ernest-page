@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earnest Page — Relationship UGC Casting Ads (Young Adults)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      gap: 24px;
+      padding: 32px 16px;
+    }
+
+    /* ── VARIANT PICKER ── */
+    .picker {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 700px;
+    }
+
+    .picker-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.35);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .picker-btn:hover, .picker-btn.active {
+      border-color: rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .picker-btn.single { border-color: rgba(168,85,247,0.3); }
+    .picker-btn.single.active { border-color: rgba(168,85,247,0.6); color: rgba(168,85,247,0.9); background: rgba(168,85,247,0.08); }
+    .picker-btn.taken { border-color: rgba(251,146,60,0.3); }
+    .picker-btn.taken.active { border-color: rgba(251,146,60,0.6); color: rgba(251,146,60,0.9); background: rgba(251,146,60,0.08); }
+
+    .picker-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.15);
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+
+    .section-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.12);
+      width: 100%;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* ── CAPTION PREVIEW ── */
+    .caption-bar {
+      max-width: 540px;
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .caption-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 8px;
+    }
+
+    .caption-text {
+      font-size: 13px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.55);
+      white-space: pre-wrap;
+    }
+
+    /* ── CARD (4:5 Instagram Feed) ── */
+    .card {
+      width: 540px;
+      height: 675px;
+      background: #000000;
+      position: relative;
+      overflow: hidden;
+      border-radius: 4px;
+      transition: opacity 0.25s ease;
+    }
+
+    .card.switching { opacity: 0; }
+
+    /* Grain texture */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── CONTENT ZONE ── */
+    .content {
+      position: relative;
+      z-index: 1;
+      padding: 52px 44px 0 44px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ── TOP EYEBROW ── */
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.20);
+      margin-bottom: 28px;
+    }
+
+    /* ── HEADLINE ── */
+    .problem {
+      font-size: 46px;
+      font-weight: 900;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      color: #ffffff;
+    }
+
+    .problem .dim {
+      color: rgba(255,255,255,0.32);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 36px;
+      height: 2px;
+      background: rgba(255,255,255,0.12);
+      margin: 28px 0;
+    }
+
+    /* ── TAGLINE BLOCK ── */
+    .tagline {
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.95);
+    }
+
+    .tagline .deliverable {
+      display: block;
+      font-size: 16px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.38);
+      letter-spacing: -0.01em;
+      margin-top: 10px;
+      line-height: 1.45;
+    }
+
+    .tagline .price {
+      display: block;
+      font-size: 17px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.22);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Variant picker -->
+  <div class="picker">
+    <span class="picker-label">Ad:</span>
+    <div class="section-label">— Single / Never Dated / Wanting —</div>
+    <button class="picker-btn single active" onclick="setVariant(0)">01 Everyone but me</button>
+    <button class="picker-btn single" onclick="setVariant(1)">02 Can't say it</button>
+    <button class="picker-btn single" onclick="setVariant(2)">03 Left on read</button>
+    <button class="picker-btn single" onclick="setVariant(3)">04 Something wrong</button>
+    <button class="picker-btn single" onclick="setVariant(4)">05 Situationship</button>
+    <div class="section-label">— In a Relationship / First Love —</div>
+    <button class="picker-btn taken" onclick="setVariant(5)">06 Said I love you</button>
+    <button class="picker-btn taken" onclick="setVariant(6)">07 Losing myself</button>
+    <button class="picker-btn taken" onclick="setVariant(7)">08 Is this it</button>
+    <button class="picker-btn taken" onclick="setVariant(8)">09 Can't be myself</button>
+    <button class="picker-btn taken" onclick="setVariant(9)">10 Want space</button>
+  </div>
+
+  <!-- Card -->
+  <div class="card" id="card">
+    <div class="content">
+      <div class="eyebrow">UGC Opportunity · Paid · Limited Spots</div>
+      <div class="problem" id="problem-text"></div>
+      <div class="divider"></div>
+      <div class="tagline" id="tagline-text"></div>
+    </div>
+  </div>
+
+  <!-- Caption preview -->
+  <div class="caption-bar">
+    <div class="caption-label">Instagram Caption</div>
+    <div class="caption-text" id="caption-text"></div>
+  </div>
+
+  <script>
+    /*
+      ═══════════════════════════════════════════════════════
+      RELATIONSHIP UGC CASTING — Young Adults (18–22)
+
+      SET A (01–05): Single / never dated / wanting connection
+      SET B (06–10): First relationship / early love / figuring it out
+
+      Format: UGC casting call + $20 paid session
+      CTA: Link in bio — earnestpage.com/apply
+      ═══════════════════════════════════════════════════════
+    */
+    const variants = [
+      {
+        // AD 01 — Everyone has someone except me
+        lines: [
+          "Everyone",
+          "has someone",
+          { text: "except me.", dim: true }
+        ],
+        tagline: {
+          main: "We'll pay you<br>$20 to talk<br>about it.",
+          deliverable: "Casting 10 people who feel like they're the only one still waiting.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `Everyone around you is coupling up. Group hangouts turned into double dates you're not part of. Your feed is full of people holding hands and you're holding your phone.
+
+You're not behind. But it doesn't feel that way.
+
+We're casting 10 people who feel like the only one still waiting to test an app that listens to the part of you that doesn't say this stuff out loud.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 02 — Can't say it to them
+        lines: [
+          "You like",
+          "someone and",
+          "you can't",
+          { text: "say it.", dim: true }
+        ],
+        tagline: {
+          main: "Say it here<br>first.",
+          deliverable: "Casting 10 people holding back the thing they actually feel.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `You've rehearsed the conversation a hundred times. In the shower. Walking to class. Lying awake at 1 AM.
+
+But saying it out loud — to them — would make it real. And real means it could go wrong.
+
+We're casting 10 people who can't say the thing they feel to test an app that lets you say it first. Not to them. Not to a friend. To something that just listens.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 03 — Left on read
+        lines: [
+          "They left",
+          "you on",
+          { text: "read.", dim: true }
+        ],
+        tagline: {
+          main: "And you made<br>it mean<br>everything.",
+          deliverable: "Casting 10 people who know it's just a text but can't stop the spiral.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `It's just a text. You know that. But the 4 hours of silence turned into a courtroom where you're on trial for being too much, too needy, too available, too obvious.
+
+You wrote a whole story about yourself from a grey bubble.
+
+We're casting 10 people who do this to test an app that shows you the story you're actually writing — not about them, about you.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 04 — Something must be wrong with me
+        lines: [
+          "Something",
+          "must be",
+          { text: "wrong with me.", dim: true }
+        ],
+        tagline: {
+          main: "Nothing is.",
+          deliverable: "Casting 10 people who've never been in a relationship and feel broken because of it.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `You've never been in a relationship. And at some point that stopped being a fact and started being a verdict. Like everyone else got a manual you didn't.
+
+You're not broken. You're not behind. You're not unlovable. You just decided you were and now everything confirms it.
+
+We're casting 10 people who feel this way to test an app that shows you the decision you're actually making about yourself.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 05 — Situationship
+        lines: [
+          "It's not a",
+          "relationship.",
+          "It's not",
+          { text: "nothing.", dim: true }
+        ],
+        tagline: {
+          main: "It's the<br>in-between<br>that's killing you.",
+          deliverable: "Casting 10 people stuck in a situationship they can't name.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `You're "talking." You're "hanging out." You're "seeing where it goes." But you know exactly where you want it to go — you're just afraid to say it because saying it gives them the power to leave.
+
+So you stay in the in-between. Where nothing is official and nothing is safe.
+
+We're casting 10 people stuck in a situationship to test an app that shows you what you're actually afraid of underneath the label.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 06 — They said I love you
+        lines: [
+          "They said",
+          "I love you",
+          { text: "and you froze.", dim: true }
+        ],
+        tagline: {
+          main: "That doesn't<br>mean you<br>don't.",
+          deliverable: "Casting 10 people who don't know what to do with being loved.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `They said it. And instead of feeling happy you felt — nothing? Panic? Like you suddenly had to perform something you're not sure is real?
+
+That freeze isn't a sign you don't love them. It's a sign you don't know what to do when someone actually sees you.
+
+We're casting 10 people who froze when love showed up to test an app that shows you why. Not therapy. A conversation with yourself.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 07 — Losing myself
+        lines: [
+          "I have a",
+          "relationship",
+          "but I lost",
+          { text: "my friends.", dim: true }
+        ],
+        tagline: {
+          main: "Maybe<br>yourself too.",
+          deliverable: "Casting 10 people who disappeared into a relationship.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `Your group chat went quiet. You stopped showing up. You told yourself it was just priorities changing — but your friends didn't change, you did. You just didn't notice until you needed them and they weren't there anymore.
+
+You didn't choose this. It just happened. And now you don't know who you are outside of "us."
+
+We're casting 10 people who disappeared into a relationship to test an app that helps you find the person you were before.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 08 — Is this what love is?
+        lines: [
+          "Is this",
+          "what love",
+          { text: "is supposed", dim: true },
+          { text: "to feel like?", dim: true }
+        ],
+        tagline: {
+          main: "You're allowed<br>to not know.",
+          deliverable: "Casting 10 people in their first real relationship who aren't sure what they're feeling.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `You thought it would feel like the movies. Or at least like the songs. Instead it feels like... comfortable? Boring? Anxious? You can't tell if this is love or just not being alone.
+
+Nobody tells you that not knowing is normal. That the feeling doesn't come with a label attached.
+
+We're casting 10 people in their first relationship who aren't sure what they're feeling to test an app that helps you hear yourself clearly.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 09 — Can't be myself
+        lines: [
+          "I can't be",
+          { text: "myself", dim: true },
+          "around",
+          { text: "them.", dim: true }
+        ],
+        tagline: {
+          main: "So who are<br>you being?",
+          deliverable: "Casting 10 people performing a version of themselves in a relationship.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `You laugh differently around them. You pretend to like things you don't. You edit yourself before you speak because the real version might be too much.
+
+You got the relationship. But the person in it isn't really you.
+
+We're casting 10 people who are performing a version of themselves for someone else to test an app that shows you what you're actually afraid will happen if you stop.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      },
+      {
+        // AD 10 — They want space
+        lines: [
+          "They said",
+          "they need",
+          { text: "space.", dim: true }
+        ],
+        tagline: {
+          main: "And your brain<br>said it's over.",
+          deliverable: "Casting 10 people spiraling because someone they love asked for distance.",
+          price: "earnestpage.com/apply"
+        },
+        caption: `They said "I need some space" and you heard "I'm leaving." Now you're texting less, trying to seem fine, checking when they were last online, and rehearsing what you did wrong.
+
+Space doesn't mean gone. But your brain already wrote the ending.
+
+We're casting 10 people spiraling over a reasonable request to test an app that shows you the story you're telling yourself — and why.
+
+$20 for one completed session. Everything is anonymous. earnestpage.com/apply`
+      }
+    ];
+
+    let current = 0;
+
+    function renderVariant(v) {
+      const el = document.getElementById('problem-text');
+      el.innerHTML = v.lines.map((line, i) => {
+        const isLast = i === v.lines.length - 1;
+        const text = typeof line === 'string' ? line : line.text;
+        const dim = typeof line === 'object' && line.dim;
+        return `<span class="${dim ? 'dim' : ''}">${text}</span>${isLast ? '' : '<br>'}`;
+      }).join('');
+
+      const tl = document.getElementById('tagline-text');
+      tl.innerHTML = `
+        ${v.tagline.main}
+        <span class="deliverable">${v.tagline.deliverable}</span>
+        <span class="price">${v.tagline.price}</span>
+      `;
+
+      const cl = document.getElementById('caption-text');
+      cl.textContent = v.caption;
+    }
+
+    function setVariant(index) {
+      const card = document.getElementById('card');
+      current = index;
+
+      document.querySelectorAll('.picker-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === index);
+      });
+
+      card.classList.add('switching');
+      setTimeout(() => {
+        renderVariant(variants[index]);
+        card.classList.remove('switching');
+      }, 250);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') setVariant((current + 1) % variants.length);
+      if (e.key === 'ArrowLeft')  setVariant((current - 1 + variants.length) % variants.length);
+    });
+
+    renderVariant(variants[0]);
+  </script>
+
+</body>
+</html>

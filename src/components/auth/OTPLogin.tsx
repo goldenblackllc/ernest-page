@@ -14,7 +14,7 @@ function normalizePhoneNumber(input: string, dialCode: string): string {
     return `${dialCode}${stripped}`;
 }
 
-export default function OTPLogin() {
+export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {}) {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [step, setStep] = useState<'INPUT_PHONE' | 'INPUT_CODE'>('INPUT_PHONE');
@@ -71,7 +71,11 @@ export default function OTPLogin() {
             }
             await signInWithCustomToken(auth, data.token);
             trackEvent('login');
-            router.push('/');
+            if (onSuccess) {
+                onSuccess();
+            } else {
+                router.push('/');
+            }
         } catch {
             setError("Invalid code. Please try again.");
         } finally {
