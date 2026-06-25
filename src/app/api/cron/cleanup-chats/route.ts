@@ -10,6 +10,9 @@ import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 import { generatePostAudio } from '@/lib/ai/postTTS';
 import sharp from 'sharp';
+import nodemailer from 'nodemailer';
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -590,6 +593,38 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         like_count: 0,
                         comments: 0
                     });
+
+                    // ─── NOTIFY ADMIN OF NEW POST ───
+                    try {
+                        if (process.env.GMAIL_APP_PASSWORD) {
+                            const transporter = nodemailer.createTransport({
+                                service: 'gmail',
+                                auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
+                            });
+                            const postTitle = post.title || 'Untitled';
+                            const postPseudonym = post.pseudonym || 'Anonymous';
+                            const postVisibility = visibility || 'private';
+                            await transporter.sendMail({
+                                from: `Earnest Page <${ADMIN_EMAIL}>`,
+                                to: ADMIN_EMAIL,
+                                subject: `📝 New Post — ${postTitle}`,
+                                html: `
+<div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
+    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
+    <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postTitle}</h2>
+    <p style="font-size: 13px; color: #a1a1aa; margin: 0 0 16px 0;">by ${postPseudonym}</p>
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${postVisibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${postVisibility}</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Author</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${userData?.displayName || 'Anonymous'}</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Post ID</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 11px;">${postDocRef.id}</td></tr>
+    </table>
+    ${post.letter ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${post.letter.substring(0, 300)}${post.letter.length > 300 ? '...' : ''}</div>` : ''}
+</div>`,
+                            });
+                        }
+                    } catch (emailErr) {
+                        console.error(`[Cron] Post notification email failed:`, emailErr);
+                    }
 
                     // ─── POST AUDIO GENERATION ───
                     // Generate TTS audio for the letter and response using the character's voice.
