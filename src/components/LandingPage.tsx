@@ -6,7 +6,7 @@ import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Shield, Gift, Crown, Lock, MessageCircle, BarChart3, Award } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -51,26 +51,6 @@ const sectionFade = {
     },
 };
 
-
-
-// ─── What You Walk Into ────────────────────────────────────────────
-const PLATFORM_PILLARS = [
-    {
-        icon: Lock,
-        titleKey: 'landing.system.blueprintTitle',
-        textKey: 'landing.system.blueprintText',
-    },
-    {
-        icon: MessageCircle,
-        titleKey: 'landing.system.mirrorTitle',
-        textKey: 'landing.system.mirrorText',
-    },
-    {
-        icon: BarChart3,
-        titleKey: 'landing.system.ledgerTitle',
-        textKey: 'landing.system.ledgerText',
-    },
-];
 
 // ─── Component ─────────────────────────────────────────────────────
 export function LandingPage() {
@@ -234,9 +214,7 @@ export function LandingPage() {
                     >
                         {t('landing.hero.headline1')}{' '}
                         <br className="hidden sm:block" />
-                        <span className="text-zinc-500">{t('landing.hero.headline2')}</span>{' '}
-                        <br className="hidden sm:block" />
-                        {t('landing.hero.headline3')}
+                        <span className="text-zinc-500">{t('landing.hero.headline2')}</span>
                     </motion.h1>
 
                     <motion.p
@@ -414,7 +392,7 @@ export function LandingPage() {
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
-                HOW IT WORKS — The mechanism
+                THE SIGNAL — How it works
                ═══════════════════════════════════════════════════════════ */}
             <section className="relative px-6 py-24 md:py-32">
                 <motion.div
@@ -425,34 +403,27 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-500 mb-6">
-                        {t('landing.mechanism.label')}
+                        {t('landing.signal.label')}
                     </p>
 
                     <div className="space-y-12">
-                        <div>
-                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
-                                {t('landing.mechanism.step1Title')}
-                            </h3>
-                            <p className="text-base text-zinc-400 leading-relaxed">
-                                {t('landing.mechanism.step1Body')}
-                            </p>
-                        </div>
-                        <div>
-                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
-                                {t('landing.mechanism.step2Title')}
-                            </h3>
-                            <p className="text-base text-zinc-400 leading-relaxed">
-                                {t('landing.mechanism.step2Body')}
-                            </p>
-                        </div>
-                        <div>
-                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
-                                {t('landing.mechanism.step3Title')}
-                            </h3>
-                            <p className="text-base text-zinc-400 leading-relaxed">
-                                {t('landing.mechanism.step3Body')}
-                            </p>
-                        </div>
+                        {[1, 2, 3].map((n) => (
+                            <motion.div
+                                key={n}
+                                custom={n}
+                                variants={cardReveal}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: '-40px' }}
+                            >
+                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                                    {t(`landing.signal.step${n}Title` as any)}
+                                </h3>
+                                <p className="text-base text-zinc-400 leading-relaxed">
+                                    {t(`landing.signal.step${n}Body` as any)}
+                                </p>
+                            </motion.div>
+                        ))}
                     </div>
                 </motion.div>
             </section>
@@ -460,7 +431,7 @@ export function LandingPage() {
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 
             {/* ═══════════════════════════════════════════════════════════
-                THE TRUTH — Aspirational positioning
+                THE WORLDVIEW — What we believe
                ═══════════════════════════════════════════════════════════ */}
             <section className="relative px-6 py-24 md:py-32">
                 <motion.div
@@ -471,104 +442,17 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-500 mb-10">
-                        {t('landing.truth.label')}
+                        {t('landing.worldview.label')}
                     </p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-8">
-                        {t('landing.truth.heading')}
+                        {t('landing.worldview.heading')}
                     </h2>
                     <div className="space-y-2 text-xl sm:text-2xl text-zinc-400 font-semibold leading-relaxed">
-                        <p>{t('landing.truth.line1')}</p>
-                        <p>{t('landing.truth.line2')}</p>
-                        <p>{t('landing.truth.line3')}</p>
-                        <p className="text-white">{t('landing.truth.line4')}</p>
+                        <p>{t('landing.worldview.line1')}</p>
+                        <p>{t('landing.worldview.line2')}</p>
+                        <p>{t('landing.worldview.line3')}</p>
+                        <p className="text-white">{t('landing.worldview.line4')}</p>
                     </div>
-                </motion.div>
-            </section>
-
-
-            {/* ═══════════════════════════════════════════════════════════
-                THE ARCHITECT — Founder credibility (condensed)
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
-                {/* Woodcut portrait */}
-                <motion.div
-                    className="relative w-full max-w-sm mx-auto mb-16"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                    viewport={{ once: true, margin: '-40px' }}
-                >
-                    <Image
-                        src="/woodcutman.jpeg"
-                        alt="Earnest Page"
-                        width={800}
-                        height={500}
-                        className="w-full h-auto"
-                        style={{
-                            mixBlendMode: 'luminosity',
-                            opacity: 0.6,
-                            maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
-                            WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
-                            filter: 'invert(1)',
-                        }}
-                    />
-                </motion.div>
-
-                <motion.div
-                    className="max-w-3xl mx-auto"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        {t('landing.architect.label')}
-                    </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
-                        {t('landing.architect.heading1')}
-                        <br />
-                        <span className="text-zinc-500">{t('landing.architect.heading2')}</span>
-                    </h2>
-
-                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed mb-6">
-                        {t('landing.architect.body1')}
-                    </p>
-                    <p className="text-base sm:text-lg text-zinc-300 font-semibold mb-10">
-                        {t('landing.architect.body2')}
-                    </p>
-
-                    {/* Credential badges */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                        {[
-                            { label: t('landing.architect.credHarvard'), detail: t('landing.architect.credHarvardDetail') },
-                            { label: t('landing.architect.credRSA'), detail: t('landing.architect.credRSADetail') },
-                            { label: t('landing.architect.credJSA'), detail: t('landing.architect.credJSADetail') },
-                        ].map((cred, i) => (
-                            <motion.div
-                                key={cred.label}
-                                className="rounded-xl border border-white/[0.08] bg-zinc-950 px-5 py-4 text-center"
-                                custom={i}
-                                variants={cardReveal}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: '-40px' }}
-                            >
-                                <div className="flex items-center justify-center gap-2 mb-1">
-                                    <Award className="w-3.5 h-3.5 text-zinc-500" />
-                                    <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-semibold">
-                                        {cred.label}
-                                    </span>
-                                </div>
-                                <span className="text-sm text-zinc-300 font-semibold">
-                                    {cred.detail}
-                                </span>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    <p className="text-[11px] text-zinc-600 font-mono tracking-wide">
-                        {t('landing.architect.founderLine')}
-                    </p>
                 </motion.div>
             </section>
 
@@ -591,304 +475,11 @@ export function LandingPage() {
                     <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] mb-6">
                         {t('landing.privacy.heading')}
                     </h2>
-                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-4">
+                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto">
                         {t('landing.privacy.body')}
                     </p>
-                    <p className="text-sm text-zinc-600">
-                        {t('landing.privacy.subtext')}
-                    </p>
                 </motion.div>
             </section>
-
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
-
-            {/* ═══════════════════════════════════════════════════════════
-                PRICING — Pay-per-session + Archangel
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
-                <motion.div
-                    className="max-w-4xl mx-auto"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <div className="text-center mb-16">
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                            {t('landing.pricing.label')}
-                        </p>
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
-                            {t('landing.pricing.heading1')}
-                            <br />
-                            <span className="text-zinc-500">{t('landing.pricing.heading2')}</span>
-                        </h2>
-                    </div>
-
-                    {/* Free Session Card — Visual Anchor */}
-                    <motion.div
-                        className="max-w-4xl mx-auto mb-8 rounded-2xl border-2 border-white/30 bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/50 relative"
-                        custom={0}
-                        variants={cardReveal}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true, margin: '-60px' }}
-                    >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                            <div>
-                                <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-2">
-                                    {t('landing.pricing.freeLabel')}
-                                </p>
-                                <div className="flex items-baseline gap-3 mb-2">
-                                    <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                        {t('landing.pricing.freePrice')}
-                                    </span>
-                                </div>
-                                <p className="text-sm text-zinc-500 leading-relaxed">
-                                    {t('landing.pricing.freeDesc')}
-                                </p>
-                            </div>
-                            <button
-                                onClick={scrollToAuth}
-                                className="rounded-full bg-white text-black px-8 py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 shrink-0"
-                            >
-                                {t('landing.pricing.freeCta')}
-                            </button>
-                        </div>
-                    </motion.div>
-
-                    {/* Pricing cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-                        {/* Single Session */}
-                        <motion.div
-                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/20"
-                            custom={0}
-                            variants={cardReveal}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, margin: '-60px' }}
-                        >
-                            <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                {t('landing.pricing.singleLabel')}
-                            </p>
-                            <div className="flex items-baseline gap-2 mb-2">
-                                <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                    {t('landing.pricing.singlePrice')}
-                                </span>
-                            </div>
-                            <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                {t('landing.pricing.singleDesc')}
-                            </p>
-                            <button
-                                onClick={scrollToAuth}
-                                className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
-                            >
-                                {t('landing.pricing.singleCta')}
-                            </button>
-                        </motion.div>
-
-                        {/* 3-Pack */}
-                        <motion.div
-                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/20"
-                            custom={1}
-                            variants={cardReveal}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, margin: '-60px' }}
-                        >
-                            <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                {t('landing.pricing.threePackLabel')}
-                            </p>
-                            <div className="flex items-baseline gap-2 mb-2">
-                                <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                    {t('landing.pricing.threePackPrice')}
-                                </span>
-                            </div>
-                            <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                {t('landing.pricing.threePackDesc')}
-                            </p>
-                            <button
-                                onClick={scrollToAuth}
-                                className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150"
-                            >
-                                {t('landing.pricing.threePackCta')}
-                            </button>
-                        </motion.div>
-
-                        {/* Gift */}
-                        <motion.div
-                            className="group rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10 transition-colors duration-200 hover:border-white/20"
-                            custom={2}
-                            variants={cardReveal}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, margin: '-60px' }}
-                        >
-                            <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-                                {t('landing.pricing.giftLabel')}
-                            </p>
-                            <div className="flex items-baseline gap-2 mb-2">
-                                <span className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                    {t('landing.pricing.giftPrice')}
-                                </span>
-                            </div>
-                            <p className="text-sm text-zinc-500 leading-relaxed mb-8">
-                                {t('landing.pricing.giftDesc')}
-                            </p>
-                            <button
-                                onClick={scrollToAuth}
-                                className="w-full rounded-full border border-white/20 bg-transparent text-white py-3.5 text-sm font-bold tracking-wide hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
-                            >
-                                <Gift className="w-4 h-4" />
-                                {t('landing.pricing.giftCta')}
-                            </button>
-                        </motion.div>
-                    </div>
-
-                    {/* Archangel — Price anchor */}
-                    <motion.div
-                        className="mt-5 max-w-4xl mx-auto rounded-2xl border border-amber-800/30 bg-gradient-to-br from-zinc-950 via-zinc-950 to-amber-950/10 p-8 sm:p-10 transition-colors duration-200 hover:border-amber-700/50"
-                        custom={3}
-                        variants={cardReveal}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true, margin: '-60px' }}
-                    >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-800/30 flex items-center justify-center">
-                                        <Crown className="w-5 h-5 text-amber-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-[0.25em] text-amber-600/80 font-bold">
-                                            {t('landing.pricing.archangelSubLabel')}
-                                        </p>
-                                        <h3 className="text-lg font-bold tracking-tight text-white">
-                                            {t('landing.pricing.archangelTitle')}
-                                        </h3>
-                                    </div>
-                                </div>
-                                <p className="text-sm text-zinc-500 leading-relaxed max-w-lg">
-                                    {t('landing.pricing.archangelDesc')}
-                                </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-3 shrink-0">
-                                <div>
-                                    <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
-                                        {t('landing.pricing.archangelPrice')}
-                                    </span>
-                                    <span className="text-sm text-zinc-600 ml-1">{t('landing.pricing.archangelPeriod')}</span>
-                                </div>
-                                <button
-                                    onClick={scrollToAuth}
-                                    className="rounded-full border border-amber-800/40 text-white px-6 py-3 text-sm font-bold tracking-wide hover:bg-amber-900/20 hover:border-amber-700/50 active:scale-[0.98] transition-all duration-150"
-                                >
-                                    {t('landing.pricing.archangelCta')}
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Free session note */}
-                    <motion.p
-                        className="text-center text-sm text-emerald-500/80 font-medium mt-8"
-                        custom={3.5}
-                        variants={cardReveal}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true }}
-                    >
-                        {t('landing.pricing.freeNote')}
-                    </motion.p>
-
-                    {/* Satisfaction guarantee */}
-                    <motion.p
-                        className="text-center text-sm text-zinc-600 mt-4"
-                        custom={4}
-                        variants={cardReveal}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true }}
-                    >
-                        {t('landing.pricing.refundNote')}
-                    </motion.p>
-                </motion.div>
-            </section>
-
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
-
-            {/* ═══════════════════════════════════════════════════════════
-                THE SYSTEM — What you're walking into (moved below pricing)
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
-                <motion.div
-                    className="max-w-5xl mx-auto"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        {t('landing.system.label')}
-                    </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
-                        {t('landing.system.heading1')}
-                        <br />
-                        <span className="text-zinc-500">{t('landing.system.heading2')}</span>
-                    </h2>
-                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mb-16">
-                        {t('landing.system.body')}
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {PLATFORM_PILLARS.map((item, i) => (
-                            <motion.div
-                                key={item.titleKey}
-                                className="group relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 transition-colors duration-200 hover:border-white/20 hover:bg-zinc-900/60"
-                                custom={i}
-                                variants={cardReveal}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: '-60px' }}
-                            >
-                                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center mb-6">
-                                    <item.icon className="w-5 h-5 text-zinc-300" />
-                                </div>
-                                <h3 className="text-lg font-bold tracking-tight text-white mb-3">
-                                    {t(item.titleKey as any)}
-                                </h3>
-                                <p className="text-sm text-zinc-500 leading-relaxed">
-                                    {t(item.textKey as any)}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.div>
-            </section>
-
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
-
-            {/* ═══════════════════════════════════════════════════════════
-                DISCLAIMER — The Therapy Shot Reality Check
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-16 md:py-20">
-                <motion.div
-                    className="max-w-2xl mx-auto text-center"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        {t('landing.disclaimer.heading')}
-                    </p>
-                    <p className="text-sm text-zinc-500 leading-relaxed">
-                        {t('landing.disclaimer.body')}
-                    </p>
-                </motion.div>
-            </section>
-
-
 
             {/* ── FOOTER ── */}
             <footer className="border-t border-white/[0.06] px-6 py-10">
@@ -901,8 +492,7 @@ export function LandingPage() {
                     </div>
                 </div>
                 <p className="max-w-5xl mx-auto text-[10px] text-zinc-700 text-center sm:text-left mt-4">
-                    Therapy Shots are not a substitute for licensed therapy or psychiatric care.
-                    If you are in crisis, please contact the 988 Suicide &amp; Crisis Lifeline.
+                    {t('landing.footer.disclaimer')}
                 </p>
             </footer>
         </main>

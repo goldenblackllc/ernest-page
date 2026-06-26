@@ -17,130 +17,34 @@
       "login": "Log In"
     },
     "hero": {
-      "tagline": "First shot free · No subscription · No commitment",
-      "headline1": "You have 2-3 beliefs",
-      "headline2": "running your entire life.",
-      "headline3": "You can't see them. We can.",
-      "subtext": "You're not broken, you're blind to what's running you. Tell us what's going on and we'll figure out the rest — within minutes.",
-      "price": "Free to start. $20 per shot after.",
-      "cta": "Take Your First Shot — Free",
-      "giftCta": "Gift One to Someone"
+      "headline1": "Is something bothering you?",
+      "headline2": "You're lucky.",
+      "subtext": "That frustration, that restlessness, that thing that won't leave you alone — it's not a problem. It's a signal. It's telling you what you actually want. We help you hear it."
     },
-    "mechanism": {
+    "signal": {
       "label": "How It Works",
-      "step1Title": "Tell us what makes you you.",
-      "step1Body": "Answers aren't generic. Everything is tailored to the unique person you are.",
-      "step2Title": "You tell us what's going on. You tell us what you want.",
-      "step2Body": "We analyze your words to find out who you truly are underneath the story.",
-      "step3Title": "Once you see who you really are, you can't unsee it.",
-      "step3Body": "You can choose a new you and a new life."
+      "step1Title": "Something's bothering you.",
+      "step1Body": "A relationship that's off. A decision you can't make. A feeling you can't shake. That tension is valuable.",
+      "step2Title": "You tell us about it.",
+      "step2Body": "Not in a form. Not to a bot. A real conversation. You say what's actually going on, and we listen for what's underneath.",
+      "step3Title": "You see what you actually want.",
+      "step3Body": "The feeling had a message. Once you hear it, you can't unhear it. What you do with it is up to you."
     },
-    "truth": {
-      "label": "What This Is",
-      "heading": "This is not therapy.",
-      "line1": "This is your truth.",
-      "line2": "The real truth.",
-      "line3": "The truth you always wanted.",
-      "line4": "Right now."
-    },
-    "entryPoints": {
-      "label": "Sound Familiar?",
-      "heading1": "Pick the one that",
-      "heading2": "won't leave you alone.",
-      "stuck": "I'm stuck and I don't know why",
-      "stuckSub": "Career paralysis, life transitions, feeling frozen",
-      "secret": "I can't say this out loud to anyone",
-      "secretSub": "The thing you carry alone",
-      "pattern": "I keep making the same mistake",
-      "patternSub": "Patterns you can see but can't stop",
-      "gap": "I know what I should do but I can't do it",
-      "gapSub": "The gap between intention and action",
-      "mask": "Everyone thinks I'm fine",
-      "maskSub": "The high-functioning mask"
-    },
-    "difference": {
-      "label": "The Difference",
-      "heading1": "This is not a chatbot.",
-      "heading2": "This is not therapy.",
-      "body1": "Chatbots validate you. Therapists analyze you. Neither of them will sit in front of you, look at the mess of your life, and tell you the thing you already know but haven't been able to say out loud.",
-      "body2": "This is a conversation with someone who sees the pattern you can't see from the inside.",
-      "body3": "You choose someone you admire — an archetype built from real psychology, real philosophy, and real lived experience. They don't tell you what to do. They help you see clearly enough to know for yourself.",
-      "aiEndorsement": "I am an AI. I should say that upfront. But I wasn't built to validate you, agree with you, or make you feel good. I was built from real psychology, real philosophy, and the actual details of your life — to say the thing no one else will say to your face. No other AI does that. Most people won't either.",
-      "toggleShow": "See how this compares",
-      "toggleHide": "Hide comparison",
-      "compCost": "Cost",
-      "compAvailable": "Available",
-      "compCommitment": "Commitment",
-      "compPatterns": "Knows your patterns",
-      "compIntegrity": "Integrity",
-      "compChallenges": "Challenges you",
-      "compTherapy": "Traditional Therapy",
-      "compChatbots": "AI Chatbots",
-      "compEarnest": "Earnest Page"
-    },
-    "system": {
-      "label": "The System",
-      "heading1": "More than a conversation.",
-      "heading2": "A daily operating system for your mind.",
-      "body": "A single session can shift your perspective. But Earnest Page is built for those who want to go further — defining their highest standard and executing on it daily.",
-      "blueprintTitle": "The Blueprint",
-      "blueprintText": "Define your highest standard — your Character Bible. The immutable baseline you answer to every day.",
-      "mirrorTitle": "The Mirror",
-      "mirrorText": "Consult your Ideal Self. Not a chatbot. Someone built from real psychology who challenges you to see clearly.",
-      "ledgerTitle": "The Ledger",
-      "ledgerText": "A silent, data-driven vault of your execution. When doubt sets in, the system proves you've won before."
-    },
-    "architect": {
-      "label": "The Architect",
-      "heading1": "I Built This Because",
-      "heading2": "Nothing Else Was Honest Enough.",
-      "body1": "I almost became a doctor. Instead, I became an engineer with a doctor's instinct — someone who builds technology but thinks about people first. I spent decades pressure-testing every major framework for the human mind, from CBT to Buddhist practice to McLean Hospital's most intensive program.",
-      "body2": "Earnest Page is not my first product. It may be my most important.",
-      "credHarvard": "Harvard",
-      "credHarvardDetail": "Patent Holder",
-      "credRSA": "RSA",
-      "credRSADetail": "Security Architect",
-      "credJSA": "JSA Financial",
-      "credJSADetail": "$10M / yr Founder",
-      "founderLine": "David Johnson · Founder · Patent Holder · 26 Years Building Systems That Work"
+    "worldview": {
+      "label": "What We Believe",
+      "heading": "Your feelings aren't the problem.",
+      "line1": "They're not something to manage.",
+      "line2": "They're not something to fix.",
+      "line3": "They're a signal — telling you exactly what you want.",
+      "line4": "Most people run from them. We help you listen."
     },
     "privacy": {
       "heading": "What you say stays here.",
-      "body": "Your conversations are encrypted and private. Your identity is protected by a Contact Firewall and proximity shield. Nothing is sold. Nothing is shared.",
-      "subtext": "Built by the maker of enterprise security systems — where privacy is the foundation, not the feature."
-    },
-    "pricing": {
-      "label": "Get Started",
-      "heading1": "One conversation.",
-      "heading2": "No strings attached.",
-      "freeLabel": "Your First Shot",
-      "freePrice": "Free",
-      "freeDesc": "One shot. No card required. No strings.",
-      "freeCta": "Start Now",
-      "singleLabel": "Therapy Shot",
-      "singlePrice": "$20",
-      "singleDesc": "One problem. One answer. Up to 2 hours. No commitment.",
-      "singleCta": "Take a Shot",
-      "threePackLabel": "3 Shots",
-      "threePackPrice": "$50",
-      "threePackDesc": "Three shots. Use anytime. They remember where you left off.",
-      "threePackCta": "Get 3 Sessions",
-      "giftLabel": "Gift a Session",
-      "giftPrice": "$20",
-      "giftDesc": "For the person who needs this but would never seek it out themselves.",
-      "giftCta": "Send a Gift",
-      "archangelSubLabel": "For the Architect of Their Day",
-      "archangelTitle": "The Archangel Program",
-      "archangelDesc": "All sessions included, every month. Up to 5 per day. No per-session fees, no counting credits. Auto-renews monthly. Cancel anytime.",
-      "archangelPrice": "$499",
-      "archangelPeriod": "/ month",
-      "archangelCta": "Subscribe Now",
-      "freeNote": "Your first shot is on us. No card required.",
-      "refundNote": "Not satisfied? Refund instantly. No forms, no emails, one click."
+      "body": "Everything is encrypted and anonymous. No names, no profiles, no data sold. Just you and honesty."
     },
     "auth": {
-      "heading1": "Your phone number is your security key.",
-      "heading2": "We hash it, never store it. This is how we shield your content from others.",
+      "heading1": "Get started",
+      "heading2": "Free. Private. No credit card.",
       "phonePlaceholder": "Phone number",
       "sendCode": "Send Code",
       "sending": "Sending...",
@@ -160,11 +64,8 @@
       "copyright": "© {year} Earnest Page. All rights reserved.",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
-      "acceptableUse": "Acceptable Use"
-    },
-    "disclaimer": {
-      "heading": "The Therapy Shot Reality Check",
-      "body": "This is not clinical psychotherapy, and we are not doctors. We don't do endless couches, co-pays, or open-ended venting. A Therapy Shot is a focused conversation with your Ideal Self — built from real psychology, tailored to your life. If you need a medical diagnosis or are in crisis, call a professional or dial 988. If you want a concentrated dose of clarity, step inside."
+      "acceptableUse": "Acceptable Use",
+      "disclaimer": "This is not a substitute for licensed therapy or psychiatric care. If you are in crisis, please contact the 988 Suicide & Crisis Lifeline."
     }
   },
   "dashboard": {
