@@ -14,6 +14,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     The_Inner_Mind: 'The Inner Mind',
     Quirks_and_Details: 'Quirks & Details',
     Order_and_Sanctuary: 'Order & Sanctuary',
+    The_World_I_Love: 'The World I Love',
 };
 
 export async function GET(req: Request) {
@@ -28,7 +29,7 @@ export async function GET(req: Request) {
         let cardsGenerated = 0;
 
         // Build list of eligible users with their digest data
-        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference; demographicHint: string; archetype: string; identityTitle: string; voiceId: string | null }[] = [];
+        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference; demographicHint: string; archetype: string; identityTitle: string; voiceId: string | null; nextRotationIndex: number }[] = [];
 
         for (const userDoc of usersSnapshot.docs) {
             const uid = userDoc.id;
@@ -91,8 +92,10 @@ export async function GET(req: Request) {
 
             if (allSubsections.length === 0) continue;
 
-            // Pick a random subsection
-            const pick = allSubsections[Math.floor(Math.random() * allSubsections.length)];
+            // Sequential rotation: advance to the next subsection, wrapping at the end
+            const lastIndex = typeof userData?.digest_rotation_index === 'number' ? userData.digest_rotation_index : -1;
+            const nextIndex = (lastIndex + 1) % allSubsections.length;
+            const pick = allSubsections[nextIndex];
 
             // Build demographic hint for image generation
             const identity = userData?.identity;
@@ -114,7 +117,7 @@ export async function GET(req: Request) {
 
             const voiceId = userData?.character_bible?.voice_id || null;
 
-            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle, voiceId });
+            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle, voiceId, nextRotationIndex: nextIndex });
         }
 
         // ─── BATCH PROCESSING: generate images in parallel groups of 5 ───
@@ -155,6 +158,7 @@ async function generateDigestCard(user: {
     archetype: string;
     identityTitle: string;
     voiceId: string | null;
+    nextRotationIndex: number;
 }): Promise<boolean> {
     // ─── IDEMPOTENCY CHECK ───
     // If this user already has a complete digest card for today, skip.
@@ -267,7 +271,7 @@ async function generateDigestCard(user: {
         updated_at: new Date().toISOString(),
     };
 
-    await user.ref.set({ daily_digest: digestCard }, { merge: true });
+    await user.ref.set({ daily_digest: digestCard, digest_rotation_index: user.nextRotationIndex }, { merge: true });
     return true;
 }
 

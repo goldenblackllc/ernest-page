@@ -19,24 +19,24 @@
     "hero": {
       "headline1": "Is something bothering you?",
       "headline2": "You're lucky.",
-      "subtext": "That frustration, that restlessness, that thing that won't leave you alone — it's not a problem. It's a signal. It's telling you what you actually want. We help you hear it."
+      "subtext": "There's nothing wrong with you. Feelings are your superpower. The worse you feel, the luckier you are. You're special. Discover what your feelings are telling you."
     },
     "signal": {
       "label": "How It Works",
       "step1Title": "Something's bothering you.",
       "step1Body": "A relationship that's off. A decision you can't make. A feeling you can't shake. That tension is valuable.",
-      "step2Title": "You tell us about it.",
-      "step2Body": "Not in a form. Not to a bot. A real conversation. You say what's actually going on, and we listen for what's underneath.",
+      "step2Title": "You say what's actually going on.",
+      "step2Body": "You talk about what's happening, and the thing underneath starts to surface.",
       "step3Title": "You see what you actually want.",
       "step3Body": "The feeling had a message. Once you hear it, you can't unhear it. What you do with it is up to you."
     },
     "worldview": {
-      "label": "What We Believe",
+      "label": "The Premise",
       "heading": "Your feelings aren't the problem.",
       "line1": "They're not something to manage.",
       "line2": "They're not something to fix.",
       "line3": "They're a signal — telling you exactly what you want.",
-      "line4": "Most people run from them. We help you listen."
+      "line4": "Most people run from them. The lucky ones listen."
     },
     "privacy": {
       "heading": "What you say stays here.",
@@ -44,7 +44,7 @@
     },
     "auth": {
       "heading1": "Get started",
-      "heading2": "Free. Private. No credit card.",
+      "heading2": "Private and anonymous.",
       "phonePlaceholder": "Phone number",
       "sendCode": "Send Code",
       "sending": "Sending...",
@@ -84,8 +84,9 @@
     "submitLabel": "Create My Character",
     "errorDefault": "Something went wrong. Please try again.",
     "identityForm": {
-      "visionTitle": "Who Do You Want to Be?",
-      "visionSub": "Don't think about it too hard. Just write.",
+      "setupLabel": "Before You Begin",
+      "visionTitle": "About You",
+      "visionSub": "So it's about your life, not someone else's.",
       "nameLabel": "Name your character",
       "nameOptional": "(optional — we'll create one if blank)",
       "namePlaceholder": "Leave blank to auto-generate",

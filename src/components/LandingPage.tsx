@@ -81,6 +81,7 @@ export function LandingPage() {
     const [showcasePosts, setShowcasePosts] = useState<any[]>([]);
     const [activeShowcaseIndex, setActiveShowcaseIndex] = useState(0);
     const [showcasePaused, setShowcasePaused] = useState(false);
+    const [showcaseAudioPlaying, setShowcaseAudioPlaying] = useState(false);
     const touchStartX = useRef<number | null>(null);
 
     useEffect(() => {
@@ -92,9 +93,9 @@ export function LandingPage() {
             .catch(() => {});
     }, []);
 
-    // Auto-advance the showcase every 6 seconds (paused when reading)
+    // Auto-advance the showcase every 6 seconds (paused when reading or audio is playing)
     useEffect(() => {
-        if (showcasePosts.length < 2 || showcasePaused) return;
+        if (showcasePosts.length < 2 || showcasePaused || showcaseAudioPlaying) return;
 
         const interval = setInterval(() => {
             setActiveShowcaseIndex(prev =>
@@ -103,7 +104,7 @@ export function LandingPage() {
         }, 6000);
 
         return () => clearInterval(interval);
-    }, [showcasePosts, showcasePaused]);
+    }, [showcasePosts, showcasePaused, showcaseAudioPlaying]);
 
     const handleSendCode = async () => {
         setError(null);
@@ -185,7 +186,7 @@ export function LandingPage() {
             </nav>
 
             {/* ═══════════════════════════════════════════════════════════
-                HERO + AUTH — One unit, above the fold
+                HERO — Headline + subtext only
                ═══════════════════════════════════════════════════════════ */}
             <section className="relative px-6 pt-28 sm:pt-32 pb-10 overflow-hidden">
                 {/* Background hero image with aggressive fade */}
@@ -218,7 +219,7 @@ export function LandingPage() {
                     </motion.h1>
 
                     <motion.p
-                        className="text-lg sm:text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-10"
+                        className="text-lg sm:text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto"
                         custom={2}
                         variants={fadeUp}
                         initial="hidden"
@@ -226,106 +227,6 @@ export function LandingPage() {
                     >
                         {t('landing.hero.subtext')}
                     </motion.p>
-
-                    {/* AUTH CARD — Inline with hero */}
-                    <motion.div
-                        className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950/80 backdrop-blur-sm p-8 sm:p-10"
-                        custom={3}
-                        variants={fadeUp}
-                        initial="hidden"
-                        animate="visible"
-                    >
-                        <div className="text-center mb-6">
-                            <h2 className="text-sm sm:text-base font-semibold tracking-tight text-zinc-300 mb-1">
-                                {t('landing.auth.heading1')}
-                            </h2>
-                            <p className="text-xs text-zinc-400">
-                                {t('landing.auth.heading2')}
-                            </p>
-                        </div>
-
-                        {error && (
-                            <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
-                                {error}
-                            </div>
-                        )}
-
-                        {step === 'WELCOME' && (
-                            <div className="flex flex-col gap-3">
-                                <div className="flex gap-2">
-                                    <CountryCodeSelect
-                                        value={selectedCountry}
-                                        onChange={setSelectedCountry}
-                                    />
-                                    <input
-                                        type="tel"
-                                        placeholder={t('landing.auth.phonePlaceholder')}
-                                        value={phoneNumber}
-                                        onChange={(e) => setPhoneNumber(e.target.value)}
-                                        className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleSendCode}
-                                    disabled={loading}
-                                    className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                                >
-                                    {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
-                                </button>
-
-                                <p className="text-[10px] text-zinc-600 text-center mt-2 leading-relaxed">
-                                    {t('landing.auth.byContinuing')}{' '}
-                                    <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
-                                        {t('landing.footer.terms')}
-                                    </Link>{' '}
-                                    {t('landing.auth.and')}{' '}
-                                    <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
-                                        {t('landing.footer.privacy')}
-                                    </Link>.
-                                </p>
-                            </div>
-                        )}
-
-                        {step === 'INPUT_CODE' && (
-                            <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
-                                <p className="text-xs text-zinc-400 text-center mb-2">
-                                    {t('landing.auth.codeSent')} <span className="text-white font-semibold">{displayNumber}</span>
-                                </p>
-                                <input
-                                    id="otp-code"
-                                    name="otp-code"
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    autoComplete="one-time-code"
-                                    placeholder={t('landing.auth.codePlaceholder')}
-                                    value={verificationCode}
-                                    onChange={(e) => setVerificationCode(e.target.value)}
-                                    className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                    maxLength={6}
-                                    autoFocus
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={loading || verificationCode.length < 6}
-                                    className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                                >
-                                    {loading ? t('landing.auth.verifying') : t('landing.auth.verify')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setStep('WELCOME');
-                                        setVerificationCode('');
-                                        setError(null);
-                                    }}
-                                    className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
-                                >
-                                    ← {t('landing.auth.wrongNumber')}
-                                </button>
-                            </form>
-                        )}
-                    </motion.div>
                 </div>
             </section>
 
@@ -365,6 +266,7 @@ export function LandingPage() {
                                 post={showcasePosts[activeShowcaseIndex]}
                                 onInteract={scrollToAuth}
                                 onExpandChange={setShowcasePaused}
+                                onAudioPlayingChange={setShowcaseAudioPlaying}
                             />
                         </div>
 
@@ -388,6 +290,110 @@ export function LandingPage() {
                     </div>
                 </section>
             )}
+
+            {/* ═══════════════════════════════════════════════════════════
+                AUTH — Sign up / Log in
+               ═══════════════════════════════════════════════════════════ */}
+            <section className="px-6 py-12 md:py-16">
+                <motion.div
+                    className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950/80 backdrop-blur-sm p-8 sm:p-10"
+                    variants={sectionFade}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-40px' }}
+                >
+                    <div className="text-center mb-6">
+                        <h2 className="text-sm sm:text-base font-semibold tracking-tight text-zinc-300 mb-1">
+                            {t('landing.auth.heading1')}
+                        </h2>
+                        <p className="text-xs text-zinc-400">
+                            {t('landing.auth.heading2')}
+                        </p>
+                    </div>
+
+                    {error && (
+                        <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
+                            {error}
+                        </div>
+                    )}
+
+                    {step === 'WELCOME' && (
+                        <div className="flex flex-col gap-3">
+                            <div className="flex gap-2">
+                                <CountryCodeSelect
+                                    value={selectedCountry}
+                                    onChange={setSelectedCountry}
+                                />
+                                <input
+                                    type="tel"
+                                    placeholder={t('landing.auth.phonePlaceholder')}
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                />
+                            </div>
+                            <button
+                                onClick={handleSendCode}
+                                disabled={loading}
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
+                            >
+                                {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
+                            </button>
+
+                            <p className="text-[10px] text-zinc-600 text-center mt-2 leading-relaxed">
+                                {t('landing.auth.byContinuing')}{' '}
+                                <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
+                                    {t('landing.footer.terms')}
+                                </Link>{' '}
+                                {t('landing.auth.and')}{' '}
+                                <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
+                                    {t('landing.footer.privacy')}
+                                </Link>.
+                            </p>
+                        </div>
+                    )}
+
+                    {step === 'INPUT_CODE' && (
+                        <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
+                            <p className="text-xs text-zinc-400 text-center mb-2">
+                                {t('landing.auth.codeSent')} <span className="text-white font-semibold">{displayNumber}</span>
+                            </p>
+                            <input
+                                id="otp-code"
+                                name="otp-code"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="one-time-code"
+                                placeholder={t('landing.auth.codePlaceholder')}
+                                value={verificationCode}
+                                onChange={(e) => setVerificationCode(e.target.value)}
+                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                maxLength={6}
+                                autoFocus
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading || verificationCode.length < 6}
+                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
+                            >
+                                {loading ? t('landing.auth.verifying') : t('landing.auth.verify')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setStep('WELCOME');
+                                    setVerificationCode('');
+                                    setError(null);
+                                }}
+                                className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
+                            >
+                                ← {t('landing.auth.wrongNumber')}
+                            </button>
+                        </form>
+                    )}
+                </motion.div>
+            </section>
 
             <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
 

@@ -93,9 +93,17 @@ export function IdentityForm({
                 {step === 1 && (
                     <div className="flex flex-col gap-5 flex-1">
                         {showHeadings && (
-                            <h2 className="text-2xl font-black tracking-tight">
-                                {t('onboarding.identityForm.visionTitle')}
-                            </h2>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-semibold mb-2">
+                                    {t('onboarding.identityForm.setupLabel')}
+                                </p>
+                                <h2 className="text-2xl font-black tracking-tight mb-1">
+                                    {t('onboarding.identityForm.visionTitle')}
+                                </h2>
+                                <p className="text-sm text-zinc-500">
+                                    {t('onboarding.identityForm.visionSub')}
+                                </p>
+                            </div>
                         )}
 
                         <div>

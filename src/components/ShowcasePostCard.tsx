@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { User, Heart, MessageCircle, Clock, Play, Pause, Volume2, VolumeX, RotateCcw } from "lucide-react";
+import { User, Heart, MessageCircle, Clock, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import { useAudioMute, PAUSE_ALL_AUDIO_EVENT } from "@/context/AudioMuteContext";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
@@ -20,6 +20,7 @@ interface ShowcasePost {
     user_photo_url?: string | null;
     audio_url?: string | null;
     audio_letter_ratio?: number | null;
+    audio_word_timestamps?: { word: string; start: number; end: number }[] | null;
     directive_title?: string | null;
     unexpected_yield?: string | null;
     author_avatar_url?: string | null;
@@ -32,6 +33,7 @@ interface ShowcasePostCardProps {
     post: ShowcasePost;
     onInteract: () => void;
     onExpandChange?: (expanded: boolean) => void;
+    onAudioPlayingChange?: (isPlaying: boolean) => void;
 }
 
 function timeAgo(seconds: number): string {
@@ -44,7 +46,7 @@ function timeAgo(seconds: number): string {
     return `${Math.floor(diff / 604800)}w ago`;
 }
 
-export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcasePostCardProps) {
+export function ShowcasePostCard({ post, onInteract, onExpandChange, onAudioPlayingChange }: ShowcasePostCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const pseudonym = post.pseudonym || 'Anonymous';
     const isRealityShift = post.post_type === 'reality_shift';
@@ -169,6 +171,11 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
         }
     }, [isMuted]);
 
+    // Notify parent when audio playing state changes (for carousel pause)
+    useEffect(() => {
+        onAudioPlayingChange?.(isPlaying);
+    }, [isPlaying, onAudioPlayingChange]);
+
     // Parse letter: extract greeting and body
     let greeting: string | null = null;
     let letterBody = rawLetter;
@@ -191,26 +198,154 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
 
     // ═══ SHORT-FORM VIDEO MODE ═══
     if (canPlayShort) {
-        const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {
-            const words = text.replace(/\n+/g, ' ').split(/\s+/).filter(w => w);
-            const chunks: string[] = [];
-            for (let i = 0; i < words.length; i += wordsPerChunk) {
-                chunks.push(words.slice(i, i + wordsPerChunk).join(' '));
+        // Sentence-boundary chunking — matches FeedPostCard behavior
+        const chunkText = (text: string, targetWords: number = 35): string[] => {
+            const cleaned = text.replace(/\n+/g, ' ').trim();
+            if (!cleaned) return [''];
+
+            const sentencePattern = /[^.!?]*[.!?]+[\s]*/g;
+            const sentences = cleaned.match(sentencePattern);
+            if (!sentences || sentences.length === 0) return [cleaned];
+
+            // Capture trailing text after last sentence boundary
+            const matchedLength = sentences.reduce((sum, s) => sum + s.length, 0);
+            if (matchedLength < cleaned.length) {
+                sentences.push(cleaned.slice(matchedLength));
             }
+
+            const chunks: string[] = [];
+            let current = '';
+            let wordCount = 0;
+
+            for (const sentence of sentences) {
+                const sentenceWords = sentence.trim().split(/\s+/).filter(w => w).length;
+                if (wordCount > 0 && wordCount + sentenceWords > targetWords) {
+                    chunks.push(current.trim());
+                    current = sentence;
+                    wordCount = sentenceWords;
+                } else {
+                    current += sentence;
+                    wordCount += sentenceWords;
+                }
+            }
+            if (current.trim()) chunks.push(current.trim());
             return chunks.length > 0 ? chunks : [''];
         };
 
         const letterChunks = chunkText(rawLetter);
         const responseChunks = chunkText(rawResponse.replace(/^THE COUNSEL:\s*/i, ''));
+        const allChunks = [...letterChunks, ...responseChunks];
 
+        // Build timestamp-based chunks at sentence boundaries if word timestamps are available
+        const wordTimestamps = post.audio_word_timestamps;
+        const timestampChunks: { text: string; start: number; end: number }[] | null = (() => {
+            if (!wordTimestamps || wordTimestamps.length === 0) return null;
+
+            // Filter out ellipsis tokens that leak from TTS separators
+            const filtered = wordTimestamps.filter((w) => w.word !== '...' && w.word !== '\u2026');
+            if (filtered.length === 0) return null;
+
+            // Determine letter/response boundary from word ratio
+            const splitIndex = Math.round(filtered.length * computedLetterRatio);
+
+            const chunks: { text: string; start: number; end: number }[] = [];
+            const tgtWords = 35;
+            const hardCeiling = Math.ceil(tgtWords * 1.5);
+            let chunkStart = 0;
+
+            for (let i = 0; i < filtered.length; i++) {
+                const wc = i - chunkStart + 1;
+                const word = filtered[i].word;
+                const isSentenceEnd = /[.!?]/.test(word);
+                const isNaturalPause = /[,;\u2014\u2013\-]/.test(word);
+                const isLastWord = i === filtered.length - 1;
+                const isLetterEnd = splitIndex > 0 && i === splitIndex - 1;
+
+                const shouldBreak =
+                    (isSentenceEnd && wc >= tgtWords) ||
+                    isLetterEnd ||
+                    (isNaturalPause && wc >= hardCeiling) ||
+                    (wc >= hardCeiling) ||
+                    isLastWord;
+
+                if (shouldBreak) {
+                    const group = filtered.slice(chunkStart, i + 1);
+                    let text = group.map((w) => w.word).join(' ');
+                    text = text.replace(/\b(Sincerely,)\s+/i, '$1\n');
+                    text = text.replace(/^(Dear\s+[^,]+,)\s+/i, '$1\n');
+                    chunks.push({
+                        text,
+                        start: group[0].start,
+                        end: group[group.length - 1].end,
+                    });
+                    chunkStart = i + 1;
+                }
+            }
+            return chunks;
+        })();
+
+        // Calculate which subtitle line to show based on audio progress
         const getCurrentSubtitle = () => {
-            if (audioPhase === 'idle' && !isPlaying) return null;
+            // When not playing, show the first chunk as a readable preview
+            if (audioPhase === 'idle' && !isPlaying) {
+                if (timestampChunks && timestampChunks.length > 0) {
+                    return { current: timestampChunks[0].text, next: timestampChunks[1]?.text || '', lineIndex: 0, totalLines: timestampChunks.length };
+                }
+                if (allChunks.length > 0) {
+                    return { current: allChunks[0], next: allChunks[1] || '', lineIndex: 0, totalLines: allChunks.length };
+                }
+                return null;
+            }
+
+            // ── Timestamp-based sync (precise) ──
+            if (timestampChunks && audioRef.current) {
+                const currentTime = audioRef.current.currentTime;
+                let chunkIndex = 0;
+                for (let i = 0; i < timestampChunks.length; i++) {
+                    if (currentTime >= timestampChunks[i].start) {
+                        chunkIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+                const cur = timestampChunks[chunkIndex]?.text || '';
+                const nxt = timestampChunks[chunkIndex + 1]?.text || '';
+                return { current: cur, next: nxt, lineIndex: chunkIndex, totalLines: timestampChunks.length };
+            }
+
+            // ── Fallback: word-count-weighted estimate (for older posts) ──
             const lines = audioPhase === 'response' ? responseChunks : letterChunks;
             if (lines.length === 0) return null;
-            const lineIndex = Math.min(Math.floor(audioProgress * lines.length), lines.length - 1);
-            const current = lines[lineIndex] || '';
-            const next = lines[lineIndex + 1] || '';
-            return { current, next, lineIndex, totalLines: lines.length };
+
+            let phaseProgress: number;
+            if (audioPhase === 'letter') {
+                phaseProgress = computedLetterRatio > 0
+                    ? Math.min(audioProgress / computedLetterRatio, 1)
+                    : 0;
+            } else {
+                const responseRange = 1 - computedLetterRatio;
+                phaseProgress = responseRange > 0
+                    ? Math.min((audioProgress - computedLetterRatio) / responseRange, 1)
+                    : 0;
+            }
+
+            const wordCounts = lines.map(l => l.split(/\s+/).length);
+            const totalWords = wordCounts.reduce((a, b) => a + b, 0);
+            let cumulative = 0;
+            let lineIndex = 0;
+            for (let i = 0; i < lines.length; i++) {
+                cumulative += wordCounts[i] / totalWords;
+                if (phaseProgress < cumulative) {
+                    lineIndex = i;
+                    break;
+                }
+                lineIndex = i;
+            }
+
+            const cur = lines[lineIndex] || '';
+            const nxt = lines[lineIndex + 1] || '';
+            const globalLineIndex = audioPhase === 'response' ? letterChunks.length + lineIndex : lineIndex;
+            return { current: cur, next: nxt, lineIndex: globalLineIndex, totalLines: allChunks.length };
         };
 
         const subtitle = getCurrentSubtitle();
@@ -222,6 +357,7 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
                     className="relative w-full cursor-pointer overflow-hidden"
                     style={{ aspectRatio: '4 / 5' }}
                     onClick={toggleAudio}
+                    title="Tap to pause/resume"
                 >
                     {/* Hero image as full background */}
                     <img
@@ -234,7 +370,7 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
 
                     {/* Top: Author + Title */}
-                    <div className="absolute top-0 left-0 right-0 p-4 z-10">
+                    <div className="absolute top-0 left-0 right-0 p-4 z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
                         {/* Author row */}
                         <div className="flex items-center gap-2.5 mb-3">
                             <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
@@ -252,34 +388,17 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
                                     <span className="text-[10px] text-white/50">{timestamp}</span>
                                 )}
                             </div>
-                            {/* Mute toggle + phase indicator */}
-                            {isPlaying && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
-                                >
-                                    {isMuted ? (
-                                        <VolumeX className="w-3 h-3 text-white/70" />
-                                    ) : (
-                                        <Volume2 className="w-3 h-3 text-white animate-pulse" />
-                                    )}
-                                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                                        {audioPhase === 'letter' ? 'Letter' : 'Response'}
-                                    </span>
-                                </button>
-                            )}
-                            {!isPlaying && canPlayShort && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                                    className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
-                                >
-                                    {isMuted ? (
-                                        <VolumeX className="w-3.5 h-3.5 text-white/50" />
-                                    ) : (
-                                        <Volume2 className="w-3.5 h-3.5 text-white/50" />
-                                    )}
-                                </button>
-                            )}
+                            {/* Mute toggle — always visible, matching feed style */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
+                            >
+                                {isMuted ? (
+                                    <VolumeX className="w-3.5 h-3.5 text-white/70" />
+                                ) : (
+                                    <Volume2 className="w-3.5 h-3.5 text-white animate-pulse" />
+                                )}
+                            </button>
                         </div>
 
                         {/* Title */}
@@ -290,52 +409,13 @@ export function ShowcasePostCard({ post, onInteract, onExpandChange }: ShowcaseP
                         )}
                     </div>
 
-                    {/* Center: Play button (shown when paused) */}
-                    {!isPlaying && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-transform hover:scale-110">
-                                <Play className="w-7 h-7 text-white ml-1" />
-                            </div>
+                    {/* Center: Subtitle text — matching FeedPostCard layout */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
+                        <div className={`text-center max-w-[92%] transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
+                            <p className="text-[1.35rem] sm:text-3xl lg:text-4xl font-bold text-white leading-tight" style={{ whiteSpace: 'pre-line', textShadow: '-1px -1px 0 rgba(0,0,0,0.85), 1px -1px 0 rgba(0,0,0,0.85), -1px 1px 0 rgba(0,0,0,0.85), 1px 1px 0 rgba(0,0,0,0.85), 0 2px 4px rgba(0,0,0,0.4)' }}>
+                                {subtitle?.current || '\u00A0'}
+                            </p>
                         </div>
-                    )}
-
-                    {/* Bottom: Subtitle text */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 z-10">
-                        {subtitle ? (
-                            <div className="space-y-1.5">
-                                <p className="text-[15px] font-medium text-white leading-snug drop-shadow-lg transition-all duration-300">
-                                    {subtitle.current}
-                                </p>
-                                {subtitle.next && (
-                                    <p className="text-[13px] text-white/40 leading-snug drop-shadow-lg transition-all duration-300">
-                                        {subtitle.next}
-                                    </p>
-                                )}
-                                {/* Line progress dots */}
-                                <div className="flex items-center gap-0.5 pt-2">
-                                    {Array.from({ length: Math.min(subtitle.totalLines, 20) }).map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={cn(
-                                                "h-0.5 rounded-full transition-all duration-200",
-                                                i <= subtitle.lineIndex ? "bg-white/80" : "bg-white/20",
-                                                i === subtitle.lineIndex ? "flex-[2]" : "flex-1"
-                                            )}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            /* Static preview when not playing */
-                            <div>
-                                <p className="text-[13px] text-white/60 leading-snug drop-shadow-lg line-clamp-2">
-                                    {letterChunks[0]}
-                                </p>
-                                <p className="text-[11px] text-white/30 mt-1.5 uppercase tracking-widest font-bold">
-                                    Tap to listen
-                                </p>
-                            </div>
-                        )}
                     </div>
 
                     {/* Progress bar */}
