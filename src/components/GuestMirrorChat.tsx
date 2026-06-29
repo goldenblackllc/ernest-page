@@ -322,14 +322,9 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
             </div>
 
             {/* ── Messages area ── */}
-            <div ref={scrollRef} className={`overflow-y-auto p-5 sm:p-8 space-y-3 ${messages.length > 0 ? 'flex-1 max-h-[500px] min-h-[200px]' : ''}`}>
+            <div ref={scrollRef} className={`overflow-y-auto space-y-3 ${messages.length > 0 ? 'flex-1 max-h-[500px] min-h-[200px] p-5 sm:p-8' : 'p-0'}`}>
 
-                {/* Empty state */}
-                {messages.length === 0 && !isLoading && (
-                    <div className="flex flex-col items-center justify-center gap-1 py-4 opacity-60">
-                        <p className="text-sm text-zinc-500">Say what's on your mind.</p>
-                    </div>
-                )}
+
 
                 {/* Messages — filter out held message */}
                 <AnimatePresence mode="popLayout">
@@ -408,7 +403,7 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                         placeholder="What's on your mind?"
                         disabled={isLoading}
                         rows={1}
-                        className="w-full bg-transparent text-white px-1 pr-12 min-h-[44px] max-h-[120px] resize-none focus:outline-none placeholder:text-zinc-600 text-base leading-relaxed"
+                        className="w-full bg-transparent text-white px-1 pr-12 min-h-[44px] max-h-[120px] resize-none focus:outline-none placeholder:text-zinc-400 text-base leading-relaxed"
                     />
                     <div className="absolute right-3 bottom-3">
                         <button

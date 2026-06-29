@@ -5,7 +5,7 @@ import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
@@ -46,6 +46,7 @@ const sectionFade = {
 export function LandingPage() {
     const t = useTranslations();
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [showAuthModal, setShowAuthModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
 
     const [step, setStep] = useState<'WELCOME' | 'INPUT_CODE'>('WELCOME');
@@ -123,9 +124,8 @@ export function LandingPage() {
 
     const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber, detectedDialCode) : '';
 
-    const scrollToAuth = () => {
-        document.getElementById('landing-auth')?.scrollIntoView({ behavior: 'smooth' });
-    };
+    const openAuthModal = () => setShowAuthModal(true);
+    const closeAuthModal = () => setShowAuthModal(false);
 
     return (
         <main className="min-h-screen bg-black text-white scroll-smooth overflow-x-hidden">
@@ -137,7 +137,7 @@ export function LandingPage() {
                     <div className="flex items-center gap-3 sm:gap-4">
                         <LocaleSwitcher className="w-20 sm:w-24 border-none bg-transparent hover:bg-white/5" />
                         <button
-                            onClick={scrollToAuth}
+                            onClick={openAuthModal}
                             className="rounded-full bg-white text-black px-5 py-2 text-sm font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
                         >
                             {t('landing.nav.login')}
@@ -188,108 +188,131 @@ export function LandingPage() {
             </section>
 
             {/* ═══════════════════════════════════════════════════════════
-                CTA DIVIDER — Log in prompt
+                AUTH MODAL — Triggered by nav "Log in" button
                ═══════════════════════════════════════════════════════════ */}
-            <section id="landing-auth" className="px-6 py-12 md:py-16">
-                <motion.div
-                    className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950/80 backdrop-blur-sm p-8 sm:p-10"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-40px' }}
-                >
-                    <div className="text-center mb-6">
-                        <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-100 mb-1">
-                            Want your own Earnest?
-                        </h2>
-                        <p className="text-sm text-zinc-500">
-                            Log in to build yours.
-                        </p>
-                    </div>
+            <AnimatePresence>
+                {showAuthModal && (
+                    <motion.div
+                        className="fixed inset-0 z-[60] flex items-center justify-center px-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                            onClick={closeAuthModal}
+                        />
 
-                    {error && (
-                        <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
-                            {error}
-                        </div>
-                    )}
+                        {/* Modal */}
+                        <motion.div
+                            className="relative max-w-md w-full rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 sm:p-10"
+                            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                            {/* Close button */}
+                            <button
+                                onClick={closeAuthModal}
+                                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5"
+                                aria-label="Close"
+                            >
+                                ✕
+                            </button>
 
-                    {step === 'WELCOME' && (
-                        <div className="flex flex-col gap-3">
-                            <div className="flex gap-2">
-                                <CountryCodeSelect
-                                    value={selectedCountry}
-                                    onChange={setSelectedCountry}
-                                />
-                                <input
-                                    type="tel"
-                                    placeholder={t('landing.auth.phonePlaceholder')}
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                />
+                            <div className="text-center mb-6">
+                                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-100 mb-1">
+                                    {t('landing.nav.login')}
+                                </h2>
                             </div>
-                            <button
-                                onClick={handleSendCode}
-                                disabled={loading}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                            >
-                                {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
-                            </button>
 
-                            <p className="text-[10px] text-zinc-600 text-center mt-2 leading-relaxed">
-                                {t('landing.auth.byContinuing')}{' '}
-                                <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
-                                    {t('landing.footer.terms')}
-                                </Link>{' '}
-                                {t('landing.auth.and')}{' '}
-                                <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
-                                    {t('landing.footer.privacy')}
-                                </Link>.
-                            </p>
-                        </div>
-                    )}
+                            {error && (
+                                <div className="text-red-400 text-xs font-medium p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
+                                    {error}
+                                </div>
+                            )}
 
-                    {step === 'INPUT_CODE' && (
-                        <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
-                            <p className="text-xs text-zinc-400 text-center mb-2">
-                                {t('landing.auth.codeSent')} <span className="text-white font-semibold">{displayNumber}</span>
-                            </p>
-                            <input
-                                id="otp-code"
-                                name="otp-code"
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                autoComplete="one-time-code"
-                                placeholder={t('landing.auth.codePlaceholder')}
-                                value={verificationCode}
-                                onChange={(e) => setVerificationCode(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
-                                maxLength={6}
-                                autoFocus
-                            />
-                            <button
-                                type="submit"
-                                disabled={loading || verificationCode.length < 6}
-                                className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
-                            >
-                                {loading ? t('landing.auth.verifying') : t('landing.auth.verify')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setStep('WELCOME');
-                                    setVerificationCode('');
-                                    setError(null);
-                                }}
-                                className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
-                            >
-                                ← {t('landing.auth.wrongNumber')}
-                            </button>
-                        </form>
-                    )}
-                </motion.div>
-            </section>
+                            {step === 'WELCOME' && (
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex gap-2">
+                                        <CountryCodeSelect
+                                            value={selectedCountry}
+                                            onChange={setSelectedCountry}
+                                        />
+                                        <input
+                                            type="tel"
+                                            placeholder={t('landing.auth.phonePlaceholder')}
+                                            value={phoneNumber}
+                                            onChange={(e) => setPhoneNumber(e.target.value)}
+                                            className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleSendCode}
+                                        disabled={loading}
+                                        className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
+                                    >
+                                        {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
+                                    </button>
+
+                                    <p className="text-[10px] text-zinc-600 text-center mt-2 leading-relaxed">
+                                        {t('landing.auth.byContinuing')}{' '}
+                                        <Link href="/terms" className="underline hover:text-zinc-400 transition-colors">
+                                            {t('landing.footer.terms')}
+                                        </Link>{' '}
+                                        {t('landing.auth.and')}{' '}
+                                        <Link href="/privacy" className="underline hover:text-zinc-400 transition-colors">
+                                            {t('landing.footer.privacy')}
+                                        </Link>.
+                                    </p>
+                                </div>
+                            )}
+
+                            {step === 'INPUT_CODE' && (
+                                <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }} className="flex flex-col gap-3">
+                                    <p className="text-xs text-zinc-400 text-center mb-2">
+                                        {t('landing.auth.codeSent')} <span className="text-white font-semibold">{displayNumber}</span>
+                                    </p>
+                                    <input
+                                        id="otp-code"
+                                        name="otp-code"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        autoComplete="one-time-code"
+                                        placeholder={t('landing.auth.codePlaceholder')}
+                                        value={verificationCode}
+                                        onChange={(e) => setVerificationCode(e.target.value)}
+                                        className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                        maxLength={6}
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={loading || verificationCode.length < 6}
+                                        className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
+                                    >
+                                        {loading ? t('landing.auth.verifying') : t('landing.auth.verify')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStep('WELCOME');
+                                            setVerificationCode('');
+                                            setError(null);
+                                        }}
+                                        className="text-zinc-500 text-xs mt-2 text-center hover:text-white transition-colors duration-150"
+                                    >
+                                        ← {t('landing.auth.wrongNumber')}
+                                    </button>
+                                </form>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ═══════════════════════════════════════════════════════════
                 PUBLIC FEED — Read-only infinite scroll
