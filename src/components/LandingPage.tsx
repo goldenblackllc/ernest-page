@@ -127,6 +127,12 @@ export function LandingPage() {
     const openAuthModal = () => setShowAuthModal(true);
     const closeAuthModal = () => setShowAuthModal(false);
 
+    useEffect(() => {
+        const handleOpenModal = () => openAuthModal();
+        window.addEventListener('open-auth-modal', handleOpenModal);
+        return () => window.removeEventListener('open-auth-modal', handleOpenModal);
+    }, []);
+
     return (
         <main className="min-h-screen bg-black text-white scroll-smooth overflow-x-hidden">
 

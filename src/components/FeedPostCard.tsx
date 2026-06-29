@@ -395,7 +395,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     }, [post.comments, commentsLoaded, fetchComments]);
 
     const submitComment = async () => {
-        if (!user || !commentText.trim() || isSubmittingComment) return;
+        if (!user) {
+            window.dispatchEvent(new CustomEvent('open-auth-modal'));
+            return;
+        }
+        if (!commentText.trim() || isSubmittingComment) return;
         setIsSubmittingComment(true);
         try {
             const idToken = await user.getIdToken();
@@ -480,7 +484,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     };
 
     const toggleLike = async () => {
-        if (!user) return;
+        if (!user) {
+            window.dispatchEvent(new CustomEvent('open-auth-modal'));
+            return;
+        }
         setLocalLiked(true);
         try {
             const idToken = await user.getIdToken();
@@ -1278,7 +1285,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         {c.is_mine && (
                                             <button
                                                 onClick={async () => {
-                                                    if (!user) return;
+                                                    if (!user) {
+                                                        window.dispatchEvent(new CustomEvent('open-auth-modal'));
+                                                        return;
+                                                    }
                                                     setComments(prev => prev.filter(x => x.id !== c.id));
                                                     try {
                                                         const idToken = await user.getIdToken();
@@ -1816,7 +1826,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         {c.is_mine && (
                                             <button
                                                 onClick={async () => {
-                                                    if (!user) return;
+                                                    if (!user) {
+                                                        window.dispatchEvent(new CustomEvent('open-auth-modal'));
+                                                        return;
+                                                    }
                                                     setComments(prev => prev.filter(x => x.id !== c.id));
                                                     try {
                                                         const idToken = await user.getIdToken();
