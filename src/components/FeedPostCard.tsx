@@ -24,7 +24,7 @@ interface ConversationMessage {
 interface FeedPostProps {
     post: {
         id: string;
-        uid: string;
+        uid?: string;
         authorId?: string;
         type: 'checkin';
         post_type?: 'reality_shift';
@@ -56,7 +56,7 @@ interface FeedPostProps {
         sponsored_link?: string;
         region?: string;
         language?: string;
-        created_at: Timestamp;
+        created_at: Timestamp | { _seconds: number; _nanoseconds?: number } | null;
         is_public?: boolean;
         visibility?: 'private' | 'community' | 'public';
         isLikedByMe?: boolean;
@@ -74,9 +74,21 @@ interface FeedPostProps {
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
     onRequestDelete?: (postId: string) => void;
+    onAudioPlayingChange?: (isPlaying: boolean) => void;
 }
 
-export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelete }: FeedPostProps) {
+export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelete, onAudioPlayingChange }: FeedPostProps) {
+    // Helper: convert created_at (Timestamp | plain object | null) to Date
+    const createdAtDate = (() => {
+        if (!post.created_at) return null;
+        if ('toDate' in post.created_at && typeof post.created_at.toDate === 'function') {
+            return post.created_at.toDate();
+        }
+        if ('_seconds' in post.created_at) {
+            return new Date(post.created_at._seconds * 1000);
+        }
+        return null;
+    })();
     const [isResponseExpanded, setIsResponseExpanded] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -327,6 +339,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         return () => window.removeEventListener(PAUSE_ALL_AUDIO_EVENT, handlePauseAll);
     }, []);
 
+    // Notify parent when audio playing state changes (e.g. for carousel pause)
+    useEffect(() => {
+        onAudioPlayingChange?.(isPlaying);
+    }, [isPlaying, onAudioPlayingChange]);
+
     const [translatedData, setTranslatedData] = useState<any>(post._translated || post.translations?.[locale] || null);
 
 
@@ -443,7 +460,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const publicPseudonym = post.public_post?.pseudonym || post.pseudonym || "Anonymous";
     const publicTitle = translatedData?.title || post.public_post?.title || post.title;
 
-    const timeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : t('justNow');
+    const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : t('justNow');
 
     const handleDelete = () => onRequestDelete?.(post.id);
 
@@ -484,7 +501,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
     // Reality Shift posts (must check BEFORE the letter/response null guard)
     if (post.post_type === 'reality_shift') {
-        const shiftTimeAgo = post.created_at ? formatDistanceToNow(post.created_at.toDate(), { addSuffix: true }) : t('justNow');
+        const shiftTimeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : t('justNow');
         const yieldText = translatedData?.unexpected_yield || post.unexpected_yield || '';
         const isLongYield = yieldText.length > 280;
 

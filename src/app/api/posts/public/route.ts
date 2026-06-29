@@ -1,21 +1,36 @@
 import { db } from "@/lib/firebase/admin";
+import { Timestamp } from "firebase-admin/firestore";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const SHOWCASE_LIMIT = 5;
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 20;
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        // Fetch posts with visibility === 'public' (landing page showcase)
-        const snap = await db.collection('posts')
+        const url = new URL(req.url);
+        const cursorParam = url.searchParams.get('cursor');
+        const limitParam = url.searchParams.get('limit');
+        const limit = Math.min(Math.max(parseInt(limitParam || '', 10) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+
+        let query = db.collection('posts')
             .where('visibility', '==', 'public')
-            .orderBy('created_at', 'desc')
-            .limit(SHOWCASE_LIMIT)
-            .get();
+            .orderBy('created_at', 'desc');
+
+        // Cursor-based pagination: fetch posts older than the cursor
+        if (cursorParam) {
+            const cursorSeconds = parseInt(cursorParam, 10);
+            if (!isNaN(cursorSeconds)) {
+                query = query.startAfter(Timestamp.fromMillis(cursorSeconds * 1000));
+            }
+        }
+
+        query = query.limit(limit);
+        const snap = await query.get();
 
         if (snap.empty) {
-            return Response.json({ posts: [] });
+            return Response.json({ posts: [], nextCursor: null });
         }
 
         // Batch-fetch author avatars
@@ -68,7 +83,13 @@ export async function GET() {
             };
         });
 
-        return Response.json({ posts });
+        // Determine next cursor from the last post
+        const lastPost = posts[posts.length - 1];
+        const nextCursor = posts.length >= limit && lastPost?.created_at
+            ? lastPost.created_at._seconds
+            : null;
+
+        return Response.json({ posts, nextCursor });
     } catch (error: any) {
         console.error("[Public Posts API] Error:", error);
         return Response.json({ error: error.message }, { status: 500 });

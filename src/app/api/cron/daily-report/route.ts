@@ -59,6 +59,12 @@ export async function GET(req: Request) {
             .get();
         const postsCreated = postsSnapshot.size;
 
+        // Guest sessions in last 24h
+        const guestSessionsSnapshot = await db.collection('guest_sessions')
+            .where('lastActivity', '>=', yesterday)
+            .get();
+        const guestSessions = guestSessionsSnapshot.size;
+
         // Funnel metrics — unique visitors, landing views, logins
         // Read only yesterday's funnel doc (the cron runs at 8am UTC, so
         // yesterday is the complete 24h window we care about).
@@ -184,6 +190,10 @@ export async function GET(req: Request) {
             <td style="padding: 10px 0; color: #a1a1aa;">Posts Created (24h)</td>
             <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${postsCreated}</td>
         </tr>
+        <tr style="border-bottom: 1px solid #27272a;">
+            <td style="padding: 10px 0; color: #a1a1aa;">Guest Sessions (24h)</td>
+            <td style="padding: 10px 0; text-align: right; color: #60a5fa; font-weight: 600;">${guestSessions}</td>
+        </tr>
     </table>
 
     <div style="margin: 20px 0 0 0; padding: 16px; border: 1px solid #27272a; border-radius: 10px;">
@@ -251,7 +261,7 @@ export async function GET(req: Request) {
             return NextResponse.json({
                 success: true,
                 warning: 'GMAIL_APP_PASSWORD not configured. Report logged to console.',
-                metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, uniqueVisitors, landingViews, funnelLogins },
+                metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, guestSessions, uniqueVisitors, landingViews, funnelLogins },
             });
         }
 
@@ -266,7 +276,7 @@ export async function GET(req: Request) {
         await transporter.sendMail({
             from: `Earnest Page <${ADMIN_EMAIL}>`,
             to: ADMIN_EMAIL,
-            subject: `📊 Daily Report — ${newSignups} new · ${uniqueVisitors} visitors · ${funnelLogins} logins · ${postsCreated} posts`,
+            subject: `📊 Daily Report — ${newSignups} new · ${uniqueVisitors} visitors · ${guestSessions} guest chats · ${funnelLogins} logins · ${postsCreated} posts`,
             html: htmlReport,
         });
 
@@ -274,7 +284,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({
             success: true,
-            metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, uniqueVisitors, landingViews, funnelLogins },
+            metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, guestSessions, uniqueVisitors, landingViews, funnelLogins },
         });
 
     } catch (error: any) {

@@ -6,15 +6,14 @@ import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Shield } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
 import { useEffect } from 'react';
 import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
-import { ShowcasePostCard } from '@/components/ShowcasePostCard';
+import { GuestMirrorChat } from '@/components/GuestMirrorChat';
+import { PublicFeed } from '@/components/PublicFeed';
 
 // ─── Phone Number Normalization ────────────────────────────────────
 function normalizePhoneNumber(input: string, dialCode: string): string {
@@ -30,15 +29,6 @@ const fadeUp = {
         opacity: 1,
         y: 0,
         transition: { delay: i * 0.12, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
-    }),
-};
-
-const cardReveal = {
-    hidden: { opacity: 0, y: 32 },
-    visible: (i: number) => ({
-        opacity: 1,
-        y: 0,
-        transition: { delay: 0.1 + i * 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
     }),
 };
 
@@ -76,35 +66,6 @@ export function LandingPage() {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const router = useRouter();
-
-    // ── Showcase: public posts carousel ──
-    const [showcasePosts, setShowcasePosts] = useState<any[]>([]);
-    const [activeShowcaseIndex, setActiveShowcaseIndex] = useState(0);
-    const [showcasePaused, setShowcasePaused] = useState(false);
-    const [showcaseAudioPlaying, setShowcaseAudioPlaying] = useState(false);
-    const touchStartX = useRef<number | null>(null);
-
-    useEffect(() => {
-        fetch('/api/posts/public')
-            .then(res => res.json())
-            .then(data => {
-                if (data.posts?.length) setShowcasePosts(data.posts);
-            })
-            .catch(() => {});
-    }, []);
-
-    // Auto-advance the showcase every 6 seconds (paused when reading or audio is playing)
-    useEffect(() => {
-        if (showcasePosts.length < 2 || showcasePaused || showcaseAudioPlaying) return;
-
-        const interval = setInterval(() => {
-            setActiveShowcaseIndex(prev =>
-                prev >= showcasePosts.length - 1 ? 0 : prev + 1
-            );
-        }, 6000);
-
-        return () => clearInterval(interval);
-    }, [showcasePosts, showcasePaused, showcaseAudioPlaying]);
 
     const handleSendCode = async () => {
         setError(null);
@@ -163,7 +124,7 @@ export function LandingPage() {
     const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber, detectedDialCode) : '';
 
     const scrollToAuth = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('landing-auth')?.scrollIntoView({ behavior: 'smooth' });
     };
 
     return (
@@ -186,115 +147,50 @@ export function LandingPage() {
             </nav>
 
             {/* ═══════════════════════════════════════════════════════════
-                HERO — Headline + subtext only
+                HERO — Compact headline
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 pt-28 sm:pt-32 pb-10 overflow-hidden">
-                {/* Background hero image with aggressive fade */}
-                <div className="absolute inset-0 z-0">
-                    <Image
-                        src="/img/shots-hero.png"
-                        alt=""
-                        fill
-                        className="object-cover object-center"
-                        style={{
-                            opacity: 0.25,
-                            maskImage: 'radial-gradient(ellipse at center, black 20%, transparent 70%)',
-                            WebkitMaskImage: 'radial-gradient(ellipse at center, black 20%, transparent 70%)',
-                        }}
-                        priority
-                    />
-                </div>
-
-                <div className="relative z-10 max-w-3xl mx-auto w-full text-center">
+            <section className="relative px-6 pt-28 sm:pt-32 pb-6 sm:pb-8">
+                <div className="relative z-10 max-w-2xl mx-auto w-full text-center">
                     <motion.h1
-                        className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6 break-words"
+                        className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.08] mb-3"
                         custom={1}
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
                     >
-                        {t('landing.hero.headline1')}{' '}
-                        <br className="hidden sm:block" />
-                        <span className="text-zinc-500">{t('landing.hero.headline2')}</span>
+                        Something bothering you?
                     </motion.h1>
 
                     <motion.p
-                        className="text-lg sm:text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto"
+                        className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-zinc-500 leading-[1.08]"
                         custom={2}
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
                     >
-                        {t('landing.hero.subtext')}
+                        Ask Earnest.
                     </motion.p>
                 </div>
             </section>
 
             {/* ═══════════════════════════════════════════════════════════
-                SHOWCASE — Real public posts from inside the app
+                DEMO CHAT — Inline guest chat session
                ═══════════════════════════════════════════════════════════ */}
-            {showcasePosts.length > 0 && (
-                <section className="relative py-6 md:py-10 overflow-hidden">
-                    <div className="max-w-2xl mx-auto px-4 sm:px-6">
-                        {/* Swipeable card area */}
-                        <div
-                            className="relative overflow-hidden"
-                            onTouchStart={(e) => {
-                                touchStartX.current = e.touches[0].clientX;
-                            }}
-                            onTouchEnd={(e) => {
-                                if (touchStartX.current === null) return;
-                                const diff = touchStartX.current - e.changedTouches[0].clientX;
-                                if (Math.abs(diff) > 50) {
-                                    if (diff > 0) {
-                                        // Swipe left → next
-                                        setActiveShowcaseIndex(prev =>
-                                            prev >= showcasePosts.length - 1 ? 0 : prev + 1
-                                        );
-                                    } else {
-                                        // Swipe right → prev
-                                        setActiveShowcaseIndex(prev =>
-                                            prev <= 0 ? showcasePosts.length - 1 : prev - 1
-                                        );
-                                    }
-                                }
-                                touchStartX.current = null;
-                            }}
-                        >
-                            <ShowcasePostCard
-                                key={showcasePosts[activeShowcaseIndex].id}
-                                post={showcasePosts[activeShowcaseIndex]}
-                                onInteract={scrollToAuth}
-                                onExpandChange={setShowcasePaused}
-                                onAudioPlayingChange={setShowcaseAudioPlaying}
-                            />
-                        </div>
-
-                        {/* Dot indicators */}
-                        {showcasePosts.length > 1 && (
-                            <div className="flex items-center justify-center gap-2 mt-5">
-                                {showcasePosts.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setActiveShowcaseIndex(i)}
-                                        className={`transition-all duration-300 rounded-full ${
-                                            i === activeShowcaseIndex
-                                                ? 'w-6 h-2 bg-white'
-                                                : 'w-2 h-2 bg-zinc-700 hover:bg-zinc-500'
-                                        }`}
-                                        aria-label={`View post ${i + 1}`}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </section>
-            )}
+            <section className="px-4 sm:px-6 pb-8">
+                <motion.div
+                    className="max-w-2xl mx-auto"
+                    variants={sectionFade}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <GuestMirrorChat />
+                </motion.div>
+            </section>
 
             {/* ═══════════════════════════════════════════════════════════
-                AUTH — Sign up / Log in
+                CTA DIVIDER — Log in prompt
                ═══════════════════════════════════════════════════════════ */}
-            <section className="px-6 py-12 md:py-16">
+            <section id="landing-auth" className="px-6 py-12 md:py-16">
                 <motion.div
                     className="max-w-md mx-auto rounded-2xl border border-white/[0.08] bg-zinc-950/80 backdrop-blur-sm p-8 sm:p-10"
                     variants={sectionFade}
@@ -303,11 +199,11 @@ export function LandingPage() {
                     viewport={{ once: true, margin: '-40px' }}
                 >
                     <div className="text-center mb-6">
-                        <h2 className="text-sm sm:text-base font-semibold tracking-tight text-zinc-300 mb-1">
-                            {t('landing.auth.heading1')}
+                        <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-100 mb-1">
+                            Want your own Earnest?
                         </h2>
-                        <p className="text-xs text-zinc-400">
-                            {t('landing.auth.heading2')}
+                        <p className="text-sm text-zinc-500">
+                            Log in to build yours.
                         </p>
                     </div>
 
@@ -395,96 +291,13 @@ export function LandingPage() {
                 </motion.div>
             </section>
 
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
-
             {/* ═══════════════════════════════════════════════════════════
-                THE SIGNAL — How it works
+                PUBLIC FEED — Read-only infinite scroll
                ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-32">
-                <motion.div
-                    className="max-w-3xl mx-auto"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-500 mb-6">
-                        {t('landing.signal.label')}
-                    </p>
-
-                    <div className="space-y-12">
-                        {[1, 2, 3].map((n) => (
-                            <motion.div
-                                key={n}
-                                custom={n}
-                                variants={cardReveal}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: '-40px' }}
-                            >
-                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
-                                    {t(`landing.signal.step${n}Title` as any)}
-                                </h3>
-                                <p className="text-base text-zinc-400 leading-relaxed">
-                                    {t(`landing.signal.step${n}Body` as any)}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.div>
-            </section>
-
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
-
-            {/* ═══════════════════════════════════════════════════════════
-                THE WORLDVIEW — What we believe
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-32">
-                <motion.div
-                    className="max-w-2xl mx-auto text-center"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-500 mb-10">
-                        {t('landing.worldview.label')}
-                    </p>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-8">
-                        {t('landing.worldview.heading')}
-                    </h2>
-                    <div className="space-y-2 text-xl sm:text-2xl text-zinc-400 font-semibold leading-relaxed">
-                        <p>{t('landing.worldview.line1')}</p>
-                        <p>{t('landing.worldview.line2')}</p>
-                        <p>{t('landing.worldview.line3')}</p>
-                        <p className="text-white">{t('landing.worldview.line4')}</p>
-                    </div>
-                </motion.div>
-            </section>
-
-            <div className="max-w-5xl mx-auto border-t border-white/[0.06]" />
-
-            {/* ═══════════════════════════════════════════════════════════
-                PRIVACY — The trust section
-               ═══════════════════════════════════════════════════════════ */}
-            <section className="relative px-6 py-24 md:py-36">
-                <motion.div
-                    className="max-w-3xl mx-auto text-center"
-                    variants={sectionFade}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: '-80px' }}
-                >
-                    <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto mb-8">
-                        <Shield className="w-7 h-7 text-zinc-400" />
-                    </div>
-                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] mb-6">
-                        {t('landing.privacy.heading')}
-                    </h2>
-                    <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto">
-                        {t('landing.privacy.body')}
-                    </p>
-                </motion.div>
+            <section className="pb-8">
+                <div className="max-w-3xl mx-auto px-0 sm:px-4">
+                    <PublicFeed />
+                </div>
             </section>
 
             {/* ── FOOTER ── */}
