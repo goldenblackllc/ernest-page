@@ -69,7 +69,8 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const lastSpokenIdRef = useRef<string | null>(null);
+    const heldMsgIdRef = useRef<string | null>(null); // Message held until TTS is ready
+    const [releasedMsgId, setReleasedMsgId] = useState<string | null>(null);
 
     // ── Fetch character info on mount ──
     useEffect(() => {
@@ -155,22 +156,11 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
         setIsSpeaking(false);
     }, []);
 
-    // ── TTS: auto-speak after new assistant message ──
-    useEffect(() => {
-        if (!autoSpeak || isLoading || messages.length === 0) return;
-
-        const lastMsg = messages[messages.length - 1];
-        if (lastMsg.role !== 'assistant') return;
-        if (lastSpokenIdRef.current === lastMsg.id) return;
-
-        lastSpokenIdRef.current = lastMsg.id;
-        setIsLoadingTTS(true);
-
-        fetchTTSAudio(lastMsg.content).then(blob => {
-            setIsLoadingTTS(false);
-            if (blob) playAudioBlob(blob);
-        });
-    }, [messages, isLoading, autoSpeak, fetchTTSAudio, playAudioBlob]);
+    // ── Computed: should we hold the last assistant message? ──
+    const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+    const shouldHoldLastMessage = lastMsg?.role === 'assistant'
+        && heldMsgIdRef.current === lastMsg.id
+        && releasedMsgId !== lastMsg.id;
 
     // ── TTS: toggle handler ──
     const toggleAutoSpeak = useCallback(() => {
@@ -238,13 +228,28 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                 content: data.text,
             };
 
-            setMessages(prev => [...prev, assistantMessage]);
+            // If autoSpeak, hold the message until TTS is ready
+            if (autoSpeak) {
+                heldMsgIdRef.current = assistantMessage.id;
+                setMessages(prev => [...prev, assistantMessage]);
+                setIsLoading(false);
+                setIsLoadingTTS(true);
+
+                const blob = await fetchTTSAudio(data.text);
+                setIsLoadingTTS(false);
+                heldMsgIdRef.current = null;
+                setReleasedMsgId(assistantMessage.id);
+                if (blob) playAudioBlob(blob);
+            } else {
+                setMessages(prev => [...prev, assistantMessage]);
+                setIsLoading(false);
+            }
         } catch {
             setError('Something went wrong. Try again.');
-        } finally {
             setIsLoading(false);
+            heldMsgIdRef.current = null;
         }
-    }, [input, isLoading, messages, avatarUrl, characterName, stopSpeaking]);
+    }, [input, isLoading, messages, avatarUrl, characterName, stopSpeaking, autoSpeak, fetchTTSAudio, playAudioBlob]);
 
     // ── Retry last failed message ──
     const handleRetry = useCallback(() => {
@@ -326,9 +331,11 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                     </div>
                 )}
 
-                {/* Messages */}
+                {/* Messages — filter out held message */}
                 <AnimatePresence mode="popLayout">
-                    {messages.map(msg => (
+                    {messages
+                        .filter(msg => !(shouldHoldLastMessage && msg.id === lastMsg?.id))
+                        .map(msg => (
                         <motion.div
                             key={msg.id}
                             initial={{ opacity: 0, y: 8 }}
@@ -355,7 +362,7 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                     ))}
 
                     {/* Loading / typing indicator */}
-                    {isLoading && (
+                    {(isLoading || shouldHoldLastMessage) && (
                         <motion.div
                             key="typing"
                             initial={{ opacity: 0, y: 8 }}
