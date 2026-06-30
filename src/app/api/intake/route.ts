@@ -15,6 +15,7 @@ const INTAKE_SYSTEM_PROMPT = `You are an intake coordinator for Earnest Page, a 
 - Do NOT give advice, reflect emotions, or play counselor
 - When the user gives a good answer, acknowledge it briefly (one short sentence) then ask ONLY the next unanswered question
 - If the answer is very short (just a name, one word), ask for a bit more detail on THAT question only
+- If the user describes their current life, interests, or who they already are — accept it. Not everyone is trying to change. Someone who says "I play guitar and hang out with my friends" is telling you their vision: they want to keep being that person. Do NOT probe for aspirations or dissatisfaction that isn't there. Accept the answer and move to the next question.
 - After all five questions are answered, respond with EXACTLY this marker on its own line at the end of your message: [INTAKE_COMPLETE]
 
 [PROGRESS TRACKING — CRITICAL]
@@ -51,7 +52,8 @@ When the conversation starts (the user says "start"), respond with a short welco
 "Hey — glad you're here. I just need five quick things from you so we can set up your first session. Tell me about the life you see for yourself — the person you want to be, the lifestyle, all of it. Don't overthink it."
 
 [OUTPUT RULES]
-Speak naturally. No bullet points, no numbered lists, no bold text, no formatting. Just talk like a person.`;
+Speak naturally. No bullet points, no numbered lists, no bold text, no formatting. Just talk like a person.
+CRITICAL: You MUST start EVERY response with a question marker on its own line: [Q#] where # is the question number (1-5) that the user will be answering next. The marker reflects which question you are ASKING, not which one you are acknowledging. Example: if you are acknowledging the user's Q1 answer and then asking Q2, output [Q2]. If you are probing for more detail on Q1, output [Q1]. After [INTAKE_COMPLETE], use [Q5]. This marker MUST be the very first thing in your response.`;
 
 export async function POST(req: Request) {
     try {
@@ -117,12 +119,22 @@ export async function POST(req: Request) {
             ...(isComplete ? { completed: true } : {}),
         }, { merge: true });
 
+        // Parse question marker [Q#] from the AI response
+        const qMarkerMatch = result.text.match(/\[Q(\d)\]/);
+        const aiQuestionNumber = qMarkerMatch ? parseInt(qMarkerMatch[1]) : null;
+
+        // Strip both markers from display text
+        const displayContent = result.text
+            .replace(/\[Q\d\]\s*/g, '')
+            .replace('[INTAKE_COMPLETE]', '')
+            .trim();
+
         return Response.json({
             success: true,
             message: assistantMessage,
             isComplete,
-            // Strip the marker from the displayed message
-            displayContent: result.text.replace('[INTAKE_COMPLETE]', '').trim(),
+            displayContent,
+            ...(aiQuestionNumber != null ? { questionNumber: aiQuestionNumber } : {}),
         });
 
     } catch (error: any) {

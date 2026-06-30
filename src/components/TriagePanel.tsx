@@ -84,6 +84,13 @@ export function TriagePanel() {
         return () => unsubscribe();
     }, [user]);
 
+    // Automatically trigger onboarding if needed
+    useEffect(() => {
+        if (needsOnboarding) {
+            setShowOnboarding(true);
+        }
+    }, [needsOnboarding]);
+
 
 
     // Listen for 'open-mirror-chat' custom event (e.g. from Ledger first-session card)
@@ -130,9 +137,11 @@ export function TriagePanel() {
     const handleIntakeComplete = async (answers: { rant: string; people: string; enjoyments: string; age: string; ethnicity: string }) => {
         if (!user) return;
 
-        // Mark onboarding complete immediately
+        // Mark onboarding complete + set bible status to 'compiling' immediately
+        // so the Ledger never flashes a 'failed' state during the API gap
         await setDoc(doc(db, 'users', user.uid), {
             identity: { onboarding_complete: true },
+            character_bible: { status: 'compiling', last_updated: Date.now() },
         }, { merge: true });
 
         // Fire off the character build in the background

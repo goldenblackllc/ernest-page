@@ -65,7 +65,7 @@ export function IntakeChat({ onComplete, onBack }: IntakeChatProps) {
                         role: 'assistant',
                         content: data.displayContent || data.message.content,
                     }]);
-                    setQuestionNumber(1);
+                    setQuestionNumber(data.questionNumber ?? 1);
                 }
             } catch (err) {
                 console.error('[IntakeChat] Auto-start failed:', err);
@@ -116,7 +116,11 @@ export function IntakeChat({ onComplete, onBack }: IntakeChatProps) {
                     content: data.displayContent || data.message.content,
                 };
                 setMessages(prev => [...prev, assistantMessage]);
-                setQuestionNumber(prev => Math.min(prev + 1, TOTAL_QUESTIONS));
+                if (data.questionNumber != null) {
+                    setQuestionNumber(data.questionNumber);
+                } else {
+                    setQuestionNumber(prev => Math.min(prev + 1, TOTAL_QUESTIONS));
+                }
 
                 if (data.isComplete) {
                     const userMsgs = updatedMessages.filter(m => m.role === 'user');

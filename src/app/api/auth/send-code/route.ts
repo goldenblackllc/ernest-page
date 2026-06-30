@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         }
 
         // Check for test numbers
-        if (phone.startsWith('+100000000') && phone.length === 12) {
+        if ((phone.startsWith('+100000000') || phone.startsWith('+110000000')) && phone.length === 12) {
             return Response.json({ success: true, channel: 'sms', isTestAccount: true });
         }
 

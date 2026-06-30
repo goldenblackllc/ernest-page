@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Verify the code with Twilio or handle test accounts
-        if (phone.startsWith('+100000000') && phone.length === 12) {
+        if ((phone.startsWith('+100000000') || phone.startsWith('+110000000')) && phone.length === 12) {
             if (code !== '000000') {
                 return Response.json({ error: "Invalid test code." }, { status: 401 });
             }

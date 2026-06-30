@@ -21,11 +21,13 @@ interface VoiceBrowserProps {
     currentVoiceName?: string;
     /** If true, the browser starts expanded (used on feed card). Defaults to false (collapsed in profile). */
     startOpen?: boolean;
+    /** If true, hides filters/search and constrains height to ~3 voices. Used on feed. */
+    compact?: boolean;
     /** Called after a voice is successfully selected. */
     onVoiceSelected?: (voiceId: string, voiceName: string) => void;
 }
 
-export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = false, onVoiceSelected }: VoiceBrowserProps) {
+export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = false, compact = false, onVoiceSelected }: VoiceBrowserProps) {
     const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(startOpen);
     const [results, setResults] = useState<VoiceResult[]>([]);
@@ -152,7 +154,49 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
 
             {/* Current voice */}
             {selectedName && !isOpen && (
-                <p className="text-sm text-zinc-300 mt-1">{selectedName}</p>
+                <div className="flex items-center gap-2 mt-1">
+                    <button
+                        onClick={async () => {
+                            if (playingId === selectedId) {
+                                stopPlaying();
+                                return;
+                            }
+                            if (!selectedId || !user) return;
+                            try {
+                                const idToken = await user.getIdToken();
+                                const params = new URLSearchParams({ q: selectedName });
+                                const res = await fetch(`/api/voice/search?${params}`, {
+                                    headers: { Authorization: `Bearer ${idToken}` },
+                                });
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    const match = (data.voices || []).find((v: any) => v.voice_id === selectedId);
+                                    if (match?.preview_url) {
+                                        stopPlaying();
+                                        const audio = new Audio(match.preview_url);
+                                        audio.onended = () => setPlayingId(null);
+                                        audio.onerror = () => setPlayingId(null);
+                                        audio.play();
+                                        audioRef.current = audio;
+                                        setPlayingId(selectedId);
+                                    }
+                                }
+                            } catch (err) {
+                                console.error('[VoiceBrowser] Preview fetch failed:', err);
+                            }
+                        }}
+                        className={cn(
+                            "shrink-0 w-8 h-8 flex items-center justify-center rounded-full border transition-all",
+                            playingId === selectedId
+                                ? "bg-white/10 border-white/20 animate-pulse"
+                                : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
+                        )}
+                        aria-label={`Play ${selectedName}`}
+                    >
+                        <Volume2 className={cn("w-3.5 h-3.5", playingId === selectedId ? "text-white" : "text-zinc-400")} />
+                    </button>
+                    <p className="text-sm text-zinc-300">{selectedName}</p>
+                </div>
             )}
             {!selectedName && !isOpen && (
                 <p className="text-sm text-zinc-500 italic mt-1">No voice selected</p>
@@ -218,7 +262,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                     </div>
 
                     {/* Results */}
-                    <div className="space-y-2 max-h-[320px] overflow-y-auto">
+                    <div className={cn("space-y-2 overflow-y-auto", compact ? "max-h-[200px]" : "max-h-[320px]")}>
                         {results.map(voice => {
                             const isPlaying = playingId === voice.voice_id;
                             const isSelected = selectedId === voice.voice_id;
