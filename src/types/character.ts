@@ -50,6 +50,7 @@ export interface CharacterBible {
     version?: number;       // e.g. 1.0, 1.1
     last_commit?: any;      // Firestore Timestamp of last "Finish & Commit"
     voice_confirmed?: boolean; // True once user has confirmed their auto-assigned voice
+    fail_reason?: string;   // Why the last compile failed (e.g. 'rate_limit_daily', 'rate_limit_cooldown', 'error')
     status?: 'stable' | 'compiling' | 'ready' | 'failed'; // Lockout state during updates
 }
 
