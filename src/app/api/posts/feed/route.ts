@@ -161,9 +161,10 @@ export async function GET(req: Request) {
             });
         }
 
-        // 9. Batch-fetch author avatars
+        // 9. Batch-fetch author avatars and identity titles
         const uniqueAuthorIds = [...new Set(page.map(p => p.authorId || p.uid).filter(Boolean))];
         const avatarMap: Record<string, string> = {};
+        const titleMap: Record<string, string> = {};
         if (uniqueAuthorIds.length > 0) {
             const authorRefs = uniqueAuthorIds.map(id => db.collection('users').doc(id));
             try {
@@ -175,10 +176,14 @@ export async function GET(req: Request) {
                         if (avatarUrl) {
                             avatarMap[doc.id] = avatarUrl;
                         }
+                        const identityTitle = data?.identity?.title;
+                        if (identityTitle) {
+                            titleMap[doc.id] = identityTitle;
+                        }
                     }
                 });
             } catch (err) {
-                console.warn('Failed to batch-fetch author avatars:', err);
+                console.warn('Failed to batch-fetch author data:', err);
             }
         }
 
@@ -198,6 +203,7 @@ export async function GET(req: Request) {
 
             const clean: any = { ...post };
             clean.author_avatar_url = avatarMap[post.authorId || post.uid] || null;
+            clean.author_title = titleMap[post.authorId || post.uid] || null;
 
             // Strip likedBy — never expose to client (legacy field)
             delete clean.likedBy;

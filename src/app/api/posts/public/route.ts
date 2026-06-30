@@ -33,9 +33,10 @@ export async function GET(req: Request) {
             return Response.json({ posts: [], nextCursor: null });
         }
 
-        // Batch-fetch author avatars
+        // Batch-fetch author avatars and identity titles
         const uniqueAuthorIds = [...new Set(snap.docs.map(d => d.data().authorId || d.data().uid).filter(Boolean))];
         const avatarMap: Record<string, string> = {};
+        const titleMap: Record<string, string> = {};
 
         if (uniqueAuthorIds.length > 0) {
             const authorRefs = uniqueAuthorIds.map(id => db.collection('users').doc(id));
@@ -48,10 +49,14 @@ export async function GET(req: Request) {
                         if (avatarUrl) {
                             avatarMap[doc.id] = avatarUrl;
                         }
+                        const identityTitle = data?.identity?.title;
+                        if (identityTitle) {
+                            titleMap[doc.id] = identityTitle;
+                        }
                     }
                 });
             } catch (err) {
-                console.warn('Failed to batch-fetch author avatars:', err);
+                console.warn('Failed to batch-fetch author data:', err);
             }
         }
 
@@ -72,6 +77,7 @@ export async function GET(req: Request) {
                 directive_title: data.directive_title || null,
                 unexpected_yield: data.unexpected_yield || null,
                 author_avatar_url: avatarMap[data.authorId || data.uid] || null,
+                author_title: titleMap[data.authorId || data.uid] || null,
                 like_count: data.like_count || data.likes || 0,
                 comments: data.comments || 0,
                 created_at: data.created_at?._seconds

@@ -18,6 +18,7 @@ interface PublicPost {
     directive_title?: string | null;
     unexpected_yield?: string | null;
     author_avatar_url?: string | null;
+    author_title?: string | null;
     like_count?: number;
     comments?: number;
     created_at: { _seconds: number; _nanoseconds: number } | null;

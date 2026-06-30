@@ -61,6 +61,7 @@ interface FeedPostProps {
         isLikedByMe?: boolean;
         like_count?: number;
         author_avatar_url?: string;
+        author_title?: string;
         comments?: number;
         audio_url?: string;
         audio_letter_ratio?: number;
@@ -459,7 +460,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // Public face content
     const publicLetter = post.public_post?.letter || post.letter || post.tension;
     const publicResponse = post.public_post?.response || post.response || post.counsel;
-    const publicPseudonym = post.public_post?.pseudonym || post.pseudonym || "Anonymous";
+    const publicPseudonym = post.author_title || post.public_post?.pseudonym || post.pseudonym || "Anonymous";
 
     const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : t('justNow');
 
