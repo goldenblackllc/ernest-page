@@ -24,6 +24,11 @@ export async function POST(req: Request) {
             return Response.json({ error: "Phone number is required." }, { status: 400 });
         }
 
+        // Check for test numbers
+        if (phone.startsWith('+100000000') && phone.length === 12) {
+            return Response.json({ success: true, channel: 'sms', isTestAccount: true });
+        }
+
         // Support SMS (default) and WhatsApp OTP channels
         const verifyChannel = channel === 'whatsapp' ? 'whatsapp' : 'sms';
 

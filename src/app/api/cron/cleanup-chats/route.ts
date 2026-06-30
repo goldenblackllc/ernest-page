@@ -228,7 +228,7 @@ ${transcript}
 STEP 1: THE EDITORIAL JUDGMENT
 Determine if this transcript has "Editorial Value."
 * Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where the user never states what they want or how they feel. If there is no clear want or feeling, there is no story.
-* Valuable (is_publishable: true): The user arrives with either a WANT (something they are trying to do, get, or figure out) or a NEGATIVE FEELING (something that hurts, frustrates, confuses, or weighs on them), and Character A helps them understand their situation and offers real advice. The reader must be able to relate to the want or the feeling in under 60 seconds.
+* Valuable (is_publishable: true): The user arrives with either a WANT (something they are trying to do, get, or figure out) or a SITUATION THEY ARE STUCK ON (something that is not working, a pattern they are repeating, a wall they keep hitting), and Character A helps them see the situation clearly and delivers a concrete approach. The reader must be able to recognize themselves in the situation in under 60 seconds.
 
 STEP 2: WRITE THE LETTER (If Publishable)
 Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
@@ -240,17 +240,17 @@ Every conversation follows the same two-phase structure:
 The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
 
 IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
-- WANT or FEELING: What did the user come in with? This is almost always stated in their first message or two. It is either a concrete want ("I need a new suit", "I want to lose weight", "I'm trying to decide whether to quit") or a negative feeling ("I feel off today", "I'm overwhelmed", "something isn't right in my relationship"). Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
-- SITUATION: What details emerged during Phase 1 that help a reader understand the context? Look for specifics the user shared — numbers, timelines, constraints, relationships, stakes.
+- WANT or SITUATION: What did the user come in with? This is almost always stated in their first message or two. It is either a concrete want ("I need a new suit", "I want to lose weight", "I'm trying to decide whether to quit") or a situation they are stuck on ("I keep texting my ex", "I've sent 50 applications and gotten nothing", "my boss says I'm underperforming"). Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
+- STUCK BEHAVIOR: What is the user DOING (or not doing) that is keeping them stuck? This is the most important thing to identify. People recognize themselves in behaviors, not feelings. "I feel lost" is not hookable. "I've been sitting on my couch every night for three months" IS hookable. Mine the transcript for the specific action, pattern, or habit that is not working.
+- CONTEXT: What details emerged during Phase 1 that help a reader understand the situation? Look for specifics — numbers, timelines, constraints, relationships, stakes.
 
 CRITICAL RULE: The user is a reliable narrator of their own state. If they say they want something, that is what they want — do not reinterpret it as uncertainty. If they say they feel confused, the confusion IS the story — do not diagnose a cause and present the cause as their real problem. Character A may explore, question, and probe — but Character A's framework is not the user's experience. The letter represents the USER, not Character A's interpretation of the user.
 
-YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: preserve what they actually wanted or felt, add the situation details that make it vivid, and stop. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after."
+YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: identify the stuck behavior, add the situation details that make it vivid, and end with a direct question. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after." The letter should make the reader think "that's me" or "that's my friend" — not "that poor person."
 
-- title: Write a curiosity-driven hook title (6-10 words, max 75 characters). The title should capture the user's WANT or FEELING as unresolved tension. The title must NEVER include the resolution or advice. Never use second person. Think "confession overheard in a bar" — punchy, raw, scroll-stopping. Examples: 'I Keep Choosing Work Over My Kids', 'Am I Wrong for Not Forgiving My Mother?', 'I Love My Partner But I've Disappeared', 'My Suit Doesn't Fit and My Son Graduates Thursday'. Shorter is stronger.
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
-PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
+PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (letter):
 
 FIRST — identify what to KEEP (these add value and do NOT identify the user):
   • Public figures and celebrities BY THEIR REAL NAMES — Jeremy Clarkson stays "Jeremy Clarkson", Brené Brown stays "Brené Brown". NEVER replace a public figure with "a celebrity", "a public figure I admire", "someone I look up to", or any generic substitute.
@@ -264,7 +264,7 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Addresses, phone numbers, email addresses, social media handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
-- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. This is the first thing a viewer reads as a subtitle. It must hook in under 5 words. (GOOD: "I keep going back." BAD: "I find myself increasingly torn between..."). Then 2-3 sentences of SITUATION — just enough context to understand. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, present tense. Raw and conversational — like texting a friend at 2am, not writing to a newspaper. NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the gut punch (no salutation). End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
+- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the STUCK BEHAVIOR — the single most specific, recognizable thing the user is doing that isn't working. This is the hook. Readers recognize themselves in actions, not emotions. It must land in under 8 words. (GOOD: "I've texted him 12 times since he left." "I haven't left my apartment in two weeks." "I keep rewriting my resume and nothing changes." BAD: "I find myself increasingly torn between..." "I feel so lost and alone."). Then 2-3 sentences of SITUATION — the specifics that make it vivid. End with a DIRECT QUESTION — "what's the move?", "what should I actually do?", "how do I stop?" The question signals this is a utility post seeking a solution, not a diary entry seeking sympathy. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person. Raw and conversational — like describing your situation to a sharp friend, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the stuck behavior (no salutation). End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
 
 STEP 3: THE VISUAL DIRECTOR
 Every post gets MULTIPLE images — one per subtitle chunk — that visually narrate the post as it plays. The images crossfade as the subtitle text changes, creating a visual rhythm like B-roll in a documentary.
@@ -326,7 +326,6 @@ ${transcript}`;
                             schema: z.discriminatedUnion('is_publishable', [
                                 z.object({
                                     is_publishable: z.literal(true),
-                                    title: z.string().max(75),
                                     pseudonym: z.string(),
                                     letter: z.string(),
                                     verdict: z.string().max(200),
@@ -337,7 +336,6 @@ ${transcript}`;
                                 }),
                                 z.object({
                                     is_publishable: z.literal(false),
-                                    title: z.string().max(75).optional(),
                                     pseudonym: z.string().optional(),
                                     letter: z.string().optional(),
                                     verdict: z.string().optional(),
@@ -394,13 +392,13 @@ ${transcript}
 HOW TO READ THE TRANSCRIPT:
 The conversation has two phases. Phase 1 is understanding — Character A asks questions and the user's situation becomes clear. Phase 2 is advice — Character A delivers insight, recommendations, or a concrete plan. The letter above captures Phase 1 (the user's want or feeling + their situation). Your response should deliver the substance of Phase 2 (the advice, the answer, the path forward).
 
-YOUR JOB: Write Earnest Page's response to this letter. The letter captures where the user arrived — what they wanted or how they felt. The conversation transcript shows the advice Character A gave. Your response delivers that advice — warm, specific, actionable, in Character A's exact voice. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
+YOUR JOB: Write Earnest Page's response to this letter. The letter names a situation and a stuck behavior. The conversation transcript shows the advice Character A gave. Your response delivers the COUNTER-MOVE — the specific thing to do differently. This is a strategy column, not a therapy session. The reader should finish with something they can DO today, not just something they understand. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered a reframe, deliver the reframe as a specific, repeatable move — not an abstract insight. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE:
 FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES (Jeremy Clarkson stays "Jeremy Clarkson", never "a celebrity" or "someone I admire"). Brand names, product recommendations, cultural references — keep them all verbatim.
 THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
-- response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — the thing the user needs to hear. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the insight. Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction or challenge. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
+- response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. It's going to push him further. Here's what you do instead." BAD: "I understand how painful this must be for you."). Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use or say. If there's a specific phrase to use, write the phrase. If there's a specific action, name it. One closing line with a direct challenge or instruction. The response is the PAYOFF — it answers the letter's question. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: SONNET_MODEL,
@@ -451,7 +449,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 
                 // ─── POST CREATION (with parallel image gen) ───
                 const MAX_IMAGE_RETRIES = 5;
-                if (post.is_publishable && post.title) {
+                if (post.is_publishable && post.letter) {
                     const postDocRef = db.collection('posts').doc();
 
                     // ─── IMAGE ROUTING: Always Imagen background + verdict overlay ───
@@ -468,7 +466,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             author: userData?.displayName || "Anonymous",
                             type: 'checkin',
                             public_post: {
-                                title: post.title,
+                                title: post.verdict || null,
                                 pseudonym: post.pseudonym,
                                 letter: post.letter,
                                 response: post.response,
@@ -566,7 +564,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         author: userData?.displayName || "Anonymous",
                         type: 'checkin',
                         public_post: {
-                            title: post.title,
+                            title: post.verdict || null,
                             pseudonym: post.pseudonym,
                             letter: post.letter,
                             response: post.response,
@@ -601,17 +599,17 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 service: 'gmail',
                                 auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
                             });
-                            const postTitle = post.title || 'Untitled';
+                            const postVerdict = post.verdict || 'New Post';
                             const postPseudonym = post.pseudonym || 'Anonymous';
                             const postVisibility = visibility || 'private';
                             await transporter.sendMail({
                                 from: `Earnest Page <${ADMIN_EMAIL}>`,
                                 to: ADMIN_EMAIL,
-                                subject: `📝 New Post — ${postTitle}`,
+                                subject: `📝 New Post — ${postVerdict}`,
                                 html: `
 <div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
     <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
-    <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postTitle}</h2>
+    <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postVerdict}</h2>
     <p style="font-size: 13px; color: #a1a1aa; margin: 0 0 16px 0;">by ${postPseudonym}</p>
     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
         <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${postVisibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${postVisibility}</td></tr>

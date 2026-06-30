@@ -32,13 +32,19 @@ export async function POST(req: Request) {
             return Response.json({ error: "Phone and code are required." }, { status: 400 });
         }
 
-        // 1. Verify the code with Twilio
-        const check = await client.verify.v2
-            .services(VERIFY_SERVICE_SID)
-            .verificationChecks.create({ to: phone, code });
+        // 1. Verify the code with Twilio or handle test accounts
+        if (phone.startsWith('+100000000') && phone.length === 12) {
+            if (code !== '000000') {
+                return Response.json({ error: "Invalid test code." }, { status: 401 });
+            }
+        } else {
+            const check = await client.verify.v2
+                .services(VERIFY_SERVICE_SID)
+                .verificationChecks.create({ to: phone, code });
 
-        if (check.status !== "approved") {
-            return Response.json({ error: "Invalid code. Please try again." }, { status: 401 });
+            if (check.status !== "approved") {
+                return Response.json({ error: "Invalid code. Please try again." }, { status: 401 });
+            }
         }
 
         // 2. Find or create the Firebase user
