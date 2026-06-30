@@ -646,7 +646,8 @@ export function Ledger() {
             {/* Voice Confirmation Card — shown once after bible is built, until user confirms */}
             {hasBuiltCharacter && bibleStatus === 'stable'
                 && profile?.character_bible?.voice_id
-                && !profile?.character_bible?.voice_confirmed && user && (
+                && (!profile?.identity?.session_count || profile.identity.session_count < 1)
+                && user && (
                 <VoiceBrowser
                     currentVoiceId={profile.character_bible.voice_id}
                     currentVoiceName={profile.character_bible.voice_name}

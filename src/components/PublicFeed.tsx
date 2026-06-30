@@ -8,7 +8,6 @@ interface PublicPost {
     id: string;
     type: string;
     post_type?: string | null;
-    title?: string | null;
     pseudonym?: string | null;
     letter?: string | null;
     response?: string | null;

@@ -62,7 +62,6 @@ export async function GET(req: Request) {
                 id: doc.id,
                 type: data.type || 'checkin',
                 post_type: data.post_type || null,
-                title: data.public_post?.title || data.title || null,
                 pseudonym: data.public_post?.pseudonym || data.pseudonym || 'Anonymous',
                 letter: data.public_post?.letter || data.letter || data.tension || null,
                 response: data.public_post?.response || data.response || data.counsel || null,

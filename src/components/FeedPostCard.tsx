@@ -28,19 +28,18 @@ interface FeedPostProps {
         authorId?: string;
         type: 'checkin';
         post_type?: 'reality_shift';
-        title?: string;
+
         pseudonym?: string;
         letter?: string;
         response?: string;
         tension?: string;
         counsel?: string;
         rant?: string;
-        directive_title?: string;
+
         unexpected_yield?: string;
         conversation_messages?: ConversationMessage[];
         content_raw?: string;
         public_post?: {
-            title?: string;
             pseudonym?: string;
             letter?: string;
             response?: string;
@@ -51,7 +50,7 @@ interface FeedPostProps {
         imagen_urls?: string[];
         user_photo_url?: string;
         hero_source?: 'user' | 'imagen';
-        verdict?: string;
+
         sponsored_by?: string;
         sponsored_link?: string;
         region?: string;
@@ -138,17 +137,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [shareToast, setShareToast] = useState(false);
     const handleShare = useCallback(async () => {
         const url = `${window.location.origin}/post/${post.id}`;
-        const text = post.public_post?.title || 'Check out this post on Earnest Page';
         try {
             if (navigator.share) {
-                await navigator.share({ title: text, url });
+                await navigator.share({ title: 'Earnest Page', url });
             } else {
                 await navigator.clipboard.writeText(url);
                 setShareToast(true);
                 setTimeout(() => setShareToast(false), 2000);
             }
         } catch { /* user cancelled share sheet */ }
-    }, [post.id, post.public_post?.title]);
+    }, [post.id]);
 
     // Compute letter word ratio for phase boundary estimation
     const letterText = post.public_post?.letter || post.letter || post.tension || '';
@@ -462,7 +460,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const publicLetter = post.public_post?.letter || post.letter || post.tension;
     const publicResponse = post.public_post?.response || post.response || post.counsel;
     const publicPseudonym = post.public_post?.pseudonym || post.pseudonym || "Anonymous";
-    const publicTitle = translatedData?.title || post.public_post?.title || post.title;
 
     const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : t('justNow');
 
@@ -820,7 +817,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 <img
                                     key={url}
                                     src={url}
-                                    alt={publicTitle || ""}
+                                    alt=""
                                     className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
                                     style={{ opacity: i === currentImageIndex ? 1 : 0 }}
                                 />
@@ -829,7 +826,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     ) : (
                         <img
                             src={currentImageUrl}
-                            alt={publicTitle || ""}
+                            alt=""
                             className="absolute inset-0 w-full h-full object-cover"
                         />
                     )}
@@ -888,12 +885,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             )}
                         </div>
 
-                        {/* Title — hidden when verdict is baked into the image */}
-                        {publicTitle && !(post as any).verdict && (
-                            <h2 className="text-lg font-black text-white leading-tight drop-shadow-lg">
-                                {publicTitle}
-                            </h2>
-                        )}
+
                     </div>
 
 
@@ -1144,27 +1136,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     </div>
                 </div>
 
-                {/* Text view — readable post content with copyable title */}
+                {/* Text view — readable post content */}
                 {isTextView && (
                     <div className="border-t border-white/5 bg-zinc-950">
                         <div className="p-4 space-y-4">
-                            {/* Title with copy button */}
-                            {publicTitle && (
-                                <div className="flex items-start gap-2">
-                                    <h3 className="text-base font-bold text-white leading-tight flex-1">{publicTitle}</h3>
-                                    <button
-                                        onClick={async () => {
-                                            await navigator.clipboard.writeText(publicTitle);
-                                            setCopiedField('title');
-                                            setTimeout(() => setCopiedField(null), 2000);
-                                        }}
-                                        className="shrink-0 p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-all"
-                                        title="Copy title"
-                                    >
-                                        {copiedField === 'title' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                    </button>
-                                </div>
-                            )}
 
                             {/* Letter */}
                             <div className="space-y-1.5">
@@ -1210,7 +1185,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             {/* Copy all as caption */}
                             <button
                                 onClick={async () => {
-                                    const caption = `${publicTitle || ''}\n\n${publicLetter || ''}\n\n${publicResponse || ''}`;
+                                    const caption = `${publicLetter || ''}\n\n${publicResponse || ''}`;
                                     await navigator.clipboard.writeText(caption.trim());
                                     setCopiedField('all');
                                     setTimeout(() => setCopiedField(null), 2000);
@@ -1451,7 +1426,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                             <img
                                                 src={displayUrl}
-                                                alt={publicTitle || "Hero Object"}
+                                                alt="Post image"
                                                 className="w-full h-full object-cover transition-all duration-500"
                                             />
                                             {/* Audio play/pause overlay */}
@@ -1509,20 +1484,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 );
                             })()}
 
-                            {publicTitle && (
-                                <div className="px-3 sm:px-4">
-                                    <h2 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2 leading-tight">
-                                        {publicTitle}
-                                    </h2>
-                                </div>
-                            )}
+
 
                             {post.imageUrl && (
                                 <div className="px-3 sm:px-4 mb-2">
                                     <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                         <Image
                                             src={post.imageUrl}
-                                            alt={publicTitle || "Post Image"}
+                                            alt="Post image"
                                             fill
                                             className={cn(
                                                 "object-cover transition-all duration-500",

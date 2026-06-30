@@ -466,7 +466,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             author: userData?.displayName || "Anonymous",
                             type: 'checkin',
                             public_post: {
-                                title: post.verdict || null,
                                 pseudonym: post.pseudonym,
                                 letter: post.letter,
                                 response: post.response,
@@ -564,7 +563,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         author: userData?.displayName || "Anonymous",
                         type: 'checkin',
                         public_post: {
-                            title: post.verdict || null,
                             pseudonym: post.pseudonym,
                             letter: post.letter,
                             response: post.response,
