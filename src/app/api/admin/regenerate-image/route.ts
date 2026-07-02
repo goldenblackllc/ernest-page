@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { generateImage } from '@/lib/ai/generateImage';
 import { db, storage } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import sharp from 'sharp';
 import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
+import { validateGeneratedImage } from '@/lib/ai/validateImage';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -58,22 +61,20 @@ export async function POST(req: Request) {
             const identity = userData?.identity;
             const gender = identity?.gender || '';
             const ethnicity = identity?.ethnicity || '';
-            const birthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
-            const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+            const computedAge = computeAge(identity?.age);
             const demographicParts = [
                 computedAge ? `approximately ${computedAge} years old` : '',
                 ethnicity,
                 gender,
             ].filter(Boolean);
-            const stylePrefs = userData?.character_bible?.source_code?.things_i_enjoy || identity?.things_i_enjoy || '';
             const dreamSelf = identity?.dream_self || '';
             const appearanceParts = [
                 demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
-                dreamSelf ? `Self-description: "${dreamSelf}"` : '',
-                stylePrefs ? `Style & preferences: "${stylePrefs}"` : '',
+                dreamSelf ? `Self-presentation: "${dreamSelf}"` : '',
             ].filter(Boolean);
+            const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
             const appearanceHint = appearanceParts.length > 0
-                ? `\nAPPEARANCE & STYLE (when a person appears in the image): ${appearanceParts.join(' ')} Any human figure must plausibly match this description — skin tone, build, age, clothing style, and overall aesthetic.`
+                ? `\nAPPEARANCE — MANDATORY: ${appearanceParts.join(' ')} The image generator has NO context about the user — you MUST explicitly describe any person as "${demographicTag}" in the prompt text. If you omit this, the generator will default to a generic adult.`
                 : '';
             const aiResult = await generateImagenPrompt(letter, response, appearanceHint);
             prompt = aiResult.imagen_prompt;
@@ -83,54 +84,32 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No imagen_prompt available and AI generation failed' }, { status: 400 });
         }
 
+        // Step 1: Generate background photo via Nano Banana
         console.log(`[RegenerateImage] Generating clean background image for post ${postId}`);
 
-        // Step 1: Generate background photo via Imagen
-        const imagenRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    instances: [{ prompt }],
-                    parameters: {
-                        sampleCount: 1,
-                        aspectRatio: '9:16',
-                        personGeneration: 'ALLOW_ADULT',
-                    },
-                }),
-            }
-        );
+        const result = await generateImage({
+            prompt,
+            aspectRatio: '9:16',
+            logPrefix: 'RegenerateImage',
+        });
 
-        if (!imagenRes.ok) {
-            const errorText = await imagenRes.text();
-            console.error(`[RegenerateImage] Imagen API Error:`, errorText);
-            return NextResponse.json({ error: 'Imagen API error', details: errorText }, { status: 502 });
+        if (!result) {
+            return NextResponse.json({ error: 'Image generation failed' }, { status: 502 });
         }
 
-        const data = await imagenRes.json();
-        const prediction = data.predictions?.[0];
-
-        if (prediction?.raiFilteredReason) {
-            console.warn(`[RegenerateImage] RAI filter for post ${postId}:`, prediction.raiFilteredReason);
-            return NextResponse.json({
-                error: 'Image was filtered by safety policy',
-                raiFilteredReason: prediction.raiFilteredReason,
-            }, { status: 422 });
-        }
-
-        if (!prediction?.bytesBase64Encoded) {
-            console.warn(`[RegenerateImage] No image in response for post ${postId}:`, JSON.stringify(data));
-            return NextResponse.json({ error: 'Imagen returned no image data' }, { status: 502 });
-        }
-
-        const photoBuffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
+        const photoBuffer = result.buffer;
 
         // Resize to 1080×1920 — no text overlay; subtitles are the text layer
         const finalBuffer = await sharp(photoBuffer)
             .resize(1080, 1920, { fit: 'cover', position: 'center' })
             .png()
             .toBuffer();
+
+        // Validate image quality via Gemini Flash
+        const validation = await validateGeneratedImage(finalBuffer, prompt);
+        if (!validation.pass) {
+            console.warn(`[RegenerateImage] Validation failed for post ${postId}:`, validation.summary, validation.issues);
+        }
 
         // Step 3: Upload with cache-busting filename
         const bucket = storage.bucket();
@@ -155,7 +134,8 @@ export async function POST(req: Request) {
         return NextResponse.json({
             success: true,
             imagen_url,
-            raiFilteredReason: prediction.raiFilteredReason || null,
+            raiFilteredReason: null,
+            validation,
         });
     } catch (error: any) {
         console.error('[RegenerateImage] Error:', error);
@@ -176,9 +156,8 @@ async function generateImagenPrompt(
 Your job: generate a background photo prompt for a post. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar.
 
 THE IMAGE MUST:
-- Show the world of the ANSWER, not the problem. The aspirational state. What life looks like when the advice has been taken.
-- Unambiguously signal the topic. Style posts → a beautifully dressed person. Relationship posts → a meaningful human moment. Career posts → someone in their element professionally. Health posts → vitality, movement, the body at its best.
-- Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy.
+- Show the world of this specific story — the actions, behaviors, and situations described. A viewer scrolling past should instantly understand what this story is about from the image alone.
+- You decide what scene best captures the story for social media. Pick the image that would make someone stop scrolling because they recognize the scene.
 - Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated.
 - 9:16 portrait orientation (1080×1920). No text or watermarks in the image.
 - Keep the center area relatively uncluttered — text overlays there during video playback.

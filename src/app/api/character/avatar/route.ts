@@ -3,6 +3,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
 import sharp from 'sharp';
+import { validateGeneratedImage } from '@/lib/ai/validateImage';
+import { generateImage } from '@/lib/ai/generateImage';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const maxDuration = 60;
 
@@ -64,8 +67,7 @@ export async function POST(req: Request) {
                 : '';
 
         // Compute age from birth year if possible
-        const birthYear = age ? parseInt(age, 10) : NaN;
-        const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+        const computedAge = computeAge(age);
         const ageStr = computedAge ? `${computedAge}-year-old ` : '';
         const ethnicityStr = ethnicity ? `${ethnicity} ` : '';
         const prompt = [
@@ -94,63 +96,54 @@ export async function POST(req: Request) {
             }
         }, { merge: true });
 
-        // Call Imagen 4
-        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-        const imagenRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    instances: [{ prompt }],
-                    parameters: { sampleCount: 1, aspectRatio: '1:1' },
-                }),
-            }
-        );
+        // Generate avatar via Nano Banana
+        const imageResult = await generateImage({
+            prompt,
+            aspectRatio: '1:1',
+            logPrefix: 'Avatar',
+        });
 
-        if (!imagenRes.ok) {
-            const errText = await imagenRes.text();
-            console.error('[Avatar] Imagen API error:', errText);
+        if (!imageResult) {
             try {
                 await db.collection('users').doc(uid).set({
                     character_bible: {
                         avatar_status: 'failed',
                         avatar_attempt_count: FieldValue.increment(1),
-                        avatar_error: errText.substring(0, 500),
+                        avatar_error: 'Image generation failed',
                     }
                 }, { merge: true });
             } catch (e) {
                 console.error('[Avatar] Failed to write error status:', e);
             }
-            return Response.json({ error: 'Image generation failed', detail: errText }, { status: 502 });
-        }
-
-        const imagenData = await imagenRes.json();
-        if (!imagenData.predictions?.[0]?.bytesBase64Encoded) {
-            console.error('[Avatar] No image data in response');
-            try {
-                await db.collection('users').doc(uid).set({
-                    character_bible: {
-                        avatar_status: 'failed',
-                        avatar_attempt_count: FieldValue.increment(1),
-                        avatar_error: 'No image returned from Imagen',
-                    }
-                }, { merge: true });
-            } catch (e) {
-                console.error('[Avatar] Failed to write error status:', e);
-            }
-            return Response.json({ error: 'No image returned from Imagen' }, { status: 502 });
+            return Response.json({ error: 'Image generation failed' }, { status: 502 });
         }
 
         // Resize and compress before uploading
-        const base64Data = imagenData.predictions[0].bytesBase64Encoded;
-        const rawBuffer = Buffer.from(base64Data, 'base64');
+        const rawBuffer = imageResult.buffer;
         const buffer = await sharp(rawBuffer)
             .resize(256, 256, { fit: 'cover' })
             .jpeg({ quality: 80 })
             .toBuffer();
 
         console.log(`[Avatar] Resized: ${rawBuffer.length} → ${buffer.length} bytes`);
+
+        // Validate image quality before uploading
+        const validation = await validateGeneratedImage(buffer, prompt);
+        if (!validation.pass) {
+            console.warn(`[Avatar] Image validation failed for ${uid}:`, validation.summary, validation.issues);
+            try {
+                await db.collection('users').doc(uid).set({
+                    character_bible: {
+                        avatar_status: 'failed',
+                        avatar_attempt_count: FieldValue.increment(1),
+                        avatar_error: `Image quality check failed: ${validation.summary}`,
+                    }
+                }, { merge: true });
+            } catch (e) {
+                console.error('[Avatar] Failed to write validation error status:', e);
+            }
+            return Response.json({ error: 'Image quality check failed', validation }, { status: 422 });
+        }
 
         const bucket = storage.bucket();
         const fileName = `avatars/${uid}.jpg`;

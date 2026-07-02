@@ -10,6 +10,9 @@ import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 import { generatePostAudio } from '@/lib/ai/postTTS';
 import sharp from 'sharp';
+import { validateGeneratedImage } from '@/lib/ai/validateImage';
+import { generateImage } from '@/lib/ai/generateImage';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 import nodemailer from 'nodemailer';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
@@ -119,23 +122,21 @@ async function processUserChats(
     // Build appearance hint for image generation so human figures match the user
     const gender = identity?.gender || '';
     const ethnicity = identity?.ethnicity || '';
-    const birthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
-    const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+    const computedAge = computeAge(identity?.age);
     const demographicParts = [
         computedAge ? `approximately ${computedAge} years old` : '',
         ethnicity,
         gender,
     ].filter(Boolean);
-    // Style/appearance from character bible
-    const stylePrefs = userData?.character_bible?.source_code?.things_i_enjoy || identity?.things_i_enjoy || '';
     const dreamSelf = identity?.dream_self || '';
     const appearanceParts = [
         demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
-        dreamSelf ? `Self-description: "${dreamSelf}"` : '',
-        stylePrefs ? `Style & preferences: "${stylePrefs}"` : '',
+        dreamSelf ? `Self-presentation: "${dreamSelf}"` : '',
     ].filter(Boolean);
+    // Build a compact demographic tag for Sonnet to embed in every prompt
+    const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
     const demographicHint = appearanceParts.length > 0
-        ? `\nUSER APPEARANCE (for the protagonist/letter-writer figure ONLY): ${appearanceParts.join(' ')} When the image features a person representing the USER, they should match this description. Other people in the scene (partners, friends, family, strangers) should match the STORY CONTEXT — a date night shows a couple, a family scene shows a family. Do NOT make every person in the image match the user's demographics.`
+        ? `\nUSER APPEARANCE — MANDATORY FOR EVERY PROMPT CONTAINING A PERSON:\n${appearanceParts.join(' ')}\nCRITICAL: Every imagen_prompt that includes a person representing the letter-writer MUST explicitly describe them as "${demographicTag}" in the prompt text itself. The image generator has NO memory between prompts — if you do not specify the age, ethnicity, and gender in EACH prompt, the generator will default to a generic adult. Be specific and consistent across all prompts.`
         : '';
 
     for (const chatDoc of chatDocs) {
@@ -277,13 +278,12 @@ YOUR THREE JOBS:
    Write it like you're texting someone the one line that would make them put their phone down and think.
 
 2. Write the IMAGEN_PROMPTS — an array of 5-6 prompts for Google Imagen, one per "beat" of the post. Each prompt generates a background photo for one subtitle chunk. Together they create a visual narrative.
-   - Prompt 1 (verdict): The emotional thesis as a striking image. Abstract or symbolic. Sets the tone.
-   - Prompts 2-3 (letter beats): The user's world — their situation, their reality. Grounded, specific.
-   - Prompts 4-6 (response beats): The aspirational state — what life looks like when the advice lands. Warm, resolved.
+   YOUR GOAL: Generate images for a social media video post. A viewer scrolling past should instantly understand what this story is about from the visuals alone. Show the world of this specific story — the actions, the behaviors, the situations described. If the letter talks about someone texting at 3am, the image should feel like 3am. If it's about a parent and child, show that dynamic. The images should make someone stop scrolling because they RECOGNIZE the scene.
+   YOU DECIDE the visual narrative. You know the story — pick the images that best capture it. Not every post needs the same structure. Some stories are best told through one evolving scene; others need contrasting moments. Trust your judgment.
    PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
    • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags. Never a generic coffee maker, drip machine, pour-over, or Starbucks cup. Jura + Crema is our ecosystem partner.
    • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt. Imagen knows what branded products look like.
-   ALL prompts must follow these rules: Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
+   ALL prompts must follow these rules: Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
 ${recentScaleHint}${demographicHint}
 
 3. Set photo_vibe and photo_scale for the overall post.
@@ -296,7 +296,7 @@ OUTPUT FIELDS:
 - verdict: The scroll-stopping opening hook. Under 15 words. Second person. Confrontational.
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
 - photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompts: An ARRAY of 5-6 image prompts (strings), one per beat of the post. Each prompt describes a specific scene for Google Imagen. The prompts should visually narrate the post from verdict → letter → response.
+- imagen_prompts: An ARRAY of 5-6 image prompts (strings), one per beat of the post. Each prompt describes a specific scene for Google Imagen. The prompts should visually narrate the post — a viewer should understand the story from the images alone.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -509,10 +509,10 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     const imagen_url = imagen_urls[0] || null;
 
                     // ─── IMAGE RETRY QUEUE ───
-                    // If NO images succeeded and we haven't exhausted retries,
-                    // release the chat back into the queue for the next cron run.
-                    if (imagen_urls.length === 0 && imageRetries < MAX_IMAGE_RETRIES) {
-                        console.log(`[Cron] All images failed for user ${uid} (attempt ${imageRetries + 1}/${MAX_IMAGE_RETRIES}) — re-queuing`);
+                    // Quality first: we want ALL the images we asked for.
+                    // If any are missing, re-queue for the next cron run (API may be overloaded).
+                    if (imagen_urls.length < prompts.length && imageRetries < MAX_IMAGE_RETRIES) {
+                        console.log(`[Cron] ${imagen_urls.length}/${prompts.length} images succeeded for user ${uid} (attempt ${imageRetries + 1}/${MAX_IMAGE_RETRIES}) — re-queuing for complete set`);
                         await chatDoc.ref.update({
                             processing: false,
                             processingStartedAt: FieldValue.delete(),
@@ -523,10 +523,8 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         continue; // skip deletion — chat stays in queue
                     }
 
-                    if (imagen_urls.length === 0) {
-                        console.warn(`[Cron] All images failed after ${MAX_IMAGE_RETRIES} retries for user ${uid} — saving as private`);
-                    } else if (imagen_urls.length < prompts.length) {
-                        console.warn(`[Cron] ${imagen_urls.length}/${prompts.length} images succeeded for user ${uid} — proceeding with partial set`);
+                    if (imagen_urls.length < prompts.length) {
+                        console.warn(`[Cron] Only ${imagen_urls.length}/${prompts.length} images after ${MAX_IMAGE_RETRIES} retries for user ${uid} — saving with partial set`);
                     }
 
                     // Match sponsor from imagen prompt (only for photo styles)
@@ -673,65 +671,68 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 }
 
 // ─── Image generation helper ─────────────────────────────────────────────────
+async function generateSingleImage(prompt: string, postId: string): Promise<{ buffer: Buffer; prompt: string } | null> {
+    const result = await generateImage({
+        prompt,
+        aspectRatio: '9:16',
+        logPrefix: 'Cron',
+    });
+    if (!result) return null;
+
+    const finalBuffer = await sharp(result.buffer)
+        .resize(1080, 1920, { fit: 'cover', position: 'center' })
+        .png()
+        .toBuffer();
+
+    return { buffer: finalBuffer, prompt };
+}
+
 async function generateVerdictImage(prompt: string, postId: string): Promise<string | null> {
     try {
-        // Step 1: Generate the background photo via Imagen
-        const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                instances: [{ prompt }],
-                parameters: {
-                    sampleCount: 1,
-                    aspectRatio: "9:16",
-                    personGeneration: "ALLOW_ADULT"
-                }
-            })
-        });
+        // Attempt 1: Generate and validate
+        const result = await generateSingleImage(prompt, postId);
+        if (!result) return null;
 
-        if (!imagenRes.ok) {
-            console.error("[Cron] Imagen API Error:", await imagenRes.text());
-            return null;
+        const validation = await validateGeneratedImage(result.buffer, prompt);
+        if (validation.pass) {
+            return await uploadImageBuffer(result.buffer, postId);
         }
 
-        const data = await imagenRes.json();
-        const prediction = data.predictions?.[0];
+        // Validation failed — retry once with reinforced prompt
+        console.warn(`[Cron] Image validation failed for post ${postId} (attempt 1):`, validation.summary, validation.issues);
+        const reinforcedPrompt = `${prompt} CRITICAL: Do not include any text, watermarks, metadata, words, letters, or numbers anywhere in the image. The image must be purely visual with zero text elements.`;
+        const retry = await generateSingleImage(reinforcedPrompt, postId);
+        if (!retry) return null;
 
-        if (prediction?.raiFilteredReason) {
-            console.warn(`[Cron] Imagen RAI filter for post ${postId}:`, prediction.raiFilteredReason);
+        const retryValidation = await validateGeneratedImage(retry.buffer, reinforcedPrompt);
+        if (retryValidation.pass) {
+            console.log(`[Cron] Image passed validation on retry for post ${postId}`);
+            return await uploadImageBuffer(retry.buffer, postId);
         }
 
-        if (!prediction?.bytesBase64Encoded) {
-            console.warn(`[Cron] Imagen returned no image for post ${postId}:`, JSON.stringify(prediction));
-            return null;
-        }
-
-        const photoBuffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
-
-        // Resize to 1080×1920 — no text overlay; subtitles are the only text layer
-        const finalBuffer = await sharp(photoBuffer)
-            .resize(1080, 1920, { fit: 'cover', position: 'center' })
-            .png()
-            .toBuffer();
-
-        // Step 3: Upload to Cloud Storage with cache-busting filename
-        const bucket = storage.bucket();
-        const ts = Date.now();
-        const fileName = `post-images/${postId}_imagen_${ts}.png`;
-        const file = bucket.file(fileName);
-
-        await file.save(finalBuffer, {
-            metadata: { contentType: 'image/png' },
-        });
-
-        try { await file.makePublic(); } catch { /* UBLA enabled */ }
-
-        console.log(`[Cron] Verdict image generated for post ${postId}`);
-        return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        // Both attempts failed validation — return null (skip, retry next cron run)
+        console.warn(`[Cron] Image validation failed on retry for post ${postId}:`, retryValidation.summary, '— skipping image for now');
+        return null;
     } catch (err) {
         console.error("[Cron] Verdict image generation failed:", err);
         return null;
     }
+}
+
+async function uploadImageBuffer(buffer: Buffer, postId: string): Promise<string> {
+    const bucket = storage.bucket();
+    const ts = Date.now();
+    const fileName = `post-images/${postId}_imagen_${ts}.png`;
+    const file = bucket.file(fileName);
+
+    await file.save(buffer, {
+        metadata: { contentType: 'image/png' },
+    });
+
+    try { await file.makePublic(); } catch { /* UBLA enabled */ }
+
+    console.log(`[Cron] Verdict image generated for post ${postId}`);
+    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
 

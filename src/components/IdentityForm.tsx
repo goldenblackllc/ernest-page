@@ -53,7 +53,7 @@ export function IdentityForm({
     const canAdvance = () => {
         switch (step) {
             case 1: return gender.trim().length > 0;
-            case 2: return true; // birthday + ethnicity are optional
+            case 2: return age.trim().length > 0; // birthday is required
             case 3: return rant.trim().length > 0;
             case 4: return true; // people is optional
             case 5: return true; // enjoyments is optional
@@ -153,13 +153,13 @@ export function IdentityForm({
                             <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.bornLabel')}</label>
                             <p className="text-[11px] text-zinc-600 mb-2">{t('onboarding.identityForm.bornSub')}</p>
                             <input
-                                type="text"
+                                type="date"
                                 value={age}
                                 onChange={(e) => setAge(e.target.value)}
-                                placeholder={t('onboarding.identityForm.bornPlaceholder')}
-                                maxLength={30}
+                                max={new Date().toISOString().split('T')[0]}
+                                min="1920-01-01"
                                 autoFocus
-                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 [color-scheme:dark]"
                             />
                         </div>
 

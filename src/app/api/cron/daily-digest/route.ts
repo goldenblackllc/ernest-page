@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { generatePostAudio } from '@/lib/ai/postTTS';
+import { validateGeneratedImage } from '@/lib/ai/validateImage';
+import { generateImage } from '@/lib/ai/generateImage';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -101,8 +104,7 @@ export async function GET(req: Request) {
             const identity = userData?.identity;
             const uGender = identity?.gender || '';
             const uEthnicity = identity?.ethnicity || '';
-            const uBirthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
-            const uAge = !isNaN(uBirthYear) ? Math.max(0, new Date().getFullYear() - uBirthYear) : null;
+            const uAge = computeAge(identity?.age);
             const demoParts = [
                 uAge ? `approximately ${uAge} years old` : '',
                 uEthnicity,
@@ -195,34 +197,36 @@ async function generateDigestCard(user: {
 
         for (let attempt = 1; attempt <= MAX_IMAGE_ATTEMPTS; attempt++) {
             try {
-                const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instances: [{ prompt: imagenPrompt }],
-                        parameters: { sampleCount: 1, aspectRatio: "16:9" }
-                    })
+                const imageGenResult = await generateImage({
+                    prompt: imagenPrompt,
+                    aspectRatio: '16:9',
+                    logPrefix: 'Daily Digest',
                 });
 
-                if (imagenRes.ok) {
-                    const data = await imagenRes.json();
-                    if (data.predictions?.[0]?.bytesBase64Encoded) {
-                        const buffer = Buffer.from(data.predictions[0].bytesBase64Encoded, 'base64');
-                        const bucket = storage.bucket();
-                        const fileName = `digest-images/${user.uid}_${Date.now()}.jpg`;
-                        const file = bucket.file(fileName);
+                if (imageGenResult) {
+                    const buffer = imageGenResult.buffer;
 
-                        await file.save(buffer, {
-                            metadata: { contentType: 'image/jpeg' },
-                            public: true
-                        });
-
-                        imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                        console.log(`[Daily Digest] Image generated for ${user.uid} on attempt ${attempt}`);
-                        break; // Success — exit retry loop
+                    // Validate image quality before uploading
+                    const validation = await validateGeneratedImage(buffer, imagenPrompt);
+                    if (!validation.pass) {
+                        console.warn(`[Daily Digest] Image validation failed for ${user.uid} (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, validation.summary);
+                        continue;
                     }
+
+                    const bucket = storage.bucket();
+                    const fileName = `digest-images/${user.uid}_${Date.now()}.jpg`;
+                    const file = bucket.file(fileName);
+
+                    await file.save(buffer, {
+                        metadata: { contentType: 'image/jpeg' },
+                        public: true
+                    });
+
+                    imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                    console.log(`[Daily Digest] Image generated for ${user.uid} on attempt ${attempt}`);
+                    break; // Success — exit retry loop
                 } else {
-                    console.error(`[Daily Digest] Imagen error (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, await imagenRes.text());
+                    console.error(`[Daily Digest] Image generation failed (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS})`);
                 }
             } catch (imgErr) {
                 console.error(`[Daily Digest] Image generation failed (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, imgErr);

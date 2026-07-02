@@ -4,7 +4,10 @@ import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import sharp from 'sharp';
 import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { generatePostAudio } from '@/lib/ai/postTTS';
+import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { z } from 'zod';
+import { generateImage } from '@/lib/ai/generateImage';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -64,22 +67,20 @@ export async function POST(req: Request) {
         // Build appearance hint for image generation so human figures match the user
         const gender = identity?.gender || '';
         const ethnicity = identity?.ethnicity || '';
-        const birthYear = identity?.age ? parseInt(identity.age, 10) : NaN;
-        const computedAge = !isNaN(birthYear) ? Math.max(0, new Date().getFullYear() - birthYear) : null;
+        const computedAge = computeAge(identity?.age);
         const demographicParts = [
             computedAge ? `approximately ${computedAge} years old` : '',
             ethnicity,
             gender,
         ].filter(Boolean);
-        const stylePrefs = userData?.character_bible?.source_code?.things_i_enjoy || identity?.things_i_enjoy || '';
         const dreamSelf = identity?.dream_self || '';
         const appearanceParts = [
             demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
-            dreamSelf ? `Self-description: "${dreamSelf}"` : '',
-            stylePrefs ? `Style & preferences: "${stylePrefs}"` : '',
+            dreamSelf ? `Self-presentation: "${dreamSelf}"` : '',
         ].filter(Boolean);
+        const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
         const appearanceHint = appearanceParts.length > 0
-            ? `\nAPPEARANCE & STYLE (when a person appears in the image): ${appearanceParts.join(' ')} Any human figure must plausibly match this description — skin tone, build, age, clothing style, and overall aesthetic. Do NOT default to any other demographic or style.`
+            ? `\nAPPEARANCE — MANDATORY FOR EVERY PROMPT CONTAINING A PERSON: ${appearanceParts.join(' ')} CRITICAL: Every imagen_prompt that includes a person representing the letter-writer MUST explicitly describe them as "${demographicTag}" in the prompt text itself. The image generator has NO memory between prompts — if you do not specify the age, ethnicity, and gender in EACH prompt, the generator will default to a generic adult. Be specific and consistent across all prompts.`
             : '';
 
         console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
@@ -118,7 +119,7 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 - verdict: A Therapy Shot — under 15 words, second-person, confrontational. Hit the reader between the eyes with the truth they're avoiding.
 - photo_vibe: One word capturing the emotional tone.
 - photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompts: An array of 5-6 prompts for Google Imagen to generate the post's background photos. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar. PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS: If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic, ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags. Never a generic coffee maker, drip machine, pour-over, or Starbucks cup. Jura + Crema is our ecosystem partner. If the conversation mentions any other specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name. THE IMAGES MUST: Show the world of the ANSWER, not the problem — the aspirational state. Unambiguously signal the topic. Be premium, warm, editorial — like a high-end lifestyle brand campaign. Rich, natural light. Never cold, dark, or gloomy. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area relatively uncluttered. Each prompt should explore a different angle, composition, or metaphor for the same emotional territory.
+- imagen_prompts: An array of 5-6 prompts for Google Imagen to generate the post's background photos. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar. PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS: If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic, ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags. Never a generic coffee maker, drip machine, pour-over, or Starbucks cup. Jura + Crema is our ecosystem partner. If the conversation mentions any other specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name. YOUR GOAL: Generate images for a social media video post. A viewer scrolling past should instantly understand what this story is about from the visuals alone. Show the world of this specific story — the actions, the behaviors, the situations described. You decide the visual narrative — pick the images that best capture the story. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area relatively uncluttered. Each prompt should explore a different angle or moment from the story.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 
@@ -206,38 +207,33 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
         // Both are independent of each other — run concurrently to stay under timeout.
 
         const [imageResult, audioResult] = await Promise.allSettled([
-            // Image generation
+            // Image generation — with per-prompt retries for quality
             (async (): Promise<string[]> => {
                 const prompts = pass1.imagen_prompts || [pass1.imagen_prompt].filter(Boolean);
                 if (prompts.length === 0) return [];
 
-                const results = await Promise.allSettled(prompts.map(async (prompt: string, idx: number) => {
-                    const imagenRes = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                instances: [{ prompt }],
-                                parameters: {
-                                    sampleCount: 1,
-                                    aspectRatio: '9:16',
-                                    personGeneration: 'ALLOW_ADULT',
-                                },
-                            }),
-                        }
-                    );
+                const MAX_ATTEMPTS = 3;
 
-                    if (!imagenRes.ok) return null;
-                    const data = await imagenRes.json();
-                    const prediction = data.predictions?.[0];
-                    if (!prediction?.bytesBase64Encoded) return null;
+                const generateSingleImage = async (prompt: string, idx: number): Promise<string | null> => {
+                    try {
+                    const result = await generateImage({
+                        prompt,
+                        aspectRatio: '9:16',
+                        logPrefix: 'RegeneratePost',
+                    });
+                    if (!result) return null;
 
-                    const photoBuffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
-                    const finalBuffer = await sharp(photoBuffer)
+                    const finalBuffer = await sharp(result.buffer)
                         .resize(1080, 1920, { fit: 'cover', position: 'center' })
                         .png()
                         .toBuffer();
+
+                    // Validate image quality before uploading
+                    const validation = await validateGeneratedImage(finalBuffer, prompt);
+                    if (!validation.pass) {
+                        console.warn(`[RegeneratePost] Image ${idx} failed validation:`, validation.summary, validation.issues);
+                        return null;
+                    }
 
                     const bucket = storage.bucket();
                     const ts = Date.now();
@@ -246,12 +242,56 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
                     await file.save(finalBuffer, { metadata: { contentType: 'image/png' } });
                     try { await file.makePublic(); } catch { /* UBLA enabled */ }
                     return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                }));
+                    } catch (err: any) {
+                        if (err.isQuotaError) throw err;
+                        console.error(`[RegeneratePost] Image ${idx} exception:`, err.message);
+                        return null;
+                    }
+                };
 
-                return results
-                    .filter((r): r is PromiseFulfilledResult<string | null> => r.status === 'fulfilled')
-                    .map(r => r.value)
-                    .filter((url): url is string => url !== null);
+                // First pass: generate all in parallel
+                const urls: (string | null)[] = new Array(prompts.length).fill(null);
+                let quotaExhausted = false;
+
+                const firstResults = await Promise.allSettled(
+                    prompts.map((prompt: string, idx: number) => generateSingleImage(prompt, idx))
+                );
+                firstResults.forEach((r, i) => {
+                    if (r.status === 'fulfilled' && r.value) urls[i] = r.value;
+                    if (r.status === 'rejected' && r.reason?.isQuotaError) quotaExhausted = true;
+                });
+
+                // Retry any failed prompts — but bail immediately on quota exhaustion
+                if (!quotaExhausted) {
+                    for (let attempt = 2; attempt <= MAX_ATTEMPTS; attempt++) {
+                        const failedIndices = urls.map((u, i) => u === null ? i : -1).filter(i => i >= 0);
+                        if (failedIndices.length === 0) break;
+
+                        console.log(`[RegeneratePost] Retrying ${failedIndices.length} failed images (attempt ${attempt}/${MAX_ATTEMPTS})`);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+
+                        const retryResults = await Promise.allSettled(
+                            failedIndices.map(i => generateSingleImage(prompts[i], i))
+                        );
+                        retryResults.forEach((r, ri) => {
+                            if (r.status === 'fulfilled' && r.value) urls[failedIndices[ri]] = r.value;
+                            if (r.status === 'rejected' && r.reason?.isQuotaError) quotaExhausted = true;
+                        });
+                        if (quotaExhausted) {
+                            console.warn(`[RegeneratePost] Imagen daily quota exhausted — skipping further retries`);
+                            break;
+                        }
+                    }
+                } else {
+                    console.warn(`[RegeneratePost] Imagen daily quota exhausted — skipping all retries`);
+                }
+
+                const successCount = urls.filter(Boolean).length;
+                if (successCount < prompts.length) {
+                    console.warn(`[RegeneratePost] Only ${successCount}/${prompts.length} images${quotaExhausted ? ' (quota exhausted)' : ''}`);
+                }
+
+                return urls.filter((url): url is string => url !== null);
             })(),
             // TTS audio generation
             (async () => {
@@ -272,13 +312,22 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
         }
 
         // ── STEP 4: Write everything to Firestore in one update ──
+        const publicPost: any = {
+            title: pass1.title,
+            pseudonym: pass1.pseudonym,
+            letter: pass1.letter,
+            response: pass2.response,
+        };
+        // Include imagen_url in public_post when we have new images
+        if (imagen_urls.length > 0) {
+            publicPost.imagen_url = imagen_url;
+        } else {
+            // Preserve old imagen_url from existing post data
+            publicPost.imagen_url = postData.public_post?.imagen_url || postData.imagen_url || null;
+        }
+
         const updateData: any = {
-            public_post: {
-                title: pass1.title,
-                pseudonym: pass1.pseudonym,
-                letter: pass1.letter,
-                response: pass2.response,
-            },
+            public_post: publicPost,
             verdict: pass1.verdict,
             imagen_prompts: pass1.imagen_prompts,
             photo_vibe: pass1.photo_vibe,
@@ -286,10 +335,12 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
             language: pass1.language || null,
         };
 
+        // Only overwrite images if we got new ones — don't clear old images on total failure
         if (imagen_urls.length > 0) {
             updateData.imagen_urls = imagen_urls;
             updateData.imagen_url = imagen_url;
         }
+
         if (audio) {
             updateData.audio_url = audio.audioUrl;
             updateData.audio_letter_ratio = audio.letterWordRatio;
@@ -297,13 +348,16 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
         }
 
         await postDoc.ref.update(updateData);
-        console.log(`[RegeneratePost] Full regeneration complete for ${postId} (image: ${!!imagen_url}, audio: ${!!audio})`);
+        const promptCount = (pass1.imagen_prompts || []).length;
+        console.log(`[RegeneratePost] Full regeneration complete for ${postId} (images: ${imagen_urls.length}/${promptCount}, audio: ${!!audio})`);
 
         return NextResponse.json({
             success: true,
             letter: pass1.letter,
             response: pass2.response,
             imagen_url,
+            imagen_count: imagen_urls.length,
+            imagen_requested: promptCount,
             audio_regenerated: !!audio,
         });
     } catch (error: any) {
