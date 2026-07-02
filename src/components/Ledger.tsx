@@ -472,6 +472,30 @@ export function Ledger() {
                     </div>
                 )}
 
+                {/* Voice Confirmation Card */}
+                {hasBuiltCharacter && (bibleStatus === 'stable' || bibleStatus === 'ready')
+                    && profile?.character_bible?.voice_id
+                    && !profile?.character_bible?.voice_confirmed
+                    && (!profile?.identity?.session_count || profile.identity.session_count < 1)
+                    && user && (
+                    <VoiceBrowser
+                        currentVoiceId={profile.character_bible.voice_id}
+                        currentVoiceName={profile.character_bible.voice_name}
+                        startOpen
+                        compact
+                        onVoiceSelected={async () => {
+                            try {
+                                const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
+                                await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
+                                    'character_bible.voice_confirmed': true,
+                                });
+                            } catch (err) {
+                                console.error('Failed to confirm voice:', err);
+                            }
+                        }}
+                    />
+                )}
+
                 {emptyStateContent}
             </section>
         );
@@ -644,8 +668,9 @@ export function Ledger() {
             )}
 
             {/* Voice Confirmation Card — shown once after bible is built, until user confirms */}
-            {hasBuiltCharacter && bibleStatus === 'stable'
+            {hasBuiltCharacter && (bibleStatus === 'stable' || bibleStatus === 'ready')
                 && profile?.character_bible?.voice_id
+                && !profile?.character_bible?.voice_confirmed
                 && (!profile?.identity?.session_count || profile.identity.session_count < 1)
                 && user && (
                 <VoiceBrowser

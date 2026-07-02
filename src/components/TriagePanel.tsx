@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Home, User as UserIcon, BookOpen, Heart, ArrowRight } from "lucide-react";
+import { MessageCircle, Home, User as UserIcon, BookOpen, Heart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from 'next-intl';
@@ -13,19 +13,19 @@ import { getMostRecentActiveChat } from "@/lib/firebase/chat";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
 import { SessionPurchaseModal } from "./SessionPurchaseModal";
-import { IntakeChat } from "./IntakeChat";
+import { IdentityForm, IdentityFormData } from "./IdentityForm";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
 const MAX_SESSIONS_PER_DAY = 5;
 
-type OnboardingPhase = 'gender' | 'intake';
+
 
 export function TriagePanel() {
     const { user } = useAuth();
     const pathname = usePathname();
     const t = useTranslations();
-    const { pauseAll } = useAudioMute();
+    const { pauseAll, suppressAutoPlay, unsuppressAutoPlay } = useAudioMute();
 
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
     const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
@@ -45,9 +45,6 @@ export function TriagePanel() {
 
     // Onboarding state (triggered when FAB tapped without character bible)
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>('gender');
-    const [gender, setGender] = useState('');
-    const [genderSubmitting, setGenderSubmitting] = useState(false);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
     // Session credit / subscription state
@@ -91,6 +88,15 @@ export function TriagePanel() {
         }
     }, [needsOnboarding]);
 
+    // Suppress feed auto-play while the onboarding overlay is visible
+    useEffect(() => {
+        if (showOnboarding) {
+            suppressAutoPlay();
+        } else {
+            unsuppressAutoPlay();
+        }
+    }, [showOnboarding, suppressAutoPlay, unsuppressAutoPlay]);
+
 
 
     // Listen for 'open-mirror-chat' custom event (e.g. from Ledger first-session card)
@@ -117,30 +123,22 @@ export function TriagePanel() {
     const isBibleReady = bible != null && (bible.compiled_output?.ideal?.length ?? 0) > 0;
     const dailyRemaining = MAX_SESSIONS_PER_DAY - sessionsToday;
 
-    const handleGenderSubmit = async () => {
-        if (!user || !gender.trim() || genderSubmitting) return;
-        setGenderSubmitting(true);
-        try {
-            await setDoc(doc(db, 'users', user.uid), {
-                identity: {
-                    gender: gender.trim(),
-                    onboarding_started: true,
-                },
-            }, { merge: true });
-            setOnboardingPhase('intake');
-        } catch (err) {
-            console.error('Failed to save gender:', err);
-            setGenderSubmitting(false);
-        }
-    };
-
-    const handleIntakeComplete = async (answers: { rant: string; people: string; enjoyments: string; age: string; ethnicity: string }) => {
+    const handleOnboardingSubmit = async (data: IdentityFormData) => {
         if (!user) return;
 
-        // Mark onboarding complete + set bible status to 'compiling' immediately
-        // so the Ledger never flashes a 'failed' state during the API gap
+        // Save identity fields + mark onboarding complete + set bible status to 'compiling'
+        // immediately so the Ledger never flashes a 'failed' state during the API gap
         await setDoc(doc(db, 'users', user.uid), {
-            identity: { onboarding_complete: true },
+            identity: {
+                dream_rant: data.rant.trim(),
+                gender: data.gender.trim(),
+                age: data.age.trim(),
+                ethnicity: data.ethnicity.trim(),
+                important_people: data.people.trim(),
+                things_i_enjoy: data.enjoyments.trim(),
+                character_name: data.character_name.trim(),
+                onboarding_complete: true,
+            },
             character_bible: { status: 'compiling', last_updated: Date.now() },
         }, { merge: true });
 
@@ -154,21 +152,20 @@ export function TriagePanel() {
                     'Authorization': `Bearer ${idToken}`,
                 },
                 body: JSON.stringify({
-                    rant: answers.rant,
-                    gender: identity?.gender || gender,
-                    important_people: answers.people,
-                    things_i_enjoy: answers.enjoyments,
-                    age: answers.age || '',
-                    ethnicity: answers.ethnicity || '',
-                    character_name: '',
+                    rant: data.rant.trim(),
+                    gender: data.gender.trim(),
+                    important_people: data.people.trim(),
+                    things_i_enjoy: data.enjoyments.trim(),
+                    age: data.age.trim(),
+                    ethnicity: data.ethnicity.trim(),
+                    character_name: data.character_name.trim(),
                 }),
             }).catch(err => console.error('[Onboarding] Process error:', err));
         } catch (err) {
             console.error('[Onboarding] Process error:', err);
         }
 
-        // Close onboarding and the chat bubble will now be enabled
-        // (bible will be compiling, user sees the feed)
+        // Close onboarding — bible will be compiling, user sees the feed
         setShowOnboarding(false);
         setNeedsOnboarding(false);
     };
@@ -345,64 +342,27 @@ export function TriagePanel() {
 
             {/* Onboarding Overlay — triggered by FAB when no character bible */}
             {showOnboarding && (
-                onboardingPhase === 'gender' && !identity?.onboarding_started ? (
-                    <div className="fixed inset-0 z-[60] bg-black text-white flex flex-col items-center justify-center px-6 py-12">
+                <div className="fixed inset-0 z-[60] bg-zinc-950 flex flex-col">
+                    {/* Header */}
+                    <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between pt-[calc(16px+env(safe-area-inset-top))]">
+                        <h2 className="text-sm font-bold text-white">{t('onboarding.preChat.heading')}</h2>
                         <button
                             onClick={() => setShowOnboarding(false)}
-                            className="absolute top-6 right-6 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-semibold"
+                            className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3"
                         >
                             {t('common.close')}
                         </button>
-                        <div className="w-full max-w-md mx-auto animate-in fade-in duration-300">
-                            <div className="text-center mb-8">
-                                <h1 className="text-3xl font-black tracking-tight mb-3">
-                                    {t('onboarding.preChat.heading')}
-                                </h1>
-                                <p className="text-base text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                                    {t('onboarding.preChat.subtext')}
-                                </p>
-                            </div>
-
-                            <div className="mb-6">
-                                <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">
-                                    {t('onboarding.preChat.genderLabel')}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={gender}
-                                    onChange={(e) => setGender(e.target.value)}
-                                    placeholder={t('onboarding.preChat.genderPlaceholder')}
-                                    maxLength={50}
-                                    autoFocus
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleGenderSubmit}
-                                disabled={!gender.trim() || genderSubmitting}
-                                className="w-full bg-white text-black py-3.5 text-base font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {t('onboarding.preChat.cta')}
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
                     </div>
-                ) : (
-                    <IntakeChat
-                        onComplete={handleIntakeComplete}
-                        onBack={async () => {
-                            if (user) {
-                                await setDoc(doc(db, 'users', user.uid), {
-                                    identity: { onboarding_started: false },
-                                }, { merge: true });
-                            }
-                            setOnboardingPhase('gender');
-                            setGender('');
-                            setGenderSubmitting(false);
-                        }}
-                    />
-                )
+
+                    {/* Form — fills remaining screen height */}
+                    <div className="flex-1 flex flex-col min-h-0 px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
+                        <IdentityForm
+                            onSubmit={handleOnboardingSubmit}
+                            submitLabel={t('onboarding.submitLabel')}
+                            showHeadings={true}
+                        />
+                    </div>
+                </div>
             )}
         </>
     );

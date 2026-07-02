@@ -219,6 +219,7 @@ export async function POST(req: Request) {
                     },
                     body: JSON.stringify({
                         uid,
+                        skipCooldown: true, // System-initiated — bypass cooldown
                         source_code: {
                             archetype: data.title,
                             manifesto: data.dream_self,
@@ -231,8 +232,16 @@ export async function POST(req: Request) {
 
                 if (!compileRes.ok) {
                     console.error(`[Onboarding] Background: Bible compile failed with status ${compileRes.status}`);
+                    // Extract failure reason so the UI can show a specific message
+                    let failReason = 'error';
+                    try {
+                        const body = await compileRes.json();
+                        if (compileRes.status === 429) {
+                            failReason = body.limitType === 'daily' ? 'rate_limit_daily' : 'rate_limit_cooldown';
+                        }
+                    } catch { /* body parse failed — keep generic reason */ }
                     await db.collection("users").doc(uid).set({
-                        character_bible: { status: 'failed' }
+                        character_bible: { status: 'failed', fail_reason: failReason }
                     }, { merge: true });
                     return;
                 }

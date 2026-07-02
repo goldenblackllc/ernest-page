@@ -38,7 +38,7 @@ export async function POST(req: Request) {
                     'Content-Type': 'application/json',
                     'x-internal-key': process.env.CRON_SECRET || '',
                 },
-                body: JSON.stringify({ uid, source_code }),
+                body: JSON.stringify({ uid, source_code, skipCooldown: true }),
                 signal: AbortSignal.timeout(240_000), // 4 min — fail fast so status doesn't stay 'compiling'
             });
 

@@ -1718,13 +1718,66 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     </div>
 
                     {user?.uid === post.uid && (
-                        <button
-                            onClick={handleDelete}
-                            className="text-zinc-400 hover:text-white transition-colors duration-200 p-1"
-                            title={t('deletePost')}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            {/* Regenerate post */}
+                            <div className="relative">
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!user || isRegeneratingImage) return;
+                                        setIsRegeneratingImage(true);
+                                        setRegenToast(null);
+                                        try {
+                                            const idToken = await user.getIdToken();
+                                            const res = await fetch('/api/admin/regenerate-post', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Authorization': `Bearer ${idToken}`,
+                                                },
+                                                body: JSON.stringify({ postId: post.id }),
+                                            });
+                                            if (res.ok) {
+                                                setRegenToast('✓ Regenerated');
+                                                setTimeout(() => window.location.reload(), 1500);
+                                            } else {
+                                                const err = await res.json();
+                                                setRegenToast(err.error || 'Failed');
+                                            }
+                                        } catch (err) {
+                                            setRegenToast('Failed');
+                                        } finally {
+                                            setIsRegeneratingImage(false);
+                                            setTimeout(() => setRegenToast(null), 3000);
+                                        }
+                                    }}
+                                    className={cn(
+                                        "p-1 transition-colors duration-200",
+                                        isRegeneratingImage ? "text-amber-400" : "text-zinc-400 hover:text-amber-400"
+                                    )}
+                                    title="Regenerate post (letter, response, audio, image)"
+                                    disabled={isRegeneratingImage}
+                                >
+                                    {isRegeneratingImage ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <ImagePlus className="w-4 h-4" />
+                                    )}
+                                </button>
+                                {regenToast && (
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap z-30">
+                                        {regenToast}
+                                    </span>
+                                )}
+                            </div>
+                            <button
+                                onClick={handleDelete}
+                                className="text-zinc-400 hover:text-white transition-colors duration-200 p-1"
+                                title={t('deletePost')}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
                     )}
                     <button
                         onClick={handleShare}

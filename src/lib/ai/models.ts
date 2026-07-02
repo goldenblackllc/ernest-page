@@ -8,8 +8,8 @@ const google = createGoogleGenerativeAI({
 
 export const OPUS_MODEL = 'claude-opus-4-7'; // Mirror Chat — Deep Reasoning Engine
 export const OPUS_FALLBACK = 'claude-opus-4-6'; // Stable Fallback for Opus
-export const SONNET_MODEL = 'claude-sonnet-4-6'; // Creative Writing Engine
-export const SONNET_FALLBACK = 'claude-sonnet-4-5'; // Stable Fallback for Sonnet
+export const SONNET_MODEL = 'claude-sonnet-5'; // Creative Writing Engine
+export const SONNET_FALLBACK = 'claude-sonnet-4-6'; // Stable Fallback for Sonnet
 export const BACKUP_MODEL = 'gemini-3.1-pro-preview';
 
 function getProviderModel(modelName: string) {

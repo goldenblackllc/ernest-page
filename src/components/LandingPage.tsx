@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -67,6 +67,16 @@ export function LandingPage() {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const router = useRouter();
+
+    // Delay focus so the browser registers the input for SMS autofill
+    // before it receives focus — autoFocus fires too early.
+    const otpInputRef = useCallback((node: HTMLInputElement | null) => {
+        if (node) {
+            requestAnimationFrame(() => {
+                setTimeout(() => node.focus(), 100);
+            });
+        }
+    }, []);
 
     const handleSendCode = async () => {
         setError(null);
@@ -249,10 +259,11 @@ export function LandingPage() {
                                         />
                                         <input
                                             type="tel"
+                                            autoComplete="tel"
                                             placeholder={t('landing.auth.phonePlaceholder')}
                                             value={phoneNumber}
                                             onChange={(e) => setPhoneNumber(e.target.value)}
-                                            className="flex-1 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
+                                            className="flex-1 min-w-0 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                         />
                                     </div>
                                     <button
@@ -293,7 +304,7 @@ export function LandingPage() {
                                         onChange={(e) => setVerificationCode(e.target.value)}
                                         className="w-full bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-lg text-white text-center tracking-[0.5em] placeholder:tracking-normal placeholder-zinc-700 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                         maxLength={6}
-                                        autoFocus
+                                        ref={otpInputRef}
                                     />
                                     <button
                                         type="submit"

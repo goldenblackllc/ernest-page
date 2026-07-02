@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         if (!verifyInternalAuth(req)) return unauthorizedResponse();
 
         const payload = await req.json();
-        const { uid, source_code } = payload;
+        const { uid, source_code, skipCooldown } = payload;
 
         if (!uid || !source_code) {
             return Response.json({ error: "Missing uid or source_code" }, { status: 400 });
@@ -109,15 +109,17 @@ export async function POST(req: Request) {
             }, { status: 429 });
         }
 
-        // Cooldown check
-        const timeSinceLast = now - lastCompileAt;
-        if (lastCompileAt > 0 && timeSinceLast < COOLDOWN_MS) {
-            const waitSec = Math.ceil((COOLDOWN_MS - timeSinceLast) / 1000);
-            return Response.json({
-                error: `Please wait ${waitSec > 60 ? Math.ceil(waitSec / 60) + ' minutes' : waitSec + ' seconds'} before rebuilding your character.`,
-                limitType: 'cooldown',
-                retryAfter: waitSec,
-            }, { status: 429, headers: { 'Retry-After': String(waitSec) } });
+        // Cooldown check — skip for system-initiated compiles (onboarding, retry)
+        if (!skipCooldown) {
+            const timeSinceLast = now - lastCompileAt;
+            if (lastCompileAt > 0 && timeSinceLast < COOLDOWN_MS) {
+                const waitSec = Math.ceil((COOLDOWN_MS - timeSinceLast) / 1000);
+                return Response.json({
+                    error: `Please wait ${waitSec > 60 ? Math.ceil(waitSec / 60) + ' minutes' : waitSec + ' seconds'} before rebuilding your character.`,
+                    limitType: 'cooldown',
+                    retryAfter: waitSec,
+                }, { status: 429, headers: { 'Retry-After': String(waitSec) } });
+            }
         }
 
         const providerOptions = {

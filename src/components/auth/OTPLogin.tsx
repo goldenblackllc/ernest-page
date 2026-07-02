@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,16 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
     const dialCode = getDialCodeForCountry(selectedCountry);
     const router = useRouter();
     const { trackEvent } = useTrackEvent();
+
+    // Delay focus so the browser registers the input for SMS autofill
+    // before it receives focus — autoFocus fires too early.
+    const otpInputRef = useCallback((node: HTMLInputElement | null) => {
+        if (node) {
+            requestAnimationFrame(() => {
+                setTimeout(() => node.focus(), 100);
+            });
+        }
+    }, []);
 
     const handleSendCode = async () => {
         setError(null);
@@ -97,10 +107,11 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
                         />
                         <input
                             type="tel"
+                            autoComplete="tel"
                             placeholder="Phone number"
                             value={phoneNumber}
                             onChange={(e) => setPhoneNumber(e.target.value)}
-                            className="flex-1 border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400"
+                            className="flex-1 min-w-0 border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400"
                         />
                     </div>
                     <button
@@ -131,7 +142,7 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
                         onChange={(e) => setVerificationCode(e.target.value)}
                         className="border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400 placeholder:tracking-normal text-center tracking-widest w-full mt-6"
                         maxLength={6}
-                        autoFocus
+                        ref={otpInputRef}
                     />
                     <button
                         type="submit"

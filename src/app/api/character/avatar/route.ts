@@ -71,18 +71,22 @@ export async function POST(req: Request) {
         const ageStr = computedAge ? `${computedAge}-year-old ` : '';
         const ethnicityStr = ethnicity ? `${ethnicity} ` : '';
         const prompt = [
-            `Headshot portrait, square aspect ratio.`,
+            // Lead with framing — strongest position in the prompt
+            `TIGHT HEADSHOT PORTRAIT framed from the chest up. Square 1:1 aspect ratio.`,
             `A ${ageStr}${ethnicityStr}${gender} who embodies "${title}".`,
-            visualCues ? `Visual essence: ${visualCues}` : '',
-            styleCues ? `Style and appearance: ${styleCues}` : '',
+            // Scope dynamic cues to face/upper-body only so they don't pull the camera out
+            visualCues ? `Facial features and upper-body essence: ${visualCues}` : '',
+            styleCues ? `Hair, grooming, and upper-body style: ${styleCues}` : '',
             `Cinematic studio lighting, shallow depth of field, warm tones.`,
             `Instagram-quality sharpness and color saturation.`,
-            `Shot from chest up. Natural, confident, relaxed expression.`,
+            `Natural, confident, relaxed expression. Face and upper chest fill the frame.`,
             `Full-bleed composition. No borders, no frames, no margins, no white space around the subject.`,
             // Only use the generic fallback when ethnicity is not specified
             !ethnicity ? `Do not default to any racial or ethnic stereotype.` : '',
             !ethnicity ? `Use ambiguous, diverse features unless background is specified.` : '',
             `No text, no watermarks, no logos.`,
+            // Close with explicit negative constraints to prevent full-body framing
+            `Do NOT show the subject's waist, hips, legs, or feet. Do NOT zoom out to show the full body. Keep the camera tight on the face and upper chest only.`,
         ].filter(Boolean).join(' ');
 
         console.log(`[Avatar] Generating for ${uid}: "${title}"`);

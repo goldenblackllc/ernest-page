@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
-import { Loader2, Volume2, Check } from "lucide-react";
+import { Loader2, Volume2, Square, Check } from "lucide-react";
 
 export interface VoiceResult {
     voice_id: string;
@@ -191,9 +191,12 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                                 ? "bg-white/10 border-white/20 animate-pulse"
                                 : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
                         )}
-                        aria-label={`Play ${selectedName}`}
+                        aria-label={playingId === selectedId ? `Stop ${selectedName}` : `Play ${selectedName}`}
                     >
-                        <Volume2 className={cn("w-3.5 h-3.5", playingId === selectedId ? "text-white" : "text-zinc-400")} />
+                        {playingId === selectedId
+                            ? <Square className="w-3 h-3 text-white fill-white" />
+                            : <Volume2 className="w-3.5 h-3.5 text-zinc-400" />
+                        }
                     </button>
                     <p className="text-sm text-zinc-300">{selectedName}</p>
                 </div>
@@ -286,9 +289,12 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                                                 ? "bg-white/10 border-white/20 animate-pulse"
                                                 : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
                                         )}
-                                        aria-label={`Play ${voice.name}`}
+                                        aria-label={isPlaying ? `Stop ${voice.name}` : `Play ${voice.name}`}
                                     >
-                                        <Volume2 className={cn("w-4 h-4", isPlaying ? "text-white" : "text-zinc-400")} />
+                                        {isPlaying
+                                            ? <Square className="w-3.5 h-3.5 text-white fill-white" />
+                                            : <Volume2 className="w-4 h-4 text-zinc-400" />
+                                        }
                                     </button>
 
                                     <div className="flex-1 min-w-0">
