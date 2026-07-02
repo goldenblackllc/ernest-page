@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
@@ -87,10 +88,15 @@ export async function POST(req: Request) {
         // Step 1: Generate background photo via Nano Banana
         console.log(`[RegenerateImage] Generating clean background image for post ${postId}`);
 
+        // Load user's reference image for character consistency anchoring
+        const referenceImage = await loadUserReferenceImage(uid);
+        const referenceImages = referenceImage ? [referenceImage] : undefined;
+
         const result = await generateImage({
             prompt,
             aspectRatio: '9:16',
             logPrefix: 'RegenerateImage',
+            referenceImages,
         });
 
         if (!result) {

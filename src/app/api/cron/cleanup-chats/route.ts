@@ -12,6 +12,7 @@ import { generatePostAudio } from '@/lib/ai/postTTS';
 import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { generateImage } from '@/lib/ai/generateImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 import nodemailer from 'nodemailer';
 
@@ -491,9 +492,13 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         continue;
                     }
 
+                    // Load user's reference image for character consistency anchoring
+                    const referenceImage = await loadUserReferenceImage(uid);
+                    const referenceImages = referenceImage ? [referenceImage] : undefined;
+
                     // Start parallel image generation for all prompts + dossier write
                     const imagePromises = prompts.map((prompt: string, i: number) =>
-                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`)
+                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages)
                     );
 
                     const [imageResults] = await Promise.allSettled([
@@ -671,11 +676,12 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 }
 
 // ─── Image generation helper ─────────────────────────────────────────────────
-async function generateSingleImage(prompt: string, postId: string): Promise<{ buffer: Buffer; prompt: string } | null> {
+async function generateSingleImage(prompt: string, postId: string, referenceImages?: Buffer[]): Promise<{ buffer: Buffer; prompt: string } | null> {
     const result = await generateImage({
         prompt,
         aspectRatio: '9:16',
         logPrefix: 'Cron',
+        referenceImages,
     });
     if (!result) return null;
 
@@ -687,10 +693,10 @@ async function generateSingleImage(prompt: string, postId: string): Promise<{ bu
     return { buffer: finalBuffer, prompt };
 }
 
-async function generateVerdictImage(prompt: string, postId: string): Promise<string | null> {
+async function generateVerdictImage(prompt: string, postId: string, referenceImages?: Buffer[]): Promise<string | null> {
     try {
         // Attempt 1: Generate and validate
-        const result = await generateSingleImage(prompt, postId);
+        const result = await generateSingleImage(prompt, postId, referenceImages);
         if (!result) return null;
 
         const validation = await validateGeneratedImage(result.buffer, prompt);
@@ -701,7 +707,7 @@ async function generateVerdictImage(prompt: string, postId: string): Promise<str
         // Validation failed — retry once with reinforced prompt
         console.warn(`[Cron] Image validation failed for post ${postId} (attempt 1):`, validation.summary, validation.issues);
         const reinforcedPrompt = `${prompt} CRITICAL: Do not include any text, watermarks, metadata, words, letters, or numbers anywhere in the image. The image must be purely visual with zero text elements.`;
-        const retry = await generateSingleImage(reinforcedPrompt, postId);
+        const retry = await generateSingleImage(reinforcedPrompt, postId, referenceImages);
         if (!retry) return null;
 
         const retryValidation = await validateGeneratedImage(retry.buffer, reinforcedPrompt);

@@ -7,6 +7,7 @@ import { generatePostAudio } from '@/lib/ai/postTTS';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
@@ -206,6 +207,10 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
         // ── STEP 3: Generate image + TTS audio IN PARALLEL ──
         // Both are independent of each other — run concurrently to stay under timeout.
 
+        // Load user's reference image for character consistency anchoring
+        const referenceImage = await loadUserReferenceImage(uid);
+        const referenceImages = referenceImage ? [referenceImage] : undefined;
+
         const [imageResult, audioResult] = await Promise.allSettled([
             // Image generation — with per-prompt retries for quality
             (async (): Promise<string[]> => {
@@ -220,6 +225,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
                         prompt,
                         aspectRatio: '9:16',
                         logPrefix: 'RegeneratePost',
+                        referenceImages,
                     });
                     if (!result) return null;
 

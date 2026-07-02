@@ -3,6 +3,7 @@ import { db, storage } from '@/lib/firebase/admin';
 import { generatePostAudio } from '@/lib/ai/postTTS';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { generateImage } from '@/lib/ai/generateImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
@@ -195,12 +196,17 @@ async function generateDigestCard(user: {
             : '';
         const imagenPrompt = `Create an image inspired by this passage: "${contentSnippet}". Highly photorealistic. Cinematic lighting. Instagram-quality. NEVER include visible faces or readable text.${identityContext}${user.demographicHint} ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.`;
 
+        // Load user's reference image for character consistency anchoring
+        const referenceImage = await loadUserReferenceImage(user.uid);
+        const referenceImages = referenceImage ? [referenceImage] : undefined;
+
         for (let attempt = 1; attempt <= MAX_IMAGE_ATTEMPTS; attempt++) {
             try {
                 const imageGenResult = await generateImage({
                     prompt: imagenPrompt,
                     aspectRatio: '16:9',
                     logPrefix: 'Daily Digest',
+                    referenceImages,
                 });
 
                 if (imageGenResult) {

@@ -125,7 +125,14 @@ export async function POST(req: Request) {
             .jpeg({ quality: 80 })
             .toBuffer();
 
-        console.log(`[Avatar] Resized: ${rawBuffer.length} → ${buffer.length} bytes`);
+        // Also create a higher-res reference image (512px) for character identity
+        // anchoring during post/digest image generation
+        const referenceBuffer = await sharp(rawBuffer)
+            .resize(512, 512, { fit: 'cover' })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+
+        console.log(`[Avatar] Resized: ${rawBuffer.length} → avatar ${buffer.length} bytes, reference ${referenceBuffer.length} bytes`);
 
         // Validate image quality before uploading
         const validation = await validateGeneratedImage(buffer, prompt);
@@ -146,6 +153,8 @@ export async function POST(req: Request) {
         }
 
         const bucket = storage.bucket();
+
+        // Upload standard 256px avatar
         const fileName = `avatars/${uid}.jpg`;
         const file = bucket.file(fileName);
 
@@ -156,6 +165,18 @@ export async function POST(req: Request) {
             },
             public: true,
         });
+
+        // Upload 512px reference image for character consistency anchoring
+        const refFileName = `avatars/${uid}_reference.jpg`;
+        const refFile = bucket.file(refFileName);
+        await refFile.save(referenceBuffer, {
+            metadata: {
+                contentType: 'image/jpeg',
+                cacheControl: 'public, max-age=86400',
+            },
+            public: true,
+        });
+        console.log(`[Avatar] Reference image saved: ${refFileName}`);
 
         // Cache-bust: append timestamp so browsers/CDN don't serve the old image
         const avatarUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}?v=${Date.now()}`;
