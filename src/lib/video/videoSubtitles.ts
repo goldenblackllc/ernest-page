@@ -142,12 +142,14 @@ export function generateSubtitles(
  * that are complete thoughts with frame-accurate timing.
  *
  * @param wordTimestamps  Array of { word, start, end } from audio_word_timestamps
- * @param targetWords     Minimum words before we'll break at the next sentence end (default 50)
+ * @param targetWords     Minimum words before we'll break at the next sentence end (default 35)
+ * @param letterWordCount If provided, forces a chunk break at this word index (letter/response boundary)
  * @returns Array of SubtitleEntry with real timing
  */
 export function buildChunksFromTimestamps(
     wordTimestamps: { word: string; start: number; end: number }[],
     targetWords = 35,
+    letterWordCount?: number,
 ): SubtitleEntry[] {
     if (wordTimestamps.length === 0) return [];
 
@@ -157,18 +159,25 @@ export function buildChunksFromTimestamps(
 
     const entries: SubtitleEntry[] = [];
     let chunkStart = 0;
+    let globalWordIndex = 0; // tracks position across all words for letter/response boundary
     const hardCeiling = Math.ceil(targetWords * 1.5); // never exceed this
 
     for (let i = 0; i < filtered.length; i++) {
         const wordCount = i - chunkStart + 1;
         const word = filtered[i].word;
+        globalWordIndex++;
+
         // Check for sentence-ending punctuation anywhere in the word
         const isSentenceEnd = /[.!?]/.test(word);
         // Check for comma/dash as a secondary break point
         const isNaturalPause = /[,;—–\-]/.test(word);
         const isLastWord = i === filtered.length - 1;
 
+        // Force break at letter/response boundary
+        const isLetterResponseBoundary = letterWordCount != null && globalWordIndex === letterWordCount;
+
         const shouldBreak =
+            isLetterResponseBoundary ||
             (isSentenceEnd && wordCount >= targetWords) ||
             (isNaturalPause && wordCount >= hardCeiling) ||
             (wordCount >= hardCeiling) ||
@@ -176,11 +185,12 @@ export function buildChunksFromTimestamps(
 
         if (shouldBreak) {
             const group = filtered.slice(chunkStart, i + 1);
+            const phase = (letterWordCount != null && globalWordIndex <= letterWordCount) ? 'letter' : 'response';
             entries.push({
                 text: group.map(w => w.word).join(' '),
                 startTime: group[0].start,
                 endTime: group[group.length - 1].end,
-                phase: 'letter',
+                phase,
             });
             chunkStart = i + 1;
         }

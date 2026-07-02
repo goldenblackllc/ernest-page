@@ -3,7 +3,6 @@ import { db, storage } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { generateSubtitles, generateAssSubtitles, buildChunksFromTimestamps } from '@/lib/video/videoSubtitles';
 import { renderFrame } from '@/lib/video/renderFrame';
-import { formatDistanceToNow } from 'date-fns';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -51,8 +50,13 @@ export async function GET(
         // Must have audio + image
         const unifiedAudioUrl = post.audio_url;
         const letterAudioUrl = post.letter_audio_url;
-        const heroUrl = post.public_post?.imagen_url || post.imagen_url || post.imageUrl;
-        if ((!unifiedAudioUrl && !letterAudioUrl) || !heroUrl) {
+        // Collect all image URLs — prefer imagen_urls array, fall back to single url
+        const allImageUrls: string[] = (
+            post.public_post?.imagen_urls?.length ? post.public_post.imagen_urls
+            : post.imagen_urls?.length ? post.imagen_urls
+            : [post.public_post?.imagen_url || post.imagen_url || post.imageUrl]
+        ).filter(Boolean) as string[];
+        if ((!unifiedAudioUrl && !letterAudioUrl) || allImageUrls.length === 0) {
             return NextResponse.json({ error: 'Post does not have audio and image for video generation' }, { status: 400 });
         }
 
@@ -80,15 +84,30 @@ export async function GET(
         const workDir = join(tmpdir(), `ep-video-${randomUUID()}`);
         await fs.mkdir(workDir, { recursive: true });
 
-        const heroPath = join(workDir, 'hero.jpg');
         const combinedAudioPath = join(workDir, 'combined.mp3');
         const outputPath = join(workDir, 'output.mp4');
 
-        // Download hero image
-        const heroRes = await fetch(heroUrl);
-        if (!heroRes.ok) throw new Error(`Failed to download hero image: ${heroRes.status}`);
-        const heroBuffer = Buffer.from(await heroRes.arrayBuffer());
-        await fs.writeFile(heroPath, heroBuffer);
+        // Download all images in parallel
+        console.log(`[Video] Downloading ${allImageUrls.length} image(s)...`);
+        const imagePaths: string[] = [];
+        await Promise.all(allImageUrls.map(async (url, idx) => {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const buf = Buffer.from(await res.arrayBuffer());
+                const imgPath = join(workDir, `img_${idx}.jpg`);
+                await fs.writeFile(imgPath, buf);
+                imagePaths[idx] = imgPath;
+            } catch (err: any) {
+                console.warn(`[Video] Failed to download image ${idx}: ${err.message}`);
+            }
+        }));
+        // Filter out failed downloads, ensure at least one image
+        const validImagePaths = imagePaths.filter(Boolean);
+        if (validImagePaths.length === 0) {
+            throw new Error('Failed to download any images');
+        }
+        console.log(`[Video] Downloaded ${validImagePaths.length} image(s)`);
 
         if (unifiedAudioUrl) {
             // ── UNIFIED FORMAT: single audio file — download directly ──
@@ -209,32 +228,51 @@ export async function GET(
         // Prefer real ElevenLabs word-level timestamps for frame-accurate sync.
         // Fall back to word-ratio estimation for older posts without timestamps.
         const rawTimestamps = post.audio_word_timestamps as { word: string; start: number; end: number }[] | undefined;
+        // Compute letter word count for forced subtitle break at letter/response boundary
+        const letterWordCount = letterText.split(/\s+/).filter(Boolean).length;
         const subtitles = (rawTimestamps && rawTimestamps.length > 0)
-            ? buildChunksFromTimestamps(rawTimestamps)
+            ? buildChunksFromTimestamps(rawTimestamps, 35, letterWordCount)
             : generateSubtitles(letterText, responseText, letterDuration, responseDuration);
 
-        // ── Render background frame with sharp (hero + gradients + avatar, no text) ──
+        // ── Render frames for each image ──
         const fontsDir = join(process.cwd(), 'public/fonts/hkgrotesk');
-
-        // Compute timestamp text
-        const postCreatedAt = post.created_at;
-        let createdDate: Date;
-        if (postCreatedAt?.toDate) {
-            createdDate = postCreatedAt.toDate();
-        } else if (postCreatedAt?._seconds) {
-            createdDate = new Date(postCreatedAt._seconds * 1000);
-        } else {
-            createdDate = new Date();
+        console.log('[Video] Rendering frames with sharp...');
+        const framePaths: string[] = [];
+        for (let i = 0; i < validImagePaths.length; i++) {
+            const framePath = join(workDir, `frame_${i}.png`);
+            const frameBuffer = await renderFrame({ heroPath: validImagePaths[i] });
+            await fs.writeFile(framePath, frameBuffer);
+            framePaths.push(framePath);
         }
-        const timeAgo = formatDistanceToNow(createdDate, { addSuffix: true });
+        console.log(`[Video] Rendered ${framePaths.length} frame(s)`);
 
-        console.log('[Video] Rendering frame with sharp...');
-        const framePath = join(workDir, 'frame.png');
-        const frameBuffer = await renderFrame({
-            heroPath,
-        });
-        await fs.writeFile(framePath, frameBuffer);
-        console.log(`[Video] Frame rendered: ${frameBuffer.length} bytes`);
+        // ── Map images to subtitle chunks ──
+        // Distribute images evenly across subtitle chunks.
+        // IMPORTANT: Use ABSOLUTE end times so the concat timeline matches
+        // the ASS subtitle timestamps exactly. The concat demuxer starts at t=0
+        // and each image's duration determines when the next image starts.
+        const imageTimings: { path: string; duration: number }[] = [];
+        if (framePaths.length === 1) {
+            // Single image — covers entire video
+            imageTimings.push({ path: framePaths[0], duration: totalDuration });
+        } else {
+            // Multiple images — distribute across subtitle chunks
+            const chunksPerImage = Math.max(1, Math.floor(subtitles.length / framePaths.length));
+            let chunkIdx = 0;
+            let prevEndTime = 0; // absolute time where the previous image ended
+            for (let imgIdx = 0; imgIdx < framePaths.length; imgIdx++) {
+                const isLast = imgIdx === framePaths.length - 1;
+                const endChunkIdx = isLast ? subtitles.length : Math.min(chunkIdx + chunksPerImage, subtitles.length);
+                if (chunkIdx >= subtitles.length) break;
+                // Use absolute end time of the last assigned chunk
+                const absEndTime = isLast ? totalDuration : (subtitles[endChunkIdx - 1]?.endTime || totalDuration);
+                const duration = absEndTime - prevEndTime;
+                imageTimings.push({ path: framePaths[imgIdx], duration: Math.max(0.1, duration) });
+                prevEndTime = absEndTime;
+                chunkIdx = endChunkIdx;
+            }
+        }
+        console.log(`[Video] Image timings: ${imageTimings.map(t => t.duration.toFixed(1) + 's').join(', ')}`);
 
         // ── Generate ASS subtitle file ──
         const assContent = generateAssSubtitles(subtitles, totalDuration, titleText);
@@ -252,28 +290,71 @@ export async function GET(
 </fontconfig>`, 'utf-8');
         await fs.mkdir(join(workDir, 'fc-cache'), { recursive: true });
 
-        // ── Run ffmpeg ──
+        // ── Build ffmpeg command ──
         console.log('[Video] Running ffmpeg...');
-        const ffmpegArgs: string[] = [
-            '-y',
-            '-loop', '1',
-            '-framerate', '2',
-            '-i', framePath,
-            '-i', combinedAudioPath,
-            '-filter_complex', `[0:v]ass=${assPath}:fontsdir=${fontsDir}[vout]`,
-            '-map', '[vout]',
-            '-map', '1:a',
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',
-            '-crf', '23',
-            '-r', '15',
-            '-c:a', 'aac',
-            '-b:a', '128k',
-            '-t', totalDuration.toFixed(2),
-            '-movflags', '+faststart',
-            '-pix_fmt', 'yuv420p',
-            outputPath,
-        ];
+        let ffmpegArgs: string[];
+
+        if (imageTimings.length === 1) {
+            // Single image — simple loop (original approach)
+            ffmpegArgs = [
+                '-y',
+                '-loop', '1',
+                '-framerate', '2',
+                '-i', imageTimings[0].path,
+                '-i', combinedAudioPath,
+                '-filter_complex', `[0:v]ass=${assPath}:fontsdir=${fontsDir}[vout]`,
+                '-map', '[vout]',
+                '-map', '1:a',
+                '-c:v', 'libx264',
+                '-preset', 'ultrafast',
+                '-crf', '23',
+                '-r', '15',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-t', totalDuration.toFixed(2),
+                '-movflags', '+faststart',
+                '-pix_fmt', 'yuv420p',
+                outputPath,
+            ];
+        } else {
+            // Multiple images — each image becomes a looping video input,
+            // then joined via the concat FILTER (not demuxer).
+            // This guarantees each image generates a proper frame stream with correct PTS.
+            const inputs: string[] = ['-y'];
+            for (const timing of imageTimings) {
+                inputs.push(
+                    '-loop', '1',
+                    '-framerate', '2',
+                    '-t', timing.duration.toFixed(3),
+                    '-i', timing.path,
+                );
+            }
+            // Audio is the last input
+            inputs.push('-i', combinedAudioPath);
+
+            const audioInputIdx = imageTimings.length; // index of the audio input
+            // Build concat filter: [0:v][1:v][2:v]...concat=n=N:v=1:a=0[vid];[vid]ass=...[vout]
+            const concatInputs = imageTimings.map((_, i) => `[${i}:v]`).join('');
+            const filterComplex = `${concatInputs}concat=n=${imageTimings.length}:v=1:a=0[vid];[vid]ass=${assPath}:fontsdir=${fontsDir}[vout]`;
+            console.log(`[Video] Filter: ${filterComplex}`);
+
+            ffmpegArgs = [
+                ...inputs,
+                '-filter_complex', filterComplex,
+                '-map', '[vout]',
+                '-map', `${audioInputIdx}:a`,
+                '-c:v', 'libx264',
+                '-preset', 'ultrafast',
+                '-crf', '23',
+                '-r', '15',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-t', totalDuration.toFixed(2),
+                '-movflags', '+faststart',
+                '-pix_fmt', 'yuv420p',
+                outputPath,
+            ];
+        }
         const ffmpegResult = spawnSync(ffmpegPath, ffmpegArgs, {
             timeout: 110000,
             maxBuffer: 50 * 1024 * 1024,
