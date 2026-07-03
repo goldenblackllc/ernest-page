@@ -64,7 +64,7 @@ export async function renderVerdictCard(
                     textAlign: 'center' as const,
                     lineHeight: `${lineHeight}px`,
                     textShadow: `0 0 ${Math.round(fontSize / 4)}px rgba(0,0,0,0.9), 0 0 ${Math.round(fontSize / 3)}px rgba(0,0,0,0.7), 0 0 ${fontSize}px rgba(0,0,0,0.5)`,
-                    padding: '0 60px',
+                    padding: '0 200px 0 100px',
                     maxWidth: '100%',
                 },
             },
