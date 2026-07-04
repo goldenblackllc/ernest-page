@@ -7,7 +7,6 @@ import { generatePostAudio } from '@/lib/ai/postTTS';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
-import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
@@ -65,7 +64,8 @@ export async function POST(req: Request) {
         const identity = userData?.identity;
         const characterVoiceId = userData?.character_bible?.voice_id;
 
-        // Build appearance hint for image generation so human figures match the user
+        // Build context hint for POV image generation
+        // POV images rarely show the poster's face — they show what the poster SEES.
         const gender = identity?.gender || '';
         const ethnicity = identity?.ethnicity || '';
         const computedAge = computeAge(identity?.age);
@@ -75,13 +75,9 @@ export async function POST(req: Request) {
             gender,
         ].filter(Boolean);
         const dreamSelf = identity?.dream_self || '';
-        const appearanceParts = [
-            demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
-            dreamSelf ? `Self-presentation: "${dreamSelf}"` : '',
-        ].filter(Boolean);
         const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
-        const appearanceHint = appearanceParts.length > 0
-            ? `\nAPPEARANCE — MANDATORY FOR EVERY PROMPT CONTAINING A PERSON: ${appearanceParts.join(' ')} CRITICAL: Every imagen_prompt that includes a person representing the letter-writer MUST explicitly describe them as "${demographicTag}" in the prompt text itself. The image generator has NO memory between prompts — if you do not specify the age, ethnicity, and gender in EACH prompt, the generator will default to a generic adult. Be specific and consistent across all prompts.`
+        const appearanceHint = demographicTag
+            ? `\nPOSTER CONTEXT (for hands/partial body only — NOT full-person shots):\nThe poster is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} If a prompt includes a hand, arm, or partial body, match this description. Most prompts should show OBJECTS and ENVIRONMENTS only.`
             : '';
 
         console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
@@ -119,8 +115,8 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 - letter: LENGTH: 40-80 words. This is a guide — a tight, vivid letter can be shorter than a complex situation that needs more room. The letter will be read aloud in ~15-30 seconds. STRUCTURE: GUT PUNCH FIRST — open with the rawest, most emotionally charged line. Then situation context. The letter must present the situation as UNRESOLVED. VOICE: Raw and conversational — like texting a friend at 2am. Write in first person, present tense. FORMATTING: Start directly with the letter body (no salutation). End with '\\n\\n— ' followed by the pseudonym in Title Case.
 - verdict: A Therapy Shot — under 15 words, second-person, confrontational. Hit the reader between the eyes with the truth they're avoiding.
 - photo_vibe: One word capturing the emotional tone.
-- photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompts: An array of 5-6 prompts for Google Imagen to generate the post's background photos. A viewer who has never read the post should glance at this image and immediately know what life domain it's about — style, relationships, career, health, finances, food, body, or similar. PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS: If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic, ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags. Never a generic coffee maker, drip machine, pour-over, or Starbucks cup. Jura + Crema is our ecosystem partner. If the conversation mentions any other specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name. YOUR GOAL: Generate images for a social media video post. A viewer scrolling past should instantly understand what this story is about from the visuals alone. Show the world of this specific story — the actions, the behaviors, the situations described. You decide the visual narrative — pick the images that best capture the story. Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area relatively uncluttered. Each prompt should explore a different angle or moment from the story.
+- photo_scale: One of macro, detail, environment, or pov_hands. macro = extreme close-up of a single object. detail = a surface, screen, or texture at arm's length. environment = looking out at a room, window, or space from the poster's position. pov_hands = the poster's own hands interacting with something.
+- imagen_prompts: An array of 2-3 POV image prompts for the post's background photos. THE POV RULE: Every image must be shot as if the poster took the photo themselves, with their phone, in the moment. The image is EVIDENCE of the moment, not ILLUSTRATION of it. Show what the poster SEES — a ceiling, a window, a hand, a hallway, a screen — never a third-person shot of a person. PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS: If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic, ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags from a POV angle. If the conversation mentions any other specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name. Shot with a phone camera — genuine, intimate, first-person POV. Natural phone-camera qualities (slight grain, ambient lighting). 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 
@@ -152,8 +148,8 @@ OUTPUT FIELDS:
                 letter: z.string(),
                 verdict: z.string(),
                 photo_vibe: z.string(),
-                photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
-                imagen_prompts: z.array(z.string()).min(4).max(7),
+                photo_scale: z.enum(["macro", "detail", "environment", "pov_hands"]),
+                imagen_prompts: z.array(z.string()).min(2).max(3),
                 language: z.string().optional(),
             }),
             prompt: letterPrompt,
@@ -207,9 +203,9 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
         // ── STEP 3: Generate image + TTS audio IN PARALLEL ──
         // Both are independent of each other — run concurrently to stay under timeout.
 
-        // Load user's reference image for character consistency anchoring
-        const referenceImage = await loadUserReferenceImage(uid);
-        const referenceImages = referenceImage ? [referenceImage] : undefined;
+        // POV images show the world through the poster's eyes — no reference
+        // image needed (reference images anchor the model to a face, which
+        // causes it to generate third-person shots OF that person).
 
         const [imageResult, audioResult] = await Promise.allSettled([
             // Image generation — with per-prompt retries for quality
@@ -225,7 +221,6 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
                         prompt,
                         aspectRatio: '9:16',
                         logPrefix: 'RegeneratePost',
-                        referenceImages,
                     });
                     if (!result) return null;
 

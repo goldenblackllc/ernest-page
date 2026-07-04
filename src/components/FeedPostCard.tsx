@@ -101,6 +101,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [regenToast, setRegenToast] = useState<string | null>(null);
     const [regenStyleOpen, setRegenStyleOpen] = useState(false);
 
+    // Dev-only features (regenerate button) — hidden on production
+    const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
     const t = useTranslations('feed');
     const locale = useLocale();
@@ -1069,7 +1071,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 )}
                             </button>
                         )}
-                        {user?.uid === post.uid && (
+                        {isDev && user?.uid === post.uid && (
                             <>
                                 <div className="relative">
                                     <button
@@ -1717,7 +1719,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     </div>
 
-                    {user?.uid === post.uid && (
+                    {isDev && user?.uid === post.uid && (
                         <div className="flex items-center gap-1">
                             {/* Regenerate post */}
                             <div className="relative">

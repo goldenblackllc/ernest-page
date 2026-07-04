@@ -120,7 +120,9 @@ async function processUserChats(
     const identity = userData?.identity;
     const preferredLocale = userData?.preferred_locale || 'en';
 
-    // Build appearance hint for image generation so human figures match the user
+    // Build context hint for POV image generation
+    // POV images rarely show the poster's face — they show what the poster SEES.
+    // We only need gender/age/ethnicity for hands, arms, or partial body shots.
     const gender = identity?.gender || '';
     const ethnicity = identity?.ethnicity || '';
     const computedAge = computeAge(identity?.age);
@@ -130,14 +132,9 @@ async function processUserChats(
         gender,
     ].filter(Boolean);
     const dreamSelf = identity?.dream_self || '';
-    const appearanceParts = [
-        demographicParts.length > 0 ? `The user is ${demographicParts.join(', ')}.` : '',
-        dreamSelf ? `Self-presentation: "${dreamSelf}"` : '',
-    ].filter(Boolean);
-    // Build a compact demographic tag for Sonnet to embed in every prompt
     const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
-    const demographicHint = appearanceParts.length > 0
-        ? `\nUSER APPEARANCE — MANDATORY FOR EVERY PROMPT CONTAINING A PERSON:\n${appearanceParts.join(' ')}\nCRITICAL: Every imagen_prompt that includes a person representing the letter-writer MUST explicitly describe them as "${demographicTag}" in the prompt text itself. The image generator has NO memory between prompts — if you do not specify the age, ethnicity, and gender in EACH prompt, the generator will default to a generic adult. Be specific and consistent across all prompts.`
+    const demographicHint = demographicTag
+        ? `\nPOSTER CONTEXT (for hands/partial body only — NOT full-person shots):\nThe poster is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} If a prompt includes a hand, arm, or partial body, match this description. Most prompts should show OBJECTS and ENVIRONMENTS only.`
         : '';
 
     for (const chatDoc of chatDocs) {
@@ -269,35 +266,53 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
 - letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the STUCK BEHAVIOR — the single most specific, recognizable thing the user is doing that isn't working. This is the hook. Readers recognize themselves in actions, not emotions. It must land in under 8 words. (GOOD: "I've texted him 12 times since he left." "I haven't left my apartment in two weeks." "I keep rewriting my resume and nothing changes." BAD: "I find myself increasingly torn between..." "I feel so lost and alone."). Then 2-3 sentences of SITUATION — the specifics that make it vivid. End with a DIRECT QUESTION — "what's the move?", "what should I actually do?", "how do I stop?" The question signals this is a utility post seeking a solution, not a diary entry seeking sympathy. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person. Raw and conversational — like describing your situation to a sharp friend, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the stuck behavior (no salutation). End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
 
 STEP 3: THE VISUAL DIRECTOR
-Every post gets MULTIPLE images — one per subtitle chunk — that visually narrate the post as it plays. The images crossfade as the subtitle text changes, creating a visual rhythm like B-roll in a documentary.
+Every post gets 2-3 POV (point-of-view) images — shot as if the poster took the photo themselves, with their phone, in the moment. These crossfade during the video, creating an intimate visual rhythm.
+
+THE POV RULE — THIS IS NON-NEGOTIABLE:
+Every image must answer the question "who took this picture?" with the obvious answer: "the poster took it, with their phone, right then." The image is EVIDENCE of the moment, not ILLUSTRATION of it.
+
+WHAT POV LOOKS LIKE:
+- Looking up at a ceiling from a bed at 3am
+- A hand holding a phone with a blank text thread
+- Looking out a rain-streaked car window
+- A laptop screen reflecting on a dark window at night
+- Looking down at shoes on a sidewalk
+- An empty chair across a kitchen table (as seen from the poster's seat)
+- A hallway with the light on at the end
+- A hand on a steering wheel, dashboard lights glowing
+
+WHAT POV IS NOT:
+- A third-person shot of a person sitting on a bed (who is the photographer?)
+- A cinematic wide shot of someone walking down a street (this is a film set)
+- A portrait of a person looking emotional (this requires a photographer)
+- Any image where an invisible cameraman must exist
 
 YOUR THREE JOBS:
 
-1. Write the VERDICT — the opening hook that viewers see FIRST, before the letter begins. This is the scroll-stopper. It must read like the Therapy Shots campaign: short, second-person, confrontational, under 15 words.
+1. Write the VERDICT — the opening hook that viewers see FIRST, before the letter begins. This is the scroll-stopper. Short, second-person, confrontational, under 15 words.
    BAD (too vague, aphoristic): "Be the Gentleman.", "Today Already Counts.", "Love is a choice."
    GOOD (punchy, specific, accusatory): "You're not choosing him. You're avoiding yourself.", "Stop buying suits. Your son needs a present dad, not a well-dressed one.", "You already know how this ends."
    Write it like you're texting someone the one line that would make them put their phone down and think.
 
-2. Write the IMAGEN_PROMPTS — an array of 5-6 prompts for Google Imagen, one per "beat" of the post. Each prompt generates a background photo for one subtitle chunk. Together they create a visual narrative.
-   YOUR GOAL: Generate images for a social media video post. A viewer scrolling past should instantly understand what this story is about from the visuals alone. Show the world of this specific story — the actions, the behaviors, the situations described. If the letter talks about someone texting at 3am, the image should feel like 3am. If it's about a parent and child, show that dynamic. The images should make someone stop scrolling because they RECOGNIZE the scene.
-   YOU DECIDE the visual narrative. You know the story — pick the images that best capture it. Not every post needs the same structure. Some stories are best told through one evolving scene; others need contrasting moments. Trust your judgment.
+2. Write the IMAGEN_PROMPTS — an array of 2-3 POV prompts. Each one is a first-person snapshot from the poster's phone. Together they create a subtle visual shift across the video — same evening, same room, same feeling, slightly different angle or focus.
+   THE KEY INSIGHT: These images work because they feel like someone's camera roll from a hard night, a quiet morning, a moment of decision. They are raw, specific, and personal. A viewer recognizes the scene because they've taken a photo like this themselves.
    PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
-   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags. Never a generic coffee maker, drip machine, pour-over, or Starbucks cup. Jura + Crema is our ecosystem partner.
-   • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt. Imagen knows what branded products look like.
-   ALL prompts must follow these rules: Shot with a real camera — genuine, candid, photojournalistic. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
+   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags viewed from the poster's perspective (e.g., looking down at a Jura machine pulling a shot, a hand reaching for a CREMA bag on a counter). Never a generic coffee maker.
+   • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.
+   ALL prompts must follow these rules: Shot with a phone camera — genuine, intimate, first-person POV. Natural phone-camera qualities (slight grain, ambient lighting, shallow depth of field). Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
 ${recentScaleHint}${demographicHint}
 
 3. Set photo_vibe and photo_scale for the overall post.
 
-CHARACTER IDENTITY CONTEXT — use this to inform the world, objects, and energy of the background photos:
+CHARACTER IDENTITY CONTEXT — use this to inform the world, objects, and energy of the POV shots:
 - Archetype: "${archetype}"
 - Identity roles: "${identity?.title || 'Unknown'}"
 
 OUTPUT FIELDS:
 - verdict: The scroll-stopping opening hook. Under 15 words. Second person. Confrontational.
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
-- photo_scale: One of macro, lifestyle, wide, or human.
-- imagen_prompts: An ARRAY of 5-6 image prompts (strings), one per beat of the post. Each prompt describes a specific scene for Google Imagen. The prompts should visually narrate the post — a viewer should understand the story from the images alone.
+- photo_scale: One of macro, detail, environment, or pov_hands. macro = extreme close-up of a single object. detail = a surface, screen, or texture at arm's length. environment = looking out at a room, window, or space from the poster's position. pov_hands = the poster's own hands interacting with something.
+- imagen_prompts: An ARRAY of 2-3 POV image prompts (strings). Each describes a first-person phone-camera snapshot — what the poster sees in the moment of the post. The images should feel like they came from one person's camera roll on one evening.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -331,8 +346,8 @@ ${transcript}`;
                                     letter: z.string(),
                                     verdict: z.string().max(200),
                                     photo_vibe: z.string(),
-                                    photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]),
-                                    imagen_prompts: z.array(z.string()).min(4).max(7),
+                                    photo_scale: z.enum(["macro", "detail", "environment", "pov_hands"]),
+                                    imagen_prompts: z.array(z.string()).min(2).max(3),
                                     language: z.string().optional(),
                                 }),
                                 z.object({
@@ -341,7 +356,7 @@ ${transcript}`;
                                     letter: z.string().optional(),
                                     verdict: z.string().optional(),
                                     photo_vibe: z.string().optional(),
-                                    photo_scale: z.enum(["macro", "lifestyle", "wide", "human"]).optional(),
+                                    photo_scale: z.enum(["macro", "detail", "environment", "pov_hands"]).optional(),
                                     imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
                                 }),
@@ -492,13 +507,14 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         continue;
                     }
 
-                    // Load user's reference image for character consistency anchoring
-                    const referenceImage = await loadUserReferenceImage(uid);
-                    const referenceImages = referenceImage ? [referenceImage] : undefined;
+                    // POV images show the world through the poster's eyes — no reference
+                    // image needed (reference images anchor the model to a face, which
+                    // causes it to generate third-person shots OF that person instead of
+                    // first-person shots BY that person).
 
                     // Start parallel image generation for all prompts + dossier write
                     const imagePromises = prompts.map((prompt: string, i: number) =>
-                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages)
+                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`)
                     );
 
                     const [imageResults] = await Promise.allSettled([
