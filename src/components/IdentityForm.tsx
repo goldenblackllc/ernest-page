@@ -72,13 +72,13 @@ export function IdentityForm({
 
             {/* Step counter */}
             <div className="flex items-center justify-between mb-4 shrink-0">
-                <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">
+                <p className="text-sm text-zinc-400 uppercase tracking-widest font-semibold">
                     {step} of {TOTAL_STEPS}
                 </p>
                 {step > 1 && (
                     <button
                         onClick={() => setStep((step - 1) as FormStep)}
-                        className="text-zinc-500 hover:text-white transition-colors flex items-center gap-1 text-xs font-semibold"
+                        className="text-zinc-400 hover:text-white transition-colors flex items-center gap-1 text-sm font-semibold"
                     >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         {t('common.back')}
@@ -94,21 +94,21 @@ export function IdentityForm({
                     <div className="flex flex-col gap-5 flex-1">
                         {showHeadings && (
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-semibold mb-2">
+                                <p className="text-xs uppercase tracking-[0.3em] text-zinc-400 font-semibold mb-2">
                                     {t('onboarding.identityForm.setupLabel')}
                                 </p>
                                 <h2 className="text-2xl font-black tracking-tight mb-1">
                                     {t('onboarding.identityForm.visionTitle')}
                                 </h2>
-                                <p className="text-sm text-zinc-500">
+                                <p className="text-sm text-zinc-400">
                                     {t('onboarding.identityForm.visionSub')}
                                 </p>
                             </div>
                         )}
 
                         <div>
-                            <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">
-                                {t('onboarding.identityForm.nameLabel')} <span className="text-zinc-600">{t('onboarding.identityForm.nameOptional')}</span>
+                            <label className="text-sm text-zinc-400 font-semibold mb-1.5 block">
+                                {t('onboarding.identityForm.nameLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.nameOptional')}</span>
                             </label>
                             <input
                                 type="text"
@@ -121,7 +121,7 @@ export function IdentityForm({
                         </div>
 
                         <div>
-                            <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.genderLabel')}</label>
+                            <label className="text-sm text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.genderLabel')}</label>
                             <input
                                 type="text"
                                 value={gender}
@@ -150,8 +150,8 @@ export function IdentityForm({
                 {step === 2 && (
                     <div className="flex flex-col gap-5 flex-1">
                         <div>
-                            <label className="text-xs text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.bornLabel')}</label>
-                            <p className="text-[11px] text-zinc-600 mb-2">{t('onboarding.identityForm.bornSub')}</p>
+                            <label className="text-sm text-zinc-400 font-semibold mb-1.5 block">{t('onboarding.identityForm.bornLabel')}</label>
+                            <p className="text-sm text-zinc-400 mb-2">{t('onboarding.identityForm.bornSub')}</p>
                             <input
                                 type="date"
                                 value={age}
@@ -164,10 +164,10 @@ export function IdentityForm({
                         </div>
 
                         <div>
-                            <label className="text-xs text-zinc-400 font-semibold mb-1 block">
-                                {t('onboarding.identityForm.ethnicityLabel')} <span className="text-zinc-600">{t('onboarding.identityForm.ethnicityOptional')}</span>
+                            <label className="text-sm text-zinc-400 font-semibold mb-1 block">
+                                {t('onboarding.identityForm.ethnicityLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.ethnicityOptional')}</span>
                             </label>
-                            <p className="text-[11px] text-zinc-600 mb-2">{t('onboarding.identityForm.ethnicitySub')}</p>
+                            <p className="text-sm text-zinc-400 mb-2">{t('onboarding.identityForm.ethnicitySub')}</p>
                             <textarea
                                 value={ethnicity}
                                 onChange={(e) => setEthnicity(e.target.value)}
@@ -195,7 +195,7 @@ export function IdentityForm({
                     <div className="flex flex-col gap-3 flex-1 min-h-0">
                         <div className="shrink-0">
                             <label className="text-xs text-white font-semibold mb-1 block">{t('onboarding.identityForm.rantLabel')}</label>
-                            <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed">{t('onboarding.identityForm.rantSub')}</p>
+                            <p className="text-sm text-zinc-400 mb-2 leading-relaxed">{t('onboarding.identityForm.rantSub')}</p>
                         </div>
                         <textarea
                             value={rant}
@@ -223,7 +223,7 @@ export function IdentityForm({
                     <div className="flex flex-col gap-3 flex-1 min-h-0">
                         <div className="shrink-0">
                             <label className="text-sm text-white font-semibold mb-1 block">{t('onboarding.identityForm.peopleLabel')}</label>
-                            <p className="text-xs text-zinc-500 mb-2 leading-relaxed">{t('onboarding.identityForm.peopleSub')}</p>
+                            <p className="text-sm text-zinc-400 mb-2 leading-relaxed">{t('onboarding.identityForm.peopleSub')}</p>
                         </div>
                         <textarea
                             value={people}
@@ -251,7 +251,7 @@ export function IdentityForm({
                     <div className="flex flex-col gap-3 flex-1 min-h-0">
                         <div className="shrink-0">
                             <label className="text-sm text-white font-semibold mb-1 block">{t('onboarding.identityForm.enjoymentsLabel')}</label>
-                            <p className="text-xs text-zinc-500 mb-2 leading-relaxed">{t('onboarding.identityForm.enjoymentsSub')}</p>
+                            <p className="text-sm text-zinc-400 mb-2 leading-relaxed">{t('onboarding.identityForm.enjoymentsSub')}</p>
                         </div>
                         <textarea
                             value={enjoyments}
@@ -274,7 +274,7 @@ export function IdentityForm({
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting}
-                            className="text-zinc-500 text-sm hover:text-white transition-colors py-2 text-center"
+                            className="text-zinc-400 text-sm hover:text-white transition-colors py-2 text-center"
                         >
                             {t('onboarding.identityForm.skip')}
                         </button>

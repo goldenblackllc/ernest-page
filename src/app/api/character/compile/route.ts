@@ -211,8 +211,11 @@ export async function POST(req: Request) {
             }
 
             // ─── AUTO-DEFAULT VOICE — pick from shared library if none set ───
-            let voiceId = currentBible.voice_id || '';
-            let voiceName = currentBible.voice_name || '';
+            // Re-read voice fresh — user may have selected one via VoiceBrowser while we were compiling
+            const freshVoiceSnap = await userDocRef.get();
+            const freshBible = freshVoiceSnap.data()?.character_bible || {};
+            let voiceId = freshBible.voice_id || '';
+            let voiceName = freshBible.voice_name || '';
 
             if (!voiceId) {
                 try {

@@ -472,15 +472,11 @@ export function Ledger() {
                     </div>
                 )}
 
-                {/* Voice Confirmation Card */}
-                {hasBuiltCharacter && (bibleStatus === 'stable' || bibleStatus === 'ready')
-                    && profile?.character_bible?.voice_id
-                    && !profile?.character_bible?.voice_confirmed
-                    && (!profile?.identity?.session_count || profile.identity.session_count < 1)
-                    && user && (
+                {/* Voice Selection — always show until user has confirmed a voice */}
+                {user && !profile?.character_bible?.voice_confirmed && (
                     <VoiceBrowser
-                        currentVoiceId={profile.character_bible.voice_id}
-                        currentVoiceName={profile.character_bible.voice_name}
+                        currentVoiceId={profile?.character_bible?.voice_id}
+                        currentVoiceName={profile?.character_bible?.voice_name}
                         startOpen
                         compact
                         onVoiceSelected={async () => {
@@ -553,6 +549,7 @@ export function Ledger() {
                                 </div>
                             </div>
                         )}
+
 
                         {isStaleCompilation && (
                             <button
@@ -667,15 +664,11 @@ export function Ledger() {
                 </div>
             )}
 
-            {/* Voice Confirmation Card — shown once after bible is built, until user confirms */}
-            {hasBuiltCharacter && (bibleStatus === 'stable' || bibleStatus === 'ready')
-                && profile?.character_bible?.voice_id
-                && !profile?.character_bible?.voice_confirmed
-                && (!profile?.identity?.session_count || profile.identity.session_count < 1)
-                && user && (
+            {/* Voice Selection — always show until user has confirmed a voice */}
+            {user && !profile?.character_bible?.voice_confirmed && (
                 <VoiceBrowser
-                    currentVoiceId={profile.character_bible.voice_id}
-                    currentVoiceName={profile.character_bible.voice_name}
+                    currentVoiceId={profile?.character_bible?.voice_id}
+                    currentVoiceName={profile?.character_bible?.voice_name}
                     startOpen
                     compact
                     onVoiceSelected={async () => {
