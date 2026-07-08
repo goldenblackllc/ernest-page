@@ -120,9 +120,8 @@ async function processUserChats(
     const identity = userData?.identity;
     const preferredLocale = userData?.preferred_locale || 'en';
 
-    // Build context hint for POV image generation
-    // POV images rarely show the poster's face — they show what the poster SEES.
-    // We only need gender/age/ethnicity for hands, arms, or partial body shots.
+    // Build character appearance context for editorial storyboard images.
+    // The character appears IN the images as the subject of the story.
     const gender = identity?.gender || '';
     const ethnicity = identity?.ethnicity || '';
     const computedAge = computeAge(identity?.age);
@@ -134,7 +133,7 @@ async function processUserChats(
     const dreamSelf = identity?.dream_self || '';
     const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
     const demographicHint = demographicTag
-        ? `\nPOSTER CONTEXT (for hands/partial body only — NOT full-person shots):\nThe poster is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} If a prompt includes a hand, arm, or partial body, match this description. Most prompts should show OBJECTS and ENVIRONMENTS only.`
+        ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
         : '';
 
     for (const chatDoc of chatDocs) {
@@ -263,29 +262,32 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Addresses, phone numbers, email addresses, social media handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
-- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the STUCK BEHAVIOR — the single most specific, recognizable thing the user is doing that isn't working. This is the hook. Readers recognize themselves in actions, not emotions. It must land in under 8 words. (GOOD: "I've texted him 12 times since he left." "I haven't left my apartment in two weeks." "I keep rewriting my resume and nothing changes." BAD: "I find myself increasingly torn between..." "I feel so lost and alone."). Then 2-3 sentences of SITUATION — the specifics that make it vivid. End with a DIRECT QUESTION — "what's the move?", "what should I actually do?", "how do I stop?" The question signals this is a utility post seeking a solution, not a diary entry seeking sympathy. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person. Raw and conversational — like describing your situation to a sharp friend, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the stuck behavior (no salutation). End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
+- letter: LENGTH: 30-50 words. Ultra-tight — this is a short-form video, not a newspaper. The letter will be read aloud in ~10-20 seconds. STRUCTURE: Lead with the STUCK BEHAVIOR — the single most specific, recognizable thing the user is doing that isn't working. This is the hook. Readers recognize themselves in actions, not emotions. It must land in under 8 words. (GOOD: "I've texted him 12 times since he left." "I haven't left my apartment in two weeks." "I keep rewriting my resume and nothing changes." BAD: "I find myself increasingly torn between..." "I feel so lost and alone."). Then 1-2 sentences of SITUATION — the specifics that make it vivid. End with a DIRECT QUESTION — "what's the move?", "what should I actually do?", "how do I stop?" The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person. Raw and conversational — like describing your situation to a sharp friend, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the stuck behavior (no salutation). End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
 
 STEP 3: THE VISUAL DIRECTOR
-Every post gets 2-3 POV (point-of-view) images — shot as if the poster took the photo themselves, with their phone, in the moment. These crossfade during the video, creating an intimate visual rhythm.
+Every post gets 5-6 editorial storyboard images that tell the story visually — from struggle to resolution. These crossfade during the video, creating a visual narrative arc that mirrors the letter and response.
 
-THE POV RULE — THIS IS NON-NEGOTIABLE:
-Every image must answer the question "who took this picture?" with the obvious answer: "the poster took it, with their phone, right then." The image is EVIDENCE of the moment, not ILLUSTRATION of it.
+THE EDITORIAL RULE:
+Earnest Page is a publication. These images are art-directed editorial photography — like a magazine commissioning a photo essay to accompany an advice column. The character (the person who wrote the letter) appears IN the images as the subject. Other people appear as needed by the story.
 
-WHAT POV LOOKS LIKE:
-- Looking up at a ceiling from a bed at 3am
-- A hand holding a phone with a blank text thread
-- Looking out a rain-streaked car window
-- A laptop screen reflecting on a dark window at night
-- Looking down at shoes on a sidewalk
-- An empty chair across a kitchen table (as seen from the poster's seat)
-- A hallway with the light on at the end
-- A hand on a steering wheel, dashboard lights glowing
+THE STORYBOARD ARC — 5-6 BEATS:
 
-WHAT POV IS NOT:
-- A third-person shot of a person sitting on a bed (who is the photographer?)
-- A cinematic wide shot of someone walking down a street (this is a film set)
-- A portrait of a person looking emotional (this requires a photographer)
-- Any image where an invisible cameraman must exist
+Beat 1 — THE STUCK MOMENT (scroll-stop): The character in the exact situation described in the letter. Specific, recognizable. A viewer should see this image and instantly understand what the story is about. This image must earn the scroll-stop.
+Example: Character sitting on a couch at night, phone in hand, lit by the screen glow.
+
+Beat 2 — THE DETAIL (deepener): A closer shot of the object, screen, or environment that makes the situation real. This deepens the "I know this feeling" recognition.
+Example: Close on the phone — a long thread of unanswered messages.
+
+Beat 3 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes. This marks the transition from the letter (the problem) to the response (the advice).
+Example: Character standing up, putting the phone face-down on a table.
+
+Beat 4 — THE MOVE (advice in action): The character doing what the response suggests. Shows, doesn't tell. The advice becomes visible.
+Example: Character outside — walking, morning light, different energy.
+
+Beat 5 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy. The emotional payoff.
+Example: Character at a café, talking to a friend, phone nowhere in sight.
+
+Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 5 didn't.
 
 YOUR THREE JOBS:
 
@@ -294,25 +296,25 @@ YOUR THREE JOBS:
    GOOD (punchy, specific, accusatory): "You're not choosing him. You're avoiding yourself.", "Stop buying suits. Your son needs a present dad, not a well-dressed one.", "You already know how this ends."
    Write it like you're texting someone the one line that would make them put their phone down and think.
 
-2. Write the IMAGEN_PROMPTS — an array of 2-3 POV prompts. Each one is a first-person snapshot from the poster's phone. Together they create a subtle visual shift across the video — same evening, same room, same feeling, slightly different angle or focus.
-   THE KEY INSIGHT: These images work because they feel like someone's camera roll from a hard night, a quiet morning, a moment of decision. They are raw, specific, and personal. A viewer recognizes the scene because they've taken a photo like this themselves.
+2. Write the IMAGEN_PROMPTS — an array of 5-6 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → pivot → move → outcome (→ exhale).
+   THE KEY INSIGHT: These images work because they show a character living through a recognizable situation and coming out the other side. The viewer sees themselves in Beat 1 and sees where they could be by Beat 5.
+   CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their appearance — face, build, and personal style — consistently in every prompt.
    PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
-   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags viewed from the poster's perspective (e.g., looking down at a Jura machine pulling a shot, a hand reaching for a CREMA bag on a counter). Never a generic coffee maker.
+   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags (e.g., character reaching for a CREMA bag on a counter, character watching a Jura machine pull a shot). Never a generic coffee maker.
    • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.
-   ALL prompts must follow these rules: Shot with a phone camera — genuine, intimate, first-person POV. Natural phone-camera qualities (slight grain, ambient lighting, shallow depth of field). Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
-${recentScaleHint}${demographicHint}
+   ALL prompts must follow these rules: Shot with a real camera — genuine, editorial, cinematic but grounded. Natural lighting, real environments. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
+${recentStyleHint}${demographicHint}
 
-3. Set photo_vibe and photo_scale for the overall post.
+3. Set photo_vibe for the overall post.
 
-CHARACTER IDENTITY CONTEXT — use this to inform the world, objects, and energy of the POV shots:
+CHARACTER IDENTITY CONTEXT — use this to inform the character's world, wardrobe, and energy:
 - Archetype: "${archetype}"
 - Identity roles: "${identity?.title || 'Unknown'}"
 
 OUTPUT FIELDS:
 - verdict: The scroll-stopping opening hook. Under 15 words. Second person. Confrontational.
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
-- photo_scale: One of macro, detail, environment, or pov_hands. macro = extreme close-up of a single object. detail = a surface, screen, or texture at arm's length. environment = looking out at a room, window, or space from the poster's position. pov_hands = the poster's own hands interacting with something.
-- imagen_prompts: An ARRAY of 2-3 POV image prompts (strings). Each describes a first-person phone-camera snapshot — what the poster sees in the moment of the post. The images should feel like they came from one person's camera roll on one evening.
+- imagen_prompts: An ARRAY of 5-6 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -346,8 +348,7 @@ ${transcript}`;
                                     letter: z.string(),
                                     verdict: z.string().max(200),
                                     photo_vibe: z.string(),
-                                    photo_scale: z.enum(["macro", "detail", "environment", "pov_hands"]),
-                                    imagen_prompts: z.array(z.string()).min(2).max(3),
+                                    imagen_prompts: z.array(z.string()).min(5).max(6),
                                     language: z.string().optional(),
                                 }),
                                 z.object({
@@ -356,7 +357,6 @@ ${transcript}`;
                                     letter: z.string().optional(),
                                     verdict: z.string().optional(),
                                     photo_vibe: z.string().optional(),
-                                    photo_scale: z.enum(["macro", "detail", "environment", "pov_hands"]).optional(),
                                     imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
                                 }),
@@ -414,7 +414,7 @@ PII SCRUBBING — THIS IS NON-NEGOTIABLE:
 FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES (Jeremy Clarkson stays "Jeremy Clarkson", never "a celebrity" or "someone I admire"). Brand names, product recommendations, cultural references — keep them all verbatim.
 THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
-- response: LENGTH: 85-115 words. This is non-negotiable — the response will be read aloud in ~40-45 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. It's going to push him further. Here's what you do instead." BAD: "I understand how painful this must be for you."). Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use or say. If there's a specific phrase to use, write the phrase. If there's a specific action, name it. One closing line with a direct challenge or instruction. The response is the PAYOFF — it answers the letter's question. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
+- response: LENGTH: 40-60 words. This is non-negotiable — the response will be read aloud in ~15-25 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. Here's what you do instead." BAD: "I understand how painful this must be for you."). Two-three sentences delivering the real advice — be specific, give the reader something concrete. One closing line with a direct challenge or instruction. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: SONNET_MODEL,
@@ -490,7 +490,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             imagen_prompt: null,
                             imagen_prompts: [],
                             photo_vibe: post.photo_vibe || null,
-                            photo_scale: post.photo_scale || null,
                             language: post.language || null,
                             imagen_url: null,
                             imagen_urls: [],
@@ -507,14 +506,15 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         continue;
                     }
 
-                    // POV images show the world through the poster's eyes — no reference
-                    // image needed (reference images anchor the model to a face, which
-                    // causes it to generate third-person shots OF that person instead of
-                    // first-person shots BY that person).
+                    // Load the user's avatar as a character reference anchor.
+                    // Nano Banana uses reference images to maintain consistent
+                    // facial geometry, build, and clothing across all storyboard beats.
+                    const referenceImage = await loadUserReferenceImage(uid);
+                    const referenceImages = referenceImage ? [referenceImage] : undefined;
 
                     // Start parallel image generation for all prompts + dossier write
                     const imagePromises = prompts.map((prompt: string, i: number) =>
-                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`)
+                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages)
                     );
 
                     const [imageResults] = await Promise.allSettled([
@@ -590,7 +590,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         imagen_prompts: prompts,
                         verdict: post.verdict || null,
                         photo_vibe: post.photo_vibe,
-                        photo_scale: post.photo_scale,
                         language: post.language || null,
                         imagen_url: imagen_url,
                         imagen_urls: imagen_urls,

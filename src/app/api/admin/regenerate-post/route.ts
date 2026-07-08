@@ -7,6 +7,7 @@ import { generatePostAudio } from '@/lib/ai/postTTS';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
@@ -64,8 +65,8 @@ export async function POST(req: Request) {
         const identity = userData?.identity;
         const characterVoiceId = userData?.character_bible?.voice_id;
 
-        // Build context hint for POV image generation
-        // POV images rarely show the poster's face — they show what the poster SEES.
+        // Build character appearance context for editorial storyboard images
+        // The character appears IN the images as the subject of the story.
         const gender = identity?.gender || '';
         const ethnicity = identity?.ethnicity || '';
         const computedAge = computeAge(identity?.age);
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
         const dreamSelf = identity?.dream_self || '';
         const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
         const appearanceHint = demographicTag
-            ? `\nPOSTER CONTEXT (for hands/partial body only — NOT full-person shots):\nThe poster is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} If a prompt includes a hand, arm, or partial body, match this description. Most prompts should show OBJECTS and ENVIRONMENTS only.`
+            ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
             : '';
 
         console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
@@ -112,11 +113,10 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: LENGTH: 40-80 words. This is a guide — a tight, vivid letter can be shorter than a complex situation that needs more room. The letter will be read aloud in ~15-30 seconds. STRUCTURE: GUT PUNCH FIRST — open with the rawest, most emotionally charged line. Then situation context. The letter must present the situation as UNRESOLVED. VOICE: Raw and conversational — like texting a friend at 2am. Write in first person, present tense. FORMATTING: Start directly with the letter body (no salutation). End with '\\n\\n— ' followed by the pseudonym in Title Case.
+- letter: LENGTH: 30-50 words. Ultra-tight — this is a short-form video. The letter will be read aloud in ~10-20 seconds. STRUCTURE: GUT PUNCH FIRST — open with the rawest, most emotionally charged line. Then situation context. The letter must present the situation as UNRESOLVED. VOICE: Raw and conversational — like texting a friend at 2am. Write in first person, present tense. FORMATTING: Start directly with the letter body (no salutation). End with '\\n\\n— ' followed by the pseudonym in Title Case.
 - verdict: A Therapy Shot — under 15 words, second-person, confrontational. Hit the reader between the eyes with the truth they're avoiding.
 - photo_vibe: One word capturing the emotional tone.
-- photo_scale: One of macro, detail, environment, or pov_hands. macro = extreme close-up of a single object. detail = a surface, screen, or texture at arm's length. environment = looking out at a room, window, or space from the poster's position. pov_hands = the poster's own hands interacting with something.
-- imagen_prompts: An array of 2-3 POV image prompts for the post's background photos. THE POV RULE: Every image must be shot as if the poster took the photo themselves, with their phone, in the moment. The image is EVIDENCE of the moment, not ILLUSTRATION of it. Show what the poster SEES — a ceiling, a window, a hand, a hallway, a screen — never a third-person shot of a person. PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS: If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic, ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags from a POV angle. If the conversation mentions any other specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name. Shot with a phone camera — genuine, intimate, first-person POV. Natural phone-camera qualities (slight grain, ambient lighting). 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
+- imagen_prompts: An array of 5-6 editorial storyboard prompts. THE STORYBOARD ARC — 5-6 beats telling the story from struggle to resolution: Beat 1 — THE STUCK MOMENT (the character in the situation), Beat 2 — THE DETAIL (closer shot of the key object/screen), Beat 3 — THE PIVOT (visual shift marking the turn), Beat 4 — THE MOVE (advice in action), Beat 5 — THE OUTCOME (character in the new state), Beat 6 (optional) — THE EXHALE (environmental close). The character appears IN every image. CHARACTER CONSISTENCY: describe their appearance — face, build, and personal style — consistently in every prompt. PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names. Shot with a real camera — genuine, editorial. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 
@@ -137,7 +137,7 @@ DEMOGRAPHIC CONTEXT:
 ${appearanceHint}
 
 OUTPUT FIELDS:
-- is_publishable, title, pseudonym, letter, verdict, photo_vibe, photo_scale, imagen_prompts, language`;
+- is_publishable, title, pseudonym, letter, verdict, photo_vibe, imagen_prompts, language`;
 
         const letterResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
@@ -148,8 +148,7 @@ OUTPUT FIELDS:
                 letter: z.string(),
                 verdict: z.string(),
                 photo_vibe: z.string(),
-                photo_scale: z.enum(["macro", "detail", "environment", "pov_hands"]),
-                imagen_prompts: z.array(z.string()).min(2).max(3),
+                imagen_prompts: z.array(z.string()).min(5).max(6),
                 language: z.string().optional(),
             }),
             prompt: letterPrompt,
@@ -189,7 +188,7 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Locations, addresses, phone numbers, handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
 
-- response: LENGTH: 85-115 words. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — no throat-clearing, no "I hear you". Three-five sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'.`;
+- response: LENGTH: 40-60 words. STRUCTURE: Open with the COUNTER-MOVE — no throat-clearing, no "I hear you". Two-three sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'.`;
 
         const responseResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
@@ -203,9 +202,11 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
         // ── STEP 3: Generate image + TTS audio IN PARALLEL ──
         // Both are independent of each other — run concurrently to stay under timeout.
 
-        // POV images show the world through the poster's eyes — no reference
-        // image needed (reference images anchor the model to a face, which
-        // causes it to generate third-person shots OF that person).
+        // Load the user's avatar as a character reference anchor.
+        // Nano Banana uses reference images to maintain consistent
+        // facial geometry, build, and clothing across all storyboard beats.
+        const referenceImage = await loadUserReferenceImage(uid);
+        const referenceImages = referenceImage ? [referenceImage] : undefined;
 
         const [imageResult, audioResult] = await Promise.allSettled([
             // Image generation — with per-prompt retries for quality
@@ -221,6 +222,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
                         prompt,
                         aspectRatio: '9:16',
                         logPrefix: 'RegeneratePost',
+                        referenceImages,
                     });
                     if (!result) return null;
 
@@ -332,7 +334,6 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
             verdict: pass1.verdict,
             imagen_prompts: pass1.imagen_prompts,
             photo_vibe: pass1.photo_vibe,
-            photo_scale: pass1.photo_scale,
             language: pass1.language || null,
         };
 

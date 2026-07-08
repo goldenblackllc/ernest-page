@@ -635,7 +635,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // When a post has audio and a hero image, render as a vertical "short"
     if (canPlayShort) {
         // Split text into sentence-boundary chunks — each chunk is a complete thought.
-        const chunkText = (text: string, targetWords: number = 35): string[] => {
+        const chunkText = (text: string, targetWords: number = 12): string[] => {
             const cleaned = text.replace(/\n+/g, ' ').trim();
             if (!cleaned) return [''];
 
@@ -685,7 +685,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             const splitIndex = Math.round(filtered.length * computedLetterRatio);
 
             const chunks: { text: string; start: number; end: number }[] = [];
-            const targetWords = 35;
+            const targetWords = 12;
             const hardCeiling = Math.ceil(targetWords * 1.5);
             let chunkStart = 0;
 
@@ -798,9 +798,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         const subtitle = getCurrentSubtitle();
 
-        // Multi-image: map current subtitle chunk to an image
+        // Distribute images evenly across the video duration.
+        // With 5-6 storyboard images, each image covers an equal portion
+        // of the subtitle timeline rather than being front-loaded.
         const currentImageIndex = imageUrls.length > 0
-            ? Math.min(subtitle?.lineIndex || 0, imageUrls.length - 1)
+            ? Math.min(
+                Math.floor(((subtitle?.lineIndex || 0) / Math.max(subtitle?.totalLines || 1, 1)) * imageUrls.length),
+                imageUrls.length - 1
+              )
             : 0;
         const currentImageUrl = imageUrls[currentImageIndex] || heroUrl;
 

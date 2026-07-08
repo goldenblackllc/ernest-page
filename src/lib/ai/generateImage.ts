@@ -69,7 +69,13 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
             console.log(`[${logPrefix}] Including ${referenceImages.length} reference image(s) for character anchoring`);
         }
 
-        parts.push({ text: prompt });
+        // When using reference images, instruct Imagen to anchor on identity
+        // but not blindly copy scene-inappropriate gear from the reference.
+        const referencePrefix = (referenceImages && referenceImages.length > 0)
+            ? 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n'
+            : '';
+
+        parts.push({ text: referencePrefix + prompt });
 
         const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${NANO_BANANA_MODEL}:generateContent?key=${apiKey}`,
