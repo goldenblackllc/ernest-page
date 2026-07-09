@@ -61,6 +61,7 @@ function splitTextIntoChunks(text: string, maxLen: number): string[] {
  */
 function cleanTextForTTS(text: string): string {
     return text
+        .replace(/\\n/g, ' ')                      // strip literal '\n' from AI JSON artifacts
         .replace(/[#*_~`>]/g, '')
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
         .trim();

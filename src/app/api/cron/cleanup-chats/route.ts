@@ -12,8 +12,7 @@ import { generatePostAudio } from '@/lib/ai/postTTS';
 import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { generateImage } from '@/lib/ai/generateImage';
-import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
-import { computeAge } from '@/lib/utils/parseBirthDate';
+// loadUserReferenceImage removed — scenic wallpaper images don't need character anchoring
 import nodemailer from 'nodemailer';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
@@ -120,21 +119,11 @@ async function processUserChats(
     const identity = userData?.identity;
     const preferredLocale = userData?.preferred_locale || 'en';
 
-    // Build character appearance context for editorial storyboard images.
-    // The character appears IN the images as the subject of the story.
-    const gender = identity?.gender || '';
-    const ethnicity = identity?.ethnicity || '';
-    const computedAge = computeAge(identity?.age);
-    const demographicParts = [
-        computedAge ? `approximately ${computedAge} years old` : '',
-        ethnicity,
-        gender,
-    ].filter(Boolean);
-    const dreamSelf = identity?.dream_self || '';
-    const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
-    const demographicHint = demographicTag
-        ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
-        : '';
+    // Load user interests for scenic wallpaper images
+    const thingsIEnjoy = identity?.things_i_enjoy || userData?.character_bible?.source_code?.things_i_enjoy || '';
+    const interestsHint = thingsIEnjoy
+        ? `\nUSER INTERESTS — use these to generate scenic wallpaper images:\n${thingsIEnjoy}`
+        : '\nNo interests available — generate generic beautiful scenery (golden hour landscapes, ocean waves, mountain fog, city skylines at dusk, coffee close-ups).';
 
     for (const chatDoc of chatDocs) {
         const chatData = chatDoc.data();
@@ -262,63 +251,25 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Addresses, phone numbers, email addresses, social media handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
-- letter: LENGTH: 30-50 words. Ultra-tight — this is a short-form video, not a newspaper. The letter will be read aloud in ~10-20 seconds. STRUCTURE: Lead with the STUCK BEHAVIOR — the single most specific, recognizable thing the user is doing that isn't working. This is the hook. Readers recognize themselves in actions, not emotions. It must land in under 8 words. (GOOD: "I've texted him 12 times since he left." "I haven't left my apartment in two weeks." "I keep rewriting my resume and nothing changes." BAD: "I find myself increasingly torn between..." "I feel so lost and alone."). Then 1-2 sentences of SITUATION — the specifics that make it vivid. End with a DIRECT QUESTION — "what's the move?", "what should I actually do?", "how do I stop?" The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person. Raw and conversational — like describing your situation to a sharp friend, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start directly with the stuck behavior (no salutation). End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
+- letter: LENGTH: 30-50 words. Ultra-tight — this is a short-form video, not a newspaper. The letter will be read aloud in ~10-20 seconds. STRUCTURE: Lead with the STUCK BEHAVIOR — the single most specific, recognizable thing the user is doing that isn't working. This is the hook. Readers recognize themselves in actions, not emotions. It must land in under 8 words. (GOOD: "I've texted him 12 times since he left." "I haven't left my apartment in two weeks." "I keep rewriting my resume and nothing changes." BAD: "I find myself increasingly torn between..." "I feel so lost and alone."). Then 1-2 sentences of SITUATION — the specifics that make it vivid. End with a DIRECT QUESTION — "what's the move?", "what should I actually do?", "how do I stop?" The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person. Raw and conversational — like describing your situation to a sharp friend, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start with 'Dear Earnest,\n\n' followed by the stuck behavior. End with '\n\n— ' followed by the pseudonym in Title Case (e.g., '\n\n— Overwhelmed Father'). No "Sincerely" — just the em dash. Write strictly in the requested language.
+  WRITING TECHNIQUE — OPEN LOOPS: Every sentence must pull the reader into the next. Each sentence resolves one thing but opens a new question. The reader feels incomplete until they reach the end. Think of it as a chain — each link connects to the next, and breaking the chain feels wrong. BAD (closed, self-contained): "I like a girl at school. I've never talked to her. I want her to like me." GOOD (open loops): "I've memorized her schedule. Three months, and I still can't say hi. But that's not even the real problem."
 
-STEP 3: THE VISUAL DIRECTOR
-Every post gets 5-6 editorial storyboard images that tell the story visually — from struggle to resolution. These crossfade during the video, creating a visual narrative arc that mirrors the letter and response.
+STEP 3: THE SCENIC WALLPAPER
+Every post gets 5-6 beautiful scenic/lifestyle images as ambient backgrounds. These crossfade during the video — they are NOT related to the letter content. They are simply beautiful images of things the user enjoys.
 
-THE EDITORIAL RULE:
-Earnest Page is a publication. These images are art-directed editorial photography — like a magazine commissioning a photo essay to accompany an advice column. The character (the person who wrote the letter) appears IN the images as the subject. Other people appear as needed by the story.
+THE RULE: NO PEOPLE. No faces, no hands, no silhouettes, no characters. Pure scenery, objects, landscapes, architecture, food, nature.
 
-THE STORYBOARD ARC — 5-6 BEATS:
+Generate 5-6 image prompts from the user's interests. Each prompt should describe a single stunning photograph. Vary the subjects — don't repeat the same interest.
+${recentStyleHint}${interestsHint}
 
-Beat 1 — THE STUCK MOMENT (scroll-stop): The character in the exact situation described in the letter. Specific, recognizable. A viewer should see this image and instantly understand what the story is about. This image must earn the scroll-stop.
-Example: Character sitting on a couch at night, phone in hand, lit by the screen glow.
+PRODUCT PLACEMENT — MANDATORY:
+• Any image featuring coffee, espresso, or a coffee setup MUST show a JURA automatic espresso machine and/or CREMA coffee beans/bags. Never a generic coffee maker, Nespresso, or unbranded machine. JURA + CREMA only.
+• If the user's interests mention a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.
 
-Beat 2 — THE DETAIL (deepener): A closer shot of the object, screen, or environment that makes the situation real. This deepens the "I know this feeling" recognition.
-Example: Close on the phone — a long thread of unanswered messages.
-
-Beat 3 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes. This marks the transition from the letter (the problem) to the response (the advice).
-Example: Character standing up, putting the phone face-down on a table.
-
-Beat 4 — THE MOVE (advice in action): The character doing what the response suggests. Shows, doesn't tell. The advice becomes visible.
-Example: Character outside — walking, morning light, different energy.
-
-Beat 5 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy. The emotional payoff.
-Example: Character at a café, talking to a friend, phone nowhere in sight.
-
-Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 5 didn't.
-
-YOUR THREE JOBS:
-
-1. Write the VERDICT — the opening hook that viewers see FIRST, before the letter begins. This is the scroll-stopper. Short, second-person, confrontational, under 15 words.
-   BAD (too vague, aphoristic): "Be the Gentleman.", "Today Already Counts.", "Love is a choice."
-   GOOD (punchy, specific, accusatory): "You're not choosing him. You're avoiding yourself.", "Stop buying suits. Your son needs a present dad, not a well-dressed one.", "You already know how this ends."
-   Write it like you're texting someone the one line that would make them put their phone down and think.
-
-2. Write the IMAGEN_PROMPTS — an array of 5-6 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → pivot → move → outcome (→ exhale).
-   THE KEY INSIGHT: These images work because they show a character living through a recognizable situation and coming out the other side. The viewer sees themselves in Beat 1 and sees where they could be by Beat 5.
-   CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their appearance — face, build, and personal style — consistently in every prompt.
-   EDITORIAL PHOTOGRAPHY RULES — NON-NEGOTIABLE:
-   • NEVER have the character look directly at the camera. This is editorial photography, not a portrait. The character is caught in a MOMENT — unaware of the camera. They are looking at something, doing something, lost in thought. The camera observes them; they do not acknowledge it.
-   • The character must be DOING something in every image — not standing, not posing. Sitting and staring at a phone. Walking away. Reaching for something. Leaning against a wall. The action creates the story.
-   • Use photojournalistic composition — rule of thirds, natural angles, depth of field. Shoot from slightly off-center, over-the-shoulder, or at an angle. Never a centered, symmetrical portrait.
-   PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
-   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags (e.g., character reaching for a CREMA bag on a counter, character watching a Jura machine pull a shot). Never a generic coffee maker.
-   • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.
-   ALL prompts must follow these rules: Shot with a real camera — genuine, editorial, cinematic but grounded. Natural lighting, real environments. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
-${recentStyleHint}${demographicHint}
-
-3. Set photo_vibe for the overall post.
-
-CHARACTER IDENTITY CONTEXT — use this to inform the character's world, wardrobe, and energy:
-- Archetype: "${archetype}"
-- Identity roles: "${identity?.title || 'Unknown'}"
+ALL prompts must follow these rules: Real camera photography — cinematic, editorial quality. Natural lighting, real environments. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks. No people, no faces, no hands. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
 
 OUTPUT FIELDS:
-- verdict: The scroll-stopping opening hook. Under 15 words. Second person. Confrontational.
-- photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
-- imagen_prompts: An ARRAY of 5-6 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
+- imagen_prompts: An ARRAY of 5-6 scenic/lifestyle image prompts (strings). Each describes one beautiful photograph of something the user enjoys. Variety — don't repeat the same subject.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -350,8 +301,6 @@ ${transcript}`;
                                     is_publishable: z.literal(true),
                                     pseudonym: z.string(),
                                     letter: z.string(),
-                                    verdict: z.string().max(200),
-                                    photo_vibe: z.string(),
                                     imagen_prompts: z.array(z.string()).min(5).max(6),
                                     language: z.string().optional(),
                                 }),
@@ -359,8 +308,6 @@ ${transcript}`;
                                     is_publishable: z.literal(false),
                                     pseudonym: z.string().optional(),
                                     letter: z.string().optional(),
-                                    verdict: z.string().optional(),
-                                    photo_vibe: z.string().optional(),
                                     imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
                                 }),
@@ -418,7 +365,8 @@ PII SCRUBBING — THIS IS NON-NEGOTIABLE:
 FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES (Jeremy Clarkson stays "Jeremy Clarkson", never "a celebrity" or "someone I admire"). Brand names, product recommendations, cultural references — keep them all verbatim.
 THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
-- response: LENGTH: 40-60 words. This is non-negotiable — the response will be read aloud in ~15-25 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. Here's what you do instead." BAD: "I understand how painful this must be for you."). Two-three sentences delivering the real advice — be specific, give the reader something concrete. One closing line with a direct challenge or instruction. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
+- response: LENGTH: 40-60 words. This is non-negotiable — the response will be read aloud in ~15-25 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. Here's what you do instead." BAD: "I understand how painful this must be for you."). Two-three sentences delivering the real advice — be specific, give the reader something concrete. One closing line with a direct challenge or instruction. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
+  WRITING TECHNIQUE — OPEN LOOPS: Every sentence must pull the reader into the next. Each sentence resolves one thing but opens a new question. BAD: "Stop texting him. Move on. Focus on yourself." GOOD: "Texting him 12 times isn't bringing him back. But you already knew that. Here's what you haven't tried."`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: SONNET_MODEL,
@@ -472,7 +420,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 if (post.is_publishable && post.letter) {
                     const postDocRef = db.collection('posts').doc();
 
-                    // ─── IMAGE ROUTING: Always Imagen background + verdict overlay ───
+                    // ─── IMAGE ROUTING: Scenic wallpaper backgrounds ───
                     const prompts = post.imagen_prompts || (post.imagen_prompt ? [post.imagen_prompt] : []);
                     if (prompts.length === 0) {
                         console.warn(`[Cron] Post for user ${uid} is missing imagen_prompts — saving as private`);
@@ -490,7 +438,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 letter: post.letter,
                                 response: post.response,
                             },
-                            verdict: post.verdict || null,
+
                             imagen_prompt: null,
                             imagen_prompts: [],
                             photo_vibe: post.photo_vibe || null,
@@ -510,15 +458,9 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         continue;
                     }
 
-                    // Load the user's avatar as a character reference anchor.
-                    // Nano Banana uses reference images to maintain consistent
-                    // facial geometry, build, and clothing across all storyboard beats.
-                    const referenceImage = await loadUserReferenceImage(uid);
-                    const referenceImages = referenceImage ? [referenceImage] : undefined;
-
-                    // Start parallel image generation for all prompts + dossier write
+                    // Start parallel scenic image generation + dossier write
                     const imagePromises = prompts.map((prompt: string, i: number) =>
-                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages)
+                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`)
                     );
 
                     const [imageResults] = await Promise.allSettled([
@@ -592,8 +534,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         },
                         imagen_prompt: prompts[0] || null,
                         imagen_prompts: prompts,
-                        verdict: post.verdict || null,
-                        photo_vibe: post.photo_vibe,
+                        photo_vibe: post.photo_vibe || null,
                         language: post.language || null,
                         imagen_url: imagen_url,
                         imagen_urls: imagen_urls,
@@ -619,17 +560,17 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 service: 'gmail',
                                 auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
                             });
-                            const postVerdict = post.verdict || 'New Post';
+                            const postTitle = post.pseudonym || 'New Post';
                             const postPseudonym = post.pseudonym || 'Anonymous';
                             const postVisibility = visibility || 'private';
                             await transporter.sendMail({
                                 from: `Earnest Page <${ADMIN_EMAIL}>`,
                                 to: ADMIN_EMAIL,
-                                subject: `📝 New Post — ${postVerdict}`,
+                                subject: `📝 New Post — ${postTitle}`,
                                 html: `
 <div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
     <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
-    <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postVerdict}</h2>
+    <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postTitle}</h2>
     <p style="font-size: 13px; color: #a1a1aa; margin: 0 0 16px 0;">by ${postPseudonym}</p>
     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
         <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${postVisibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${postVisibility}</td></tr>
@@ -655,7 +596,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 post.response,
                                 characterVoiceId,
                                 postDocRef.id,
-                                post.verdict,
                             );
                             if (audioResult) {
                                 await postDocRef.update({

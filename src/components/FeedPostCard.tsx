@@ -636,7 +636,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     if (canPlayShort) {
         // Split text into sentence-boundary chunks — each chunk is a complete thought.
         const chunkText = (text: string, targetWords: number = 12): string[] => {
-            const cleaned = text.replace(/\n+/g, ' ').trim();
+            // Strip both literal '\n' strings (AI JSON artifacts) and real newlines
+            const cleaned = text.replace(/\\n/g, ' ').replace(/\n+/g, ' ').trim();
             if (!cleaned) return [''];
 
             const sentencePattern = /[^.!?]*[.!?]+[\s]*/g;

@@ -7,8 +7,7 @@ import { generatePostAudio } from '@/lib/ai/postTTS';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
-import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
-import { computeAge } from '@/lib/utils/parseBirthDate';
+
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -65,21 +64,8 @@ export async function POST(req: Request) {
         const identity = userData?.identity;
         const characterVoiceId = userData?.character_bible?.voice_id;
 
-        // Build character appearance context for editorial storyboard images
-        // The character appears IN the images as the subject of the story.
-        const gender = identity?.gender || '';
-        const ethnicity = identity?.ethnicity || '';
-        const computedAge = computeAge(identity?.age);
-        const demographicParts = [
-            computedAge ? `approximately ${computedAge} years old` : '',
-            ethnicity,
-            gender,
-        ].filter(Boolean);
-        const dreamSelf = identity?.dream_self || '';
-        const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
-        const appearanceHint = demographicTag
-            ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
-            : '';
+        // Load user interests for scenic wallpaper images
+        const thingsIEnjoy = identity?.things_i_enjoy || userData?.character_bible?.source_code?.things_i_enjoy || '';
 
         console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
 
@@ -113,10 +99,10 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: LENGTH: 30-50 words. Ultra-tight — this is a short-form video. The letter will be read aloud in ~10-20 seconds. STRUCTURE: GUT PUNCH FIRST — open with the rawest, most emotionally charged line. Then situation context. The letter must present the situation as UNRESOLVED. VOICE: Raw and conversational — like texting a friend at 2am. Write in first person, present tense. FORMATTING: Start directly with the letter body (no salutation). End with '\\n\\n— ' followed by the pseudonym in Title Case.
-- verdict: A Therapy Shot — under 15 words, second-person, confrontational. Hit the reader between the eyes with the truth they're avoiding.
-- photo_vibe: One word capturing the emotional tone.
-- imagen_prompts: An array of 5-6 editorial storyboard prompts. THE STORYBOARD ARC — 5-6 beats telling the story from struggle to resolution: Beat 1 — THE STUCK MOMENT (the character in the situation), Beat 2 — THE DETAIL (closer shot of the key object/screen), Beat 3 — THE PIVOT (visual shift marking the turn), Beat 4 — THE MOVE (advice in action), Beat 5 — THE OUTCOME (character in the new state), Beat 6 (optional) — THE EXHALE (environmental close). The character appears IN every image. CHARACTER CONSISTENCY: describe their appearance — face, build, and personal style — consistently in every prompt. EDITORIAL PHOTOGRAPHY RULES: NEVER have the character look directly at the camera — they are caught in a moment, unaware of the camera. The character must be DOING something (not standing, not posing). Use photojournalistic composition — rule of thirds, natural angles, slightly off-center or over-the-shoulder. Never a centered portrait. PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names. Shot with a real camera — genuine, editorial. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
+- letter: LENGTH: 30-50 words. Ultra-tight — this is a short-form video. The letter will be read aloud in ~10-20 seconds. STRUCTURE: GUT PUNCH FIRST — open with the rawest, most emotionally charged line. Then situation context. The letter must present the situation as UNRESOLVED. VOICE: Raw and conversational — like texting a friend at 2am. Write in first person, present tense. FORMATTING: Start with 'Dear Earnest,\\n\\n' followed by the stuck behavior. End with '\\n\\n— ' followed by the pseudonym in Title Case.
+- imagen_prompts: An array of 5-6 scenic/lifestyle image prompts based on the user's interests. These are beautiful ambient backgrounds — NO PEOPLE in any image. They have no relationship to the letter content. Each image is a standalone beautiful photograph of something the user enjoys. PRODUCT PLACEMENT: Any image featuring coffee/espresso MUST show a JURA automatic espresso machine and/or CREMA coffee beans — never a generic machine. If user interests mention a specific brand, use the exact name. Rules: Real camera photography. Natural lighting. 9:16 portrait orientation (1080×1920). No text or watermarks. No people, no faces, no hands. Keep the center area uncluttered.
+
+WRITING TECHNIQUE — OPEN LOOPS: Every sentence must pull the reader into the next. Each sentence resolves one thing but opens a new question. The reader feels incomplete until they reach the end. BAD (closed, self-contained): "I like a girl at school. I've never talked to her. I want her to like me." GOOD (open loops): "I've memorized her schedule. Three months, and I still can't say hi. But that's not even the real problem."
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 
@@ -131,13 +117,10 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Locations, addresses, phone numbers, handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
 
-DEMOGRAPHIC CONTEXT:
-- Archetype: "${archetype}"
-- Identity roles: "${identity?.title || 'Unknown'}"
-${appearanceHint}
+${thingsIEnjoy ? `\nUSER INTERESTS — use these to generate scenic wallpaper images:\n${thingsIEnjoy}` : '\nNo interests available — generate generic beautiful scenery (golden hour landscapes, ocean waves, mountain fog, city skylines at dusk).'}
 
 OUTPUT FIELDS:
-- is_publishable, title, pseudonym, letter, verdict, photo_vibe, imagen_prompts, language`;
+- is_publishable, title, pseudonym, letter, imagen_prompts, language`;
 
         const letterResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
@@ -146,8 +129,6 @@ OUTPUT FIELDS:
                 title: z.string().max(75),
                 pseudonym: z.string(),
                 letter: z.string(),
-                verdict: z.string(),
-                photo_vibe: z.string(),
                 imagen_prompts: z.array(z.string()).min(5).max(6),
                 language: z.string().optional(),
             }),
@@ -188,7 +169,9 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Locations, addresses, phone numbers, handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
 
-- response: LENGTH: 40-60 words. STRUCTURE: Open with the COUNTER-MOVE — no throat-clearing, no "I hear you". Two-three sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'.`;
+- response: LENGTH: 40-60 words. STRUCTURE: Open with the COUNTER-MOVE — no throat-clearing, no "I hear you". Two-three sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'.
+
+WRITING TECHNIQUE — OPEN LOOPS: Every sentence must pull the reader into the next. Each sentence resolves one thing but opens a new question. The reader feels incomplete until they reach the end. BAD (closed, self-contained): "I like a girl at school. I've never talked to her. I want her to like me." GOOD (open loops): "I've memorized her schedule. Three months, and I still can't say hi. But that's not even the real problem."`;
 
         const responseResult = await generateWithFallback({
             primaryModelId: SONNET_MODEL,
@@ -202,11 +185,6 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
         // ── STEP 3: Generate image + TTS audio IN PARALLEL ──
         // Both are independent of each other — run concurrently to stay under timeout.
 
-        // Load the user's avatar as a character reference anchor.
-        // Nano Banana uses reference images to maintain consistent
-        // facial geometry, build, and clothing across all storyboard beats.
-        const referenceImage = await loadUserReferenceImage(uid);
-        const referenceImages = referenceImage ? [referenceImage] : undefined;
 
         const [imageResult, audioResult] = await Promise.allSettled([
             // Image generation — with per-prompt retries for quality
@@ -222,7 +200,6 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
                         prompt,
                         aspectRatio: '9:16',
                         logPrefix: 'RegeneratePost',
-                        referenceImages,
                     });
                     if (!result) return null;
 
@@ -299,7 +276,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
             // TTS audio generation
             (async () => {
                 if (!characterVoiceId) return null;
-                return generatePostAudio(pass1.letter, pass2.response, characterVoiceId, postId, pass1.verdict);
+                return generatePostAudio(pass1.letter, pass2.response, characterVoiceId, postId);
             })(),
         ]);
 
@@ -331,9 +308,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
 
         const updateData: any = {
             public_post: publicPost,
-            verdict: pass1.verdict,
             imagen_prompts: pass1.imagen_prompts,
-            photo_vibe: pass1.photo_vibe,
             language: pass1.language || null,
         };
 
