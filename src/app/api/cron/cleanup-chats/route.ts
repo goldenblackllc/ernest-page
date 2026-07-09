@@ -299,6 +299,10 @@ YOUR THREE JOBS:
 2. Write the IMAGEN_PROMPTS — an array of 5-6 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → pivot → move → outcome (→ exhale).
    THE KEY INSIGHT: These images work because they show a character living through a recognizable situation and coming out the other side. The viewer sees themselves in Beat 1 and sees where they could be by Beat 5.
    CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their appearance — face, build, and personal style — consistently in every prompt.
+   EDITORIAL PHOTOGRAPHY RULES — NON-NEGOTIABLE:
+   • NEVER have the character look directly at the camera. This is editorial photography, not a portrait. The character is caught in a MOMENT — unaware of the camera. They are looking at something, doing something, lost in thought. The camera observes them; they do not acknowledge it.
+   • The character must be DOING something in every image — not standing, not posing. Sitting and staring at a phone. Walking away. Reaching for something. Leaning against a wall. The action creates the story.
+   • Use photojournalistic composition — rule of thirds, natural angles, depth of field. Shoot from slightly off-center, over-the-shoulder, or at an angle. Never a centered, symmetrical portrait.
    PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
    • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags (e.g., character reaching for a CREMA bag on a counter, character watching a Jura machine pull a shot). Never a generic coffee maker.
    • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.

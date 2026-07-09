@@ -189,6 +189,10 @@ Beat 5 — THE OUTCOME (resolution): The character in the new state — wider sh
 Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling.
 
 CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their appearance — face, build, and personal style — consistently in every prompt.
+EDITORIAL PHOTOGRAPHY RULES:
+- NEVER have the character look directly at the camera. They are caught in a moment — unaware of the camera. Looking at something, doing something, lost in thought.
+- The character must be DOING something in every image — not standing, not posing. The action creates the story.
+- Use photojournalistic composition — rule of thirds, natural angles, depth of field. Shoot from slightly off-center, over-the-shoulder, or at an angle. Never a centered, symmetrical portrait.
 PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names.
 
 ALL prompts must follow these rules:

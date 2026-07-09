@@ -685,8 +685,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             const splitIndex = Math.round(filtered.length * computedLetterRatio);
 
             const chunks: { text: string; start: number; end: number }[] = [];
-            const targetWords = 12;
-            const hardCeiling = Math.ceil(targetWords * 1.5);
+            const minWords = 5;         // minimum before allowing a sentence-end break
+            const targetWords = 12;     // target chunk size — break at natural pauses here
+            const hardCeiling = Math.ceil(targetWords * 1.5); // 18 — force break regardless
             let chunkStart = 0;
 
             for (let i = 0; i < filtered.length; i++) {
@@ -699,9 +700,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 const isLetterEnd = splitIndex > 0 && i === splitIndex - 1;
 
                 const shouldBreak =
-                    (isSentenceEnd && wordCount >= targetWords) ||
+                    (isSentenceEnd && wordCount >= minWords) ||
                     isLetterEnd ||
-                    (isNaturalPause && wordCount >= hardCeiling) ||
+                    (isNaturalPause && wordCount >= targetWords) ||
                     (wordCount >= hardCeiling) ||
                     isLastWord;
 
