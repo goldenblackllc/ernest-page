@@ -92,35 +92,7 @@
       "body": "Tus conversaciones están encriptadas y son privadas. Tu identidad está protegida por un Firewall de Contacto y un escudo de proximidad. Nada se vende. Nada se comparte.",
       "subtext": "Construido por el creador de sistemas de seguridad empresarial, donde la privacidad es la base, no una característica."
     },
-    "pricing": {
-      "label": "Empezar",
-      "heading1": "Una conversación.",
-      "heading2": "Sin ataduras.",
-      "freeLabel": "Tu Primera Sesión",
-      "freePrice": "Gratis",
-      "freeDesc": "Una conversación completa. Sin tarjeta. Sin ataduras.",
-      "freeCta": "Comenzar Ahora",
-      "singleLabel": "Sesión Individual",
-      "singlePrice": "$20",
-      "singleDesc": "Una conversación completa. Hasta 2 horas. Sin compromiso.",
-      "singleCta": "Comenzar Ahora",
-      "threePackLabel": "Paquete de 3",
-      "threePackPrice": "$50",
-      "threePackDesc": "Tres sesiones. Úsalas en cualquier momento. Recuerdan dónde lo dejaste.",
-      "threePackCta": "Obtener 3 Sesiones",
-      "giftLabel": "Regalar una Sesión",
-      "giftPrice": "$20",
-      "giftDesc": "Para la persona que necesita esto pero nunca lo buscaría por sí misma.",
-      "giftCta": "Enviar un Regalo",
-      "archangelSubLabel": "Para el arquitecto de su día",
-      "archangelTitle": "El Programa Arcángel",
-      "archangelDesc": "Todas las sesiones incluidas, cada mes. Hasta 5 por día. Sin tarifas por sesión, sin contar créditos. Renovación mensual automática. Cancela en cualquier momento.",
-      "archangelPrice": "$499",
-      "archangelPeriod": "/ mes",
-      "archangelCta": "Suscribirse Ahora",
-      "freeNote": "Tu primera sesión es por nuestra cuenta. Sin tarjeta requerida.",
-      "refundNote": "¿No estás satisfecho? Reembolso instantáneo. Sin formularios, sin correos, un clic."
-    },
+
     "auth": {
       "heading1": "Empieza ahora mismo.",
       "heading2": "Sin cuentas. Sin correos. Solo tu teléfono.",
@@ -149,8 +121,6 @@
     "header": {
       "securityVault": "Bóveda de Seguridad",
       "rolodex": "Siguiendo",
-      "giftSession": "Regalar una Sesión",
-      "billing": "Facturación y Sesiones",
       "logOut": "Cerrar Sesión",
       "support": "Soporte"
     }
@@ -243,25 +213,15 @@
     "mode": "Modo"
   },
   "tollbooth": {
-    "secureEnrollment": "Inscripción Segura",
+    "secureEnrollment": "Comenzar",
     "heading": "Exige una vida mejor.",
-    "body": "Earnest Page no es otra aplicación que olvidas. Es una inversión intencional para alguien que se niega a comprometerse. Por $4 al día, asegurar tu estándar cuesta menos que el café que tomas mientras pones excusas.",
-    "thirtyDays": "30 Días",
-    "provingGround": "El Terreno de Prueba",
-    "provingPrice": "$120",
-    "provingPeriod": "/ 30 días",
-    "provingDesc": "30 días para demostrar que hablas en serio. Sin prórrogas.",
-    "oneYear": "1 Año",
-    "longGame": "A Largo Plazo",
-    "longPrice": "$1,200",
-    "longPeriod": "/ 1 año",
-    "longDesc": "Ya lo demostraste. Ahora construye el efecto compuesto.",
-    "selectPlan": "Seleccione su compromiso arriba para continuar."
+    "body": "Earnest Page no es otra aplicación que olvidas. Es un compromiso intencional para alguien que se niega a conformarse.",
+    "selectPlan": "Regístrate para comenzar."
   },
   "triagePanel": {
     "buildingCharacter": "Construyendo tu personaje...",
     "openChat": "Abrir chat",
-    "purchaseSession": "Comprar una sesión",
+    "purchaseSession": "Iniciar una sesión",
     "startOnboarding": "Configura tu personaje",
     "dailyLimit": "Límite diario alcanzado — ve a hacer el trabajo."
   },
@@ -417,7 +377,7 @@
   "supportChat": {
     "title": "Soporte",
     "placeholder": "Haz una pregunta...",
-    "emptyState": "¿Preguntas sobre suscripciones, funciones, privacidad o cómo funciona la app? Pregunta lo que quieras.",
+    "emptyState": "¿Preguntas sobre funciones, privacidad o cómo funciona la app? Pregunta lo que quieras.",
     "errorTooMany": "Has enviado demasiados mensajes. Por favor, espera un momento e inténtalo de nuevo.",
     "errorWrong": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "errorReach": "No se pudo contactar al soporte. Por favor, inténtalo más tarde."
@@ -473,7 +433,7 @@
     "unauthorized": "Acceso no autorizado.",
     "missingSession": "Falta el ID de sesión.",
     "userNotFound": "Usuario no encontrado.",
-    "noActiveSub": "Sin suscripción activa ni créditos de sesión.",
+    "noActiveSub": "Límite diario de sesiones alcanzado. Vuelve mañana.",
     "mirrorTimeout": "El algoritmo está tardando más de lo esperado. Por favor, intenta enviar de nuevo.",
     "unexpected": "Ocurrió un error inesperado.",
     "rantRequired": "El desahogo es obligatorio.",
@@ -528,12 +488,8 @@
       "p2": "Aceptas no utilizar el Servicio de ninguna manera descrita en nuestra "
     },
     "s7": {
-      "title": "7. Pago y Suscripción",
-      "p1": "El acceso al Servicio requiere una suscripción de pago. Los pagos se procesan de forma segura a través de Stripe. Al suscribirte, autorizas el cargo correspondiente.",
-      "strong1": "Cancelación.",
-      "p2": " Puedes cancelar tu suscripción en cualquier momento desde el panel de Seguridad y Enrutamiento en tu perfil. Si cancelas dentro de los 7 días posteriores a tu fecha de suscripción, se te reembolsará el pago completo. Después de 7 días, tu acceso continúa hasta el final del período pagado y no se emite reembolso.",
-      "strong2": "Suscripciones Vencidas.",
-      "p3": " Cuando tu período de suscripción termine, conservarás acceso de solo lectura a tu perfil, expediente y revisiones mensuales. El Chat del Espejo y las funciones de edición de personaje se desactivan hasta que te vuelvas a suscribir."
+      "title": "7. Acceso y Uso",
+      "p1": "Earnest Page se ofrece de forma gratuita. El acceso a las sesiones de Chat del Espejo está sujeto a un límite de uso diario para garantizar la calidad del servicio para todos los usuarios."
     },
     "s8": {
       "title": "8. Privacidad",
@@ -601,8 +557,8 @@
       "p6": ". Las sesiones \"Quemar al Cerrar\" se eliminan inmediatamente con cero retención de datos.",
       "t4": "2.4 Datos de Ubicación",
       "p7": "Si otorgas permiso de geolocalización del navegador, tus coordenadas aproximadas (latitud y longitud) se utilizan para la función Punto Ciego de Proximidad, que filtra publicaciones dentro de un radio de 320 km para proteger tu anonimato. También puedes establecer manualmente un ancla de ubicación mediante código postal. Tus coordenadas precisas nunca se muestran a otros usuarios ni se incluyen en las respuestas de la API.",
-      "t5": "2.5 Datos de Pago",
-      "p8": "El procesamiento de pagos es gestionado completamente por Stripe. No almacenamos números de tarjetas de crédito, datos de cuentas bancarias ni otras credenciales de pago en nuestros servidores. Solo almacenamos tu estado de suscripción, tipo de plan e identificadores de intención de pago de Stripe."
+      "t5": "2.5 Datos de Uso",
+      "p8": "Podemos recopilar métricas de uso anónimas para mejorar la calidad del servicio. No se recopilan datos de pago ya que Earnest Page es gratuito."
     },
     "s3": {
       "title": "3. Cómo Usamos Tu Información",
@@ -611,7 +567,7 @@
       "l3": "Para generar publicaciones anónimas escritas por IA para el muro público (con tu consentimiento mediante la configuración de enrutamiento)",
       "l4": "Para generar imágenes hero con IA para las publicaciones",
       "l5": "Para proporcionar filtrado de anonimato basado en proximidad",
-      "l6": "Para procesar pagos y gestionar suscripciones",
+      "l6": "Para mantener los límites de uso y prevenir abusos",
       "l7": "Para mejorar el Servicio y solucionar problemas técnicos"
     },
     "s4": {
@@ -629,9 +585,7 @@
       "td3_1": "Google (Imagen)",
       "td3_2": "Generación de imágenes para publicaciones",
       "td3_3": "Solo indicaciones de texto generadas por IA",
-      "td4_1": "Stripe",
-      "td4_2": "Procesamiento de pagos",
-      "td4_3": "Detalles de pago (manejados por Stripe)",
+
       "td5_1": "Twilio",
       "td5_2": "Códigos de verificación SMS",
       "td5_3": "Número de teléfono (solo para envío de OTP)",

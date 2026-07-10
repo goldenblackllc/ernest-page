@@ -72,8 +72,6 @@
     "header": {
       "securityVault": "Security Vault",
       "rolodex": "Following",
-      "giftSession": "Gift a Session",
-      "billing": "Billing & Sessions",
       "logOut": "Log Out",
       "support": "Support"
     }
@@ -193,25 +191,15 @@
     "mode": "Mode"
   },
   "tollbooth": {
-    "secureEnrollment": "Secure Enrollment",
+    "secureEnrollment": "Get Started",
     "heading": "Demand a Better Life.",
-    "body": "Earnest Page is not another app you forget about. It is an intentional investment for someone who refuses to compromise. At $4 a day, securing your standard costs less than the coffee you drink while making excuses.",
-    "thirtyDays": "30 Days",
-    "provingGround": "The Proving Ground",
-    "provingPrice": "$120",
-    "provingPeriod": "/ 30 days",
-    "provingDesc": "30 days to prove you mean it. No extensions.",
-    "oneYear": "1 Year",
-    "longGame": "The Long Game",
-    "longPrice": "$1,200",
-    "longPeriod": "/ 1 year",
-    "longDesc": "You already proved it. Now build the compound effect.",
-    "selectPlan": "Select your commitment above to proceed."
+    "body": "Earnest Page is not another app you forget about. It is an intentional commitment for someone who refuses to compromise.",
+    "selectPlan": "Sign up to begin."
   },
   "triagePanel": {
     "buildingCharacter": "Building your character...",
     "openChat": "Open chat",
-    "purchaseSession": "Purchase a session",
+    "purchaseSession": "Start a session",
     "startOnboarding": "Set up your character",
     "dailyLimit": "Daily limit reached — go do the work."
   },
@@ -383,7 +371,7 @@
   "supportChat": {
     "title": "Support",
     "placeholder": "Ask a question...",
-    "emptyState": "Questions about subscriptions, features, privacy, or how the app works? Ask away.",
+    "emptyState": "Questions about features, privacy, or how the app works? Ask away.",
     "errorTooMany": "You've sent too many messages. Please wait a moment and try again.",
     "errorWrong": "Something went wrong. Please try again.",
     "errorReach": "Unable to reach support. Please try again later."
@@ -439,7 +427,7 @@
     "unauthorized": "Unauthorized access.",
     "missingSession": "Missing session ID.",
     "userNotFound": "User not found.",
-    "noActiveSub": "No active subscription or session credits.",
+    "noActiveSub": "Daily session limit reached. Come back tomorrow.",
     "mirrorTimeout": "The algorithm is currently taking longer than expected. Please try submitting again.",
     "unexpected": "An unexpected error occurred.",
     "rantRequired": "Rant is required.",
@@ -495,14 +483,8 @@
       "p2": "You agree not to use the Service in any manner described in our "
     },
     "s7": {
-      "title": "7. Payment & Subscription",
-      "p1": "Access to the Service is available through individual session purchases or a recurring monthly subscription (The Archangel Program). Payments are processed securely through Stripe. By purchasing sessions or subscribing, you authorize the applicable charge.",
-      "strong1": "Auto-Renewal.",
-      "p1b": " The Archangel Program is a recurring monthly subscription billed at $499/month. Your subscription will automatically renew each month until you cancel. You will be charged on the same date each month. By subscribing, you authorize recurring charges to your payment method.",
-      "strong1b": "Cancellation.",
-      "p2": " You may cancel your subscription at any time from the Billing & Sessions page in your profile. If you cancel within 7 days of your initial subscription date, your payment will be refunded in full and access will end immediately. After 7 days, your cancellation takes effect at the end of your current billing period — you retain access until then, and no further charges will be made.",
-      "strong2": "Expired Subscriptions.",
-      "p3": " When your subscription period ends, you retain read-only access to your profile, dossier, and monthly reviews. The Mirror Chat and character editing features are disabled until you resubscribe."
+      "title": "7. Access & Usage",
+      "p1": "Earnest Page is provided free of charge. Access to Mirror Chat sessions is subject to a daily usage limit to ensure quality of service for all users."
     },
     "s8": {
       "title": "8. Privacy",
@@ -570,8 +552,8 @@
       "p6": ". “Burn on Close” sessions are deleted immediately with zero data retention.",
       "t4": "2.4 Location Data",
       "p7": "If you grant browser geolocation permission, your approximate coordinates (latitude and longitude) are used for the Proximity Blind Spot feature, which filters posts from within a 200-mile radius to protect your anonymity. You may also manually set a location anchor via zip code. Your precise coordinates are never displayed to other users or included in API responses.",
-      "t5": "2.5 Payment Data",
-      "p8": "Payment processing is handled entirely by Stripe. We do not store credit card numbers, bank account details, or other payment credentials on our servers. We store only your subscription status, plan type, and Stripe payment intent identifiers."
+      "t5": "2.5 Usage Data",
+      "p8": "We may collect anonymous usage metrics to improve service quality. No payment data is collected as Earnest Page is free."
     },
     "s3": {
       "title": "3. How We Use Your Information",
@@ -580,7 +562,7 @@
       "l3": "To generate anonymous, AI-ghostwritten posts for the public feed (with your consent via routing settings)",
       "l4": "To generate AI-powered hero images for posts",
       "l5": "To provide proximity-based anonymity filtering",
-      "l6": "To process payments and manage subscriptions",
+      "l6": "To maintain usage limits and prevent abuse",
       "l7": "To improve the Service and fix technical issues"
     },
     "s4": {
@@ -598,9 +580,7 @@
       "td3_1": "Google (Imagen)",
       "td3_2": "Image generation for posts",
       "td3_3": "AI-generated text prompts only",
-      "td4_1": "Stripe",
-      "td4_2": "Payment processing",
-      "td4_3": "Payment details (handled by Stripe)",
+
       "td5_1": "Twilio",
       "td5_2": "SMS verification codes",
       "td5_3": "Phone number (for OTP delivery only)",

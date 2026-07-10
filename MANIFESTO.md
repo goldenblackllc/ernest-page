@@ -129,38 +129,24 @@ A dedicated security panel accessible from the user profile:
 ### D. Proximity Privacy
 Posts from users near the reader's location are hidden by default. Geo-coordinates are stored on user documents (`home_lat`, `home_lng`) and on posts, enabling proximity-based filtering.
 
-## 8. Monetization
+## 8. Access Model
 
-### A. Session-Based Access
-There is no subscription paywall. Users purchase session credits à la carte or subscribe to the Archangel Program for unlimited access.
+Earnest Page is **completely free** for all authenticated users. There are no session credits, subscriptions, or payment gates.
 
-| Option | Price | What You Get |
+### Usage Limits
+| Limit | Value | Rationale |
 |---|---|---|
-| **First Session** | Free | 1 session on account creation. No card required. |
-| **Single Session** | $20 USD | 1 conversation (up to 2 hours / 30 exchanges) |
-| **3-Pack** | $50 USD | 3 sessions (save $10). Credits stored, use anytime. |
-| **The Archangel Program** | $499/month | Unlimited sessions (up to 5/day). Auto-renewing subscription via Stripe. Cancel anytime. |
-| **Gift a Session** | $20 USD | Buyer pays, receives a unique shareable link. Recipient redeems for 1 session credit. |
+| **Daily sessions** | 5 per day | Encourages users to do the real work between sessions |
+| **Session length** | Up to 2 hours / 30 exchanges | Prevents open-ended resource consumption |
+| **First session** | Free (no onboarding gate) | New users can start immediately |
 
-### B. Payment Flow
-*   **`SessionPurchaseModal.tsx`** — In-app modal for purchasing single sessions, 3-packs, gifts, or upgrading to Archangel.
-*   **`/api/create-payment-intent`** — Creates a Stripe PaymentIntent server-side for one-time purchases.
-*   **`/api/create-archangel-subscription`** — Creates a Stripe recurring subscription for the Archangel Program.
-*   **`/api/confirm-purchase`** — Verifies payment and credits the account immediately (not reliant on webhook timing).
-*   **`/api/webhooks/stripe`** — Stripe webhook handler for payment lifecycle events.
-*   **`/api/gift/create`** — Generates a unique gift code after payment. Admin bypass available for promotional codes.
-*   **`/api/gift/redeem`** — Validates and redeems a gift link, adding 1 credit to the recipient's account. Accessible at `/gift/[code]`.
+### Abuse Prevention
+*   **Phone authentication** — One phone number = one account. Prevents bot farms and multi-accounting.
+*   **AI intent constraint** — The Mirror Chat system prompt restricts conversations to personal growth topics. It will not respond to coding requests, technical questions, or off-topic prompts.
+*   **Rate limiting** — API-level rate limits on all endpoints.
+*   **Acceptable Use Policy** — Prohibits automated scripts, bots, scrapers, and circumvention of platform features.
+*   **Content moderation** — AI-generated posts are filtered before publication.
 
-### C. Refund Policy
-*   Session credits can be refunded within 7 days of purchase — one click, no forms.
-*   A trust-tier system scales how many refunds a user can request based on total purchase history.
-*   **`/api/refund-session`** — Server-side refund processing via Stripe.
-
-### D. Subscription Management (Archangel)
-*   **`SubscriptionView.tsx`** — Displays current plan status, next billing date, session credit balance, daily usage, billing history, and refund controls.
-*   **`/api/archangel/resubscribe`** — Re-activates a canceled-at-period-end subscription.
-*   **`/api/update-payment-method`** — Updates the Stripe payment method for an active subscription.
-*   Subscription data stored on user document: `subscription.status`, `subscription.currentPeriodEnd`, `subscription.cancelAtPeriodEnd`, `subscription.stripeSubscriptionId`.
 
 ## 9. Admin & Reporting
 
@@ -175,7 +161,6 @@ There is no subscription paywall. Users purchase session credits à la carte or 
 *   **UX Pattern:** Content-first feeds, mobile-first design, bottom tab navigation.
 *   **Backend:** Firebase (Firestore, Admin SDK). Deployed on Vercel.
 *   **Auth:** Twilio Verify (OTP) → Firebase Custom Tokens.
-*   **Payments:** Stripe (PaymentIntents, subscriptions, webhooks).
 *   **AI:**
     *   **Heavy Reasoning:** Anthropic Claude Opus (`claude-opus-4-7`) — powers Mirror Chat conversations.
     *   **Creative Writing:** Anthropic Claude Sonnet (`claude-sonnet-5`) — powers Ghost-Writing, Plan Generation, Dossier Updates, Support Chat, Reality Shift PII scrubbing.

@@ -99,10 +99,15 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: LENGTH: 30-50 words. Ultra-tight — this is a short-form video. The letter will be read aloud in ~10-20 seconds. STRUCTURE: GUT PUNCH FIRST — open with the rawest, most emotionally charged line. Then situation context. The letter must present the situation as UNRESOLVED. VOICE: Raw and conversational — like texting a friend at 2am. Write in first person, present tense. FORMATTING: Start with 'Dear Earnest,\\n\\n' followed by the stuck behavior. End with '\\n\\n— ' followed by the pseudonym in Title Case.
+- letter: LENGTH: 30-50 words. This will be read aloud in a short-form video (~10-20 seconds).
+  OPEN-LOOP WRITING: Every sentence must make the reader NEED the next one. The reader cannot stop mid-letter — each sentence feels incomplete without the next. Do NOT resolve the situation. The letter is the "before."
+  VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
+  FORMATTING: Start with 'Dear Earnest,\\n\\n'. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
+  EXAMPLES OF GOOD OPEN-LOOP LETTERS:
+  "Dear Earnest, I've memorized her schedule. Three months, every hallway, every lunch period. She doesn't know my name. How do you talk to someone you've already built up in your head? — Hallway Ghost"
+  "Dear Earnest, There's a thread on my phone I keep opening. Twelve messages. All blue. Not one reply. I know what that means. So why can't I stop typing? — Left on Read"
+  "Dear Earnest, I built something I believe in. Two years of my life. But every time I try to explain it, I watch their eyes glaze over. What do you do when the thing you're proudest of bores everyone? — Pitch Deck Prisoner"
 - imagen_prompts: An array of 5-6 scenic/lifestyle image prompts based on the user's interests. These are beautiful ambient backgrounds — NO PEOPLE in any image. They have no relationship to the letter content. Each image is a standalone beautiful photograph of something the user enjoys. PRODUCT PLACEMENT: Any image featuring coffee/espresso MUST show a JURA automatic espresso machine and/or CREMA coffee beans — never a generic machine. If user interests mention a specific brand, use the exact name. Rules: Real camera photography. Natural lighting. 9:16 portrait orientation (1080×1920). No text or watermarks. No people, no faces, no hands. Keep the center area uncluttered.
-
-WRITING TECHNIQUE — OPEN LOOPS: Every sentence must pull the reader into the next. Each sentence resolves one thing but opens a new question. The reader feels incomplete until they reach the end. BAD (closed, self-contained): "I like a girl at school. I've never talked to her. I want her to like me." GOOD (open loops): "I've memorized her schedule. Three months, and I still can't say hi. But that's not even the real problem."
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 

@@ -6,8 +6,7 @@ const MAX_SESSIONS_PER_DAY = 5;
 /**
  * POST /api/consume-session
  * Called when a user starts a new Mirror Chat session.
- * Enforces: daily cap (5/day for everyone), then credit check.
- * Users with active subscriptions bypass the credit check but NOT the daily cap.
+ * Enforces daily cap (5/day for everyone). Earnest Page is free.
  */
 export async function POST(req: Request) {
     try {
@@ -31,8 +30,8 @@ export async function POST(req: Request) {
             });
         }
 
-        // ─── DAILY CAP (applies to everyone, including Archangel) ───
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        // ─── DAILY CAP (applies to everyone) ───
+        const today = new Date().toISOString().split('T')[0];
         const sessionsToday = data?.sessions_today_date === today ? (data?.sessions_today || 0) : 0;
 
         if (sessionsToday >= MAX_SESSIONS_PER_DAY) {
@@ -47,54 +46,16 @@ export async function POST(req: Request) {
             );
         }
 
-        // ─── SUBSCRIPTION CHECK (Archangel, Proving Ground, Long Game) ───
-        const sub = data?.subscription;
-        const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
-        const isActiveStatus = sub?.status === 'active' || sub?.status === 'past_due';
-        const hasActiveSub = isActiveStatus && subEndDate && new Date(subEndDate) > new Date();
-
-        // Allow 3-day grace period for past_due subscriptions beyond their period end
-        const isPastDueGrace = sub?.status === 'past_due' && subEndDate &&
-            (Date.now() - new Date(subEndDate).getTime()) < 3 * 24 * 60 * 60 * 1000;
-
-        const hasAccess = hasActiveSub || isPastDueGrace;
-
-        if (hasAccess) {
-            // Increment daily counter but don't consume credits
-            await db.collection('users').doc(uid).update({
-                sessions_today: sessionsToday + 1,
-                sessions_today_date: today,
-            });
-
-            return Response.json({
-                granted: true,
-                source: 'subscription',
-                remaining: 'unlimited',
-                sessionsToday: sessionsToday + 1,
-                dailyRemaining: MAX_SESSIONS_PER_DAY - sessionsToday - 1,
-            });
-        }
-
-        // ─── CREDIT CHECK (pay-per-session users) ───
-        const credits = data?.session_credits || 0;
-        if (credits <= 0) {
-            return Response.json(
-                { error: 'No session credits available. Purchase a session to continue.', granted: false },
-                { status: 402 }
-            );
-        }
-
-        // Decrement credit + increment daily counter
+        // Increment daily counter
         await db.collection('users').doc(uid).update({
-            session_credits: FieldValue.increment(-1),
             sessions_today: sessionsToday + 1,
             sessions_today_date: today,
         });
 
         return Response.json({
             granted: true,
-            source: 'session_credit',
-            remaining: credits - 1,
+            source: 'free',
+            remaining: 'unlimited',
             sessionsToday: sessionsToday + 1,
             dailyRemaining: MAX_SESSIONS_PER_DAY - sessionsToday - 1,
         });

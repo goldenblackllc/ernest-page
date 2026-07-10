@@ -5,8 +5,8 @@ const MAX_SESSIONS_PER_DAY = 5;
 
 /**
  * POST /api/check-session-access
- * Lightweight access check — verifies daily cap, subscription, and credit balance
- * WITHOUT consuming a credit. Used to gate the chat window opening.
+ * Lightweight access check — verifies daily cap only.
+ * Earnest Page is free for all authenticated users.
  */
 export async function POST(req: Request) {
     try {
@@ -29,39 +29,9 @@ export async function POST(req: Request) {
             });
         }
 
-        // ─── SUBSCRIPTION CHECK ───
-        const sub = data?.subscription;
-        const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
-        const isActiveStatus = sub?.status === 'active' || sub?.status === 'past_due';
-        const hasActiveSub = isActiveStatus && subEndDate && new Date(subEndDate) > new Date();
-
-        // Allow 3-day grace period for past_due subscriptions beyond their period end
-        const isPastDueGrace = sub?.status === 'past_due' && subEndDate &&
-            (Date.now() - new Date(subEndDate).getTime()) < 3 * 24 * 60 * 60 * 1000;
-
-        if (hasActiveSub || isPastDueGrace) {
-            return Response.json({
-                canStart: true,
-                source: 'subscription',
-                dailyRemaining: MAX_SESSIONS_PER_DAY - sessionsToday,
-                paymentFailed: sub?.status === 'past_due',
-            });
-        }
-
-        // ─── CREDIT CHECK (read-only) ───
-        const credits = data?.session_credits || 0;
-        if (credits <= 0) {
-            return Response.json({
-                canStart: false,
-                reason: 'no_credits',
-                message: 'No session credits available. Purchase a session to continue.',
-            });
-        }
-
         return Response.json({
             canStart: true,
-            source: 'session_credit',
-            credits,
+            source: 'free',
             dailyRemaining: MAX_SESSIONS_PER_DAY - sessionsToday,
         });
     } catch (error: any) {

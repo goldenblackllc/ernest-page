@@ -92,35 +92,7 @@
       "body": "Vos conversations sont cryptées et privées. Votre identité est protégée par un pare-feu de contact et un bouclier de proximité. Rien n'est vendu. Rien n'est partagé.",
       "subtext": "Construit par le créateur de systèmes de sécurité d'entreprise — où la confidentialité est la base, pas une fonctionnalité."
     },
-    "pricing": {
-      "label": "Commencer",
-      "heading1": "Une conversation.",
-      "heading2": "Sans attaches.",
-      "freeLabel": "Votre Première Session",
-      "freePrice": "Gratuit",
-      "freeDesc": "Une conversation complète. Aucune carte requise. Sans attaches.",
-      "freeCta": "Commencer maintenant",
-      "singleLabel": "Session Unique",
-      "singlePrice": "20 $",
-      "singleDesc": "Une conversation complète. Jusqu'à 2 heures. Sans engagement.",
-      "singleCta": "Commencer maintenant",
-      "threePackLabel": "Pack de 3",
-      "threePackPrice": "50 $",
-      "threePackDesc": "Trois sessions. Utilisez-les n'importe quand. Ils se souviendront d'où vous vous étiez arrêté.",
-      "threePackCta": "Obtenir 3 sessions",
-      "giftLabel": "Offrir une Session",
-      "giftPrice": "20 $",
-      "giftDesc": "Pour la personne qui en a besoin mais ne le chercherait jamais par elle-même.",
-      "giftCta": "Envoyer un cadeau",
-      "archangelSubLabel": "Pour l'architecte de sa journée",
-      "archangelTitle": "Le Programme Archange",
-      "archangelDesc": "Toutes les sessions incluses, chaque mois. Jusqu'à 5 par jour. Pas de frais par session, pas de comptage de crédits. Renouvellement mensuel automatique. Annulation à tout moment.",
-      "archangelPrice": "499 $",
-      "archangelPeriod": "/ mois",
-      "archangelCta": "S'abonner maintenant",
-      "freeNote": "Votre première session est offerte. Aucune carte requise.",
-      "refundNote": "Pas satisfait ? Remboursement instantané. Pas de formulaires, pas d'e-mails, un seul clic."
-    },
+
     "auth": {
       "heading1": "Commencez dès maintenant.",
       "heading2": "Pas de compte. Pas d'e-mail. Juste votre téléphone.",
@@ -149,8 +121,6 @@
     "header": {
       "securityVault": "Coffre de sécurité",
       "rolodex": "Abonnements",
-      "giftSession": "Offrir une session",
-      "billing": "Facturation et Sessions",
       "logOut": "Déconnexion",
       "support": "Assistance"
     }
@@ -243,25 +213,15 @@
     "mode": "Mode"
   },
   "tollbooth": {
-    "secureEnrollment": "Inscription sécurisée",
+    "secureEnrollment": "Commencer",
     "heading": "Exigez une vie meilleure.",
-    "body": "Earnest Page n'est pas une énième application que vous oubliez. C'est un investissement intentionnel pour quelqu'un qui refuse les compromis. À 4 $ par jour, garantir vos standards coûte moins cher que le café que vous buvez pendant que vous trouvez des excuses.",
-    "thirtyDays": "30 Jours",
-    "provingGround": "Le Terrain d'Essai",
-    "provingPrice": "120 $",
-    "provingPeriod": "/ 30 jours",
-    "provingDesc": "30 jours pour prouver que vous êtes sérieux. Pas de prolongations.",
-    "oneYear": "1 An",
-    "longGame": "Le Jeu à Long Terme",
-    "longPrice": "1 200 $",
-    "longPeriod": "/ 1 an",
-    "longDesc": "Vous l'avez déjà prouvé. Maintenant, construisez l'effet composé.",
-    "selectPlan": "Sélectionnez votre engagement ci-dessus pour continuer."
+    "body": "Earnest Page n'est pas une énième application que vous oubliez. C'est un engagement intentionnel pour quelqu'un qui refuse les compromis.",
+    "selectPlan": "Inscrivez-vous pour commencer."
   },
   "triagePanel": {
     "buildingCharacter": "Construction de votre personnage...",
     "openChat": "Ouvrir le chat",
-    "purchaseSession": "Acheter une session",
+    "purchaseSession": "Démarrer une session",
     "startOnboarding": "Configurer votre personnage",
     "dailyLimit": "Limite quotidienne atteinte — allez faire le travail."
   },
@@ -417,7 +377,7 @@
   "supportChat": {
     "title": "Assistance",
     "placeholder": "Posez une question...",
-    "emptyState": "Des questions sur les abonnements, les fonctionnalités, la confidentialité ou le fonctionnement de l'appli ? Demandez tout ce que vous voulez.",
+    "emptyState": "Des questions sur les fonctionnalités, la confidentialité ou le fonctionnement de l'appli ? Demandez tout ce que vous voulez.",
     "errorTooMany": "Vous avez envoyé trop de messages. Veuillez patienter un moment et réessayer.",
     "errorWrong": "Une erreur s'est produite. Veuillez réessayer.",
     "errorReach": "Impossible de joindre l'assistance. Veuillez réessayer plus tard."
@@ -473,7 +433,7 @@
     "unauthorized": "Accès non autorisé.",
     "missingSession": "ID de session manquant.",
     "userNotFound": "Utilisateur non trouvé.",
-    "noActiveSub": "Aucun abonnement actif ou crédits de session.",
+    "noActiveSub": "Limite quotidienne de sessions atteinte. Revenez demain.",
     "mirrorTimeout": "L'algorithme prend plus de temps que prévu. Veuillez réessayer.",
     "unexpected": "Une erreur inattendue s'est produite.",
     "rantRequired": "Le défoulement est obligatoire.",
@@ -528,12 +488,8 @@
       "p2": "Vous acceptez de ne pas utiliser le Service de quelque manière que ce soit décrite dans notre "
     },
     "s7": {
-      "title": "7. Paiement et Abonnement",
-      "p1": "L'accès au Service nécessite un abonnement payant. Les paiements sont traités de manière sécurisée via Stripe. En vous abonnant, vous autorisez le prélèvement applicable.",
-      "strong1": "Annulation.",
-      "p2": " Vous pouvez annuler votre abonnement à tout moment depuis le panneau Sécurité et Routage de votre profil. Si vous annulez dans les 7 jours suivant votre date d'abonnement, votre paiement sera intégralement remboursé. Après 7 jours, votre accès continue jusqu'à la fin de la période payée et aucun remboursement n'est effectué.",
-      "strong2": "Abonnements Expirés.",
-      "p3": " Lorsque votre période d'abonnement se termine, vous conservez un accès en lecture seule à votre profil, dossier et bilans mensuels. Le Chat du Miroir et les fonctions d'édition de personnage sont désactivés jusqu'à ce que vous vous réabonniez."
+      "title": "7. Accès et Utilisation",
+      "p1": "Earnest Page est fourni gratuitement. L'accès aux sessions du Chat du Miroir est soumis à une limite d'utilisation quotidienne afin de garantir la qualité du service pour tous les utilisateurs."
     },
     "s8": {
       "title": "8. Confidentialité",
@@ -601,8 +557,8 @@
       "p6": ". Les sessions « Brûler à la fermeture » sont supprimées immédiatement avec zéro rétention de données.",
       "t4": "2.4 Données de Localisation",
       "p7": "Si vous accordez l'autorisation de géolocalisation du navigateur, vos coordonnées approximatives (latitude et longitude) sont utilisées pour la fonction Zone Aveugle de Proximité, qui filtre les publications dans un rayon de 320 km pour protéger votre anonymat. Vous pouvez également définir manuellement un ancrage de localisation via code postal. Vos coordonnées précises ne sont jamais affichées aux autres utilisateurs ni incluses dans les réponses de l'API.",
-      "t5": "2.5 Données de Paiement",
-      "p8": "Le traitement des paiements est entièrement géré par Stripe. Nous ne stockons pas les numéros de carte de crédit, les données de compte bancaire ou d'autres identifiants de paiement sur nos serveurs. Nous ne stockons que votre statut d'abonnement, votre type de plan et les identifiants d'intention de paiement Stripe."
+      "t5": "2.5 Données d'Utilisation",
+      "p8": "Nous pouvons collecter des métriques d'utilisation anonymes pour améliorer la qualité du service. Aucune donnée de paiement n'est collectée car Earnest Page est gratuit."
     },
     "s3": {
       "title": "3. Comment Nous Utilisons Vos Informations",
@@ -611,7 +567,7 @@
       "l3": "Pour générer des publications anonymes écrites par IA pour le flux public (avec votre consentement via les paramètres de routage)",
       "l4": "Pour générer des images hero par IA pour les publications",
       "l5": "Pour fournir un filtrage d'anonymat basé sur la proximité",
-      "l6": "Pour traiter les paiements et gérer les abonnements",
+      "l6": "Pour maintenir les limites d'utilisation et prévenir les abus",
       "l7": "Pour améliorer le Service et résoudre les problèmes techniques"
     },
     "s4": {
@@ -629,9 +585,7 @@
       "td3_1": "Google (Imagen)",
       "td3_2": "Génération d'images pour les publications",
       "td3_3": "Uniquement des prompts texte générés par IA",
-      "td4_1": "Stripe",
-      "td4_2": "Traitement des paiements",
-      "td4_3": "Détails de paiement (gérés par Stripe)",
+
       "td5_1": "Twilio",
       "td5_2": "Codes de vérification SMS",
       "td5_3": "Numéro de téléphone (pour l'envoi de OTP uniquement)",

@@ -27,11 +27,10 @@ interface MirrorChatProps {
     uid: string;
     initialContext?: string | null;
     defaultPostRouting?: 'private' | 'community' | 'public';
-    isUnlimited?: boolean; // Active subscription (e.g. Archangel) — skip session limits
-    onNeedsPurchase?: () => void; // Called when credit consumption fails (no credits left)
+
 }
 
-export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialContext, defaultPostRouting, isUnlimited, onNeedsPurchase }: MirrorChatProps) {
+export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
     const { user: authUser } = useAuth();
     const t = useTranslations();
     const { suppressAutoPlay, unsuppressAutoPlay } = useAudioMute();
@@ -114,7 +113,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     // Derive exchange count from messages
     const exchangeCount = messages.filter(m => m.role === 'user').length;
     const isAtExchangeLimit = exchangeCount >= MAX_EXCHANGES;
-    const isSessionLimited = !isUnlimited && (isAtExchangeLimit || isSessionExpired);
+    const isSessionLimited = isAtExchangeLimit || isSessionExpired;
 
     // Session timer — check expiry every 30 seconds
     useEffect(() => {
@@ -181,7 +180,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     const data = await res.json();
 
                     if (!data.granted) {
-                        onNeedsPurchase?.();
+                        onClose();
                         return;
                     }
                     setCreditConsumed(true);
@@ -372,8 +371,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                 const data = await res.json();
 
                 if (!data.granted) {
-                    // No credits — send to purchase modal
-                    onNeedsPurchase?.();
+                    // Daily limit reached — close chat
+                    onClose();
                     return;
                 }
 

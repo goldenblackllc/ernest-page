@@ -9,7 +9,7 @@ import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell, Shield, CreditCard, LogOut, Users, HelpCircle, Mail, Gift } from "lucide-react";
+import { Bell, Shield, LogOut, Users, HelpCircle, Mail } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";
@@ -38,8 +38,7 @@ export function DashboardHeader() {
     }, [user]);
 
     const incompleteCount = profile?.active_todos?.filter(t => !t.completed).length || 0;
-    const sub = profile?.subscription;
-    const hasActivePlan = sub && sub.status === 'active';
+
 
 
     const handleLogout = async () => {
@@ -118,29 +117,7 @@ export function DashboardHeader() {
                                             {t('dashboard.header.rolodex')}
                                         </button>
 
-                                        {/* Gift a Session */}
-                                        <button
-                                            onClick={() => {
-                                                setIsMenuOpen(false);
-                                                router.push('/gift');
-                                            }}
-                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
-                                        >
-                                            <Gift className="w-4 h-4 text-zinc-500" />
-                                            {t('dashboard.header.giftSession')}
-                                        </button>
 
-                                        {/* Subscription */}
-                                        <button
-                                            onClick={() => {
-                                                setIsMenuOpen(false);
-                                                router.push('/subscription');
-                                            }}
-                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
-                                        >
-                                            <CreditCard className="w-4 h-4 text-zinc-500" />
-                                            {t('dashboard.header.billing')}
-                                        </button>
 
                                         {/* Log Out */}
                                         <button

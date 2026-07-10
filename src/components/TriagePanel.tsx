@@ -12,7 +12,6 @@ import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { getMostRecentActiveChat } from "@/lib/firebase/chat";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
-import { SessionPurchaseModal } from "./SessionPurchaseModal";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -28,7 +27,6 @@ export function TriagePanel() {
     const { pauseAll, suppressAutoPlay, unsuppressAutoPlay } = useAudioMute();
 
     const [isMirrorOpen, setIsMirrorOpen] = useState(false);
-    const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
     const [isDailyCapHit, setIsDailyCapHit] = useState(false);
     const [initialContext, setInitialContext] = useState<string | null>(null);
 
@@ -47,9 +45,7 @@ export function TriagePanel() {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-    // Session credit / subscription state
-    const [sessionCredits, setSessionCredits] = useState<number>(0);
-    const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+    // Session state
     const [sessionsToday, setSessionsToday] = useState<number>(0);
 
     useEffect(() => {
@@ -58,7 +54,6 @@ export function TriagePanel() {
             setBible(data.character_bible);
             setIdentity(data.identity || null);
             setDefaultPostRouting(data.default_post_routing || 'community');
-            setSessionCredits(data.session_credits || 0);
 
             // Check if user needs onboarding (no completed onboarding)
             const isLegacyComplete = !!data.identity?.title;
@@ -68,15 +63,6 @@ export function TriagePanel() {
             // Daily session count
             const today = new Date().toISOString().split('T')[0];
             setSessionsToday(data.sessions_today_date === today ? (data.sessions_today || 0) : 0);
-
-            // Check subscription
-            const sub = data.subscription;
-            if (sub && (sub.status === 'active' || sub.status === 'past_due')) {
-                const endDate = sub.currentPeriodEnd || sub.subscribedUntil;
-                setHasActiveSubscription(endDate ? new Date(endDate) > new Date() : false);
-            } else {
-                setHasActiveSubscription(false);
-            }
         });
         return () => unsubscribe();
     }, [user]);
@@ -117,11 +103,11 @@ export function TriagePanel() {
         };
         window.addEventListener('open-mirror-checkin', handleCheckin);
         return () => window.removeEventListener('open-mirror-checkin', handleCheckin);
-    }, [hasActiveSubscription, sessionCredits, sessionsToday]);
+    }, [sessionsToday]);
 
-    const canChat = hasActiveSubscription || sessionCredits > 0;
     const isBibleReady = bible != null && (bible.compiled_output?.ideal?.length ?? 0) > 0;
-    const dailyRemaining = MAX_SESSIONS_PER_DAY - sessionsToday;
+
+
 
     const handleOnboardingSubmit = async (data: IdentityFormData) => {
         if (!user) return;
@@ -179,12 +165,7 @@ export function TriagePanel() {
 
         if (!isBibleReady) return; // Bible is compiling, can't start yet
 
-        if (!canChat) {
-            setIsPurchaseOpen(true);
-            return;
-        }
-
-        // Layer 1: Resume existing session without re-charging
+        // Check access (daily cap)
         try {
             const existingSession = await getMostRecentActiveChat(user!.uid);
             if (existingSession) {
@@ -214,7 +195,8 @@ export function TriagePanel() {
             }
 
             if (!data.canStart) {
-                setIsPurchaseOpen(true);
+                setIsDailyCapHit(true);
+                setTimeout(() => setIsDailyCapHit(false), 5000);
                 return;
             }
 
@@ -225,46 +207,6 @@ export function TriagePanel() {
         }
     };
 
-    const handlePurchaseComplete = async () => {
-        // Credits are now confirmed in Firestore by /api/confirm-purchase.
-        // With deferred consumption, we just need to verify access and open the chat.
-        const idToken = await user?.getIdToken();
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
-
-        for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-                const res = await fetch('/api/check-session-access', {
-                    method: 'POST',
-                    headers,
-                });
-                const data = await res.json();
-
-                if (data.reason === 'daily_limit') {
-                    setIsDailyCapHit(true);
-                    setTimeout(() => setIsDailyCapHit(false), 5000);
-                    return;
-                }
-
-                if (data.canStart) {
-                    openMirror();
-                    return;
-                }
-
-                // Credits not visible yet — wait and retry
-                if (attempt < 2) {
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            } catch {
-                if (attempt < 2) {
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
-        }
-
-        // All retries exhausted — open anyway, mirror route will re-check
-        openMirror();
-    };
 
     return (
         <>
@@ -304,7 +246,7 @@ export function TriagePanel() {
                             ? t('triagePanel.startOnboarding')
                             : !isBibleReady
                                 ? t('triagePanel.buildingCharacter')
-                                : canChat ? t('triagePanel.openChat') : t('triagePanel.purchaseSession')
+                                : t('triagePanel.openChat')
                     }
                 >
                     <MessageCircle className={cn("w-7 h-7", !isBibleReady && !needsOnboarding && "animate-pulse")} />
@@ -329,15 +271,6 @@ export function TriagePanel() {
                 uid={user?.uid || ""}
                 initialContext={initialContext}
                 defaultPostRouting={defaultPostRouting}
-                isUnlimited={hasActiveSubscription}
-                onNeedsPurchase={() => { setIsMirrorOpen(false); setIsPurchaseOpen(true); }}
-            />
-
-            {/* Session Purchase Modal */}
-            <SessionPurchaseModal
-                isOpen={isPurchaseOpen}
-                onClose={() => setIsPurchaseOpen(false)}
-                onPurchased={handlePurchaseComplete}
             />
 
             {/* Onboarding Overlay — triggered by FAB when no character bible */}
