@@ -74,8 +74,10 @@ export async function POST(req: Request) {
         const characterAge = userData?.identity?.age || '';
         const characterGender = userData?.identity?.gender || '';
 
-        // Get the tone directive
-        const toneDirective = ENGAGEMENT_TONES[tone].directive;
+        // Tone directive removed — the Conversation Spine provides structural flow,
+        // and the character's own bible voice should dictate tone, not a generic override.
+        // To restore: const toneDirective = ENGAGEMENT_TONES[tone].directive;
+        const toneDirective = '';
 
         // Determine language instruction for the AI
         let languageInstruction = "";
