@@ -252,13 +252,14 @@ THEN — replace everything that identifies THE USER PERSONALLY:
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
 - letter: LENGTH: 30-50 words. This will be read aloud in a short-form video (~10-20 seconds).
-  OPEN-LOOP WRITING: Every sentence must make the reader NEED the next one. The reader cannot stop mid-letter — each sentence feels incomplete without the next. Do NOT resolve the situation. The letter is the "before."
+  THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must leave the reader with a question that only the NEXT sentence can answer. Use short sentences. Each sentence should contain a specific-but-undefined reference — something concrete enough to form a question about, but vague enough that the reader MUST keep reading to resolve it. The reader should be unable to stop mid-letter. Do NOT resolve the situation. The letter is the "before."
+  MECHANICS: A sentence like "I walked into the store and couldn't believe what I saw" works because "what I saw" is specific (something exists) but undefined (you don't know what). A sentence like "My house needs real work and I have almost no budget" does NOT work because it is complete — the reader has no question to carry forward. Keep sentences short. Long sentences close loops by packing in too much information.
   VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
   FORMATTING: Start with 'Dear Earnest,\n\n'. End with '\n\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
-  EXAMPLES OF GOOD OPEN-LOOP LETTERS:
-  "Dear Earnest, I've memorized her schedule. Three months, every hallway, every lunch period. She doesn't know my name. How do you talk to someone you've already built up in your head? — Hallway Ghost"
-  "Dear Earnest, There's a thread on my phone I keep opening. Twelve messages. All blue. Not one reply. I know what that means. So why can't I stop typing? — Left on Read"
-  "Dear Earnest, I built something I believe in. Two years of my life. But every time I try to explain it, I watch their eyes glaze over. What do you do when the thing you're proudest of bores everyone? — Pitch Deck Prisoner"
+  EXAMPLES OF GOOD SLIPPERY SLIDE LETTERS:
+  "Dear Earnest, I did something at work today. Nobody saw it, but my boss will by Monday. I don't know if I should tell her first or let her find out. The worst part? I'd probably do it again. — Already Guilty"
+  "Dear Earnest, My best friend told me a secret last week. I promised I wouldn't say anything. But then I found out who it was about. — Keeping Score"
+  "Dear Earnest, I applied for something I'm not qualified for. They called me back. Now I have an interview on Tuesday, and there's one question I can't answer honestly. — Borrowed Résumé"
 
 STEP 3: THE SCENIC WALLPAPER
 Every post gets 5-6 beautiful scenic/lifestyle images as ambient backgrounds. These crossfade during the video — they are NOT related to the letter content. They are simply beautiful images of things the user enjoys.
@@ -372,7 +373,7 @@ FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NA
 THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
 - response: LENGTH: 40-60 words. This is non-negotiable — the response will be read aloud in ~15-25 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. Here's what you do instead." BAD: "I understand how painful this must be for you."). Two-three sentences delivering the real advice — be specific, give the reader something concrete. One closing line with a direct challenge or instruction. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
-  WRITING TECHNIQUE — OPEN LOOPS: Every sentence must pull the reader into the next. Each sentence resolves one thing but opens a new question. BAD: "Stop texting him. Move on. Focus on yourself." GOOD: "Texting him 12 times isn't bringing him back. But you already knew that. Here's what you haven't tried."`;
+  WRITING TECHNIQUE — THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must leave the reader with a question that only the next sentence can answer. Use short sentences with specific-but-undefined references — concrete enough to form a question, vague enough that only the next sentence resolves it. BAD (closed, complete): "Stop texting him. Move on. Focus on yourself." — each sentence is self-contained, the reader can stop anywhere. GOOD (slippery slide): "Texting him isn't the problem. It's why you open the app at 2am. And until you figure that out, no advice is going to land." — each sentence raises a question the next one answers.`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: SONNET_MODEL,
