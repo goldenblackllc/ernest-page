@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import sharp from 'sharp';
-import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { generatePostAudio } from '@/lib/ai/postTTS';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 
 
 export const runtime = 'nodejs';
@@ -64,8 +66,21 @@ export async function POST(req: Request) {
         const identity = userData?.identity;
         const characterVoiceId = userData?.character_bible?.voice_id;
 
-        // Load user interests for scenic wallpaper images
-        const thingsIEnjoy = identity?.things_i_enjoy || userData?.character_bible?.source_code?.things_i_enjoy || '';
+        // Build character appearance context for editorial storyboard images
+        // The character appears IN the images as the subject of the story.
+        const gender = identity?.gender || '';
+        const ethnicity = identity?.ethnicity || '';
+        const computedAge = computeAge(identity?.age);
+        const demographicParts = [
+            computedAge ? `approximately ${computedAge} years old` : '',
+            ethnicity,
+            gender,
+        ].filter(Boolean);
+        const dreamSelf = identity?.dream_self || '';
+        const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
+        const appearanceHint = demographicTag
+            ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
+            : '';
 
         console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
 
@@ -99,15 +114,15 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: LENGTH: 30-50 words. This will be read aloud in a short-form video. THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must leave the reader with a question that only the NEXT sentence can answer. Use short sentences. Each sentence should contain a specific-but-undefined reference — something concrete enough to form a question about, but vague enough that the reader MUST keep reading to resolve it. The reader should be unable to stop mid-letter. Do NOT resolve the situation. The letter is the "before."
-   MECHANICS: A sentence like "I walked into the store and couldn't believe what I saw" works because "what I saw" is specific (something exists) but undefined (you don't know what). A sentence like "My house needs real work and I have almost no budget" does NOT work because it is complete — the reader has no question to carry forward. Keep sentences short. Long sentences close loops by packing in too much information.
+- letter: LENGTH: 30-50 words. This will be read aloud in a short-form video.
+   WRITING FOR EMOTIONAL RESONANCE: The letter should make a stranger feel something. The way to do that is through SPECIFIC, CONCRETE DETAIL — not cleverness, not hooks, not wordplay. The reader should recognize themselves or someone they love in this letter. One honest, specific detail does more than five poetic sentences.
+   CLARITY: Every pronoun and reference must be identifiable from the letter alone. A reader with ZERO context must be able to picture the situation. BAD: "I won't leave him behind" — who is "him"? GOOD: "I won't leave my dog behind."
+   RESTRAINT: Say less, not more. The emotion lives in what's left unsaid. Do NOT resolve the situation — the letter is the "before."
    VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
    FORMATTING: Start with 'Dear Earnest,\\n\\n'. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
-   EXAMPLES OF GOOD SLIPPERY SLIDE LETTERS:
-   "Dear Earnest, I did something at work today. Nobody saw it, but my boss will by Monday. I don't know if I should tell her first or let her find out. The worst part? I'd probably do it again. — Already Guilty"
-   "Dear Earnest, My best friend told me a secret last week. I promised I wouldn't say anything. But then I found out who it was about. — Keeping Score"
-   "Dear Earnest, I applied for something I'm not qualified for. They called me back. Now I have an interview on Tuesday, and there's one question I can't answer honestly. — Borrowed Résumé"
-- imagen_prompts: An array of 5-6 scenic/lifestyle image prompts based on the user's interests. These are beautiful ambient backgrounds — NO PEOPLE in any image. They have no relationship to the letter content. Each image is a standalone beautiful photograph of something the user enjoys. PRODUCT PLACEMENT: Any image featuring coffee/espresso MUST show a JURA automatic espresso machine and/or CREMA coffee beans — never a generic machine. If user interests mention a specific brand, use the exact name. Rules: Real camera photography. Natural lighting. 9:16 portrait orientation (1080×1920). No text or watermarks. No people, no faces, no hands. Keep the center area uncluttered.
+- imagen_prompts: An array of 5-6 editorial storyboard prompts. THE STORYBOARD ARC — 5-6 beats telling the story from struggle to resolution: Beat 1 — THE STUCK MOMENT (the character in the situation), Beat 2 — THE DETAIL (closer shot of the key object/screen), Beat 3 — THE PIVOT (visual shift marking the turn), Beat 4 — THE MOVE (advice in action), Beat 5 — THE OUTCOME (character in the new state), Beat 6 (optional) — THE EXHALE (environmental close). The character appears IN every image. CHARACTER CONSISTENCY: describe their appearance — face, build, and personal style — consistently in every prompt. EDITORIAL PHOTOGRAPHY RULES: NEVER have the character look directly at the camera — they are caught in a moment, unaware of the camera. The character must be DOING something (not standing, not posing). Use photojournalistic composition — rule of thirds, natural angles, slightly off-center or over-the-shoulder. Never a centered portrait. PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names. Shot with a real camera — genuine, editorial. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
+- verdict: A scroll-stopping opening hook — under 15 words, second-person, confrontational. Hit the reader between the eyes with the truth they're avoiding.
+- photo_vibe: One word capturing the emotional tone.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
 
@@ -122,18 +137,21 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Locations, addresses, phone numbers, handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
 
-${thingsIEnjoy ? `\nUSER INTERESTS — use these to generate scenic wallpaper images:\n${thingsIEnjoy}` : '\nNo interests available — generate generic beautiful scenery (golden hour landscapes, ocean waves, mountain fog, city skylines at dusk).'}
+${appearanceHint}
 
 OUTPUT FIELDS:
-- is_publishable, title, pseudonym, letter, imagen_prompts, language`;
+- is_publishable, title, pseudonym, letter, verdict, photo_vibe, imagen_prompts, language`;
 
         const letterResult = await generateWithFallback({
-            primaryModelId: SONNET_MODEL,
+            primaryModelId: OPUS_MODEL,
+            fallbackModelId: OPUS_FALLBACK,
             schema: z.object({
                 is_publishable: z.literal(true),
                 title: z.string().max(75),
                 pseudonym: z.string(),
                 letter: z.string(),
+                verdict: z.string().max(200),
+                photo_vibe: z.string(),
                 imagen_prompts: z.array(z.string()).min(5).max(6),
                 language: z.string().optional(),
             }),
@@ -176,10 +194,11 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
 
 - response: LENGTH: 40-60 words. STRUCTURE: Open with the COUNTER-MOVE — no throat-clearing, no "I hear you". Two-three sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'.
 
-WRITING TECHNIQUE — THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must leave the reader with a question that only the next sentence can answer. Use short sentences with specific-but-undefined references — concrete enough to form a question, vague enough that only the next sentence resolves it. BAD (closed, complete): "Stop texting him. Move on. Focus on yourself." — each sentence is self-contained, the reader can stop anywhere. GOOD (slippery slide): "Texting him isn't the problem. It's why you open the app at 2am. And until you figure that out, no advice is going to land." — each sentence raises a question the next one answers.`;
+WRITING FOR EMOTIONAL RESONANCE: The response should land like the best advice you've ever gotten — specific, unexpected, and true. Use concrete detail, not abstraction. The reader should finish this and feel like someone finally said the thing nobody else would say to them.`;
 
         const responseResult = await generateWithFallback({
-            primaryModelId: SONNET_MODEL,
+            primaryModelId: OPUS_MODEL,
+            fallbackModelId: OPUS_FALLBACK,
             schema: z.object({ response: z.string() }),
             prompt: responsePrompt,
         });
@@ -190,6 +209,9 @@ WRITING TECHNIQUE — THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must 
         // ── STEP 3: Generate image + TTS audio IN PARALLEL ──
         // Both are independent of each other — run concurrently to stay under timeout.
 
+        // Load the user's avatar as a character reference anchor.
+        const referenceImage = await loadUserReferenceImage(uid);
+        const referenceImages = referenceImage ? [referenceImage] : undefined;
 
         const [imageResult, audioResult] = await Promise.allSettled([
             // Image generation — with per-prompt retries for quality
@@ -205,6 +227,7 @@ WRITING TECHNIQUE — THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must 
                         prompt,
                         aspectRatio: '9:16',
                         logPrefix: 'RegeneratePost',
+                        referenceImages,
                     });
                     if (!result) return null;
 
@@ -302,6 +325,7 @@ WRITING TECHNIQUE — THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must 
             pseudonym: pass1.pseudonym,
             letter: pass1.letter,
             response: pass2.response,
+            verdict: pass1.verdict || null,
         };
         // Include imagen_url in public_post when we have new images
         if (imagen_urls.length > 0) {

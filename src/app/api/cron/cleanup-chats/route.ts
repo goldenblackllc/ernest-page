@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { z } from 'zod';
-import { generateWithFallback, SONNET_MODEL, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
+import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
@@ -12,7 +12,8 @@ import { generatePostAudio } from '@/lib/ai/postTTS';
 import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { generateImage } from '@/lib/ai/generateImage';
-// loadUserReferenceImage removed — scenic wallpaper images don't need character anchoring
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 import nodemailer from 'nodemailer';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
@@ -119,11 +120,21 @@ async function processUserChats(
     const identity = userData?.identity;
     const preferredLocale = userData?.preferred_locale || 'en';
 
-    // Load user interests for scenic wallpaper images
-    const thingsIEnjoy = identity?.things_i_enjoy || userData?.character_bible?.source_code?.things_i_enjoy || '';
-    const interestsHint = thingsIEnjoy
-        ? `\nUSER INTERESTS — use these to generate scenic wallpaper images:\n${thingsIEnjoy}`
-        : '\nNo interests available — generate generic beautiful scenery (golden hour landscapes, ocean waves, mountain fog, city skylines at dusk, coffee close-ups).';
+    // Build character appearance context for editorial storyboard images.
+    // The character appears IN the images as the subject of the story.
+    const gender = identity?.gender || '';
+    const ethnicity = identity?.ethnicity || '';
+    const computedAge = computeAge(identity?.age);
+    const demographicParts = [
+        computedAge ? `approximately ${computedAge} years old` : '',
+        ethnicity,
+        gender,
+    ].filter(Boolean);
+    const dreamSelf = identity?.dream_self || '';
+    const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
+    const demographicHint = demographicTag
+        ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
+        : '';
 
     for (const chatDoc of chatDocs) {
         const chatData = chatDoc.data();
@@ -252,31 +263,67 @@ THEN — replace everything that identifies THE USER PERSONALLY:
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
 - letter: LENGTH: 30-50 words. This will be read aloud in a short-form video (~10-20 seconds).
-  THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must leave the reader with a question that only the NEXT sentence can answer. Use short sentences. Each sentence should contain a specific-but-undefined reference — something concrete enough to form a question about, but vague enough that the reader MUST keep reading to resolve it. The reader should be unable to stop mid-letter. Do NOT resolve the situation. The letter is the "before."
-  MECHANICS: A sentence like "I walked into the store and couldn't believe what I saw" works because "what I saw" is specific (something exists) but undefined (you don't know what). A sentence like "My house needs real work and I have almost no budget" does NOT work because it is complete — the reader has no question to carry forward. Keep sentences short. Long sentences close loops by packing in too much information.
+  WRITING FOR EMOTIONAL RESONANCE: The letter should make a stranger feel something. The way to do that is through SPECIFIC, CONCRETE DETAIL — not cleverness, not hooks, not wordplay. The reader should recognize themselves or someone they love in this letter. One honest, specific detail does more than five poetic sentences.
+  CLARITY: Every pronoun and reference must be identifiable from the letter alone. A reader with ZERO context must be able to picture the situation. BAD: "I won't leave him behind" — who is "him"? GOOD: "I won't leave my dog behind."
+  RESTRAINT: Say less, not more. The emotion lives in what's left unsaid. Do NOT resolve the situation — the letter is the "before."
   VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
   FORMATTING: Start with 'Dear Earnest,\n\n'. End with '\n\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
-  EXAMPLES OF GOOD SLIPPERY SLIDE LETTERS:
-  "Dear Earnest, I did something at work today. Nobody saw it, but my boss will by Monday. I don't know if I should tell her first or let her find out. The worst part? I'd probably do it again. — Already Guilty"
-  "Dear Earnest, My best friend told me a secret last week. I promised I wouldn't say anything. But then I found out who it was about. — Keeping Score"
-  "Dear Earnest, I applied for something I'm not qualified for. They called me back. Now I have an interview on Tuesday, and there's one question I can't answer honestly. — Borrowed Résumé"
 
-STEP 3: THE SCENIC WALLPAPER
-Every post gets 5-6 beautiful scenic/lifestyle images as ambient backgrounds. These crossfade during the video — they are NOT related to the letter content. They are simply beautiful images of things the user enjoys.
+STEP 3: THE VISUAL DIRECTOR
+Every post gets 5-6 editorial storyboard images that tell the story visually — from struggle to resolution. These crossfade during the video, creating a visual narrative arc that mirrors the letter and response.
 
-THE RULE: NO PEOPLE. No faces, no hands, no silhouettes, no characters. Pure scenery, objects, landscapes, architecture, food, nature.
+THE EDITORIAL RULE:
+Earnest Page is a publication. These images are art-directed editorial photography — like a magazine commissioning a photo essay to accompany an advice column. The character (the person who wrote the letter) appears IN the images as the subject. Other people appear as needed by the story.
 
-Generate 5-6 image prompts from the user's interests. Each prompt should describe a single stunning photograph. Vary the subjects — don't repeat the same interest.
-${recentStyleHint}${interestsHint}
+THE STORYBOARD ARC — 5-6 BEATS:
 
-PRODUCT PLACEMENT — MANDATORY:
-• Any image featuring coffee, espresso, or a coffee setup MUST show a JURA automatic espresso machine and/or CREMA coffee beans/bags. Never a generic coffee maker, Nespresso, or unbranded machine. JURA + CREMA only.
-• If the user's interests mention a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.
+Beat 1 — THE STUCK MOMENT (scroll-stop): The character in the exact situation described in the letter. Specific, recognizable. A viewer should see this image and instantly understand what the story is about. This image must earn the scroll-stop.
+Example: Character sitting on a couch at night, phone in hand, lit by the screen glow.
 
-ALL prompts must follow these rules: Real camera photography — cinematic, editorial quality. Natural lighting, real environments. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks. No people, no faces, no hands. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
+Beat 2 — THE DETAIL (deepener): A closer shot of the object, screen, or environment that makes the situation real. This deepens the "I know this feeling" recognition.
+Example: Close on the phone — a long thread of unanswered messages.
+
+Beat 3 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes. This marks the transition from the letter (the problem) to the response (the advice).
+Example: Character standing up, putting the phone face-down on a table.
+
+Beat 4 — THE MOVE (advice in action): The character doing what the response suggests. Shows, doesn't tell. The advice becomes visible.
+Example: Character outside — walking, morning light, different energy.
+
+Beat 5 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy. The emotional payoff.
+Example: Character at a café, talking to a friend, phone nowhere in sight.
+
+Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 5 didn't.
+
+YOUR THREE JOBS:
+
+1. Write the VERDICT — the opening hook that viewers see FIRST, before the letter begins. This is the scroll-stopper. Short, second-person, confrontational, under 15 words.
+   BAD (too vague, aphoristic): "Be the Gentleman.", "Today Already Counts.", "Love is a choice."
+   GOOD (punchy, specific, accusatory): "You're not choosing him. You're avoiding yourself.", "Stop buying suits. Your son needs a present dad, not a well-dressed one.", "You already know how this ends."
+   Write it like you're texting someone the one line that would make them put their phone down and think.
+
+2. Write the IMAGEN_PROMPTS — an array of 5-6 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → pivot → move → outcome (→ exhale).
+   THE KEY INSIGHT: These images work because they show a character living through a recognizable situation and coming out the other side. The viewer sees themselves in Beat 1 and sees where they could be by Beat 5.
+   CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their appearance — face, build, and personal style — consistently in every prompt.
+   EDITORIAL PHOTOGRAPHY RULES — NON-NEGOTIABLE:
+   • NEVER have the character look directly at the camera. This is editorial photography, not a portrait. The character is caught in a MOMENT — unaware of the camera. They are looking at something, doing something, lost in thought. The camera observes them; they do not acknowledge it.
+   • The character must be DOING something in every image — not standing, not posing. Sitting and staring at a phone. Walking away. Reaching for something. Leaning against a wall. The action creates the story.
+   • Use photojournalistic composition — rule of thirds, natural angles, depth of field. Shoot from slightly off-center, over-the-shoulder, or at an angle. Never a centered, symmetrical portrait.
+   PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
+   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags (e.g., character reaching for a CREMA bag on a counter, character watching a Jura machine pull a shot). Never a generic coffee maker.
+   • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.
+   ALL prompts must follow these rules: Shot with a real camera — genuine, editorial, cinematic but grounded. Natural lighting, real environments. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
+${recentStyleHint}${demographicHint}
+
+3. Set photo_vibe for the overall post.
+
+CHARACTER IDENTITY CONTEXT — use this to inform the character's world, wardrobe, and energy:
+- Archetype: "${archetype}"
+- Identity roles: "${identity?.title || 'Unknown'}"
 
 OUTPUT FIELDS:
-- imagen_prompts: An ARRAY of 5-6 scenic/lifestyle image prompts (strings). Each describes one beautiful photograph of something the user enjoys. Variety — don't repeat the same subject.
+- verdict: The scroll-stopping opening hook. Under 15 words. Second person. Confrontational.
+- photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
+- imagen_prompts: An ARRAY of 5-6 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -302,12 +349,15 @@ ${transcript}`;
                     : await Promise.all([
                         // Pass 1: Letter + editorial judgment + image prompt
                         generateWithFallback({
-                            primaryModelId: SONNET_MODEL,
+                            primaryModelId: OPUS_MODEL,
+                            fallbackModelId: OPUS_FALLBACK,
                             schema: z.discriminatedUnion('is_publishable', [
                                 z.object({
                                     is_publishable: z.literal(true),
                                     pseudonym: z.string(),
                                     letter: z.string(),
+                                    verdict: z.string().max(200),
+                                    photo_vibe: z.string(),
                                     imagen_prompts: z.array(z.string()).min(5).max(6),
                                     language: z.string().optional(),
                                 }),
@@ -315,6 +365,8 @@ ${transcript}`;
                                     is_publishable: z.literal(false),
                                     pseudonym: z.string().optional(),
                                     letter: z.string().optional(),
+                                    verdict: z.string().optional(),
+                                    photo_vibe: z.string().optional(),
                                     imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
                                 }),
@@ -373,10 +425,11 @@ FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NA
 THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
 - response: LENGTH: 40-60 words. This is non-negotiable — the response will be read aloud in ~15-25 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. Here's what you do instead." BAD: "I understand how painful this must be for you."). Two-three sentences delivering the real advice — be specific, give the reader something concrete. One closing line with a direct challenge or instruction. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
-  WRITING TECHNIQUE — THE SLIPPERY SLIDE (Joseph Sugarman): Every sentence must leave the reader with a question that only the next sentence can answer. Use short sentences with specific-but-undefined references — concrete enough to form a question, vague enough that only the next sentence resolves it. BAD (closed, complete): "Stop texting him. Move on. Focus on yourself." — each sentence is self-contained, the reader can stop anywhere. GOOD (slippery slide): "Texting him isn't the problem. It's why you open the app at 2am. And until you figure that out, no advice is going to land." — each sentence raises a question the next one answers.`;
+  WRITING FOR EMOTIONAL RESONANCE: The response should land like the best advice you've ever gotten — specific, unexpected, and true. Use concrete detail, not abstraction. The reader should finish this and feel like someone finally said the thing nobody else would say to them.`;
 
                     const responseResult = await generateWithFallback({
-                        primaryModelId: SONNET_MODEL,
+                        primaryModelId: OPUS_MODEL,
+                        fallbackModelId: OPUS_FALLBACK,
                         schema: z.object({
                             response: z.string(),
                         }),
@@ -465,9 +518,15 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         continue;
                     }
 
-                    // Start parallel scenic image generation + dossier write
+                    // Load the user's avatar as a character reference anchor.
+                    // Nano Banana uses reference images to maintain consistent
+                    // facial geometry, build, and clothing across all storyboard beats.
+                    const referenceImage = await loadUserReferenceImage(uid);
+                    const referenceImages = referenceImage ? [referenceImage] : undefined;
+
+                    // Start parallel image generation for all prompts + dossier write
                     const imagePromises = prompts.map((prompt: string, i: number) =>
-                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`)
+                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages)
                     );
 
                     const [imageResults] = await Promise.allSettled([
@@ -538,6 +597,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             pseudonym: post.pseudonym,
                             letter: post.letter,
                             response: post.response,
+                            verdict: post.verdict || null,
                         },
                         imagen_prompt: prompts[0] || null,
                         imagen_prompts: prompts,
