@@ -128,12 +128,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         return () => clearInterval(interval);
     }, [sessionStartedAt, isOpen]);
 
-    // Set session start time on first message
-    useEffect(() => {
-        if (messages.length > 0 && !sessionStartedAt) {
-            setSessionStartedAt(Date.now());
-        }
-    }, [messages, sessionStartedAt]);
+
 
 
     // Initialize or Resume Session
@@ -247,6 +242,11 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                 setIsLoading(chat.status === "generating");
                 if (chat.user_photo_url) {
                     setPostPhotoUrl(chat.user_photo_url);
+                }
+                // Restore session start time from Firestore so the 2-hour timer
+                // survives close/reopen without resetting.
+                if (chat.createdAt && !sessionStartedAt) {
+                    setSessionStartedAt(chat.createdAt);
                 }
             } else {
                 setMessages([]);
@@ -870,6 +870,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         setPlanConfirmation(null);
         setCreditConsumed(false);
         setPostPhotoUrl(null);
+        setSessionStartedAt(null);
+        setIsSessionExpired(false);
 
         unsuppressAutoPlay();
         onClose();
