@@ -98,26 +98,15 @@ STEP 1: THE EDITORIAL JUDGMENT
 This transcript is already published — regenerate it as publishable (is_publishable: true).
 
 STEP 2: WRITE THE LETTER
-HOW CONVERSATIONS WORK:
-Every conversation follows the same two-phase structure:
-  Phase 1 — UNDERSTANDING: The user states what they want or how they feel. Character A asks clarifying questions. The situation becomes clear.
-  Phase 2 — ADVICE: Character A delivers insight, recommendations, or a reframe.
-The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
+Write the user's side as a "Dear Earnest" letter — a person describing their situation and asking for help. Write it as they would if they could say it perfectly. The letter should NOT include any advice from the conversation — only the user's situation, in their words.
 
-IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
-- WANT or FEELING: What did the user come in with?
-- SITUATION: What details emerged during Phase 1 that help a reader understand the context?
+The letter must stand alone. A reader who knows nothing should understand the situation, care about the person, and want to hear the answer. Specific, concrete detail is what makes a stranger feel something — include the details that make the situation real (numbers, names, constraints, stakes). Every reference must be clear without context (say "my dog" not "him").
 
-CRITICAL RULE: The user is a reliable narrator of their own state. Do NOT reinterpret or diagnose.
-
-YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly.
+Do not reinterpret what the user said. If they said it, it's true.
 
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 - letter: LENGTH: 30-50 words. This will be read aloud in a short-form video.
-   WRITING FOR EMOTIONAL RESONANCE: The letter should make a stranger feel something. The way to do that is through SPECIFIC, CONCRETE DETAIL — not cleverness, not hooks, not wordplay. The reader should recognize themselves or someone they love in this letter. One honest, specific detail does more than five poetic sentences.
-   CLARITY: Every pronoun and reference must be identifiable from the letter alone. A reader with ZERO context must be able to picture the situation. BAD: "I won't leave him behind" — who is "him"? GOOD: "I won't leave my dog behind."
-   RESTRAINT: Say less, not more. The emotion lives in what's left unsaid. Do NOT resolve the situation — the letter is the "before."
    VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
    FORMATTING: Start with 'Dear Earnest,\\n\\n'. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
 - imagen_prompts: An array of 5-6 editorial storyboard prompts. THE STORYBOARD ARC — 5-6 beats telling the story from struggle to resolution: Beat 1 — THE STUCK MOMENT (the character in the situation), Beat 2 — THE DETAIL (closer shot of the key object/screen), Beat 3 — THE PIVOT (visual shift marking the turn), Beat 4 — THE MOVE (advice in action), Beat 5 — THE OUTCOME (character in the new state), Beat 6 (optional) — THE EXHALE (environmental close). The character appears IN every image. CHARACTER CONSISTENCY: describe their appearance — face, build, and personal style — consistently in every prompt. EDITORIAL PHOTOGRAPHY RULES: NEVER have the character look directly at the camera — they are caught in a moment, unaware of the camera. The character must be DOING something (not standing, not posing). Use photojournalistic composition — rule of thirds, natural angles, slightly off-center or over-the-shoulder. Never a centered portrait. PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names. Shot with a real camera — genuine, editorial. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
@@ -174,10 +163,7 @@ ${pass1.letter}
 CHAT TRANSCRIPT (for context — the advice that emerged in this conversation):
 ${transcript}
 
-HOW TO READ THE TRANSCRIPT:
-The conversation has two phases. Phase 1 is understanding. Phase 2 is advice. The letter above captures Phase 1. Your response should deliver the substance of Phase 2.
-
-YOUR JOB: Write Earnest Page's response to this letter. Match the nature of the advice: if the conversation delivered practical recommendations, the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe.
+YOUR JOB: Write Earnest Page's response to this letter. The conversation transcript shows the advice that emerged — your response should deliver that advice. The reader should finish with something they can DO, not just something they understand. Be specific and concrete. Match the nature of the advice: practical if practical, emotional if emotional.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS:
 
@@ -192,9 +178,8 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Locations, addresses, phone numbers, handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
 
-- response: LENGTH: 40-60 words. STRUCTURE: Open with the COUNTER-MOVE — no throat-clearing, no "I hear you". Two-three sentences delivering the real advice. One closing line with a direct instruction, challenge, or reassurance. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'.
-
-WRITING FOR EMOTIONAL RESONANCE: The response should land like the best advice you've ever gotten — specific, unexpected, and true. Use concrete detail, not abstraction. The reader should finish this and feel like someone finally said the thing nobody else would say to them.`;
+- response: LENGTH: 40-60 words. No throat-clearing, no "I hear you." Go straight to the advice. Write in Character A's voice.
+  FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'. No "Sincerely" — just the em dash.`;
 
         const responseResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,

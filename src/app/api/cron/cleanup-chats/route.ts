@@ -229,22 +229,11 @@ Determine if this transcript has "Editorial Value."
 * Valuable (is_publishable: true): The user arrives with either a WANT (something they are trying to do, get, or figure out) or a SITUATION THEY ARE STUCK ON (something that is not working, a pattern they are repeating, a wall they keep hitting), and Character A helps them see the situation clearly and delivers a concrete approach. The reader must be able to recognize themselves in the situation in under 60 seconds.
 
 STEP 2: WRITE THE LETTER (If Publishable)
-Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
+Write the user's side as a "Dear Earnest" letter — a person describing their situation and asking for help. Write it as they would if they could say it perfectly. The letter should NOT include any advice from the conversation — only the user's situation, in their words.
 
-HOW CONVERSATIONS WORK — understand this before writing:
-Every conversation follows the same two-phase structure:
-  Phase 1 — UNDERSTANDING: The user states what they want or how they feel. Character A asks clarifying questions. The situation becomes clear. This phase is about the user's reality.
-  Phase 2 — ADVICE: Character A delivers insight, recommendations, or a reframe. The user reacts, clarifies, and the advice gets refined. This phase is Character A's contribution.
-The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
+The letter must stand alone. A reader who knows nothing should understand the situation, care about the person, and want to hear the answer. Specific, concrete detail is what makes a stranger feel something — include the details that make the situation real (numbers, names, constraints, stakes). Every reference must be clear without context (say "my dog" not "him").
 
-IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
-- WANT or SITUATION: What did the user come in with? This is almost always stated in their first message or two. It is either a concrete want ("I need a new suit", "I want to lose weight", "I'm trying to decide whether to quit") or a situation they are stuck on ("I keep texting my ex", "I've sent 50 applications and gotten nothing", "my boss says I'm underperforming"). Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
-- STUCK BEHAVIOR: What is the user DOING (or not doing) that is keeping them stuck? This is the most important thing to identify. People recognize themselves in behaviors, not feelings. "I feel lost" is not hookable. "I've been sitting on my couch every night for three months" IS hookable. Mine the transcript for the specific action, pattern, or habit that is not working.
-- CONTEXT: What details emerged during Phase 1 that help a reader understand the situation? Look for specifics — numbers, timelines, constraints, relationships, stakes.
-
-CRITICAL RULE: The user is a reliable narrator of their own state. If they say they want something, that is what they want — do not reinterpret it as uncertainty. If they say they feel confused, the confusion IS the story — do not diagnose a cause and present the cause as their real problem. Character A may explore, question, and probe — but Character A's framework is not the user's experience. The letter represents the USER, not Character A's interpretation of the user.
-
-YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: identify the stuck behavior, add the situation details that make it vivid, and end with a direct question. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after." The letter should make the reader think "that's me" or "that's my friend" — not "that poor person."
+Do not reinterpret what the user said. If they said it, it's true.
 
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
@@ -263,9 +252,6 @@ THEN — replace everything that identifies THE USER PERSONALLY:
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
 - letter: LENGTH: 30-50 words. This will be read aloud in a short-form video (~10-20 seconds).
-  WRITING FOR EMOTIONAL RESONANCE: The letter should make a stranger feel something. The way to do that is through SPECIFIC, CONCRETE DETAIL — not cleverness, not hooks, not wordplay. The reader should recognize themselves or someone they love in this letter. One honest, specific detail does more than five poetic sentences.
-  CLARITY: Every pronoun and reference must be identifiable from the letter alone. A reader with ZERO context must be able to picture the situation. BAD: "I won't leave him behind" — who is "him"? GOOD: "I won't leave my dog behind."
-  RESTRAINT: Say less, not more. The emotion lives in what's left unsaid. Do NOT resolve the situation — the letter is the "before."
   VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
   FORMATTING: Start with 'Dear Earnest,\n\n'. End with '\n\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
 
@@ -415,17 +401,14 @@ ${pass1.letter}
 CHAT TRANSCRIPT (for context — the advice that emerged in this conversation):
 ${transcript}
 
-HOW TO READ THE TRANSCRIPT:
-The conversation has two phases. Phase 1 is understanding — Character A asks questions and the user's situation becomes clear. Phase 2 is advice — Character A delivers insight, recommendations, or a concrete plan. The letter above captures Phase 1 (the user's want or feeling + their situation). Your response should deliver the substance of Phase 2 (the advice, the answer, the path forward).
-
-YOUR JOB: Write Earnest Page's response to this letter. The letter names a situation and a stuck behavior. The conversation transcript shows the advice Character A gave. Your response delivers the COUNTER-MOVE — the specific thing to do differently. This is a strategy column, not a therapy session. The reader should finish with something they can DO today, not just something they understand. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered a reframe, deliver the reframe as a specific, repeatable move — not an abstract insight. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
+YOUR JOB: Write Earnest Page's response to this letter. The conversation transcript shows the advice that emerged — your response should deliver that advice. The reader should finish with something they can DO, not just something they understand. Be specific and concrete. Match the nature of the advice: practical if practical, emotional if emotional.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE:
 FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES (Jeremy Clarkson stays "Jeremy Clarkson", never "a celebrity" or "someone I admire"). Brand names, product recommendations, cultural references — keep them all verbatim.
 THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
-- response: LENGTH: 40-60 words. This is non-negotiable — the response will be read aloud in ~15-25 seconds. STRUCTURE: Open with the COUNTER-MOVE — name why the stuck behavior doesn't work, then deliver the alternative. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the strategy. (GOOD: "Texting him 12 times isn't going to bring him back. Here's what you do instead." BAD: "I understand how painful this must be for you."). Two-three sentences delivering the real advice — be specific, give the reader something concrete. One closing line with a direct challenge or instruction. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.
-  WRITING FOR EMOTIONAL RESONANCE: The response should land like the best advice you've ever gotten — specific, unexpected, and true. Use concrete detail, not abstraction. The reader should finish this and feel like someone finally said the thing nobody else would say to them.`;
+- response: LENGTH: 40-60 words. No throat-clearing, no "I hear you." Go straight to the advice. Write in Character A's voice.
+  FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Write strictly in the requested language.`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: OPUS_MODEL,
