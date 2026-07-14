@@ -7,7 +7,7 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
-const VALIDATION_MODEL = 'gemini-2.0-flash';
+const VALIDATION_MODEL = 'gemini-2.5-flash';
 
 const validationSchema = z.object({
     pass: z.boolean().describe('true if the image is clean and matches the prompt, false otherwise'),

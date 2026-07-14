@@ -79,7 +79,8 @@ export async function POST(req: Request) {
         const dreamSelf = identity?.dream_self || '';
         const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
         const appearanceHint = demographicTag
-            ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
+            ? `\nCHARACTER APPEARANCE — MANDATORY: The main character's fixed traits (face, ethnicity, age, gender): ${demographicTag}. You MUST include "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.${dreamSelf ? `\nTheir ASPIRATIONAL self-presentation (use for LATER beats only — pivot, move, outcome): "${dreamSelf}"` : ''}
+TRANSFORMATION ARC: If the letter describes a physical state that differs from the aspirational self (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2 (struggle). Transition in Beat 3 (pivot). By Beats 4-5 (move, outcome), the character should embody their resolved/aspirational state. This visual transformation IS the story. The face stays the same — only the body, posture, and energy transform.`
             : '';
 
         console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
@@ -98,19 +99,28 @@ STEP 1: THE EDITORIAL JUDGMENT
 This transcript is already published — regenerate it as publishable (is_publishable: true).
 
 STEP 2: WRITE THE LETTER
-Write the user's side as a "Dear Earnest" letter — a person describing their situation and asking for help. Write it as they would if they could say it perfectly. The letter should NOT include any advice from the conversation — only the user's situation, in their words.
+Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
 
-The letter must stand alone. A reader who knows nothing should understand the situation, care about the person, and want to hear the answer. Specific, concrete detail is what makes a stranger feel something — include the details that make the situation real (numbers, names, constraints, stakes). Every reference must be clear without context (say "my dog" not "him").
+HOW CONVERSATIONS WORK — understand this before writing:
+Every conversation follows the same two-phase structure:
+  Phase 1 — UNDERSTANDING: The user states what they want or how they feel. Character A asks clarifying questions. The situation becomes clear. This phase is about the user's reality.
+  Phase 2 — ADVICE: Character A delivers insight, recommendations, or a reframe. The user reacts, clarifies, and the advice gets refined. This phase is Character A's contribution.
+The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
 
-Do not reinterpret what the user said. If they said it, it's true.
+IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
+- WANT or FEELING: What did the user come in with? Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
+- SITUATION: What details emerged during Phase 1 that help a reader understand the context? Look for specifics the user shared.
+
+INCLUDE THE FULL SITUATION: If the user revealed a passion, a desire, a thing they love doing, or something they discovered about themselves during the conversation, that is PART OF THEIR SITUATION — not advice. Include it in the letter. The letter should contain everything the response will need to reference. A cold reader will only ever see the letter and response — never the transcript.
+
+CRITICAL RULE: The user is a reliable narrator of their own state. If they say they want something, that is what they want — do not reinterpret it as uncertainty. Character A may explore, question, and probe — but Character A's framework is not the user's experience. The letter represents the USER, not Character A's interpretation of the user.
+
+YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: preserve what they actually wanted or felt, add the situation details that make it vivid, and stop. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after."
 
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: LENGTH: 30-50 words. This will be read aloud in a short-form video.
-   VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
-   FORMATTING: Start with 'Dear Earnest,\\n\\n'. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
-- imagen_prompts: An array of 5-6 editorial storyboard prompts. THE STORYBOARD ARC — 5-6 beats telling the story from struggle to resolution: Beat 1 — THE STUCK MOMENT (the character in the situation), Beat 2 — THE DETAIL (closer shot of the key object/screen), Beat 3 — THE PIVOT (visual shift marking the turn), Beat 4 — THE MOVE (advice in action), Beat 5 — THE OUTCOME (character in the new state), Beat 6 (optional) — THE EXHALE (environmental close). The character appears IN every image. CHARACTER CONSISTENCY: describe their appearance — face, build, and personal style — consistently in every prompt. EDITORIAL PHOTOGRAPHY RULES: NEVER have the character look directly at the camera — they are caught in a moment, unaware of the camera. The character must be DOING something (not standing, not posing). Use photojournalistic composition — rule of thirds, natural angles, slightly off-center or over-the-shoulder. Never a centered portrait. PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names. Shot with a real camera — genuine, editorial. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
-- verdict: A scroll-stopping opening hook — under 15 words, second-person, confrontational. Hit the reader between the eyes with the truth they're avoiding.
+- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. It must hook in under 8 words. Then 2-3 sentences of SITUATION. The letter must present the situation as UNRESOLVED. VOICE: First person, present tense. Raw and conversational. No clinical language. NEVER reference the chat or session. FORMATTING: Start with 'Dear Earnest,\\n\\n'. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash.
+- imagen_prompts: An array of 5-6 editorial storyboard prompts. THE STORYBOARD ARC — 5-6 beats telling the story from struggle to resolution: Beat 1 — THE STUCK MOMENT (the character in the situation), Beat 2 — THE DETAIL (closer shot of the key object/screen), Beat 3 — THE PIVOT (visual shift marking the turn), Beat 4 — THE MOVE (advice in action), Beat 5 — THE OUTCOME (character in the new state), Beat 6 (optional) — THE EXHALE (environmental close). The character appears IN every image. CHARACTER CONSISTENCY: describe their fixed traits — face, ethnicity, age — consistently in every prompt. TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform. EDITORIAL PHOTOGRAPHY RULES: NEVER have the character look directly at the camera — they are caught in a moment, unaware of the camera. The character must be DOING something (not standing, not posing). Use photojournalistic composition — rule of thirds, natural angles, slightly off-center or over-the-shoulder. Never a centered portrait. PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names. Shot with a real camera — genuine, editorial. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
 - photo_vibe: One word capturing the emotional tone.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
@@ -129,7 +139,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
 ${appearanceHint}
 
 OUTPUT FIELDS:
-- is_publishable, title, pseudonym, letter, verdict, photo_vibe, imagen_prompts, language`;
+- is_publishable, title, pseudonym, letter, photo_vibe, imagen_prompts, language`;
 
         const letterResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
@@ -139,7 +149,6 @@ OUTPUT FIELDS:
                 title: z.string().max(75),
                 pseudonym: z.string(),
                 letter: z.string(),
-                verdict: z.string().max(200),
                 photo_vibe: z.string(),
                 imagen_prompts: z.array(z.string()).min(5).max(6),
                 language: z.string().optional(),
@@ -163,23 +172,22 @@ ${pass1.letter}
 CHAT TRANSCRIPT (for context — the advice that emerged in this conversation):
 ${transcript}
 
-YOUR JOB: Write Earnest Page's response to this letter. The conversation transcript shows the advice that emerged — your response should deliver that advice. The reader should finish with something they can DO, not just something they understand. Be specific and concrete. Match the nature of the advice: practical if practical, emotional if emotional.
+HOW TO READ THE TRANSCRIPT:
+The conversation has two phases. Phase 1 is understanding — Character A asks questions and the user's situation becomes clear. Phase 2 is advice — Character A delivers insight, recommendations, or a concrete plan. The letter above captures Phase 1 (the user's want or feeling + their situation). Your response should deliver the substance of Phase 2 (the advice, the answer, the path forward).
 
-PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS:
+YOUR JOB: Write Earnest Page's response to this letter. The letter captures where the user arrived — what they wanted or how they felt. The conversation transcript shows the advice Character A gave. Your response delivers that advice — warm, specific, actionable, in Character A's exact voice. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
 
-FIRST — identify what to KEEP (these add value and do NOT identify the user):
-  • Public figures and celebrities BY THEIR REAL NAMES — Jeremy Clarkson stays "Jeremy Clarkson", Brené Brown stays "Brené Brown". NEVER replace a public figure with "a celebrity", "a public figure I admire", "someone I look up to", or any generic substitute.
-  • Brand and product names (e.g., "Hugo Boss", "Nike", "Tesla")
-  • Cultural references — books, films, songs, TV shows, podcasts, by their real titles
-  • Generic industry or category names (e.g., "tech", "finance", "healthcare")
-THEN — replace everything that identifies THE USER PERSONALLY:
-  • Names of people the user personally knows → relationship role
-  • Employer, workplace, school, clients → generic labels
-  • Locations, addresses, phone numbers, handles
-The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
+SINGLE-INSIGHT FOCUS: The response should orbit ONE central reframe — the single belief or pattern that is actually blocking them. Don't scatter across multiple points. Setup → reframe → directive. The reframe is the line that should stop a reader cold.
 
-- response: LENGTH: 40-60 words. No throat-clearing, no "I hear you." Go straight to the advice. Write in Character A's voice.
-  FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'. No "Sincerely" — just the em dash.`;
+SELF-CONTAINMENT — NON-NEGOTIABLE: The response must only reference situations, details, and context that appear IN THE LETTER. The reader has never seen the transcript. If the transcript contains insights, translate them into advice that makes sense given only what the letter says. Never say "you already named it" or reference something the letter doesn't mention.
+
+NO WANT-SUBSTITUTION: Do not tell the writer what they "really" want. If the advice involves reframing a desire, name the specific feeling behind their stated want — don't replace their want with a different one.
+
+PII SCRUBBING — THIS IS NON-NEGOTIABLE:
+FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES. Brand names, product recommendations, cultural references — keep them all verbatim.
+THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
+
+- response: LENGTH: 85-115 words. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — the thing the user needs to hear. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the insight. Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction or challenge. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them.`;
 
         const responseResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
@@ -213,6 +221,9 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
                         aspectRatio: '9:16',
                         logPrefix: 'RegeneratePost',
                         referenceImages,
+                        // Transformation arc: early beats use face-only reference
+                        // so the text prompt controls body type
+                        referenceMode: idx < 2 ? 'face-only' : 'full',
                     });
                     if (!result) return null;
 
@@ -310,7 +321,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
             pseudonym: pass1.pseudonym,
             letter: pass1.letter,
             response: pass2.response,
-            verdict: pass1.verdict || null,
+
         };
         // Include imagen_url in public_post when we have new images
         if (imagen_urls.length > 0) {

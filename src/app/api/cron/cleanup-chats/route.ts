@@ -133,7 +133,8 @@ async function processUserChats(
     const dreamSelf = identity?.dream_self || '';
     const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
     const demographicHint = demographicTag
-        ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
+        ? `\nCHARACTER APPEARANCE — MANDATORY: The main character's fixed traits (face, ethnicity, age, gender): ${demographicTag}. You MUST include "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.${dreamSelf ? `\nTheir ASPIRATIONAL self-presentation (use for LATER beats only — pivot, move, outcome): "${dreamSelf}"` : ''}
+TRANSFORMATION ARC: If the letter describes a physical state that differs from the aspirational self (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2 (struggle). Transition in Beat 3 (pivot). By Beats 4-5 (move, outcome), the character should embody their resolved/aspirational state. This visual transformation IS the story. The face stays the same — only the body, posture, and energy transform.`
         : '';
 
     for (const chatDoc of chatDocs) {
@@ -229,11 +230,23 @@ Determine if this transcript has "Editorial Value."
 * Valuable (is_publishable: true): The user arrives with either a WANT (something they are trying to do, get, or figure out) or a SITUATION THEY ARE STUCK ON (something that is not working, a pattern they are repeating, a wall they keep hitting), and Character A helps them see the situation clearly and delivers a concrete approach. The reader must be able to recognize themselves in the situation in under 60 seconds.
 
 STEP 2: WRITE THE LETTER (If Publishable)
-Write the user's side as a "Dear Earnest" letter — a person describing their situation and asking for help. Write it as they would if they could say it perfectly. The letter should NOT include any advice from the conversation — only the user's situation, in their words.
+Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
 
-The letter must stand alone. A reader who knows nothing should understand the situation, care about the person, and want to hear the answer. Specific, concrete detail is what makes a stranger feel something — include the details that make the situation real (numbers, names, constraints, stakes). Every reference must be clear without context (say "my dog" not "him").
+HOW CONVERSATIONS WORK — understand this before writing:
+Every conversation follows the same two-phase structure:
+  Phase 1 — UNDERSTANDING: The user states what they want or how they feel. Character A asks clarifying questions. The situation becomes clear. This phase is about the user's reality.
+  Phase 2 — ADVICE: Character A delivers insight, recommendations, or a reframe. The user reacts, clarifies, and the advice gets refined. This phase is Character A's contribution.
+The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
 
-Do not reinterpret what the user said. If they said it, it's true.
+IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
+- WANT or FEELING: What did the user come in with? This is almost always stated in their first message or two. It is either a concrete want ("I need a new suit", "I want to lose weight", "I'm trying to decide whether to quit") or a negative feeling ("I feel off today", "I'm overwhelmed", "something isn't right in my relationship"). Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
+- SITUATION: What details emerged during Phase 1 that help a reader understand the context? Look for specifics the user shared — numbers, timelines, constraints, relationships, stakes.
+
+INCLUDE THE FULL SITUATION: If the user revealed a passion, a desire, a thing they love doing, or something they discovered about themselves during the conversation, that is PART OF THEIR SITUATION — not advice. Include it in the letter. The letter should contain everything the response will need to reference. A cold reader will only ever see the letter and response — never the transcript.
+
+CRITICAL RULE: The user is a reliable narrator of their own state. If they say they want something, that is what they want — do not reinterpret it as uncertainty. If they say they feel confused, the confusion IS the story — do not diagnose a cause and present the cause as their real problem. Character A may explore, question, and probe — but Character A's framework is not the user's experience. The letter represents the USER, not Character A's interpretation of the user.
+
+YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: preserve what they actually wanted or felt, add the situation details that make it vivid, and stop. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after." The letter should make the reader think "that's me" or "that's my friend" — not "that poor person."
 
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 
@@ -251,9 +264,7 @@ THEN — replace everything that identifies THE USER PERSONALLY:
   • Addresses, phone numbers, email addresses, social media handles
 The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
 
-- letter: LENGTH: 30-50 words. This will be read aloud in a short-form video (~10-20 seconds).
-  VOICE: First person. Raw. Conversational — like describing your situation to a sharp friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session.
-  FORMATTING: Start with 'Dear Earnest,\n\n'. End with '\n\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
+- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. This is the first thing a viewer reads as a subtitle. It must hook in under 8 words. (GOOD: "I keep going back." "I hate my body." "I just graduated and I can't find a job." BAD: "I find myself increasingly torn between..."). Then 2-3 sentences of SITUATION — just enough context to understand. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, present tense. Raw and conversational — like texting a friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start with 'Dear Earnest,\n\n' followed by the gut punch. End with '\n\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
 
 STEP 3: THE VISUAL DIRECTOR
 Every post gets 5-6 editorial storyboard images that tell the story visually — from struggle to resolution. These crossfade during the video, creating a visual narrative arc that mirrors the letter and response.
@@ -280,16 +291,12 @@ Example: Character at a café, talking to a friend, phone nowhere in sight.
 
 Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 5 didn't.
 
-YOUR THREE JOBS:
+YOUR TWO JOBS:
 
-1. Write the VERDICT — the opening hook that viewers see FIRST, before the letter begins. This is the scroll-stopper. Short, second-person, confrontational, under 15 words.
-   BAD (too vague, aphoristic): "Be the Gentleman.", "Today Already Counts.", "Love is a choice."
-   GOOD (punchy, specific, accusatory): "You're not choosing him. You're avoiding yourself.", "Stop buying suits. Your son needs a present dad, not a well-dressed one.", "You already know how this ends."
-   Write it like you're texting someone the one line that would make them put their phone down and think.
-
-2. Write the IMAGEN_PROMPTS — an array of 5-6 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → pivot → move → outcome (→ exhale).
+1. Write the IMAGEN_PROMPTS — an array of 5-6 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → pivot → move → outcome (→ exhale).
    THE KEY INSIGHT: These images work because they show a character living through a recognizable situation and coming out the other side. The viewer sees themselves in Beat 1 and sees where they could be by Beat 5.
-   CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their appearance — face, build, and personal style — consistently in every prompt.
+   CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their fixed traits — face, ethnicity, age — consistently in every prompt.
+   TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform.
    EDITORIAL PHOTOGRAPHY RULES — NON-NEGOTIABLE:
    • NEVER have the character look directly at the camera. This is editorial photography, not a portrait. The character is caught in a MOMENT — unaware of the camera. They are looking at something, doing something, lost in thought. The camera observes them; they do not acknowledge it.
    • The character must be DOING something in every image — not standing, not posing. Sitting and staring at a phone. Walking away. Reaching for something. Leaning against a wall. The action creates the story.
@@ -300,14 +307,13 @@ YOUR THREE JOBS:
    ALL prompts must follow these rules: Shot with a real camera — genuine, editorial, cinematic but grounded. Natural lighting, real environments. Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
 ${recentStyleHint}${demographicHint}
 
-3. Set photo_vibe for the overall post.
+2. Set photo_vibe for the overall post.
 
 CHARACTER IDENTITY CONTEXT — use this to inform the character's world, wardrobe, and energy:
 - Archetype: "${archetype}"
 - Identity roles: "${identity?.title || 'Unknown'}"
 
 OUTPUT FIELDS:
-- verdict: The scroll-stopping opening hook. Under 15 words. Second person. Confrontational.
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
 - imagen_prompts: An ARRAY of 5-6 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
@@ -342,7 +348,6 @@ ${transcript}`;
                                     is_publishable: z.literal(true),
                                     pseudonym: z.string(),
                                     letter: z.string(),
-                                    verdict: z.string().max(200),
                                     photo_vibe: z.string(),
                                     imagen_prompts: z.array(z.string()).min(5).max(6),
                                     language: z.string().optional(),
@@ -351,7 +356,6 @@ ${transcript}`;
                                     is_publishable: z.literal(false),
                                     pseudonym: z.string().optional(),
                                     letter: z.string().optional(),
-                                    verdict: z.string().optional(),
                                     photo_vibe: z.string().optional(),
                                     imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
@@ -401,14 +405,22 @@ ${pass1.letter}
 CHAT TRANSCRIPT (for context — the advice that emerged in this conversation):
 ${transcript}
 
-YOUR JOB: Write Earnest Page's response to this letter. The conversation transcript shows the advice that emerged — your response should deliver that advice. The reader should finish with something they can DO, not just something they understand. Be specific and concrete. Match the nature of the advice: practical if practical, emotional if emotional.
+HOW TO READ THE TRANSCRIPT:
+The conversation has two phases. Phase 1 is understanding — Character A asks questions and the user's situation becomes clear. Phase 2 is advice — Character A delivers insight, recommendations, or a concrete plan. The letter above captures Phase 1 (the user's want or feeling + their situation). Your response should deliver the substance of Phase 2 (the advice, the answer, the path forward).
+
+YOUR JOB: Write Earnest Page's response to this letter. The letter captures where the user arrived — what they wanted or how they felt. The conversation transcript shows the advice Character A gave. Your response delivers that advice — warm, specific, actionable, in Character A's exact voice. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
+
+SINGLE-INSIGHT FOCUS: The response should orbit ONE central reframe — the single belief or pattern that is actually blocking them. Don't scatter across multiple points. Setup → reframe → directive. The reframe is the line that should stop a reader cold.
+
+SELF-CONTAINMENT — NON-NEGOTIABLE: The response must only reference situations, details, and context that appear IN THE LETTER. The reader has never seen the transcript. If the transcript contains insights, translate them into advice that makes sense given only what the letter says. Never say "you already named it" or reference something the letter doesn't mention.
+
+NO WANT-SUBSTITUTION: Do not tell the writer what they "really" want. If the advice involves reframing a desire, name the specific feeling behind their stated want — don't replace their want with a different one. "You want money because you think it'll prove you're not failing" is good. "You don't want money — you want peace" is bad.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE:
 FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES (Jeremy Clarkson stays "Jeremy Clarkson", never "a celebrity" or "someone I admire"). Brand names, product recommendations, cultural references — keep them all verbatim.
 THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
 
-- response: LENGTH: 40-60 words. No throat-clearing, no "I hear you." Go straight to the advice. Write in Character A's voice.
-  FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Write strictly in the requested language.`;
+- response: LENGTH: 85-115 words. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — the thing the user needs to hear. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the insight. Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction or challenge. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
 
                     const responseResult = await generateWithFallback({
                         primaryModelId: OPUS_MODEL,
@@ -508,8 +520,11 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     const referenceImages = referenceImage ? [referenceImage] : undefined;
 
                     // Start parallel image generation for all prompts + dossier write
+                    // Transformation arc: early beats (0-1) use face-only reference
+                    // so the text prompt controls body type. Later beats (2+) use full
+                    // reference to pull in the aspirational build from the avatar.
                     const imagePromises = prompts.map((prompt: string, i: number) =>
-                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages)
+                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages, i < 2 ? 'face-only' : 'full')
                     );
 
                     const [imageResults] = await Promise.allSettled([
@@ -580,7 +595,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             pseudonym: post.pseudonym,
                             letter: post.letter,
                             response: post.response,
-                            verdict: post.verdict || null,
+
                         },
                         imagen_prompt: prompts[0] || null,
                         imagen_prompts: prompts,
@@ -685,12 +700,13 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 }
 
 // ─── Image generation helper ─────────────────────────────────────────────────
-async function generateSingleImage(prompt: string, postId: string, referenceImages?: Buffer[]): Promise<{ buffer: Buffer; prompt: string } | null> {
+async function generateSingleImage(prompt: string, postId: string, referenceImages?: Buffer[], referenceMode?: 'full' | 'face-only'): Promise<{ buffer: Buffer; prompt: string } | null> {
     const result = await generateImage({
         prompt,
         aspectRatio: '9:16',
         logPrefix: 'Cron',
         referenceImages,
+        referenceMode,
     });
     if (!result) return null;
 
@@ -702,10 +718,10 @@ async function generateSingleImage(prompt: string, postId: string, referenceImag
     return { buffer: finalBuffer, prompt };
 }
 
-async function generateVerdictImage(prompt: string, postId: string, referenceImages?: Buffer[]): Promise<string | null> {
+async function generateVerdictImage(prompt: string, postId: string, referenceImages?: Buffer[], referenceMode?: 'full' | 'face-only'): Promise<string | null> {
     try {
         // Attempt 1: Generate and validate
-        const result = await generateSingleImage(prompt, postId, referenceImages);
+        const result = await generateSingleImage(prompt, postId, referenceImages, referenceMode);
         if (!result) return null;
 
         const validation = await validateGeneratedImage(result.buffer, prompt);
@@ -716,7 +732,7 @@ async function generateVerdictImage(prompt: string, postId: string, referenceIma
         // Validation failed — retry once with reinforced prompt
         console.warn(`[Cron] Image validation failed for post ${postId} (attempt 1):`, validation.summary, validation.issues);
         const reinforcedPrompt = `${prompt} CRITICAL: Do not include any text, watermarks, metadata, words, letters, or numbers anywhere in the image. The image must be purely visual with zero text elements.`;
-        const retry = await generateSingleImage(reinforcedPrompt, postId, referenceImages);
+        const retry = await generateSingleImage(reinforcedPrompt, postId, referenceImages, referenceMode);
         if (!retry) return null;
 
         const retryValidation = await validateGeneratedImage(retry.buffer, reinforcedPrompt);
