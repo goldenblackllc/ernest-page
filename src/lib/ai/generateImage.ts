@@ -26,6 +26,16 @@ interface GenerateImageOptions {
      * The model supports up to 14 reference images per call.
      */
     referenceImages?: Buffer[];
+    /**
+     * Controls how strongly the reference image anchors the output.
+     * - 'full' (default): Anchor on face, build, hair, and personal style.
+     * - 'face-only': Anchor on face, hair, and ethnic features ONLY.
+     *   The model is told to ignore the reference's body type/build and
+     *   follow the text prompt instead. Used for early storyboard beats
+     *   where the character's current physical state may differ from the
+     *   aspirational avatar (transformation arc).
+     */
+    referenceMode?: 'full' | 'face-only';
 }
 
 interface GenerateImageResult {
@@ -45,7 +55,7 @@ interface GenerateImageResult {
  * producing consistent characters across multiple generations.
  */
 export async function generateImage(options: GenerateImageOptions): Promise<GenerateImageResult | null> {
-    const { prompt, aspectRatio = '9:16', logPrefix = 'ImageGen', referenceImages } = options;
+    const { prompt, aspectRatio = '9:16', logPrefix = 'ImageGen', referenceImages, referenceMode = 'full' } = options;
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     if (!apiKey) {
@@ -69,11 +79,18 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
             console.log(`[${logPrefix}] Including ${referenceImages.length} reference image(s) for character anchoring`);
         }
 
-        // When using reference images, instruct Imagen to anchor on identity
-        // but not blindly copy scene-inappropriate gear from the reference.
-        const referencePrefix = (referenceImages && referenceImages.length > 0)
-            ? 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n'
-            : '';
+        // When using reference images, instruct the model on how to anchor identity.
+        // 'full' mode anchors on everything (face, build, style).
+        // 'face-only' mode anchors on face/hair only — lets the text prompt control
+        // body type for transformation arc (e.g., early beats show current state).
+        let referencePrefix = '';
+        if (referenceImages && referenceImages.length > 0) {
+            if (referenceMode === 'face-only') {
+                referencePrefix = 'Use the reference image ONLY to maintain the character\'s face, hair, and ethnic features. Do NOT copy the body type, weight, build, or physique from the reference image — follow the body description in the text prompt below instead. Keep their facial identity consistent but let the scene dictate their physical state.\n\n';
+            } else {
+                referencePrefix = 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n';
+            }
+        }
 
         parts.push({ text: referencePrefix + prompt });
 

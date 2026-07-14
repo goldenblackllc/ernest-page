@@ -72,7 +72,8 @@ export async function POST(req: Request) {
             const dreamSelf = identity?.dream_self || '';
             const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
             const characterHint = demographicTag
-                ? `\nCHARACTER APPEARANCE — MANDATORY: The main character in every image is ${demographicTag}.${dreamSelf ? ` Self-presentation: "${dreamSelf}"` : ''} The image generator has NO context about the character — you MUST describe them as "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.`
+                ? `\nCHARACTER APPEARANCE — MANDATORY: The main character's fixed traits (face, ethnicity, age, gender): ${demographicTag}. You MUST include "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.${dreamSelf ? `\nTheir ASPIRATIONAL self-presentation (use for LATER beats only — pivot, move, outcome): "${dreamSelf}"` : ''}
+TRANSFORMATION ARC: If the letter describes a physical state that differs from the aspirational self (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2 (struggle). Transition in Beat 3 (pivot). By Beats 4-5 (move, outcome), the character should embody their resolved/aspirational state. This visual transformation IS the story. The face stays the same — only the body, posture, and energy transform.`
                 : '';
 
             const aiResult = await generateStoryboardPrompts(letter, response, characterHint);
@@ -91,11 +92,16 @@ export async function POST(req: Request) {
 
         const generateSingleImage = async (prompt: string, idx: number): Promise<string | null> => {
             try {
+                // Transformation arc: early beats (0-1) use face-only reference
+                // so the text prompt controls body type. Later beats (2+) use
+                // full reference to pull in the aspirational build.
+                const referenceMode = idx < 2 ? 'face-only' as const : 'full' as const;
                 const result = await generateImage({
                     prompt,
                     aspectRatio: '9:16',
                     logPrefix: 'RegenerateImage',
                     referenceImages,
+                    referenceMode,
                 });
                 if (!result) return null;
 
@@ -187,7 +193,8 @@ Beat 4 — THE MOVE (advice in action): The character doing what the response su
 Beat 5 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy.
 Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling.
 
-CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their appearance — face, build, and personal style — consistently in every prompt.
+CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their fixed traits — face, ethnicity, age — consistently in every prompt.
+TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform.
 EDITORIAL PHOTOGRAPHY RULES:
 - NEVER have the character look directly at the camera. They are caught in a moment — unaware of the camera. Looking at something, doing something, lost in thought.
 - The character must be DOING something in every image — not standing, not posing. The action creates the story.

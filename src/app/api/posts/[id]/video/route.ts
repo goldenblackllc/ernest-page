@@ -231,7 +231,7 @@ export async function GET(
         // Compute letter word count for forced subtitle break at letter/response boundary
         const letterWordCount = letterText.split(/\s+/).filter(Boolean).length;
         const subtitles = (rawTimestamps && rawTimestamps.length > 0)
-            ? buildChunksFromTimestamps(rawTimestamps, 35, letterWordCount)
+            ? buildChunksFromTimestamps(rawTimestamps, 12, letterWordCount)
             : generateSubtitles(letterText, responseText, letterDuration, responseDuration);
 
         // ── Render frames for each image ──

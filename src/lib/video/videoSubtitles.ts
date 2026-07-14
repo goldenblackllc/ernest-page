@@ -18,7 +18,7 @@ export interface SubtitleEntry {
  * words. Chunks always end at a sentence boundary (., !, ?) so the viewer
  * reads complete thoughts — never a dangling fragment like "a casual".
  */
-function chunkText(text: string, targetWords = 35): string[] {
+function chunkText(text: string, targetWords = 12): string[] {
     const cleaned = text.replace(/\n+/g, ' ').trim();
     if (!cleaned) return [];
 
@@ -97,7 +97,7 @@ export function generateSubtitles(
     responseText: string,
     letterDuration: number,
     responseDuration: number,
-    wordsPerChunk = 30
+    wordsPerChunk = 12
 ): SubtitleEntry[] {
     const entries: SubtitleEntry[] = [];
 
@@ -148,7 +148,7 @@ export function generateSubtitles(
  */
 export function buildChunksFromTimestamps(
     wordTimestamps: { word: string; start: number; end: number }[],
-    targetWords = 35,
+    targetWords = 12,
     letterWordCount?: number,
 ): SubtitleEntry[] {
     if (wordTimestamps.length === 0) return [];
@@ -160,6 +160,7 @@ export function buildChunksFromTimestamps(
     const entries: SubtitleEntry[] = [];
     let chunkStart = 0;
     let globalWordIndex = 0; // tracks position across all words for letter/response boundary
+    const minWords = 5;      // minimum before allowing a sentence-end break
     const hardCeiling = Math.ceil(targetWords * 1.5); // never exceed this
 
     for (let i = 0; i < filtered.length; i++) {
@@ -178,8 +179,8 @@ export function buildChunksFromTimestamps(
 
         const shouldBreak =
             isLetterResponseBoundary ||
-            (isSentenceEnd && wordCount >= targetWords) ||
-            (isNaturalPause && wordCount >= hardCeiling) ||
+            (isSentenceEnd && wordCount >= minWords) ||
+            (isNaturalPause && wordCount >= targetWords) ||
             (wordCount >= hardCeiling) ||
             isLastWord;
 
