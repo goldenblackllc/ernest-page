@@ -123,17 +123,25 @@ export async function GET(req: Request) {
             eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle, voiceId, nextRotationIndex: nextIndex });
         }
 
-        // ─── BATCH PROCESSING: generate images in parallel groups of 5 ───
-        const BATCH_SIZE = 5;
+        // ─── SEQUENTIAL PROCESSING: generate one at a time to avoid 429 rate limits ──
+        const USER_STAGGER_MS = 1500;
+        let quotaExhausted = false;
 
-        for (let i = 0; i < eligibleUsers.length; i += BATCH_SIZE) {
-            const batch = eligibleUsers.slice(i, i + BATCH_SIZE);
-            const results = await Promise.allSettled(
-                batch.map(user => generateDigestCard(user))
-            );
-            for (const result of results) {
-                if (result.status === 'fulfilled' && result.value) cardsGenerated++;
-                else if (result.status === 'rejected') console.error('[Daily Digest] Batch error:', result.reason);
+        for (let i = 0; i < eligibleUsers.length; i++) {
+            if (quotaExhausted) break;
+            if (i > 0) await new Promise(r => setTimeout(r, USER_STAGGER_MS));
+
+            try {
+                const success = await generateDigestCard(eligibleUsers[i]);
+                if (success) cardsGenerated++;
+            } catch (err: any) {
+                if (err?.isQuotaError) {
+                    quotaExhausted = true;
+                    const remaining = eligibleUsers.length - (i + 1);
+                    console.warn(`[Daily Digest] Image quota exhausted — stopping. ${remaining} users deferred to next cron run.`);
+                } else {
+                    console.error('[Daily Digest] Card generation error:', err);
+                }
             }
         }
 
@@ -234,7 +242,11 @@ async function generateDigestCard(user: {
                 } else {
                     console.error(`[Daily Digest] Image generation failed (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS})`);
                 }
-            } catch (imgErr) {
+            } catch (imgErr: any) {
+                if (imgErr.isQuotaError) {
+                    console.warn(`[Daily Digest] Image quota exhausted for ${user.uid} — deferring to next cron run`);
+                    throw imgErr; // Bubble up to batch loop to stop all processing
+                }
                 console.error(`[Daily Digest] Image generation failed (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, imgErr);
             }
 
@@ -246,6 +258,7 @@ async function generateDigestCard(user: {
 
         if (!imageUrl) {
             console.warn(`[Daily Digest] Image failed after ${MAX_IMAGE_ATTEMPTS} attempts for ${user.uid} — will retry on next cron run`);
+            return false; // Don't write a broken card — keep yesterday's digest visible
         }
     }
 

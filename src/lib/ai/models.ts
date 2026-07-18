@@ -53,14 +53,16 @@ export async function streamWithFallback(options: any) {
         return await streamText({
             ...aiOptions,
             ...(abortSignal && { abortSignal }),
-            model: getProviderModel(primary)
+            model: getProviderModel(primary),
+            allowSystemInMessages: true,
         });
     } catch (error: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await streamText({
             ...aiOptions,
             abortSignal: AbortSignal.timeout(150_000),
-            model: getProviderModel(fallback)
+            model: getProviderModel(fallback),
+            allowSystemInMessages: true,
         });
     }
 }
@@ -75,14 +77,16 @@ export async function generateTextWithFallback(options: any) {
         return await generateText({
             ...aiOptions,
             ...(abortSignal && { abortSignal }),
-            model: getProviderModel(primary)
+            model: getProviderModel(primary),
+            allowSystemInMessages: true,
         });
     } catch (error: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await generateText({
             ...aiOptions,
             abortSignal: AbortSignal.timeout(150_000),
-            model: getProviderModel(fallback)
+            model: getProviderModel(fallback),
+            allowSystemInMessages: true,
         });
     }
 }

@@ -909,6 +909,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         </div>
                     </div>
 
+
                     {/* Progress bar */}
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10 z-20">
                         <div

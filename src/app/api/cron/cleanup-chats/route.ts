@@ -519,24 +519,36 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     const referenceImage = await loadUserReferenceImage(uid);
                     const referenceImages = referenceImage ? [referenceImage] : undefined;
 
-                    // Start parallel image generation for all prompts + dossier write
+                    // Sequential image generation with stagger delay to avoid 429 rate limits.
                     // Transformation arc: early beats (0-1) use face-only reference
                     // so the text prompt controls body type. Later beats (2+) use full
                     // reference to pull in the aspirational build from the avatar.
-                    const imagePromises = prompts.map((prompt: string, i: number) =>
-                        generateVerdictImage(prompt, `${postDocRef.id}_${i}`, referenceImages, i < 2 ? 'face-only' : 'full')
-                    );
+                    const IMAGE_STAGGER_MS = 1500; // delay between sequential API calls
+                    const imagen_urls: string[] = [];
+                    let quotaExhausted = false;
 
-                    const [imageResults] = await Promise.allSettled([
-                        Promise.allSettled(imagePromises),
-                        dossierPromise,
-                    ]);
+                    // Run images sequentially while dossier runs in parallel
+                    const imageSequence = (async () => {
+                        for (let i = 0; i < prompts.length; i++) {
+                            if (quotaExhausted) break;
+                            if (i > 0) await new Promise(r => setTimeout(r, IMAGE_STAGGER_MS));
+                            try {
+                                const url = await generateVerdictImage(
+                                    prompts[i], `${postDocRef.id}_${i}`,
+                                    referenceImages, i < 2 ? 'face-only' : 'full'
+                                );
+                                if (url) imagen_urls.push(url);
+                            } catch (err: any) {
+                                if (err?.isQuotaError) {
+                                    quotaExhausted = true;
+                                    console.warn(`[Cron] Quota exhausted after ${imagen_urls.length}/${prompts.length} images for user ${uid} — stopping batch`);
+                                }
+                                // other errors already logged by generateVerdictImage
+                            }
+                        }
+                    })();
 
-                    const imagen_urls = (imageResults.status === 'fulfilled'
-                        ? (imageResults.value as PromiseSettledResult<string | null>[])
-                            .map(r => r.status === 'fulfilled' ? r.value : null)
-                            .filter(Boolean) as string[]
-                        : []);
+                    await Promise.allSettled([imageSequence, dossierPromise]);
                     const imagen_url = imagen_urls[0] || null;
 
                     // ─── IMAGE RETRY QUEUE ───
@@ -744,8 +756,9 @@ async function generateVerdictImage(prompt: string, postId: string, referenceIma
         // Both attempts failed validation — return null (skip, retry next cron run)
         console.warn(`[Cron] Image validation failed on retry for post ${postId}:`, retryValidation.summary, '— skipping image for now');
         return null;
-    } catch (err) {
+    } catch (err: any) {
         console.error("[Cron] Verdict image generation failed:", err);
+        if (err?.isQuotaError) throw err; // propagate quota errors so callers can stop the batch
         return null;
     }
 }

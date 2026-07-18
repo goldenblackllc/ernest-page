@@ -627,8 +627,8 @@ export function Ledger() {
                 />
             )}
 
-            {/* Daily Digest Card — always first */}
-            {profile?.daily_digest?.title && (
+            {/* Daily Digest Card — only shown when complete (title + image) */}
+            {profile?.daily_digest?.title && profile?.daily_digest?.image_url && (
                 <DigestCard
                     title={profile.daily_digest.title}
                     content={profile.daily_digest.full_content || profile.daily_digest.content}

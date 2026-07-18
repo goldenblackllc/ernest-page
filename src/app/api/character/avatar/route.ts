@@ -100,60 +100,75 @@ export async function POST(req: Request) {
             }
         }, { merge: true });
 
-        // Generate avatar via Nano Banana
-        const imageResult = await generateImage({
-            prompt,
-            aspectRatio: '1:1',
-            logPrefix: 'Avatar',
-        });
+        // Generate avatar with retry loop (up to 3 attempts)
+        const MAX_AVATAR_ATTEMPTS = 3;
+        const AVATAR_RETRY_DELAY_MS = 2000;
+        let buffer: Buffer | null = null;
+        let referenceBuffer: Buffer | null = null;
 
-        if (!imageResult) {
+        for (let attempt = 1; attempt <= MAX_AVATAR_ATTEMPTS; attempt++) {
+            const imageResult = await generateImage({
+                prompt,
+                aspectRatio: '1:1',
+                logPrefix: 'Avatar',
+            });
+
+            if (!imageResult) {
+                console.error(`[Avatar] Image generation returned null (attempt ${attempt}/${MAX_AVATAR_ATTEMPTS})`);
+                if (attempt < MAX_AVATAR_ATTEMPTS) {
+                    await new Promise(resolve => setTimeout(resolve, AVATAR_RETRY_DELAY_MS));
+                    continue;
+                }
+                break;
+            }
+
+            // Resize and compress before validating
+            const rawBuffer = imageResult.buffer;
+            const resizedBuffer = await sharp(rawBuffer)
+                .resize(256, 256, { fit: 'cover' })
+                .jpeg({ quality: 80 })
+                .toBuffer();
+
+            // Also create a higher-res reference image (512px) for character identity
+            // anchoring during post/digest image generation
+            const resizedRefBuffer = await sharp(rawBuffer)
+                .resize(512, 512, { fit: 'cover' })
+                .jpeg({ quality: 85 })
+                .toBuffer();
+
+            console.log(`[Avatar] Resized: ${rawBuffer.length} → avatar ${resizedBuffer.length} bytes, reference ${resizedRefBuffer.length} bytes`);
+
+            // Validate image quality before uploading
+            const validation = await validateGeneratedImage(resizedBuffer, prompt);
+            if (!validation.pass) {
+                console.warn(`[Avatar] Image validation failed for ${uid} (attempt ${attempt}/${MAX_AVATAR_ATTEMPTS}):`, validation.summary, validation.issues);
+                if (attempt < MAX_AVATAR_ATTEMPTS) {
+                    await new Promise(resolve => setTimeout(resolve, AVATAR_RETRY_DELAY_MS));
+                    continue;
+                }
+                break;
+            }
+
+            // Validation passed — use these buffers
+            buffer = resizedBuffer;
+            referenceBuffer = resizedRefBuffer;
+            console.log(`[Avatar] Image validated for ${uid} on attempt ${attempt}`);
+            break;
+        }
+
+        if (!buffer || !referenceBuffer) {
             try {
                 await db.collection('users').doc(uid).set({
                     character_bible: {
                         avatar_status: 'failed',
                         avatar_attempt_count: FieldValue.increment(1),
-                        avatar_error: 'Image generation failed',
+                        avatar_error: `Image failed after ${MAX_AVATAR_ATTEMPTS} attempts`,
                     }
                 }, { merge: true });
             } catch (e) {
                 console.error('[Avatar] Failed to write error status:', e);
             }
-            return Response.json({ error: 'Image generation failed' }, { status: 502 });
-        }
-
-        // Resize and compress before uploading
-        const rawBuffer = imageResult.buffer;
-        const buffer = await sharp(rawBuffer)
-            .resize(256, 256, { fit: 'cover' })
-            .jpeg({ quality: 80 })
-            .toBuffer();
-
-        // Also create a higher-res reference image (512px) for character identity
-        // anchoring during post/digest image generation
-        const referenceBuffer = await sharp(rawBuffer)
-            .resize(512, 512, { fit: 'cover' })
-            .jpeg({ quality: 85 })
-            .toBuffer();
-
-        console.log(`[Avatar] Resized: ${rawBuffer.length} → avatar ${buffer.length} bytes, reference ${referenceBuffer.length} bytes`);
-
-        // Validate image quality before uploading
-        const validation = await validateGeneratedImage(buffer, prompt);
-        if (!validation.pass) {
-            console.warn(`[Avatar] Image validation failed for ${uid}:`, validation.summary, validation.issues);
-            try {
-                await db.collection('users').doc(uid).set({
-                    character_bible: {
-                        avatar_status: 'failed',
-                        avatar_attempt_count: FieldValue.increment(1),
-                        avatar_error: `Image quality check failed: ${validation.summary}`,
-                    }
-                }, { merge: true });
-            } catch (e) {
-                console.error('[Avatar] Failed to write validation error status:', e);
-            }
-            return Response.json({ error: 'Image quality check failed', validation }, { status: 422 });
+            return Response.json({ error: `Image failed after ${MAX_AVATAR_ATTEMPTS} attempts` }, { status: 422 });
         }
 
         const bucket = storage.bucket();
