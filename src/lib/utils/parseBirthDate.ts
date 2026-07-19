@@ -33,15 +33,22 @@ export function parseBirthDate(input: string | undefined | null): ParsedBirthDat
 
     // ── Strategy 1: Try native Date parsing ──
     // Handles "April 11, 2011", "2011-04-11", "12/18/2007", etc.
-    const parsed = new Date(trimmed);
-    if (!isNaN(parsed.getTime())) {
-        const year = parsed.getFullYear();
-        if (year >= 1900 && year <= currentYear) {
-            return {
-                year,
-                month: parsed.getMonth() + 1,
-                day: parsed.getDate(),
-            };
+    // SKIP for bare 4-digit year strings (e.g., "2022", "2004") — the Date constructor
+    // interprets these as UTC midnight on Jan 1, which shifts to the previous year's
+    // Dec 31 in western timezones, producing off-by-one year errors.
+    // Strategies 2/3 below handle year-only inputs correctly.
+    const isBareYear = /^\d{4}$/.test(trimmed);
+    if (!isBareYear) {
+        const parsed = new Date(trimmed);
+        if (!isNaN(parsed.getTime())) {
+            const year = parsed.getFullYear();
+            if (year >= 1900 && year <= currentYear) {
+                return {
+                    year,
+                    month: parsed.getMonth() + 1,
+                    day: parsed.getDate(),
+                };
+            }
         }
     }
 
@@ -83,8 +90,12 @@ export function parseBirthDate(input: string | undefined | null): ParsedBirthDat
 
 /**
  * Compute the user's current age in whole years from a birth-date string.
- * Returns null if the input cannot be parsed.
+ * Returns null if the input cannot be parsed or if the resulting age is
+ * implausibly young (under 13) — which almost certainly indicates bad data
+ * rather than an actual child user.
  */
+const MIN_PLAUSIBLE_AGE = 13;
+
 export function computeAge(input: string | undefined | null): number | null {
     const birth = parseBirthDate(input);
     if (!birth) return null;
@@ -103,6 +114,10 @@ export function computeAge(input: string | undefined | null): number | null {
             }
         }
     }
+
+    // Guard against implausibly young ages — likely bad input data
+    // (e.g., user entered current year instead of birth year)
+    if (age < MIN_PLAUSIBLE_AGE) return null;
 
     return age >= 0 ? age : null;
 }
