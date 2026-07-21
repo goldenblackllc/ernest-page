@@ -214,16 +214,26 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 const NUM_IMAGES = 6;
                 const MAX_ATTEMPTS = 3;
 
-                // Pick photographer randomly — AI selection has LLM bias and always picks the same one
+                // Pick style randomly — 8 equal options (6 photographers + 2 landscapes)
                 const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
-                const imagenTag = randomStyle.imagenTag;
-                console.log(`[RegeneratePost] Photographer — randomly selected: "${randomStyle.id}" (${randomStyle.name})`);
+                console.log(`[RegeneratePost] Style — randomly selected: "${randomStyle.id}" (${randomStyle.name}, category: ${randomStyle.category})`);
 
-                // The story IS the prompt — photographer tag + the ghost-written letter
-                const storyPrompt = imagenTag
-                    ? `${imagenTag} ${pass1.letter}`
-                    : pass1.letter;
-                console.log(`[RegeneratePost] Imagen prompt:\n${storyPrompt}\n---`);
+                // Build prompt and reference image config based on category
+                let storyPrompt: string;
+                let useReferenceImages = referenceImages;
+
+                if (randomStyle.category === 'landscape') {
+                    // Landscape without the person — character bible, no reference images
+                    storyPrompt = `${randomStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                    useReferenceImages = undefined;
+                } else if (randomStyle.category === 'landscape-with-person') {
+                    // Landscape with the person — character bible, with reference images
+                    storyPrompt = `${randomStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                } else {
+                    // Photographer — letter as prompt
+                    storyPrompt = `${randomStyle.imagenTag} ${pass1.letter}`;
+                }
+                console.log(`[RegeneratePost] Imagen prompt (${storyPrompt.length} chars):\n${storyPrompt.substring(0, 300)}...\n---`);
 
                 const generateSingleImage = async (prompt: string, idx: number): Promise<string | null> => {
                     try {
@@ -231,9 +241,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         prompt,
                         aspectRatio: '9:16',
                         logPrefix: 'RegeneratePost',
-                        referenceImages,
-                        // Transformation arc: early beats use face-only reference
-                        // so the text prompt controls body type
+                        referenceImages: useReferenceImages,
                         referenceMode: idx < 2 ? 'face-only' : 'full',
                     });
                     if (!result) return null;
