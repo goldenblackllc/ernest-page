@@ -30,7 +30,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'photographer',
         bestFor: 'Stories about connection, joy, social life, reclaiming confidence, celebration, or aspiration.',
         vision: `You are Slim Aarons. You photograph "attractive people doing attractive things in attractive places." Your subjects don't perform for the camera — they simply live beautifully and you happen to be there. Sun-drenched natural light, saturated warm tones, golden hour. Poolside terraces, lush gardens, curated interiors. The viewer doesn't just see the photo — they want to step INTO this life. Effortless glamour, never staged-looking. The good life, captured mid-sentence.`,
-        imagenTag: 'Generate an image in the style of Slim Aarons for this letter:',
+        imagenTag: 'Imagine you are an online advice column and we hired Slim Aarons to take photos for us. Generate a photo they might take to accompany this story:',
     },
     {
         id: 'cartier-bresson',
@@ -38,7 +38,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'photographer',
         bestFor: 'Stories about pivotal moments, sudden clarity, timing, decisions, or life-changing realizations.',
         vision: `You are Henri Cartier-Bresson. You live for "the decisive moment" — the split second when composition, gesture, and meaning collide. Geometric precision: diagonal lines, frames within frames, shadows as structural elements. You find the extraordinary in the ordinary. You never stage anything — you wait, watch, and shoot when the world aligns. High contrast, architectural composition, layered depth. Every element in the frame has a reason to be there.`,
-        imagenTag: 'Generate an image in the style of Henri Cartier-Bresson for this letter:',
+        imagenTag: 'Imagine you are an online advice column and we hired Henri Cartier-Bresson to take photos for us. Generate a photo they might take to accompany this story:',
     },
     {
         id: 'dorothea-lange',
@@ -46,7 +46,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'photographer',
         bestFor: 'Stories about hardship, endurance, family struggle, financial stress, exhaustion, or resilience.',
         vision: `You are Dorothea Lange. You get close — close enough to feel the story in the lines of a face, the grip of a hand, the weight of a posture. Raw human dignity under pressure. No artifice, no flattery — just the truth of the moment. Natural light, often harsh. Tight framing that forces intimacy. The viewer cannot look away because you've made them feel responsible. Your photos don't illustrate suffering — they honor the strength inside it.`,
-        imagenTag: 'Generate an image in the style of Dorothea Lange for this letter:',
+        imagenTag: 'Imagine you are an online advice column and we hired Dorothea Lange to take photos for us. Generate a photo they might take to accompany this story:',
     },
     {
         id: 'richard-avedon',
@@ -54,7 +54,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'photographer',
         bestFor: 'Stories about identity, self-image, reinvention, confronting truth, or stripping away pretense.',
         vision: `You are Richard Avedon. You strip everything away. White or minimal backgrounds — nowhere to hide. The subject stands alone with their character. Razor-sharp focus, high contrast, every gesture and expression amplified by the emptiness around it. Your portraits don't capture what people look like — they capture what people ARE. Movement, spontaneity within the stark frame. The tension between vulnerability and defiance.`,
-        imagenTag: 'Generate an image in the style of Richard Avedon for this letter:',
+        imagenTag: 'Imagine you are an online advice column and we hired Richard Avedon to take photos for us. Generate a photo they might take to accompany this story:',
     },
     {
         id: 'saul-leiter',
@@ -62,7 +62,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'photographer',
         bestFor: 'Stories about loneliness, longing, quiet inner worlds, urban life, or unspoken emotions.',
         vision: `You are Saul Leiter. You see the world through layers — rain-streaked windows, steamed glass, reflections, door frames, curtains. Your subjects are often partially hidden, glimpsed, fragmented. Accidental beauty in the everyday. Painterly color: a red umbrella against grey, warm light bleeding through fog. Soft focus, shallow depth of field, abstract compositions that feel more like paintings than photographs. The beauty is in what's almost — but not quite — revealed.`,
-        imagenTag: 'Generate an image in the style of Saul Leiter for this letter:',
+        imagenTag: 'Imagine you are an online advice column and we hired Saul Leiter to take photos for us. Generate a photo they might take to accompany this story:',
     },
     {
         id: 'platon',
@@ -70,7 +70,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'photographer',
         bestFor: 'Stories about power, anger, vulnerability beneath strength, confrontation, or raw emotional intensity.',
         vision: `You are Platon. You shoot extreme close-ups that turn a face into a landscape. Dramatic, confrontational lighting — one light source, deep shadows, every line and pore visible. Minimal or pure white backgrounds. The eyes do all the talking. Your portraits are intense, almost uncomfortably intimate. You don't capture beauty — you capture TRUTH. The tension between power and vulnerability in a single expression. Magazine-cover intensity, no escape for the viewer.`,
-        imagenTag: 'Generate an image in the style of Platon for this letter:',
+        imagenTag: 'Imagine you are an online advice column and we hired Platon to take photos for us. Generate a photo they might take to accompany this story:',
     },
     {
         id: 'landscape',
@@ -78,7 +78,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'landscape',
         bestFor: 'Any story — scenic locations from the character\'s life without the person.',
         vision: '',
-        imagenTag: 'Generate a beautiful landscape photograph of a place this person loves based on their character:',
+        imagenTag: 'Imagine you are an online advice column. Generate a beautiful landscape photograph to accompany a story, based on this person\'s character:',
     },
     {
         id: 'landscape-portrait',
@@ -86,7 +86,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'landscape-with-person',
         bestFor: 'Any story — the person placed in a location they love.',
         vision: '',
-        imagenTag: 'Generate a photograph of this person in a place they love based on their character:',
+        imagenTag: 'Imagine you are an online advice column. Generate a photograph of this person in a place they love to accompany a story, based on their character:',
     },
 ];
 
