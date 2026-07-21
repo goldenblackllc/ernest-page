@@ -88,6 +88,14 @@ export const VISUAL_STYLES: VisualStyle[] = [
         vision: '',
         imagenTag: 'Imagine you are an online advice column. Generate a photograph of this person in a place they love to accompany a story, based on their character:',
     },
+    {
+        id: 'tom-ford',
+        name: 'Tom Ford',
+        category: 'photographer',
+        bestFor: 'Any story — professional photo shoot with clean backdrop and studio lighting.',
+        vision: '',
+        imagenTag: 'Imagine you are an online advice column and we hired Tom Ford to take photos for us. Generate a photo they might take to accompany this story:',
+    },
 ];
 
 /**
