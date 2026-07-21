@@ -9,6 +9,7 @@ export interface SubtitleEntry {
     startTime: number;
     endTime: number;
     phase: 'letter' | 'response';
+    words?: { word: string; start: number; end: number }[];
 }
 
 /**
@@ -18,7 +19,7 @@ export interface SubtitleEntry {
  * words. Chunks always end at a sentence boundary (., !, ?) so the viewer
  * reads complete thoughts — never a dangling fragment like "a casual".
  */
-function chunkText(text: string, targetWords = 12): string[] {
+function chunkText(text: string, targetWords = 7): string[] {
     const cleaned = text.replace(/\n+/g, ' ').trim();
     if (!cleaned) return [];
 
@@ -97,7 +98,7 @@ export function generateSubtitles(
     responseText: string,
     letterDuration: number,
     responseDuration: number,
-    wordsPerChunk = 12
+    wordsPerChunk = 7
 ): SubtitleEntry[] {
     const entries: SubtitleEntry[] = [];
 
@@ -148,7 +149,7 @@ export function generateSubtitles(
  */
 export function buildChunksFromTimestamps(
     wordTimestamps: { word: string; start: number; end: number }[],
-    targetWords = 12,
+    targetWords = 7,
     letterWordCount?: number,
 ): SubtitleEntry[] {
     if (wordTimestamps.length === 0) return [];
@@ -160,7 +161,7 @@ export function buildChunksFromTimestamps(
     const entries: SubtitleEntry[] = [];
     let chunkStart = 0;
     let globalWordIndex = 0; // tracks position across all words for letter/response boundary
-    const minWords = 5;      // minimum before allowing a sentence-end break
+    const minWords = 3;      // minimum before allowing a sentence-end break
     const hardCeiling = Math.ceil(targetWords * 1.5); // never exceed this
 
     for (let i = 0; i < filtered.length; i++) {
@@ -192,6 +193,7 @@ export function buildChunksFromTimestamps(
                 startTime: group[0].start,
                 endTime: group[group.length - 1].end,
                 phase,
+                words: group.map(w => ({ word: w.word, start: w.start, end: w.end })),
             });
             chunkStart = i + 1;
         }
@@ -252,7 +254,7 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Sub,HK Grotesk,80,&H00F5F0EB,&H00F5F0EB,&H80000000,&HA0000000,1,0,0,0,100,100,1,0,1,3,2,2,100,200,350
+Style: Sub,HK Grotesk,100,&H00F5F0EB,&H004DC8FC,&H80000000,&HA0000000,-1,0,0,0,100,100,1,0,1,4,2,2,100,200,350
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
@@ -265,8 +267,24 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
     for (const entry of entries) {
         const start = formatAssTime(entry.startTime);
         const end = formatAssTime(entry.endTime);
-        const text = escapeAss(entry.text);
-        events.push(`Dialogue: 0,${start},${end},Sub,,0,0,0,,{\\fad(150,100)}${text}`);
+
+        if (entry.words && entry.words.length > 0) {
+            // Karaoke mode — highlight words one by one using \kf (fill sweep)
+            // ASS \kf sweeps from SecondaryColour (pre-spoken) to PrimaryColour (post-spoken).
+            // Override on the first word: \2c = white (unspoken), \1c = gold (spoken/swept).
+            const karaokeWords = entry.words.map((w, idx) => {
+                const durationCs = Math.round((w.end - w.start) * 100);
+                if (idx === 0) {
+                    return `{\\1c&H004DC8FC&\\2c&H00F5F0EB&\\kf${durationCs}}${escapeAss(w.word)}`;
+                }
+                return `{\\kf${durationCs}}${escapeAss(w.word)}`;
+            });
+            events.push(`Dialogue: 0,${start},${end},Sub,,0,0,0,,${karaokeWords.join(' ')}`);
+        } else {
+            // Fallback — plain subtitle with fade
+            const text = escapeAss(entry.text);
+            events.push(`Dialogue: 0,${start},${end},Sub,,0,0,0,,{\\fad(150,100)}${text}`);
+        }
     }
 
     return header + '\n' + events.join('\n') + '\n';

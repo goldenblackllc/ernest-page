@@ -158,7 +158,7 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
     const hasAudio = Boolean(post.audio_url || (post.letter_audio_url && post.response_audio_url));
 
     // Subtitle chunks
-    const chunkText = (text: string, wordsPerChunk: number = 12): string[] => {
+    const chunkText = (text: string, wordsPerChunk: number = 7): string[] => {
         const words = text.replace(/\n+/g, ' ').split(/\s+/).filter(w => w);
         const chunks: string[] = [];
         for (let i = 0; i < words.length; i += wordsPerChunk) {
@@ -170,12 +170,79 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
     const letterChunks = chunkText(publicLetter || '');
     const responseChunks = chunkText((publicResponse || '').replace(/^THE COUNSEL:\s*/i, ''));
 
-    const getCurrentSubtitle = () => {
+    // Build timestamp-based chunks with per-word data for karaoke
+    const wordTimestamps = post.audio_word_timestamps as { word: string; start: number; end: number }[] | undefined;
+    const timestampChunks = (() => {
+        if (!wordTimestamps || wordTimestamps.length === 0) return null;
+        const filtered = wordTimestamps.filter(w => w.word !== '...' && w.word !== '\u2026');
+        if (filtered.length === 0) return null;
+
+        const chunks: { text: string; start: number; end: number; words: { word: string; start: number; end: number }[] }[] = [];
+        const minWords = 3;
+        const targetWords = 7;
+        const hardCeiling = Math.ceil(targetWords * 1.5);
+        let chunkStart = 0;
+
+        for (let i = 0; i < filtered.length; i++) {
+            const wordCount = i - chunkStart + 1;
+            const word = filtered[i].word;
+            const isSentenceEnd = /[.!?]/.test(word);
+            const isNaturalPause = /[,;\u2014\u2013\-]/.test(word);
+            const isLastWord = i === filtered.length - 1;
+
+            const shouldBreak =
+                (isSentenceEnd && wordCount >= minWords) ||
+                (isNaturalPause && wordCount >= targetWords) ||
+                (wordCount >= hardCeiling) ||
+                isLastWord;
+
+            if (shouldBreak) {
+                const group = filtered.slice(chunkStart, i + 1);
+                chunks.push({
+                    text: group.map(w => w.word).join(' '),
+                    start: group[0].start,
+                    end: group[group.length - 1].end,
+                    words: group.map(w => ({ word: w.word, start: w.start, end: w.end })),
+                });
+                chunkStart = i + 1;
+            }
+        }
+        return chunks.length > 0 ? chunks : null;
+    })();
+
+    const getCurrentSubtitle = (): { current: string; words?: { word: string; start: number; end: number }[]; activeWordIndex: number } | null => {
         if (audioPhase === 'idle' && !isPlaying) return null;
+
+        // Timestamp-based sync with karaoke
+        if (timestampChunks && audioRef.current) {
+            const currentTime = audioRef.current.currentTime;
+            let chunkIndex = 0;
+            for (let i = 0; i < timestampChunks.length; i++) {
+                if (currentTime >= timestampChunks[i].start) {
+                    chunkIndex = i;
+                } else {
+                    break;
+                }
+            }
+            const chunk = timestampChunks[chunkIndex];
+            let activeWordIndex = 0;
+            if (chunk?.words) {
+                for (let w = 0; w < chunk.words.length; w++) {
+                    if (currentTime >= chunk.words[w].start) {
+                        activeWordIndex = w;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            return { current: chunk?.text || '', words: chunk?.words, activeWordIndex };
+        }
+
+        // Fallback: word-count estimate
         const lines = audioPhase === 'response' ? responseChunks : letterChunks;
         if (lines.length === 0) return null;
         const lineIndex = Math.min(Math.floor(audioProgress * lines.length), lines.length - 1);
-        return lines[lineIndex];
+        return { current: lines[lineIndex], activeWordIndex: -1 };
     };
 
     const subtitle = getCurrentSubtitle();
@@ -222,20 +289,28 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
                                 )}
                             </div>
 
-                            {/* Subtitle */}
-                            <div className="absolute bottom-4 left-4 right-4 z-20">
+                            {/* Subtitle — karaoke word-highlight style */}
+                            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none px-5">
                                 {isPlaying && subtitle ? (
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1">
-                                            {audioPhase === 'response' ? 'Earnest Page responds' : 'The letter'}
-                                        </p>
-                                        <p className="text-base text-white font-medium leading-relaxed drop-shadow-lg animate-[fadeInUp_0.3s_ease-out]" key={subtitle}>
-                                            {subtitle}
+                                    <div className="text-center max-w-[94%]">
+                                        <p className="text-[1.75rem] sm:text-4xl font-black text-white leading-snug" style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
+                                            {subtitle.words && subtitle.activeWordIndex >= 0 ? (
+                                                subtitle.words.map((w: { word: string }, i: number) => (
+                                                    <span
+                                                        key={i}
+                                                        className={`transition-colors duration-100 ${i === subtitle.activeWordIndex ? 'text-amber-300' : 'text-white'}`}
+                                                    >
+                                                        {w.word}{i < (subtitle.words?.length ?? 0) - 1 ? ' ' : ''}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                subtitle.current
+                                            )}
                                         </p>
                                     </div>
                                 ) : (
-                                    <div>
-                                        <p className="text-[13px] text-white/60 leading-snug drop-shadow-lg line-clamp-2">
+                                    <div className="text-center max-w-[94%]">
+                                        <p className="text-lg text-white/60 font-bold leading-snug drop-shadow-lg line-clamp-2">
                                             {letterChunks[0]}
                                         </p>
                                         <p className="text-[11px] text-white/30 mt-1.5 uppercase tracking-widest font-bold">

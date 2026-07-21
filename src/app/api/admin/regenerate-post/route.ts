@@ -219,8 +219,9 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 console.log(`[RegeneratePost] Style — randomly selected: "${randomStyle.id}" (${randomStyle.name}, category: ${randomStyle.category})`);
 
                 // Build prompt and reference image config based on category
-                let storyPrompt: string;
+                let storyPrompt: string = '';
                 let useReferenceImages = referenceImages;
+                let cinematicPrompts: string[] | null = null;
 
                 if (randomStyle.category === 'landscape') {
                     // Landscape without the person — character bible, no reference images
@@ -229,11 +230,54 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 } else if (randomStyle.category === 'landscape-with-person') {
                     // Landscape with the person — character bible, with reference images
                     storyPrompt = `${randomStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                } else if (randomStyle.category === 'cinematic') {
+                    // AI generates bespoke prompts per image
+                    console.log(`[RegeneratePost] Generating cinematic prompts for style "${randomStyle.id}" via AI...`);
+
+                    const storySection = randomStyle.omitLetter ? '' : `\nSTORY:\n${pass1.letter}\n`;
+
+                    const styleDirection = randomStyle.id === 'life-magazine'
+                        ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 6 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
+                        : `You are a Visual Director for an advice column called Earnest Page. You're creating 6 photographs that capture moments from this person's life.`;
+
+                    const aiResult = await generateWithFallback({
+                        primaryModelId: OPUS_MODEL,
+                        schema: z.object({
+                            prompts: z.array(z.string()).min(6).max(6),
+                        }),
+                        prompt: `${styleDirection}
+
+First, read the character's identity. For each image, choose:
+- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)
+- A SCALE: the shot type
+
+SCALE types:
+- "macro": Extreme close-up of an object, texture, or detail from their life.
+- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.
+- "wide": An aspirational landscape, cityscape, or architectural shot from their world.
+- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.
+
+RULES:
+- Highly photorealistic. Cinematic lighting. Instagram-quality.
+- 9:16 portrait orientation. No text or watermarks.
+- Vary the scales and vibes across all 6 images.
+- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.
+- Ground every image in specific details from the character.
+
+CHARACTER:
+${JSON.stringify(compiledBible)}
+${storySection}
+Return exactly 6 detailed Imagen prompts. Each should be a self-contained image description.`,
+                    });
+                    cinematicPrompts = (aiResult.object as any).prompts;
+                    console.log(`[RegeneratePost] Generated ${cinematicPrompts!.length} cinematic prompts`);
                 } else {
                     // Photographer — letter as prompt
                     storyPrompt = `${randomStyle.imagenTag} ${pass1.letter}`;
                 }
-                console.log(`[RegeneratePost] Imagen prompt (${storyPrompt.length} chars):\n${storyPrompt.substring(0, 300)}...\n---`);
+                if (storyPrompt) {
+                    console.log(`[RegeneratePost] Imagen prompt (${storyPrompt.length} chars):\n${storyPrompt.substring(0, 300)}...\n---`);
+                }
 
                 const generateSingleImage = async (prompt: string, idx: number): Promise<string | null> => {
                     try {
@@ -277,7 +321,10 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 let quotaExhausted = false;
 
                 const firstResults = await Promise.allSettled(
-                    Array.from({ length: NUM_IMAGES }, (_, idx) => generateSingleImage(storyPrompt, idx))
+                    Array.from({ length: NUM_IMAGES }, (_, idx) => {
+                        const prompt = cinematicPrompts ? cinematicPrompts[idx % cinematicPrompts.length] : storyPrompt;
+                        return generateSingleImage(prompt, idx);
+                    })
                 );
                 firstResults.forEach((r, i) => {
                     if (r.status === 'fulfilled' && r.value) urls[i] = r.value;
@@ -294,7 +341,10 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         await new Promise(resolve => setTimeout(resolve, 2000));
 
                         const retryResults = await Promise.allSettled(
-                            failedIndices.map(i => generateSingleImage(storyPrompt, i))
+                            failedIndices.map(i => {
+                                const prompt = cinematicPrompts ? cinematicPrompts[i % cinematicPrompts.length] : storyPrompt;
+                                return generateSingleImage(prompt, i);
+                            })
                         );
                         retryResults.forEach((r, ri) => {
                             if (r.status === 'fulfilled' && r.value) urls[failedIndices[ri]] = r.value;

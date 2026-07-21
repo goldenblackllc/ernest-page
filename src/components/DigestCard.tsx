@@ -152,7 +152,7 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
     }, [isMuted]);
 
     // Sentence-boundary chunking — matches FeedPostCard behavior
-    const chunkText = (text: string, targetWords: number = 35): string[] => {
+    const chunkText = (text: string, targetWords: number = 7): string[] => {
         const cleaned = text.replace(/\n+/g, ' ').replace(/\*\*[^*]+:\*\*\s*/g, '').trim();
         if (!cleaned) return [''];
 
@@ -244,10 +244,10 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
                         </div>
                     </div>
 
-                    {/* Subtitle text — always rendered, visibility via opacity to avoid DOM pop-in */}
-                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
-                        <div className={`text-center max-w-[92%] transition-opacity duration-300 ${showSubtitle ? 'opacity-100' : 'opacity-0'}`}>
-                            <p className="text-[1.35rem] sm:text-3xl lg:text-4xl font-bold text-white leading-tight" style={{ whiteSpace: 'pre-line', textShadow: '-1px -1px 0 rgba(0,0,0,0.85), 1px -1px 0 rgba(0,0,0,0.85), -1px 1px 0 rgba(0,0,0,0.85), 1px 1px 0 rgba(0,0,0,0.85), 0 2px 4px rgba(0,0,0,0.4)' }}>
+                    {/* Subtitle text — larger karaoke-style typography */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-5">
+                        <div className={`text-center max-w-[94%] transition-opacity duration-300 ${showSubtitle ? 'opacity-100' : 'opacity-0'}`}>
+                            <p className="text-[1.75rem] sm:text-4xl lg:text-5xl font-black text-white leading-snug" style={{ whiteSpace: 'pre-line', textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
                                 {subtitleText || '\u00A0'}
                             </p>
                         </div>

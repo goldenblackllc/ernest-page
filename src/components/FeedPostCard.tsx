@@ -675,7 +675,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         // Build timestamp-based chunks at sentence boundaries if word timestamps are available
         const wordTimestamps = post.audio_word_timestamps;
-        const timestampChunks: { text: string; start: number; end: number }[] | null = (() => {
+        const timestampChunks: { text: string; start: number; end: number; words: { word: string; start: number; end: number }[] }[] | null = (() => {
             if (!wordTimestamps || wordTimestamps.length === 0) return null;
 
             // Filter out ellipsis tokens that leak from TTS separators
@@ -685,10 +685,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             // Determine letter/response boundary from word ratio
             const splitIndex = Math.round(filtered.length * computedLetterRatio);
 
-            const chunks: { text: string; start: number; end: number }[] = [];
-            const minWords = 5;         // minimum before allowing a sentence-end break
-            const targetWords = 12;     // target chunk size — break at natural pauses here
-            const hardCeiling = Math.ceil(targetWords * 1.5); // 18 — force break regardless
+            const chunks: { text: string; start: number; end: number; words: { word: string; start: number; end: number }[] }[] = [];
+            const minWords = 3;         // minimum before allowing a sentence-end break
+            const targetWords = 7;      // target chunk size — short punchy karaoke phrases
+            const hardCeiling = Math.ceil(targetWords * 1.5); // ~11 — force break regardless
             let chunkStart = 0;
 
             for (let i = 0; i < filtered.length; i++) {
@@ -718,6 +718,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         text,
                         start: group[0].start,
                         end: group[group.length - 1].end,
+                        words: group.map((w: any) => ({ word: w.word, start: w.start, end: w.end })),
                     });
                     chunkStart = i + 1;
                 }
@@ -731,7 +732,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             if (audioPhase === 'idle' && !isPlaying) {
                 if (timestampChunks && timestampChunks.length > 0) {
                     // Timestamp chunks already include verdict words (prepended in TTS)
-                    return { current: timestampChunks[0].text, next: timestampChunks[1]?.text || '', lineIndex: 0, totalLines: timestampChunks.length };
+                    return { current: timestampChunks[0].text, next: timestampChunks[1]?.text || '', lineIndex: 0, totalLines: timestampChunks.length, words: timestampChunks[0].words, activeWordIndex: -1 };
                 }
                 if (allChunks.length > 0) {
                     return { current: allChunks[0], next: allChunks[1] || '', lineIndex: 0, totalLines: allChunks.length };
@@ -750,9 +751,21 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         break;
                     }
                 }
-                const current = timestampChunks[chunkIndex]?.text || '';
+                const chunk = timestampChunks[chunkIndex];
+                const current = chunk?.text || '';
                 const next = timestampChunks[chunkIndex + 1]?.text || '';
-                return { current, next, lineIndex: chunkIndex, totalLines: timestampChunks.length };
+                // Find active word within chunk for karaoke highlight
+                let activeWordIndex = 0;
+                if (chunk?.words) {
+                    for (let w = 0; w < chunk.words.length; w++) {
+                        if (currentTime >= chunk.words[w].start) {
+                            activeWordIndex = w;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                return { current, next, lineIndex: chunkIndex, totalLines: timestampChunks.length, words: chunk?.words, activeWordIndex };
             }
 
             // ── Fallback: word-count-weighted estimate (for older posts) ──
@@ -900,11 +913,22 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
 
 
-                    {/* Subtitle text — always rendered, visibility via opacity to avoid DOM pop-in */}
-                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-6">
-                        <div className={`text-center max-w-[92%] transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
-                            <p className="text-[1.35rem] sm:text-3xl lg:text-4xl font-bold text-white leading-tight" style={{ whiteSpace: 'pre-line', textShadow: '-1px -1px 0 rgba(0,0,0,0.85), 1px -1px 0 rgba(0,0,0,0.85), -1px 1px 0 rgba(0,0,0,0.85), 1px 1px 0 rgba(0,0,0,0.85), 0 2px 4px rgba(0,0,0,0.4)' }}>
-                                {subtitle?.current || '\u00A0'}
+                    {/* Subtitle text — karaoke word-highlight style */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-5">
+                        <div className={`text-center max-w-[94%] transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
+                            <p className="text-[1.75rem] sm:text-4xl lg:text-5xl font-black text-white leading-snug" style={{ whiteSpace: 'pre-line', textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
+                                {subtitle?.words && subtitle.activeWordIndex !== undefined && subtitle.activeWordIndex >= 0 ? (
+                                    subtitle.words.map((w: { word: string }, i: number) => (
+                                        <span
+                                            key={i}
+                                            className={`transition-colors duration-100 ${i === subtitle.activeWordIndex ? 'text-amber-300' : 'text-white'}`}
+                                        >
+                                            {w.word}{i < subtitle.words.length - 1 ? ' ' : ''}
+                                        </span>
+                                    ))
+                                ) : (
+                                    subtitle?.current || '\u00A0'
+                                )}
                             </p>
                         </div>
                     </div>

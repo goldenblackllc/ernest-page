@@ -6,7 +6,7 @@
  * - 2 landscapes: character bible → Imagen (with or without the person)
  */
 
-export type StyleCategory = 'photographer' | 'landscape' | 'landscape-with-person';
+export type StyleCategory = 'photographer' | 'landscape' | 'landscape-with-person' | 'cinematic';
 
 export interface VisualStyle {
     /** Machine-readable identifier stored in Firestore */
@@ -21,6 +21,10 @@ export interface VisualStyle {
     vision: string;
     /** Prompt prefix sent to Imagen */
     imagenTag: string;
+    /** Optional per-image prompt variations. When set, each image uses variations[idx % length] instead of imagenTag */
+    variations?: string[];
+    /** If true, cinematic category won't include the letter/story — only character bible */
+    omitLetter?: boolean;
 }
 
 export const VISUAL_STYLES: VisualStyle[] = [
@@ -95,6 +99,38 @@ export const VISUAL_STYLES: VisualStyle[] = [
         bestFor: 'Any story — professional photo shoot with clean backdrop and studio lighting.',
         vision: '',
         imagenTag: 'Imagine you are an online advice column and we hired Tom Ford to take photos for us. Generate a photo they might take to accompany this story:',
+    },
+    {
+        id: 'studio-poses',
+        name: 'Studio Poses',
+        category: 'photographer',
+        bestFor: 'Any story — full body shots against a backdrop with varied poses.',
+        vision: '',
+        imagenTag: 'Imagine you are an online advice column. Generate a full body studio photograph with professional lighting and a clean backdrop to accompany this story:',
+        variations: [
+            'Imagine you are an online advice column. Generate a full body studio photograph of a person standing confidently with arms loosely at their sides, slight angle to the camera, professional lighting, clean backdrop. To accompany this story:',
+            'Imagine you are an online advice column. Generate a full body studio photograph of a person seated on a simple stool, leaning slightly forward, relaxed and natural, professional lighting, clean backdrop. To accompany this story:',
+            'Imagine you are an online advice column. Generate a full body studio photograph of a person mid-stride, captured in motion, editorial fashion style, professional lighting, clean backdrop. To accompany this story:',
+            'Imagine you are an online advice column. Generate a full body studio photograph of a person leaning casually against a wall, hands in pockets, at ease, professional lighting, clean backdrop. To accompany this story:',
+            'Imagine you are an online advice column. Generate a full body studio photograph of a person looking over their shoulder, three-quarter turn away from camera, professional lighting, clean backdrop. To accompany this story:',
+        ],
+    },
+    {
+        id: 'life-scenes',
+        name: 'Life Scenes',
+        category: 'cinematic',
+        bestFor: 'Any story — bespoke cinematic photographs of the person\'s life using VIBE + SCALE framework.',
+        vision: '',
+        imagenTag: '', // Not used — cinematic category generates custom prompts via AI
+    },
+    {
+        id: 'life-magazine',
+        name: 'Life Magazine',
+        category: 'cinematic',
+        bestFor: 'Any story — Life Magazine-style editorial photography of the character\'s world.',
+        vision: '',
+        imagenTag: '',
+        omitLetter: true,
     },
 ];
 
