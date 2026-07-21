@@ -235,7 +235,14 @@ export function generateAssSubtitles(
     //   Top ~500px: platform headers (profile pic, username, search, navigation)
     //   Bottom ~480px: platform footers (username, caption, action buttons, nav bar)
     //   Right ~120px: action buttons (like, comment, share)
-    // Verdict text is baked into the background image — no title overlay needed.
+    //
+    // Typography: HK Grotesk SemiBold — clean geometric sans, refined for subtitles.
+    // Parameters tuned for a polished, readable subtitle feel:
+    //   - 80pt (smaller than the old 100 — refined, not shouty)
+    //   - Warm white (&H00EBF0F5 in ASS BGR) instead of pure white
+    //   - 3px outline (thin, just enough contrast against any background)
+    //   - 2px shadow at 63% opacity (subtle depth, not "stamped on")
+    //   - Spacing: 1 (slight letter-spacing for breathing room)
     const header = `[Script Info]
 Title: Earnest Page Video
 ScriptType: v4.00+
@@ -245,7 +252,7 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Sub,HK Grotesk,100,&H00FFFFFF,&H00FFFFFF,&H00000000,&HB4000000,1,0,0,0,100,100,0,0,1,8,6,2,100,200,350
+Style: Sub,HK Grotesk,80,&H00F5F0EB,&H00F5F0EB,&H80000000,&HA0000000,1,0,0,0,100,100,1,0,1,3,2,2,100,200,350
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
@@ -253,11 +260,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
     const events: string[] = [];
 
     // Timed subtitles — bottom-center, synced to audio
+    // \fad(150,100) adds a subtle 150ms fade-in and 100ms fade-out for
+    // smooth, cinematic transitions instead of hard text cuts.
     for (const entry of entries) {
         const start = formatAssTime(entry.startTime);
         const end = formatAssTime(entry.endTime);
         const text = escapeAss(entry.text);
-        events.push(`Dialogue: 0,${start},${end},Sub,,0,0,0,,${text}`);
+        events.push(`Dialogue: 0,${start},${end},Sub,,0,0,0,,{\\fad(150,100)}${text}`);
     }
 
     return header + '\n' + events.join('\n') + '\n';

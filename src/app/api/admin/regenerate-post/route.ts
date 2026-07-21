@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
+import { PHOTOGRAPHER_CATALOG, getVisualStyle, VISUAL_STYLES } from '@/lib/ai/visualStyles';
 
 
 export const runtime = 'nodejs';
@@ -120,7 +121,8 @@ YOUR EDITORIAL MANDATE: Write the letter the user would have written if they cou
 - title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
 - pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
 - letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. It must hook in under 8 words. Then 2-3 sentences of SITUATION. The letter must present the situation as UNRESOLVED. VOICE: First person, present tense. Raw and conversational. No clinical language. NEVER reference the chat or session. FORMATTING: Start with 'Dear Earnest,\\n\\n'. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash.
-- imagen_prompts: An array of 5-6 editorial storyboard prompts. THE STORYBOARD ARC — 5-6 beats telling the story from struggle to resolution: Beat 1 — THE STUCK MOMENT (the character in the situation), Beat 2 — THE DETAIL (closer shot of the key object/screen), Beat 3 — THE PIVOT (visual shift marking the turn), Beat 4 — THE MOVE (advice in action), Beat 5 — THE OUTCOME (character in the new state), Beat 6 (optional) — THE EXHALE (environmental close). The character appears IN every image. CHARACTER CONSISTENCY: describe their fixed traits — face, ethnicity, age — consistently in every prompt. TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform. EDITORIAL PHOTOGRAPHY RULES: NEVER have the character look directly at the camera — they are caught in a moment, unaware of the camera. The character must be DOING something (not standing, not posing). Use photojournalistic composition — rule of thirds, natural angles, slightly off-center or over-the-shoulder. Never a centered portrait. PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names. Shot with a real camera — genuine, editorial. 9:16 portrait orientation (1080×1920). No text or watermarks. Keep the center area uncluttered.
+- visual_style: Pick the ONE photographer id from the list below whose vision best serves this story. Return ONLY the id string (e.g., "slim-aarons", "platon", "saul-leiter").
+${PHOTOGRAPHER_CATALOG}
 - photo_vibe: One word capturing the emotional tone.
 
 PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
@@ -139,7 +141,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
 ${appearanceHint}
 
 OUTPUT FIELDS:
-- is_publishable, title, pseudonym, letter, photo_vibe, imagen_prompts, language`;
+- is_publishable, title, pseudonym, letter, visual_style, photo_vibe, language`;
 
         const letterResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
@@ -150,7 +152,7 @@ OUTPUT FIELDS:
                 pseudonym: z.string(),
                 letter: z.string(),
                 photo_vibe: z.string(),
-                imagen_prompts: z.array(z.string()).min(5).max(6),
+                visual_style: z.string(),
                 language: z.string().optional(),
             }),
             prompt: letterPrompt,
@@ -207,12 +209,21 @@ THEN — replace what identifies THE USER: Names of people the user personally k
         const referenceImages = referenceImage ? [referenceImage] : undefined;
 
         const [imageResult, audioResult] = await Promise.allSettled([
-            // Image generation — with per-prompt retries for quality
+            // Image generation — send the story directly to Imagen with photographer style
             (async (): Promise<string[]> => {
-                const prompts = pass1.imagen_prompts || [pass1.imagen_prompt].filter(Boolean);
-                if (prompts.length === 0) return [];
-
+                const NUM_IMAGES = 6;
                 const MAX_ATTEMPTS = 3;
+
+                // Pick photographer randomly — AI selection has LLM bias and always picks the same one
+                const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
+                const imagenTag = randomStyle.imagenTag;
+                console.log(`[RegeneratePost] Photographer — randomly selected: "${randomStyle.id}" (${randomStyle.name})`);
+
+                // The story IS the prompt — photographer tag + the ghost-written letter
+                const storyPrompt = imagenTag
+                    ? `${imagenTag} ${pass1.letter}`
+                    : pass1.letter;
+                console.log(`[RegeneratePost] Imagen prompt:\n${storyPrompt}\n---`);
 
                 const generateSingleImage = async (prompt: string, idx: number): Promise<string | null> => {
                     try {
@@ -254,11 +265,11 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 };
 
                 // First pass: generate all in parallel
-                const urls: (string | null)[] = new Array(prompts.length).fill(null);
+                const urls: (string | null)[] = new Array(NUM_IMAGES).fill(null);
                 let quotaExhausted = false;
 
                 const firstResults = await Promise.allSettled(
-                    prompts.map((prompt: string, idx: number) => generateSingleImage(prompt, idx))
+                    Array.from({ length: NUM_IMAGES }, (_, idx) => generateSingleImage(storyPrompt, idx))
                 );
                 firstResults.forEach((r, i) => {
                     if (r.status === 'fulfilled' && r.value) urls[i] = r.value;
@@ -275,7 +286,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         await new Promise(resolve => setTimeout(resolve, 2000));
 
                         const retryResults = await Promise.allSettled(
-                            failedIndices.map(i => generateSingleImage(prompts[i], i))
+                            failedIndices.map(i => generateSingleImage(storyPrompt, i))
                         );
                         retryResults.forEach((r, ri) => {
                             if (r.status === 'fulfilled' && r.value) urls[failedIndices[ri]] = r.value;
@@ -291,8 +302,8 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 }
 
                 const successCount = urls.filter(Boolean).length;
-                if (successCount < prompts.length) {
-                    console.warn(`[RegeneratePost] Only ${successCount}/${prompts.length} images${quotaExhausted ? ' (quota exhausted)' : ''}`);
+                if (successCount < NUM_IMAGES) {
+                    console.warn(`[RegeneratePost] Only ${successCount}/${NUM_IMAGES} images${quotaExhausted ? ' (quota exhausted)' : ''}`);
                 }
 
                 return urls.filter((url): url is string => url !== null);
@@ -333,7 +344,8 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 
         const updateData: any = {
             public_post: publicPost,
-            imagen_prompts: pass1.imagen_prompts,
+            imagen_prompts: [`${getVisualStyle(pass1.visual_style || '')?.imagenTag || ''} ${pass1.letter}`.trim()],
+            visual_style: pass1.visual_style || null,
             language: pass1.language || null,
         };
 

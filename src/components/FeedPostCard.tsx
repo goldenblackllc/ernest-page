@@ -876,7 +876,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 {isMuted ? (
                                     <VolumeX className="w-3.5 h-3.5 text-white/70" />
                                 ) : (
-                                    <Volume2 className="w-3.5 h-3.5 text-white animate-pulse" />
+                                    <Volume2 className={`w-3.5 h-3.5 text-white ${isPlaying ? 'animate-pulse' : ''}`} />
                                 )}
                             </button>
                             {/* Visibility control */}

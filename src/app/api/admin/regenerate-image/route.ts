@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
+import { PHOTOGRAPHER_CATALOG, getVisualStyle } from '@/lib/ai/visualStyles';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
 
         // Determine the imagen_prompts — use override if provided, otherwise generate fresh via AI.
         let prompts: string[];
+        let visualStyleId: string | null = null;
 
         if (overridePrompt) {
             // Single override prompt — generate just 1 image
@@ -78,6 +80,15 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
 
             const aiResult = await generateStoryboardPrompts(letter, response, characterHint);
             prompts = aiResult.imagen_prompts;
+
+            const chosenStyle = getVisualStyle(aiResult.visual_style || '');
+            const imagenTag = chosenStyle?.imagenTag || '';
+            console.log(`[RegenerateImage] Photographer — AI returned: "${aiResult.visual_style}", resolved: "${chosenStyle?.id || 'NONE'}"`);
+            // Prepend photographer tag to each prompt
+            prompts = prompts.map(p => imagenTag ? `${imagenTag} ${p}` : p);
+
+            // Store visual_style for Firestore update
+            visualStyleId = aiResult.visual_style || null;
         }
 
         if (prompts.length === 0) {
@@ -152,6 +163,7 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
             imagen_urls,
             imagen_prompt: prompts[0] || null,
             imagen_prompts: prompts,
+            visual_style: visualStyleId,
             is_public: postData.visibility !== 'private',
         });
 
@@ -173,11 +185,12 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
 // ─── Helper: Generate editorial storyboard prompts via AI ───
 async function generateStoryboardPrompts(
     letter: string, response: string, characterHint: string = '',
-): Promise<{ imagen_prompts: string[] }> {
+): Promise<{ imagen_prompts: string[]; visual_style: string }> {
     const result = await generateWithFallback({
         primaryModelId: SONNET_MODEL,
         schema: z.object({
             imagen_prompts: z.array(z.string()).min(5).max(6).describe('5-6 editorial storyboard prompts for Google Imagen.'),
+            visual_style: z.string().describe('The id of the chosen visual style'),
         }),
         prompt: `You are a Visual Director for an advice column on social media.
 Your job: generate 5-6 editorial storyboard image prompts that tell this story visually — from struggle to resolution.
@@ -186,7 +199,7 @@ Earnest Page is a publication. These images are art-directed editorial photograp
 
 THE STORYBOARD ARC — 5-6 BEATS:
 
-Beat 1 — THE STUCK MOMENT (scroll-stop): The character in the exact situation described in the letter. Specific, recognizable.
+Beat 1 — THE STUCK MOMENT: The character in the exact situation described in the letter. Specific, recognizable.
 Beat 2 — THE DETAIL (deepener): A closer shot of the object, screen, or environment that makes the situation real.
 Beat 3 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes.
 Beat 4 — THE MOVE (advice in action): The character doing what the response suggests.
@@ -198,12 +211,17 @@ TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, 
 EDITORIAL PHOTOGRAPHY RULES:
 - NEVER have the character look directly at the camera. They are caught in a moment — unaware of the camera. Looking at something, doing something, lost in thought.
 - The character must be DOING something in every image — not standing, not posing. The action creates the story.
-- Use photojournalistic composition — rule of thirds, natural angles, depth of field. Shoot from slightly off-center, over-the-shoulder, or at an angle. Never a centered, symmetrical portrait.
+- Use editorial composition — rule of thirds, intentional angles, depth of field. Every element in the frame is deliberate and art-directed. Shoot from slightly off-center, over-the-shoulder, or at an angle. Never a centered, symmetrical portrait.
+- The key insight: show a character FEELING something — not just doing something.
 PRODUCT PLACEMENT: If coffee is mentioned, use JURA machine + CREMA beans. If specific brands are mentioned, use exact names.
 
+PHOTOGRAPHER SELECTION:
+Choose ONE photographer from the catalog below whose vision best serves this story:
+${PHOTOGRAPHER_CATALOG}
+Return their id in the visual_style field.
+Then BECOME that photographer — write every imagen prompt through their creative eye.
+
 ALL prompts must follow these rules:
-- Shot with a real camera — genuine, editorial, cinematic but grounded
-- Natural lighting, real environments
 - Never CGI, 3D-rendered, or illustrated
 - 9:16 portrait orientation (1080×1920)
 - No text or watermarks in the image
