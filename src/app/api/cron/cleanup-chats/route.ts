@@ -268,7 +268,7 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
 - letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. This is the first thing a viewer reads as a subtitle. It must hook in under 8 words. (GOOD: "I keep going back." "I hate my body." "I just graduated and I can't find a job." BAD: "I find myself increasingly torn between..."). Then 2-3 sentences of SITUATION — just enough context to understand. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, present tense. Raw and conversational — like texting a friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start with 'Dear Earnest,\\n\\n' followed by the gut punch. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
 
 STEP 3: THE VISUAL DIRECTOR
-Every post gets 5-6 editorial storyboard images that tell the story visually — from struggle to resolution. These crossfade during the video, creating a visual narrative arc that mirrors the letter and response.
+Every post gets 7-8 editorial storyboard images that tell the story visually — from struggle to resolution. These crossfade during the video, creating a visual narrative arc that mirrors the letter and response.
 
 THE EDITORIAL RULE:
 Earnest Page is a publication. These images are art-directed editorial photography — like a magazine commissioning a photo essay to accompany an advice column. The character (the person who wrote the letter) appears IN the images as the subject. Other people appear as needed by the story.
@@ -279,7 +279,7 @@ ${PHOTOGRAPHER_CATALOG}
 ${recentStyleHint}
 Output your choice as visual_style (the photographer's id string, e.g., "slim-aarons", "platon").
 
-THE STORYBOARD ARC — 5-6 BEATS:
+THE STORYBOARD ARC — 7-8 BEATS:
 
 Beat 1 — THE STUCK MOMENT: The character in the exact situation described in the letter. Specific, recognizable. A viewer should see this image and instantly understand what the story is about.
 Example: Character sitting on a couch at night, phone in hand, lit by the screen glow.
@@ -287,22 +287,28 @@ Example: Character sitting on a couch at night, phone in hand, lit by the screen
 Beat 2 — THE DETAIL (deepener): A closer shot of the object, screen, or environment that makes the situation real. This deepens the "I know this feeling" recognition.
 Example: Close on the phone — a long thread of unanswered messages.
 
-Beat 3 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes. This marks the transition from the letter (the problem) to the response (the advice).
+Beat 3 — THE WEIGHT (emotional deepener): Show the toll — the character's body language, the mess around them, the exhaustion. A beat that lets the viewer sit in the feeling before any change happens.
+Example: Character's reflection in a dark window, shoulders slumped, city lights blurred behind them.
+
+Beat 4 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes. This marks the transition from the letter (the problem) to the response (the advice).
 Example: Character standing up, putting the phone face-down on a table.
 
-Beat 4 — THE MOVE (advice in action): The character doing what the response suggests. Shows, doesn't tell. The advice becomes visible.
+Beat 5 — THE MOVE (advice in action): The character doing what the response suggests. Shows, doesn't tell. The advice becomes visible.
 Example: Character outside — walking, morning light, different energy.
 
-Beat 5 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy. The emotional payoff.
+Beat 6 — THE CLOSE-UP SHIFT: A detail shot that shows the change — hands relaxed instead of clenched, a new object in the scene, a different screen, a cleared space. The transformation made tangible through a small, specific detail.
+Example: Hands wrapping around a warm mug, sunlight on the table, phone face-down and forgotten.
+
+Beat 7 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy. The emotional payoff.
 Example: Character at a café, talking to a friend, phone nowhere in sight.
 
-Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 5 didn't.
+Beat 8 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 7 didn't.
 
 YOUR THREE JOBS:
 
 1. Select the PHOTOGRAPHER from the catalog above.
 
-2. Write the IMAGEN_PROMPTS — an array of 5-6 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → pivot → move → outcome (→ exhale).
+2. Write the IMAGEN_PROMPTS — an array of 7-8 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → weight → pivot → move → close-up shift → outcome (→ exhale).
    THE KEY INSIGHT: You ARE the photographer you selected. Don't write generic prompts and slap a style on top. Ask yourself for each beat: how would THIS photographer compose this shot? What would THEY notice? Where would THEY place the camera? How would THEY use light and shadow?
    CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their fixed traits — face, ethnicity, age — consistently in every prompt.
    TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform.
@@ -325,7 +331,7 @@ CHARACTER IDENTITY CONTEXT — use this to inform the character's world, wardrob
 OUTPUT FIELDS:
 - visual_style: The id of the chosen visual style from the catalog above (e.g., "cereal", "slim-aarons", "mr-porter", "kinfolk", "monocle").
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
-- imagen_prompts: An ARRAY of 5-6 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
+- imagen_prompts: An ARRAY of 7-8 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -360,7 +366,7 @@ ${transcript}`;
                                     letter: z.string(),
                                     visual_style: z.string(),
                                     photo_vibe: z.string(),
-                                    imagen_prompts: z.array(z.string()).min(5).max(6),
+                                    imagen_prompts: z.array(z.string()).min(7).max(8),
                                     language: z.string().optional(),
                                 }),
                                 z.object({

@@ -269,15 +269,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
         const end = formatAssTime(entry.endTime);
 
         if (entry.words && entry.words.length > 0) {
-            // Karaoke mode — highlight words one by one using \kf (fill sweep)
-            // ASS \kf sweeps from SecondaryColour (pre-spoken) to PrimaryColour (post-spoken).
-            // Override on the first word: \2c = white (unspoken), \1c = gold (spoken/swept).
+            // Karaoke mode — highlight words one by one using \k (instant flip)
+            // \k flips the entire word from SecondaryColour to PrimaryColour at once.
+            // (\kf would sweep left-to-right within each word — looks bad.)
+            // Override on the first word: \2c = white (unspoken), \1c = gold (spoken).
             const karaokeWords = entry.words.map((w, idx) => {
                 const durationCs = Math.round((w.end - w.start) * 100);
                 if (idx === 0) {
-                    return `{\\1c&H004DC8FC&\\2c&H00F5F0EB&\\kf${durationCs}}${escapeAss(w.word)}`;
+                    return `{\\1c&H004DC8FC&\\2c&H00F5F0EB&\\k${durationCs}}${escapeAss(w.word)}`;
                 }
-                return `{\\kf${durationCs}}${escapeAss(w.word)}`;
+                return `{\\k${durationCs}}${escapeAss(w.word)}`;
             });
             events.push(`Dialogue: 0,${start},${end},Sub,,0,0,0,,${karaokeWords.join(' ')}`);
         } else {

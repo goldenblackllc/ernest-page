@@ -17,7 +17,7 @@ export const maxDuration = 120;
  * POST /api/admin/regenerate-image
  *
  * Regenerates ALL hero images for an existing post using the
- * editorial storyboard system (5-6 beats: struggle → resolution).
+ * editorial storyboard system (7-8 beats: struggle → resolution).
  *
  * Body: { postId: string, prompt?: string, verdict?: string }
  *   - postId: required — the post to regenerate
@@ -189,22 +189,24 @@ async function generateStoryboardPrompts(
     const result = await generateWithFallback({
         primaryModelId: SONNET_MODEL,
         schema: z.object({
-            imagen_prompts: z.array(z.string()).min(5).max(6).describe('5-6 editorial storyboard prompts for Google Imagen.'),
+            imagen_prompts: z.array(z.string()).min(7).max(8).describe('7-8 editorial storyboard prompts for Google Imagen.'),
             visual_style: z.string().describe('The id of the chosen visual style'),
         }),
         prompt: `You are a Visual Director for an advice column on social media.
-Your job: generate 5-6 editorial storyboard image prompts that tell this story visually — from struggle to resolution.
+Your job: generate 7-8 editorial storyboard image prompts that tell this story visually — from struggle to resolution.
 
 Earnest Page is a publication. These images are art-directed editorial photography — like a magazine commissioning a photo essay to accompany an advice column. The character (the person who wrote the letter) appears IN the images as the subject.
 
-THE STORYBOARD ARC — 5-6 BEATS:
+THE STORYBOARD ARC — 7-8 BEATS:
 
 Beat 1 — THE STUCK MOMENT: The character in the exact situation described in the letter. Specific, recognizable.
 Beat 2 — THE DETAIL (deepener): A closer shot of the object, screen, or environment that makes the situation real.
-Beat 3 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes.
-Beat 4 — THE MOVE (advice in action): The character doing what the response suggests.
-Beat 5 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy.
-Beat 6 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling.
+Beat 3 — THE WEIGHT (emotional deepener): Show the toll — the character's body language, the mess around them, the exhaustion.
+Beat 4 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes.
+Beat 5 — THE MOVE (advice in action): The character doing what the response suggests.
+Beat 6 — THE CLOSE-UP SHIFT: A detail shot that shows the change — hands relaxed, a new object, a cleared space. The transformation made tangible.
+Beat 7 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy.
+Beat 8 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling.
 
 CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their fixed traits — face, ethnicity, age — consistently in every prompt.
 TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform.

@@ -211,7 +211,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
         const [imageResult, audioResult] = await Promise.allSettled([
             // Image generation — send the story directly to Imagen with photographer style
             (async (): Promise<string[]> => {
-                const NUM_IMAGES = 6;
+                const NUM_IMAGES = 8;
                 const MAX_ATTEMPTS = 3;
 
                 // Pick style randomly — 8 equal options (6 photographers + 2 landscapes)
@@ -237,13 +237,13 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     const storySection = randomStyle.omitLetter ? '' : `\nSTORY:\n${pass1.letter}\n`;
 
                     const styleDirection = randomStyle.id === 'life-magazine'
-                        ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 6 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
-                        : `You are a Visual Director for an advice column called Earnest Page. You're creating 6 photographs that capture moments from this person's life.`;
+                        ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
+                        : `You are a Visual Director for an advice column called Earnest Page. You're creating 8 photographs that capture moments from this person's life.`;
 
                     const aiResult = await generateWithFallback({
                         primaryModelId: OPUS_MODEL,
                         schema: z.object({
-                            prompts: z.array(z.string()).min(6).max(6),
+                            prompts: z.array(z.string()).min(8).max(8),
                         }),
                         prompt: `${styleDirection}
 
@@ -260,14 +260,14 @@ SCALE types:
 RULES:
 - Highly photorealistic. Cinematic lighting. Instagram-quality.
 - 9:16 portrait orientation. No text or watermarks.
-- Vary the scales and vibes across all 6 images.
+- Vary the scales and vibes across all 8 images.
 - The images should feel like snapshots from a real person's life — intimate, authentic, with depth.
 - Ground every image in specific details from the character.
 
 CHARACTER:
 ${JSON.stringify(compiledBible)}
 ${storySection}
-Return exactly 6 detailed Imagen prompts. Each should be a self-contained image description.`,
+Return exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
                     });
                     cinematicPrompts = (aiResult.object as any).prompts;
                     console.log(`[RegeneratePost] Generated ${cinematicPrompts!.length} cinematic prompts`);

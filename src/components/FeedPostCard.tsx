@@ -814,7 +814,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         const subtitle = getCurrentSubtitle();
 
         // Distribute images evenly across the video duration.
-        // With 5-6 storyboard images, each image covers an equal portion
+        // With 7-8 storyboard images, each image covers an equal portion
         // of the subtitle timeline rather than being front-loaded.
         const currentImageIndex = imageUrls.length > 0
             ? Math.min(
