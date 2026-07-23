@@ -13,7 +13,7 @@ import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { generateImage } from '@/lib/ai/generateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
-import { PHOTOGRAPHER_CATALOG, getVisualStyle } from '@/lib/ai/visualStyles';
+import { VISUAL_STYLES, getVisualStyle } from '@/lib/ai/visualStyles';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 import nodemailer from 'nodemailer';
 
@@ -183,9 +183,13 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                 ? `\nThe user's last ${recentScales.length} post(s) used these photo scales: [${recentScales.join(', ')}]. Do NOT repeat the same scale. Choose a DIFFERENT scale for variety.`
                 : '';
 
-            const recentStyleHint = recentStyles.length > 0
-                ? `\nThe user's last ${recentStyles.length} post(s) used these visual styles: [${recentStyles.join(', ')}]. STRONGLY prefer a DIFFERENT style for variety. Mix it up.`
-                : '';
+            // Randomly select a visual style, excluding recently used ones for variety
+            const availableStyles = recentStyles.length > 0
+                ? VISUAL_STYLES.filter(s => !recentStyles.includes(s.id))
+                : VISUAL_STYLES;
+            const stylePool = availableStyles.length > 0 ? availableStyles : VISUAL_STYLES;
+            const randomStyle = stylePool[Math.floor(Math.random() * stylePool.length)];
+            console.log(`[Cron] Style — randomly selected: "${randomStyle.id}" (${randomStyle.name}), excluded: [${recentStyles.join(', ')}]`);
 
             const currentDossier = identity?.dossier || '';
             const sessionCount = (identity?.session_count || 0) + 1;
@@ -273,11 +277,9 @@ Every post gets 7-8 editorial storyboard images that tell the story visually —
 THE EDITORIAL RULE:
 Earnest Page is a publication. These images are art-directed editorial photography — like a magazine commissioning a photo essay to accompany an advice column. The character (the person who wrote the letter) appears IN the images as the subject. Other people appear as needed by the story.
 
-PHOTOGRAPHER SELECTION — CHOOSE ONE:
-Choose the photographer whose creative vision best serves this story. Then BECOME that photographer — write every imagen prompt through their eye:
-${PHOTOGRAPHER_CATALOG}
-${recentStyleHint}
-Output your choice as visual_style (the photographer's id string, e.g., "slim-aarons", "platon").
+ASSIGNED PHOTOGRAPHER: ${randomStyle.name} ("${randomStyle.id}")
+You MUST write every imagen prompt through this photographer's eye. BECOME this photographer.${randomStyle.vision ? `
+THEIR VISION: ${randomStyle.vision}` : ''}
 
 THE STORYBOARD ARC — 7-8 BEATS:
 
@@ -304,12 +306,10 @@ Example: Character at a café, talking to a friend, phone nowhere in sight.
 
 Beat 8 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 7 didn't.
 
-YOUR THREE JOBS:
+YOUR TWO JOBS:
 
-1. Select the PHOTOGRAPHER from the catalog above.
-
-2. Write the IMAGEN_PROMPTS — an array of 7-8 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → weight → pivot → move → close-up shift → outcome (→ exhale).
-   THE KEY INSIGHT: You ARE the photographer you selected. Don't write generic prompts and slap a style on top. Ask yourself for each beat: how would THIS photographer compose this shot? What would THEY notice? Where would THEY place the camera? How would THEY use light and shadow?
+1. Write the IMAGEN_PROMPTS — an array of 7-8 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → weight → pivot → move → close-up shift → outcome (→ exhale).
+   THE KEY INSIGHT: You ARE ${randomStyle.name}. Don't write generic prompts and slap a style on top. Ask yourself for each beat: how would ${randomStyle.name} compose this shot? What would THEY notice? Where would THEY place the camera? How would THEY use light and shadow?
    CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their fixed traits — face, ethnicity, age — consistently in every prompt.
    TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform.
    EDITORIAL PHOTOGRAPHY RULES — NON-NEGOTIABLE:
@@ -322,14 +322,13 @@ YOUR THREE JOBS:
    ALL prompts must follow these rules: Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
 ${demographicHint}
 
-3. Set photo_vibe for the overall post.
+2. Set photo_vibe for the overall post.
 
 CHARACTER IDENTITY CONTEXT — use this to inform the character's world, wardrobe, and energy:
 - Archetype: "${archetype}"
 - Identity roles: "${identity?.title || 'Unknown'}"
 
 OUTPUT FIELDS:
-- visual_style: The id of the chosen visual style from the catalog above (e.g., "cereal", "slim-aarons", "mr-porter", "kinfolk", "monocle").
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
 - imagen_prompts: An ARRAY of 7-8 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
@@ -364,7 +363,6 @@ ${transcript}`;
                                     is_publishable: z.literal(true),
                                     pseudonym: z.string(),
                                     letter: z.string(),
-                                    visual_style: z.string(),
                                     photo_vibe: z.string(),
                                     imagen_prompts: z.array(z.string()).min(7).max(8),
                                     language: z.string().optional(),
@@ -373,7 +371,6 @@ ${transcript}`;
                                     is_publishable: z.literal(false),
                                     pseudonym: z.string().optional(),
                                     letter: z.string().optional(),
-                                    visual_style: z.string().optional(),
                                     photo_vibe: z.string().optional(),
                                     imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
@@ -460,6 +457,9 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     // Not publishable — pass through as-is
                     post = pass1;
                 }
+
+                // Stamp the randomly pre-selected visual style onto the post
+                post.visual_style = randomStyle.id;
 
                 // ─── DOSSIER + RECAPS WRITE (runs in parallel with image gen below) ───
                 // Skip dossier/recap writes on image-retry runs (already written on first pass)
