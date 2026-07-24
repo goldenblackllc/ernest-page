@@ -231,10 +231,8 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     // Landscape with the person — character bible, with reference images
                     storyPrompt = `${randomStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
                 } else if (randomStyle.category === 'cinematic') {
-                    // AI generates bespoke prompts per image
+                    // AI generates bespoke prompts from character bible only (no letter)
                     console.log(`[RegeneratePost] Generating cinematic prompts for style "${randomStyle.id}" via AI...`);
-
-                    const storySection = randomStyle.omitLetter ? '' : `\nSTORY:\n${pass1.letter}\n`;
 
                     const styleDirection = randomStyle.id === 'life-magazine'
                         ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
@@ -266,7 +264,6 @@ RULES:
 
 CHARACTER:
 ${JSON.stringify(compiledBible)}
-${storySection}
 Return exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
                     });
                     cinematicPrompts = (aiResult.object as any).prompts;

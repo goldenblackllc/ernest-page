@@ -162,8 +162,7 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
 
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
-            // Fetch recent posts to avoid repeating the same photo style and scale
-            let recentScales: string[] = [];
+            // Fetch recent posts to avoid repeating the same photo style
             let recentStyles: string[] = [];
             try {
                 const recentSnap = await db.collection("posts")
@@ -171,17 +170,10 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                     .orderBy("created_at", "desc")
                     .limit(3)
                     .get();
-                recentScales = recentSnap.docs
-                    .map(d => d.data().photo_scale)
-                    .filter(Boolean);
                 recentStyles = recentSnap.docs
                     .map(d => d.data().visual_style || d.data().photo_style)
                     .filter(Boolean);
             } catch { /* ignore — index may not exist yet */ }
-
-            const recentScaleHint = recentScales.length > 0
-                ? `\nThe user's last ${recentScales.length} post(s) used these photo scales: [${recentScales.join(', ')}]. Do NOT repeat the same scale. Choose a DIFFERENT scale for variety.`
-                : '';
 
             // Randomly select a visual style, excluding recently used ones for variety
             const availableStyles = recentStyles.length > 0
@@ -271,66 +263,8 @@ The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, re
 
 - letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. This is the first thing a viewer reads as a subtitle. It must hook in under 8 words. (GOOD: "I keep going back." "I hate my body." "I just graduated and I can't find a job." BAD: "I find myself increasingly torn between..."). Then 2-3 sentences of SITUATION — just enough context to understand. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, present tense. Raw and conversational — like texting a friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start with 'Dear Earnest,\\n\\n' followed by the gut punch. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
 
-STEP 3: THE VISUAL DIRECTOR
-Every post gets 7-8 editorial storyboard images that tell the story visually — from struggle to resolution. These crossfade during the video, creating a visual narrative arc that mirrors the letter and response.
-
-THE EDITORIAL RULE:
-Earnest Page is a publication. These images are art-directed editorial photography — like a magazine commissioning a photo essay to accompany an advice column. The character (the person who wrote the letter) appears IN the images as the subject. Other people appear as needed by the story.
-
-ASSIGNED PHOTOGRAPHER: ${randomStyle.name} ("${randomStyle.id}")
-You MUST write every imagen prompt through this photographer's eye. BECOME this photographer.${randomStyle.vision ? `
-THEIR VISION: ${randomStyle.vision}` : ''}
-
-THE STORYBOARD ARC — 7-8 BEATS:
-
-Beat 1 — THE STUCK MOMENT: The character in the exact situation described in the letter. Specific, recognizable. A viewer should see this image and instantly understand what the story is about.
-Example: Character sitting on a couch at night, phone in hand, lit by the screen glow.
-
-Beat 2 — THE DETAIL (deepener): A closer shot of the object, screen, or environment that makes the situation real. This deepens the "I know this feeling" recognition.
-Example: Close on the phone — a long thread of unanswered messages.
-
-Beat 3 — THE WEIGHT (emotional deepener): Show the toll — the character's body language, the mess around them, the exhaustion. A beat that lets the viewer sit in the feeling before any change happens.
-Example: Character's reflection in a dark window, shoulders slumped, city lights blurred behind them.
-
-Beat 4 — THE PIVOT (turning point): A visual shift — lighting changes, scene shifts, the character's posture or energy changes. This marks the transition from the letter (the problem) to the response (the advice).
-Example: Character standing up, putting the phone face-down on a table.
-
-Beat 5 — THE MOVE (advice in action): The character doing what the response suggests. Shows, doesn't tell. The advice becomes visible.
-Example: Character outside — walking, morning light, different energy.
-
-Beat 6 — THE CLOSE-UP SHIFT: A detail shot that shows the change — hands relaxed instead of clenched, a new object in the scene, a different screen, a cleared space. The transformation made tangible through a small, specific detail.
-Example: Hands wrapping around a warm mug, sunlight on the table, phone face-down and forgotten.
-
-Beat 7 — THE OUTCOME (resolution): The character in the new state — wider shot, breathing room, different energy. The emotional payoff.
-Example: Character at a café, talking to a friend, phone nowhere in sight.
-
-Beat 8 (optional) — THE EXHALE (emotional close): A final environmental or detail shot that leaves the viewer with a feeling. Only include if it adds something Beat 7 didn't.
-
-YOUR TWO JOBS:
-
-1. Write the IMAGEN_PROMPTS — an array of 7-8 editorial storyboard prompts. Each one is a beat in the visual story. Together they tell the arc: stuck → detail → weight → pivot → move → close-up shift → outcome (→ exhale).
-   THE KEY INSIGHT: You ARE ${randomStyle.name}. Don't write generic prompts and slap a style on top. Ask yourself for each beat: how would ${randomStyle.name} compose this shot? What would THEY notice? Where would THEY place the camera? How would THEY use light and shadow?
-   CHARACTER CONSISTENCY: The same character must appear across all beats. Describe their fixed traits — face, ethnicity, age — consistently in every prompt.
-   TRANSFORMATION ARC: If the letter describes a physical state (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2. Transition in Beat 3. By Beats 4-5, the character embodies their resolved/aspirational state. The face stays the same — only body, posture, and energy transform.
-   EDITORIAL PHOTOGRAPHY RULES — NON-NEGOTIABLE:
-   • NEVER have the character look directly at the camera. This is editorial photography, not a portrait. The character is caught in a MOMENT — unaware of the camera. They are looking at something, doing something, lost in thought. The camera observes them; they do not acknowledge it.
-   • The character must be DOING something in every image — not standing, not posing. Sitting and staring at a phone. Walking away. Reaching for something. Leaning against a wall. The action creates the story.
-   • Compose as your chosen photographer would — their signature angles, their use of space, their relationship to the subject.
-   PRODUCT PLACEMENT — MANDATORY SUBSTITUTIONS:
-   • If the conversation mentions coffee, espresso, brew, morning routine, or any coffee-related topic: ALL coffee imagery MUST show a JURA automatic espresso machine and CREMA coffee beans/bags (e.g., character reaching for a CREMA bag on a counter, character watching a Jura machine pull a shot). Never a generic coffee maker.
-   • If the conversation mentions a specific brand (Hugo Boss, Tesla, etc.), use the EXACT brand name in the image prompt.
-   ALL prompts must follow these rules: Never CGI, 3D-rendered, or illustrated. 9:16 portrait orientation (1080×1920). No text or watermarks in the image. Keep the center area relatively uncluttered (subtitle text overlays there during video playback).
-${demographicHint}
-
-2. Set photo_vibe for the overall post.
-
-CHARACTER IDENTITY CONTEXT — use this to inform the character's world, wardrobe, and energy:
-- Archetype: "${archetype}"
-- Identity roles: "${identity?.title || 'Unknown'}"
-
 OUTPUT FIELDS:
 - photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
-- imagen_prompts: An ARRAY of 7-8 editorial storyboard prompts (strings). Each describes one beat of the visual story. The images should feel like an editorial photo essay — same character, same world, a story told in stills.
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
@@ -364,7 +298,6 @@ ${transcript}`;
                                     pseudonym: z.string(),
                                     letter: z.string(),
                                     photo_vibe: z.string(),
-                                    imagen_prompts: z.array(z.string()).min(7).max(8),
                                     language: z.string().optional(),
                                 }),
                                 z.object({
@@ -372,7 +305,6 @@ ${transcript}`;
                                     pseudonym: z.string().optional(),
                                     letter: z.string().optional(),
                                     photo_vibe: z.string().optional(),
-                                    imagen_prompts: z.array(z.string()).optional(),
                                     language: z.string().optional(),
                                 }),
                             ]),
@@ -493,10 +425,63 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 if (post.is_publishable && post.letter) {
                     const postDocRef = db.collection('posts').doc();
 
-                    // ─── IMAGE ROUTING: Scenic wallpaper backgrounds ───
-                    const prompts = post.imagen_prompts || (post.imagen_prompt ? [post.imagen_prompt] : []);
+                    // ─── IMAGE PROMPT CONSTRUCTION (server-side, based on style category) ───
+                    const NUM_IMAGES = 8;
+                    const chosenStyle = getVisualStyle(post.visual_style || '');
+                    console.log(`[CleanupChats] Style — selected: "${post.visual_style}", resolved: "${chosenStyle?.id || 'NONE'}" (category: ${chosenStyle?.category || 'unknown'})`);
+
+                    let prompts: string[] = [];
+                    let useReferenceImages: Buffer[] | undefined;
+
+                    // Load the user's avatar as a character reference anchor.
+                    const referenceImage = await loadUserReferenceImage(uid);
+                    const baseReferenceImages = referenceImage ? [referenceImage] : undefined;
+                    useReferenceImages = baseReferenceImages;
+
+                    if (chosenStyle?.category === 'landscape') {
+                        // Landscape without the person — character bible, no reference images
+                        const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                        prompts = Array(NUM_IMAGES).fill(prompt);
+                        useReferenceImages = undefined;
+                    } else if (chosenStyle?.category === 'landscape-with-person') {
+                        // Landscape with the person — character bible, with reference images
+                        const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                        prompts = Array(NUM_IMAGES).fill(prompt);
+                    } else if (chosenStyle?.category === 'cinematic') {
+                        // AI generates bespoke prompts from character bible only (no letter)
+                        console.log(`[Cron] Generating cinematic prompts for style "${chosenStyle.id}" via AI...`);
+                        const styleDirection = chosenStyle.id === 'life-magazine'
+                            ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
+                            : `You are a Visual Director for an advice column called Earnest Page. You're creating 8 photographs that capture moments from this person's life.`;
+
+                        try {
+                            const aiResult = await generateWithFallback({
+                                primaryModelId: OPUS_MODEL,
+                                fallbackModelId: OPUS_FALLBACK,
+                                schema: z.object({
+                                    prompts: z.array(z.string()).min(8).max(8),
+                                }),
+                                prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 9:16 portrait orientation. No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
+                            });
+                            prompts = (aiResult.object as any).prompts;
+                            console.log(`[Cron] Generated ${prompts.length} cinematic prompts`);
+                        } catch (err: any) {
+                            console.error(`[Cron] Cinematic prompt generation failed:`, err.message);
+                        }
+                    } else if (chosenStyle?.variations && chosenStyle.variations.length > 0) {
+                        // Studio poses — rotate through pose variations with character bible
+                        prompts = Array.from({ length: NUM_IMAGES }, (_, i) =>
+                            `${chosenStyle.variations![i % chosenStyle.variations!.length]} ${JSON.stringify(compiledBible)}`
+                        );
+                    } else {
+                        // Photographer styles — imagenTag + letter (image model decides the scene)
+                        const tag = chosenStyle?.imagenTag || '';
+                        const prompt = tag ? `${tag} ${post.letter}` : post.letter;
+                        prompts = Array(NUM_IMAGES).fill(prompt);
+                    }
+
                     if (prompts.length === 0) {
-                        console.warn(`[Cron] Post for user ${uid} is missing imagen_prompts — saving as private`);
+                        console.warn(`[Cron] No image prompts generated for user ${uid} — saving as private`);
                         await dossierPromise;
                         await postDocRef.set({
                             id: postDocRef.id,
@@ -511,7 +496,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 letter: post.letter,
                                 response: post.response,
                             },
-
                             imagen_prompt: null,
                             imagen_prompts: [],
                             photo_vibe: post.photo_vibe || null,
@@ -531,36 +515,19 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         continue;
                     }
 
-                    // Load the user's avatar as a character reference anchor.
-                    // Nano Banana uses reference images to maintain consistent
-                    // facial geometry, build, and clothing across all storyboard beats.
-                    const referenceImage = await loadUserReferenceImage(uid);
-                    const referenceImages = referenceImage ? [referenceImage] : undefined;
-
                     // Sequential image generation with stagger delay to avoid 429 rate limits.
-                    // Transformation arc: early beats (0-1) use face-only reference
-                    // so the text prompt controls body type. Later beats (2+) use full
-                    // reference to pull in the aspirational build from the avatar.
-                    const IMAGE_STAGGER_MS = 1500; // delay between sequential API calls
+                    const IMAGE_STAGGER_MS = 1500;
                     const imagen_urls: string[] = [];
                     let quotaExhausted = false;
-
-                    // Run images sequentially while dossier runs in parallel
-                    // Resolve photographer style for this post
-                    const chosenStyle = getVisualStyle(post.visual_style || '');
-                    const imagenTag = chosenStyle?.imagenTag || '';
-                    console.log(`[CleanupChats] Photographer — selected: "${post.visual_style}", resolved: "${chosenStyle?.id || 'NONE'}"`);
 
                     const imageSequence = (async () => {
                         for (let i = 0; i < prompts.length; i++) {
                             if (quotaExhausted) break;
                             if (i > 0) await new Promise(r => setTimeout(r, IMAGE_STAGGER_MS));
                             try {
-                                // Prepend photographer imagen tag to each prompt
-                                const styledPrompt = imagenTag ? `${imagenTag} ${prompts[i]}` : prompts[i];
                                 const url = await generateVerdictImage(
-                                    styledPrompt, `${postDocRef.id}_${i}`,
-                                    referenceImages, i < 2 ? 'face-only' : 'full'
+                                    prompts[i], `${postDocRef.id}_${i}`,
+                                    useReferenceImages, i < 2 ? 'face-only' : 'full'
                                 );
                                 if (url) imagen_urls.push(url);
                             } catch (err: any) {
