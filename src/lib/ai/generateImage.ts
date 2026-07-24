@@ -92,7 +92,15 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
             }
         }
 
-        parts.push({ text: referencePrefix + prompt });
+        // Append aspect ratio instruction to the prompt so the model generates
+        // in the correct orientation (the API doesn't support aspectRatio in generationConfig)
+        const aspectRatioHint = aspectRatio === '9:16' ? ' 9:16 portrait orientation (1080×1920). Do not generate in landscape or square format.'
+            : aspectRatio === '16:9' ? ' 16:9 landscape orientation. Do not generate in portrait or square format.'
+            : aspectRatio === '4:3' ? ' 4:3 landscape orientation.'
+            : aspectRatio === '3:4' ? ' 3:4 portrait orientation.'
+            : '';
+
+        parts.push({ text: referencePrefix + prompt + aspectRatioHint });
 
         const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${NANO_BANANA_MODEL}:generateContent?key=${apiKey}`,
