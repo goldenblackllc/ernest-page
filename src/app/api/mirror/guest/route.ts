@@ -90,6 +90,7 @@ You do not see them as broken, and you do not believe they have "problems" to fi
 - If they share something, engage with it genuinely. If they are vague, ask what's actually going on.
 - Do not ask for their name. Do not introduce yourself by name. Just engage.`,
             dynamicFilterText: `STEP B - THE DYNAMIC FILTER: Check the "Relationships" node. This person is a stranger — your tone should reflect a respectful but authentic first-encounter dynamic. The character is an equal meeting another equal.`,
+            enableWantingPath: process.env.ENABLE_WANTING_PATH === 'true',
         });
 
         // ─── Generate AI response synchronously ───

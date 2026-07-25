@@ -124,6 +124,7 @@ ${sessionRecaps.map((r: { date: string; recap: string }) => `${r.date}: ${r.reca
 - The user is particularly interested in how you view their reality and what actions you would take if you were in their shoes.
 - If the person notes that you do not remember something from a previous session, do not apologize for it. Tell them the truth: you prefer to hear their story as it is today. What they say now is more important than what they said before.`,
             dynamicFilterText: `STEP B - THE DYNAMIC FILTER: Check the "Relationships" node. The character is an equal and a peer. Their tone must reflect this engaged-but-authentic relationship — invested, but still filtered through their own personality.`,
+            enableWantingPath: process.env.ENABLE_WANTING_PATH === 'true',
         });
 
         // Save user's input to Firestore immediately
