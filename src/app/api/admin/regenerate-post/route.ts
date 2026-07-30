@@ -3,7 +3,9 @@ import { db, storage } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import sharp from 'sharp';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
-import { generatePostAudio } from '@/lib/ai/postTTS';
+import { generatePostAudio, generateShortAudio, ShortAudioResult } from '@/lib/ai/postTTS';
+import { generateShortScript } from '@/lib/ai/shortScript';
+import { assembleShortVideo } from '@/lib/video/assembleShortVideo';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
@@ -201,185 +203,21 @@ THEN — replace what identifies THE USER: Names of people the user personally k
         const pass2 = responseResult.object as any;
         console.log(`[RegeneratePost] Pass 2 complete — response: ${pass2.response.split(' ').length} words`);
 
-        // ── STEP 3: Generate image + TTS audio IN PARALLEL ──
-        // Both are independent of each other — run concurrently to stay under timeout.
+        // ── STEP 3: Generate TTS audio ──
+        // Image generation is SKIPPED — we use Pexels stock video in the short-form pipeline.
 
-        // Load the user's avatar as a character reference anchor.
-        const referenceImage = await loadUserReferenceImage(uid);
-        const referenceImages = referenceImage ? [referenceImage] : undefined;
-
-        const [imageResult, audioResult] = await Promise.allSettled([
-            // Image generation — send the story directly to Imagen with photographer style
-            (async (): Promise<string[]> => {
-                const NUM_IMAGES = 8;
-                const MAX_ATTEMPTS = 3;
-
-                // Pick style randomly — 8 equal options (6 photographers + 2 landscapes)
-                const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
-                console.log(`[RegeneratePost] Style — randomly selected: "${randomStyle.id}" (${randomStyle.name}, category: ${randomStyle.category})`);
-
-                // Build prompt and reference image config based on category
-                let storyPrompt: string = '';
-                let useReferenceImages = referenceImages;
-                let cinematicPrompts: string[] | null = null;
-
-                if (randomStyle.category === 'landscape') {
-                    // Landscape without the person — character bible, no reference images
-                    storyPrompt = `${randomStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
-                    useReferenceImages = undefined;
-                } else if (randomStyle.category === 'landscape-with-person') {
-                    // Landscape with the person — character bible, with reference images
-                    storyPrompt = `${randomStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
-                } else if (randomStyle.category === 'cinematic') {
-                    // AI generates bespoke prompts from character bible only (no letter)
-                    console.log(`[RegeneratePost] Generating cinematic prompts for style "${randomStyle.id}" via AI...`);
-
-                    const styleDirection = randomStyle.id === 'life-magazine'
-                        ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
-                        : `You are a Visual Director for an advice column called Earnest Page. You're creating 8 photographs that capture moments from this person's life.`;
-
-                    const aiResult = await generateWithFallback({
-                        primaryModelId: OPUS_MODEL,
-                        schema: z.object({
-                            prompts: z.array(z.string()).min(8).max(8),
-                        }),
-                        prompt: `${styleDirection}
-
-First, read the character's identity. For each image, choose:
-- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)
-- A SCALE: the shot type
-
-SCALE types:
-- "macro": Extreme close-up of an object, texture, or detail from their life.
-- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.
-- "wide": An aspirational landscape, cityscape, or architectural shot from their world.
-- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.
-
-RULES:
-- Highly photorealistic. Cinematic lighting. Instagram-quality.
-- 9:16 portrait orientation. No text or watermarks.
-- Vary the scales and vibes across all 8 images.
-- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.
-- Ground every image in specific details from the character.
-
-CHARACTER:
-${JSON.stringify(compiledBible)}
-Return exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
-                    });
-                    cinematicPrompts = (aiResult.object as any).prompts;
-                    console.log(`[RegeneratePost] Generated ${cinematicPrompts!.length} cinematic prompts`);
-                } else {
-                    // Photographer — letter as prompt
-                    storyPrompt = `${randomStyle.imagenTag} ${pass1.letter}`;
-                }
-                if (storyPrompt) {
-                    console.log(`[RegeneratePost] Imagen prompt (${storyPrompt.length} chars):\n${storyPrompt.substring(0, 300)}...\n---`);
-                }
-
-                const generateSingleImage = async (prompt: string, idx: number): Promise<string | null> => {
-                    try {
-                    const result = await generateImage({
-                        prompt,
-                        aspectRatio: '9:16',
-                        logPrefix: 'RegeneratePost',
-                        referenceImages: useReferenceImages,
-                        referenceMode: idx < 2 ? 'face-only' : 'full',
-                    });
-                    if (!result) return null;
-
-                    const finalBuffer = await sharp(result.buffer)
-                        .resize(1080, 1920, { fit: 'cover', position: 'center' })
-                        .png()
-                        .toBuffer();
-
-                    // Validate image quality before uploading
-                    const validation = await validateGeneratedImage(finalBuffer, prompt);
-                    if (!validation.pass) {
-                        console.warn(`[RegeneratePost] Image ${idx} failed validation:`, validation.summary, validation.issues);
-                        return null;
-                    }
-
-                    const bucket = storage.bucket();
-                    const ts = Date.now();
-                    const fileName = `post-images/${postId}_imagen_${ts}_${idx}.png`;
-                    const file = bucket.file(fileName);
-                    await file.save(finalBuffer, { metadata: { contentType: 'image/png' } });
-                    try { await file.makePublic(); } catch { /* UBLA enabled */ }
-                    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                    } catch (err: any) {
-                        if (err.isQuotaError) throw err;
-                        console.error(`[RegeneratePost] Image ${idx} exception:`, err.message);
-                        return null;
-                    }
-                };
-
-                // First pass: generate all in parallel
-                const urls: (string | null)[] = new Array(NUM_IMAGES).fill(null);
-                let quotaExhausted = false;
-
-                const firstResults = await Promise.allSettled(
-                    Array.from({ length: NUM_IMAGES }, (_, idx) => {
-                        const prompt = cinematicPrompts ? cinematicPrompts[idx % cinematicPrompts.length] : storyPrompt;
-                        return generateSingleImage(prompt, idx);
-                    })
-                );
-                firstResults.forEach((r, i) => {
-                    if (r.status === 'fulfilled' && r.value) urls[i] = r.value;
-                    if (r.status === 'rejected' && r.reason?.isQuotaError) quotaExhausted = true;
-                });
-
-                // Retry any failed prompts — but bail immediately on quota exhaustion
-                if (!quotaExhausted) {
-                    for (let attempt = 2; attempt <= MAX_ATTEMPTS; attempt++) {
-                        const failedIndices = urls.map((u, i) => u === null ? i : -1).filter(i => i >= 0);
-                        if (failedIndices.length === 0) break;
-
-                        console.log(`[RegeneratePost] Retrying ${failedIndices.length} failed images (attempt ${attempt}/${MAX_ATTEMPTS})`);
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-
-                        const retryResults = await Promise.allSettled(
-                            failedIndices.map(i => {
-                                const prompt = cinematicPrompts ? cinematicPrompts[i % cinematicPrompts.length] : storyPrompt;
-                                return generateSingleImage(prompt, i);
-                            })
-                        );
-                        retryResults.forEach((r, ri) => {
-                            if (r.status === 'fulfilled' && r.value) urls[failedIndices[ri]] = r.value;
-                            if (r.status === 'rejected' && r.reason?.isQuotaError) quotaExhausted = true;
-                        });
-                        if (quotaExhausted) {
-                            console.warn(`[RegeneratePost] Imagen daily quota exhausted — skipping further retries`);
-                            break;
-                        }
-                    }
-                } else {
-                    console.warn(`[RegeneratePost] Imagen daily quota exhausted — skipping all retries`);
-                }
-
-                const successCount = urls.filter(Boolean).length;
-                if (successCount < NUM_IMAGES) {
-                    console.warn(`[RegeneratePost] Only ${successCount}/${NUM_IMAGES} images${quotaExhausted ? ' (quota exhausted)' : ''}`);
-                }
-
-                return urls.filter((url): url is string => url !== null);
-            })(),
-            // TTS audio generation
-            (async () => {
-                if (!characterVoiceId) return null;
-                return generatePostAudio(pass1.letter, pass2.response, characterVoiceId, postId);
-            })(),
-        ]);
-
-        const imagen_urls: string[] = imageResult.status === 'fulfilled' ? imageResult.value : [];
-        const imagen_url = imagen_urls[0] || null;
-        const audio = audioResult.status === 'fulfilled' ? audioResult.value : null;
-
-        if (imageResult.status === 'rejected') {
-            console.error(`[RegeneratePost] Image failed:`, imageResult.reason);
+        let audio: { audioUrl: string; letterWordRatio: number; wordTimestamps: { word: string; start: number; end: number }[] } | null = null;
+        if (characterVoiceId) {
+            try {
+                audio = await generatePostAudio(pass1.letter, pass2.response, characterVoiceId, postId);
+            } catch (err: any) {
+                console.error(`[RegeneratePost] TTS failed:`, err.message);
+            }
         }
-        if (audioResult.status === 'rejected') {
-            console.error(`[RegeneratePost] TTS failed:`, audioResult.reason);
-        }
+
+        // Preserve existing images — don't clear them since we're not generating new ones
+        const imagen_urls: string[] = [];
+        const imagen_url = null;
 
         // ── STEP 4: Write everything to Firestore in one update ──
         const publicPost: any = {
@@ -404,16 +242,74 @@ Return exactly 8 detailed Imagen prompts. Each should be a self-contained image 
             language: pass1.language || null,
         };
 
-        // Only overwrite images if we got new ones — don't clear old images on total failure
-        if (imagen_urls.length > 0) {
-            updateData.imagen_urls = imagen_urls;
-            updateData.imagen_url = imagen_url;
-        }
+        // Preserve existing images — don't overwrite since we're not generating new ones
+        // (existing imagen_urls stay on the post document)
 
         if (audio) {
             updateData.audio_url = audio.audioUrl;
             updateData.audio_letter_ratio = audio.letterWordRatio;
             updateData.audio_word_timestamps = audio.wordTimestamps;
+        }
+
+        // ── Generate Q&A short-form content + video ──
+        if (pass1.letter && pass2.response && characterVoiceId) {
+            try {
+                console.log('[RegeneratePost] Generating Q&A short script...');
+                const shortScript = await generateShortScript(pass1.letter, pass2.response);
+                
+                if (shortScript.question && shortScript.answer) {
+                    console.log(`[RegeneratePost] Short script: Q=${shortScript.question.split(/\s+/).length}w, A=${shortScript.answer.split(/\s+/).length}w`);
+                    
+                    // Store the short script
+                    updateData.short_question = shortScript.question;
+                    updateData.short_answer = shortScript.answer;
+                    
+                    // Generate two-voice audio
+                    console.log('[RegeneratePost] Generating two-voice short audio...');
+                    const shortAudio = await generateShortAudio(
+                        shortScript.question,
+                        shortScript.answer,
+                        characterVoiceId,
+                        postId,
+                    );
+                    
+                    if (shortAudio) {
+                        // Build combined word timestamps with answer offset
+                        const offsetAnswerTimestamps = shortAudio.answerTimestamps.map(w => ({
+                            word: w.word,
+                            start: w.start + shortAudio.questionDuration,
+                            end: w.end + shortAudio.questionDuration,
+                        }));
+                        const allShortTimestamps = [...shortAudio.questionTimestamps, ...offsetAnswerTimestamps];
+                        const totalShortDuration = shortAudio.questionDuration + shortAudio.answerDuration;
+                        
+                        updateData.short_audio_url = shortAudio.audioUrl;
+                        updateData.short_audio_word_timestamps = allShortTimestamps;
+                        updateData.short_audio_letter_ratio = shortAudio.questionDuration / totalShortDuration;
+                        updateData.short_audio_question_duration = shortAudio.questionDuration;
+                        updateData.short_audio_answer_duration = shortAudio.answerDuration;
+                        
+                        console.log(`[RegeneratePost] Short audio: ${totalShortDuration.toFixed(1)}s total`);
+                        
+                        // ── Assemble the final video ──
+                        console.log('[RegeneratePost] Assembling short video...');
+                        const videoResult = await assembleShortVideo({
+                            postId,
+                            scriptQuestion: shortScript.question,
+                            scriptAnswer: shortScript.answer,
+                            questionDuration: shortAudio.questionDuration,
+                            answerDuration: shortAudio.answerDuration,
+                            questionTimestamps: shortAudio.questionTimestamps,
+                            answerTimestamps: shortAudio.answerTimestamps,
+                            combinedAudioBuffer: Buffer.concat([shortAudio.questionBuffer, shortAudio.answerBuffer]),
+                        });
+                        updateData.short_video_url = videoResult.videoUrl;
+                        console.log(`[RegeneratePost] Short video stored: ${videoResult.videoUrl}`);
+                    }
+                }
+            } catch (err: any) {
+                console.error('[RegeneratePost] Short format generation failed (non-fatal):', err.message);
+            }
         }
 
         await postDoc.ref.update(updateData);

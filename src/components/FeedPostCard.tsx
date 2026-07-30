@@ -68,6 +68,15 @@ interface FeedPostProps {
         audio_word_timestamps?: { word: string; start: number; end: number }[];
         letter_audio_url?: string;
         response_audio_url?: string;
+        // Q&A short format fields
+        short_question?: string;
+        short_answer?: string;
+        short_audio_url?: string;
+        short_audio_word_timestamps?: { word: string; start: number; end: number }[];
+        short_audio_letter_ratio?: number;
+        short_audio_question_duration?: number;
+        short_audio_answer_duration?: number;
+        short_video_url?: string;
         translations?: Record<string, any>;
         _translated?: Record<string, any>;
     };
@@ -112,6 +121,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
     // ═══ AUDIO PLAYBACK STATE ═══
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioPhase, setAudioPhase] = useState<'idle' | 'letter' | 'response'>('idle');
     const [audioProgress, setAudioProgress] = useState(0);
@@ -123,8 +133,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const isAutoPlaySuppressedRef = useRef(false);
     const hasCompletedRef = useRef(false);
 
-    // Support both unified (audio_url) and legacy (letter_audio_url + response_audio_url) formats
-    const unifiedAudioUrl = post.audio_url;
+    // Support Q&A short format (preferred), unified (audio_url), and legacy (letter_audio_url + response_audio_url)
+    const unifiedAudioUrl = post.short_audio_url || post.audio_url;
     const legacyHasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
     const hasAudio = Boolean(unifiedAudioUrl) || legacyHasAudio;
     const heroUrl = post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
@@ -134,7 +144,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         if (post.user_photo_url) return [post.user_photo_url, ...aiImages];
         return aiImages;
     })();
-    const canPlayShort = hasAudio && (Boolean(heroUrl) || imageUrls.length > 0);
+    const canPlayShort = Boolean(post.short_video_url) || (hasAudio && (Boolean(heroUrl) || imageUrls.length > 0));
 
     // Share handler — Web Share API with clipboard fallback
     const [shareToast, setShareToast] = useState(false);
@@ -155,6 +165,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const letterText = post.public_post?.letter || post.letter || post.tension || '';
     const responseText = post.public_post?.response || post.response || post.counsel || '';
     const computedLetterRatio = (() => {
+        if (post.short_audio_letter_ratio != null) return post.short_audio_letter_ratio;
         if (post.audio_letter_ratio != null) return post.audio_letter_ratio;
         const lw = letterText.split(/\s+/).filter(Boolean).length;
         const rw = responseText.split(/\s+/).filter(Boolean).length;
@@ -276,7 +287,13 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 if (entry.isIntersecting) {
                     // Card scrolled back into view — cancel any pending pause
                     if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
-                    // Start playback (unless suppressed, already playing, or already completed)
+                    // Video mode: play the video element directly
+                    if (videoRef.current) {
+                        pauseAll(); // pause all other cards first
+                        videoRef.current.play().catch(() => {});
+                        return;
+                    }
+                    // Audio mode: start playback (unless suppressed, already playing, or already completed)
                     if (!isPlayingRef.current && !isAutoPlaySuppressedRef.current && !hasCompletedRef.current) {
                         toggleAudioRef.current();
                     }
@@ -284,6 +301,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     // Debounce the pause — prevents flicker when card bounces near threshold
                     if (pauseTimer) clearTimeout(pauseTimer);
                     pauseTimer = setTimeout(() => {
+                        // Pause video if playing
+                        if (videoRef.current) {
+                            videoRef.current.pause();
+                            videoRef.current.currentTime = 0;
+                        }
+                        // Pause audio if playing
                         if (isPlayingRef.current && audioRef.current) {
                             audioRef.current.pause();
                             audioRef.current.currentTime = 0;
@@ -307,10 +330,13 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         };
     }, [canPlayShort]);
 
-    // Sync global mute state to active audio element
+    // Sync global mute state to active audio/video element
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.muted = isMuted;
+        }
+        if (videoRef.current) {
+            videoRef.current.muted = isMuted;
         }
     }, [isMuted]);
 
@@ -331,6 +357,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
                 audioRef.current = null;
+            }
+            if (videoRef.current) {
+                videoRef.current.pause();
+                videoRef.current.currentTime = 0;
             }
             setIsPlaying(false);
             setAudioPhase('idle');
@@ -459,9 +489,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // Total likes: karma pool likes + viewer's own like
     const totalLikes = (post.like_count || 0) + (localLiked ? 1 : 0);
 
-    // Public face content
-    const publicLetter = post.public_post?.letter || post.letter || post.tension;
-    const publicResponse = post.public_post?.response || post.response || post.counsel;
+    // Public face content — prefer Q&A short format when available
+    const hasShortFormat = Boolean(post.short_question && post.short_answer);
+    const publicLetter = hasShortFormat ? post.short_question : (post.public_post?.letter || post.letter || post.tension);
+    const publicResponse = hasShortFormat ? post.short_answer : (post.public_post?.response || post.response || post.counsel);
     const publicPseudonym = post.author_title || post.public_post?.pseudonym || post.pseudonym || "Anonymous";
 
     const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : t('justNow');
@@ -674,7 +705,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         const allChunks = [...letterChunks, ...responseChunks];
 
         // Build timestamp-based chunks at sentence boundaries if word timestamps are available
-        const wordTimestamps = post.audio_word_timestamps;
+        const wordTimestamps = post.short_audio_word_timestamps || post.audio_word_timestamps;
         const timestampChunks: { text: string; start: number; end: number; words: { word: string; start: number; end: number }[] }[] | null = (() => {
             if (!wordTimestamps || wordTimestamps.length === 0) return null;
 
@@ -833,8 +864,29 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     onClick={toggleAudio}
                     title="Tap to pause/resume"
                 >
-                    {/* Hero image — crossfade between multi-image backgrounds */}
-                    {imageUrls.length > 1 ? (
+                    {/* Visual: video player when available, image crossfade fallback */}
+                    {post.short_video_url ? (
+                        <video
+                            ref={videoRef}
+                            src={post.short_video_url}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loop
+                            muted={isMuted}
+                            playsInline
+                            preload="metadata"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (videoRef.current) {
+                                    if (videoRef.current.paused) {
+                                        pauseAll();
+                                        videoRef.current.play().catch(() => {});
+                                    } else {
+                                        videoRef.current.pause();
+                                    }
+                                }
+                            }}
+                        />
+                    ) : imageUrls.length > 1 ? (
                         <>
                             {imageUrls.map((url, i) => (
                                 <img
@@ -913,7 +965,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
 
 
-                    {/* Subtitle text — karaoke word-highlight style */}
+                    {/* Subtitle text — karaoke word-highlight style (hidden when video has baked-in subs) */}
+                    {!post.short_video_url && (
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-5">
                         <div className={`text-center max-w-[94%] transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
                             <p className="text-[1.75rem] sm:text-4xl lg:text-5xl font-black text-white leading-snug" style={{ whiteSpace: 'pre-line', textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
@@ -932,6 +985,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             </p>
                         </div>
                     </div>
+                    )}
 
 
                     {/* Progress bar */}
@@ -1035,13 +1089,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     setVideoToast(null);
                                     try {
                                         const idToken = await user.getIdToken();
-                                        const res = await fetch(`/api/posts/${post.id}/video?refresh=1`, {
+                                        const res = await fetch(`/api/posts/${post.id}/video?format=short`, {
                                             headers: { Authorization: `Bearer ${idToken}` },
                                         });
-                                        if (!res.ok) throw new Error('Failed to generate video');
-
-                                        // API streams the MP4 bytes directly
+                                        if (!res.ok) throw new Error('Failed to download video');
                                         const blob = await res.blob();
+
                                         const blobUrl = URL.createObjectURL(blob);
                                         const filename = `earnest-page-${post.id}.mp4`;
 

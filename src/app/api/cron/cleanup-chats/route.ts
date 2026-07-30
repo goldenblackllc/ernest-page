@@ -8,7 +8,8 @@ import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/securit
 import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
-import { generatePostAudio } from '@/lib/ai/postTTS';
+import { generatePostAudio, generateShortAudio } from '@/lib/ai/postTTS';
+import { generateShortScript } from '@/lib/ai/shortScript';
 import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { generateImage } from '@/lib/ai/generateImage';
@@ -677,6 +678,44 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             }
                         } catch (err) {
                             console.error(`[Cron] Post audio failed for ${postDocRef.id}:`, err);
+                        }
+
+                        // ── Generate Q&A short-form content ──
+                        try {
+                            console.log(`[CleanupChats] Generating Q&A short for post ${postDocRef.id}...`);
+                            const shortScript = await generateShortScript(post.letter, post.response);
+                            
+                            if (shortScript.question && shortScript.answer) {
+                                const shortAudio = await generateShortAudio(
+                                    shortScript.question,
+                                    shortScript.answer,
+                                    characterVoiceId,
+                                    postDocRef.id,
+                                );
+                                
+                                if (shortAudio) {
+                                    const offsetAnswerTimestamps = shortAudio.answerTimestamps.map((w: any) => ({
+                                        word: w.word,
+                                        start: w.start + shortAudio.questionDuration,
+                                        end: w.end + shortAudio.questionDuration,
+                                    }));
+                                    const allShortTimestamps = [...shortAudio.questionTimestamps, ...offsetAnswerTimestamps];
+                                    const totalShortDuration = shortAudio.questionDuration + shortAudio.answerDuration;
+                                    
+                                    await postDocRef.update({
+                                        short_question: shortScript.question,
+                                        short_answer: shortScript.answer,
+                                        short_audio_url: shortAudio.audioUrl,
+                                        short_audio_word_timestamps: allShortTimestamps,
+                                        short_audio_letter_ratio: shortAudio.questionDuration / totalShortDuration,
+                                        short_audio_question_duration: shortAudio.questionDuration,
+                                        short_audio_answer_duration: shortAudio.answerDuration,
+                                    });
+                                    console.log(`[CleanupChats] Short format stored for post ${postDocRef.id}`);
+                                }
+                            }
+                        } catch (err: any) {
+                            console.error(`[CleanupChats] Short format failed (non-fatal): ${err.message}`);
                         }
                     }
 

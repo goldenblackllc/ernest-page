@@ -1,4 +1,4 @@
-import { storage } from '@/lib/firebase/admin';
+import { db, storage } from '@/lib/firebase/admin';
 
 /**
  * Generate TTS audio for a Dear Earnest post using ElevenLabs.
@@ -317,6 +317,177 @@ export async function generatePostAudio(
         return { audioUrl, letterWordRatio, wordTimestamps: audioResult.wordTimestamps };
     } catch (err) {
         console.error('[PostTTS] Audio generation failed:', err);
+        return null;
+    }
+}
+
+export interface ShortAudioResult {
+    /** MP3 buffer for the question portion (character voice) */
+    questionBuffer: Buffer;
+    /** MP3 buffer for the answer portion (Earnest voice, speed 1.1) */
+    answerBuffer: Buffer;
+    /** Word-level timestamps for question audio (times relative to question start) */
+    questionTimestamps: WordTimestamp[];
+    /** Word-level timestamps for answer audio (times relative to answer start) */
+    answerTimestamps: WordTimestamp[];
+    /** Duration of the question audio in seconds */
+    questionDuration: number;
+    /** Duration of the answer audio in seconds */
+    answerDuration: number;
+    /** Firebase Storage URL of the combined (question+answer) audio file */
+    audioUrl: string;
+}
+
+/**
+ * Generate a single TTS audio chunk with an optional speed override.
+ * Used internally by generateShortAudio for the Earnest voice at speed 1.1.
+ */
+async function generateTTSChunkWithSpeed(
+    chunk: string,
+    voiceId: string,
+    apiKey: string,
+    timeOffset: number,
+    speed: number = 1.0,
+): Promise<ChunkResult | null> {
+    const res = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`,
+        {
+            method: 'POST',
+            headers: {
+                'xi-api-key': apiKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: chunk,
+                model_id: 'eleven_v3',
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.8,
+                    style: 0.45,
+                    use_speaker_boost: true,
+                    speed,
+                },
+            }),
+        }
+    );
+
+    if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.error(`[PostTTS] ElevenLabs error (speed=${speed}): ${res.status}`, errText);
+        return null;
+    }
+
+    const json = await res.json() as {
+        audio_base64: string;
+        alignment: {
+            characters: string[];
+            character_start_times_seconds: number[];
+            character_end_times_seconds: number[];
+        };
+    };
+
+    const audioBuffer = Buffer.from(json.audio_base64, 'base64');
+    const wordTimestamps = parseWordTimestamps(
+        json.alignment.characters,
+        json.alignment.character_start_times_seconds,
+        json.alignment.character_end_times_seconds,
+        timeOffset,
+    );
+
+    const charEndTimes = json.alignment.character_end_times_seconds;
+    const duration = charEndTimes.length > 0 ? charEndTimes[charEndTimes.length - 1] : 0;
+
+    return { audioBuffer, wordTimestamps, duration };
+}
+
+/**
+ * Retrieve the Earnest (admin) voice ID from Firestore.
+ * Falls back to null if ADMIN_UID is not set or voice is not configured.
+ */
+async function getEarnestVoiceId(): Promise<string | null> {
+    const adminUid = process.env.ADMIN_UID;
+    if (!adminUid) {
+        console.error('[PostTTS] ADMIN_UID not configured');
+        return null;
+    }
+    const userDoc = await db.collection('users').doc(adminUid).get();
+    if (!userDoc.exists) return null;
+    return userDoc.data()?.character_bible?.voice_id || null;
+}
+
+/**
+ * Generate two separate audio tracks for a Q&A short-form video.
+ *
+ * - Question: spoken by the character's own voice (standard speed)
+ * - Answer: spoken by the Earnest voice (speed 1.1 for slightly faster delivery)
+ *
+ * Both tracks include word-level timestamps for karaoke subtitles.
+ * A combined audio file (question + answer) is uploaded to Firebase Storage.
+ *
+ * @param questionText  The Q&A short question text
+ * @param answerText    The Q&A short answer text
+ * @param characterVoiceId  The post author's ElevenLabs voice ID
+ * @param postId        Post document ID (used for storage path)
+ * @returns ShortAudioResult or null if generation fails
+ */
+export async function generateShortAudio(
+    questionText: string,
+    answerText: string,
+    characterVoiceId: string,
+    postId: string,
+): Promise<ShortAudioResult | null> {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+        console.error('[PostTTS] ELEVENLABS_API_KEY not configured');
+        return null;
+    }
+
+    try {
+        // Get the Earnest voice for the answer
+        const earnestVoiceId = await getEarnestVoiceId();
+        if (!earnestVoiceId) {
+            console.error('[PostTTS] Could not retrieve Earnest voice ID');
+            return null;
+        }
+
+        const cleanQuestion = cleanTextForTTS(questionText);
+        const cleanAnswer = cleanTextForTTS(answerText);
+
+        if (!cleanQuestion || !cleanAnswer) {
+            console.error('[PostTTS] Empty question or answer text');
+            return null;
+        }
+
+        // Generate both audio tracks in parallel
+        const [questionResult, answerResult] = await Promise.all([
+            // Question: character's voice, standard speed
+            generateTTSChunkWithTimestamps(cleanQuestion, characterVoiceId, apiKey, 0),
+            // Answer: Earnest voice, speed 1.1
+            generateTTSChunkWithSpeed(cleanAnswer, earnestVoiceId, apiKey, 0, 1.1),
+        ]);
+
+        if (!questionResult || !answerResult) {
+            console.error('[PostTTS] Failed to generate one or both short audio tracks');
+            return null;
+        }
+
+        // Upload combined audio (question + answer concatenated)
+        const combinedBuffer = Buffer.concat([questionResult.audioBuffer, answerResult.audioBuffer]);
+        const audioUrl = await uploadAudio(combinedBuffer, `short-audio/${postId}_${Date.now()}.mp3`);
+
+        console.log(`[PostTTS] Short audio generated for post ${postId} (question: ${questionResult.duration.toFixed(1)}s, answer: ${answerResult.duration.toFixed(1)}s)`);
+
+        return {
+            questionBuffer: questionResult.audioBuffer,
+            answerBuffer: answerResult.audioBuffer,
+            questionTimestamps: questionResult.wordTimestamps,
+            answerTimestamps: answerResult.wordTimestamps,
+            questionDuration: questionResult.duration,
+            answerDuration: answerResult.duration,
+            audioUrl,
+        };
+    } catch (err) {
+        console.error('[PostTTS] Short audio generation failed:', err);
         return null;
     }
 }

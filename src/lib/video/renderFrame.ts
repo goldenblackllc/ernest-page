@@ -49,3 +49,44 @@ export async function renderFrame(opts: RenderFrameOptions): Promise<Buffer> {
     return result;
 }
 
+/**
+ * Renders a solid black 1080x1920 PNG buffer for the question phase.
+ * Text rendering is handled by ASS subtitles.
+ */
+export async function renderTextFrame(): Promise<Buffer> {
+    return sharp({
+        create: {
+            width: 1080,
+            height: 1920,
+            channels: 3,
+            background: { r: 0, g: 0, b: 0 },
+        },
+    }).png().toBuffer();
+}
+
+/**
+ * Renders the "Ask Earnest." end card.
+ * A 1080x1920 black background with warm white text centered.
+ */
+export async function renderEndFrame(): Promise<Buffer> {
+    const WIDTH = 1080;
+    const HEIGHT = 1920;
+
+    const svg = `<svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle"
+              font-family="sans-serif" font-weight="600" font-size="72"
+              fill="#F5F0EB">Ask Earnest.</text>
+    </svg>`;
+
+    return sharp({
+        create: {
+            width: WIDTH,
+            height: HEIGHT,
+            channels: 3,
+            background: { r: 0, g: 0, b: 0 },
+        },
+    })
+    .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+}
