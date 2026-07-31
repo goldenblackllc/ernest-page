@@ -9,7 +9,7 @@ import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 import { generatePostAudio, generateShortAudio } from '@/lib/ai/postTTS';
-import { generateConversationAudio, getEarnestVoiceId, BETH_VOICE_ID } from '@/lib/ai/postTTS';
+import { generateConversationAudio, getEarnestVoiceForUser } from '@/lib/ai/postTTS';
 import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
 import { generateShortScript } from '@/lib/ai/shortScript';
 import sharp from 'sharp';
@@ -689,9 +689,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             if (condensedMessages && condensedMessages.length > 0) {
                                 // Dual-voice conversation audio for condensed transcript
                                 const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
-                                const idealSelfVoiceId = isFemale
-                                    ? BETH_VOICE_ID
-                                    : await getEarnestVoiceId();
+                                const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
                                 
                                 if (idealSelfVoiceId) {
                                     console.log(`[Cron] Generating dual-voice audio (gender: ${gender || 'default male'})...`);

@@ -130,6 +130,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [audioProgress, setAudioProgress] = useState(0);
     const cardRef = useRef<HTMLDivElement>(null);
 
+
     // Stable refs — prevent IntersectionObserver re-creation on every state change
     const isPlayingRef = useRef(false);
     const toggleAudioRef = useRef<() => void>(() => {});
@@ -151,6 +152,17 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         if (post.user_photo_url) return [post.user_photo_url, ...aiImages];
         return aiImages;
     })();
+
+    // ═══ IMAGE CAROUSEL TIMER (5-second cycle, loops) ═══
+    const [carouselIndex, setCarouselIndex] = useState(0);
+    useEffect(() => {
+        if (imageUrls.length <= 1) return;
+        const timer = setInterval(() => {
+            setCarouselIndex(prev => (prev + 1) % imageUrls.length);
+        }, 10000);
+        return () => clearInterval(timer);
+    }, [imageUrls.length]);
+
     const canPlayShort = hasAudio && (Boolean(heroUrl) || imageUrls.length > 0);
 
     // Share handler — Web Share API with clipboard fallback
@@ -853,15 +865,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         const subtitle = getCurrentSubtitle();
 
-        // Distribute images evenly across the video duration.
-        // With 7-8 storyboard images, each image covers an equal portion
-        // of the subtitle timeline rather than being front-loaded.
-        const currentImageIndex = imageUrls.length > 0
-            ? Math.min(
-                Math.floor(((subtitle?.lineIndex || 0) / Math.max(subtitle?.totalLines || 1, 1)) * imageUrls.length),
-                imageUrls.length - 1
-              )
-            : 0;
+        // Image index driven by 5-second carousel timer (loops)
+        const currentImageIndex = imageUrls.length > 0 ? carouselIndex % imageUrls.length : 0;
         const currentImageUrl = imageUrls[currentImageIndex] || heroUrl;
 
         return (

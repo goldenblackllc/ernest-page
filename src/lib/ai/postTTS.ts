@@ -321,8 +321,56 @@ export async function generatePostAudio(
     }
 }
 
-/** Beth's ElevenLabs voice ID — used for the Ideal Self voice on female users' posts */
-export const BETH_VOICE_ID = '19STyYD15bswVz51nqLf';
+/** British Earnest voices (default) */
+export const BETH_VOICE_ID = '19STyYD15bswVz51nqLf'; // Female British
+// Male British = getEarnestVoiceId() (David's voice from Firestore)
+
+/** American Earnest voices (fallback when user's accent is British) */
+export const AMERICAN_MALE_VOICE_ID = 'ZMK5OD2jmsdse3EKE4W5';
+export const AMERICAN_FEMALE_VOICE_ID = 'yHZVd5I4cP7s0hjt1Mss';
+
+/**
+ * Detect a voice's accent via the ElevenLabs API.
+ * Returns the accent label (e.g. 'american', 'british', 'australian') or null.
+ */
+async function getVoiceAccent(voiceId: string, apiKey: string): Promise<string | null> {
+    try {
+        const res = await fetch(`https://api.elevenlabs.io/v1/voices/${voiceId}`, {
+            headers: { 'xi-api-key': apiKey },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.labels?.accent?.toLowerCase() || null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Pick the right Earnest voice for a user based on their voice's accent.
+ * If the user's accent is British, use American Earnest (and vice versa).
+ * This ensures the two voices in the conversation sound clearly distinct.
+ */
+export async function getEarnestVoiceForUser(
+    userVoiceId: string,
+    isFemale: boolean,
+): Promise<string | null> {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) return isFemale ? BETH_VOICE_ID : await getEarnestVoiceId();
+
+    const userAccent = await getVoiceAccent(userVoiceId, apiKey);
+    console.log(`[PostTTS] User voice ${userVoiceId} accent: ${userAccent || 'unknown'}`);
+
+    const isBritish = userAccent && ['british', 'english', 'british english'].includes(userAccent);
+
+    if (isBritish) {
+        // User is British → use American Earnest
+        return isFemale ? AMERICAN_FEMALE_VOICE_ID : AMERICAN_MALE_VOICE_ID;
+    } else {
+        // User is American or other → use British Earnest (default)
+        return isFemale ? BETH_VOICE_ID : await getEarnestVoiceId();
+    }
+}
 
 export interface MessageBoundary {
     role: 'user' | 'ideal_self';
@@ -385,9 +433,10 @@ export async function generateConversationAudio(
         const messageBoundaries: MessageBoundary[] = [];
         let cumulativeOffset = 0;
 
-        // Generate a real silent MP3 using ffmpeg (1.2 seconds)
-        const SILENCE_DURATION = 1.2;
+        // Generate a real silent MP3 using ffmpeg (1.2 seconds target)
+        const SILENCE_DURATION_TARGET = 1.2;
         let silenceBuffer: Buffer | null = null;
+        let actualSilenceDuration = SILENCE_DURATION_TARGET;
         try {
             const pathMod = await import('path');
             const { spawnSync } = await import('child_process');
@@ -404,13 +453,15 @@ export async function generateConversationAudio(
             if (ffmpegPath) {
                 const result = spawnSync(ffmpegPath, [
                     '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono`,
-                    '-t', String(SILENCE_DURATION),
+                    '-t', String(SILENCE_DURATION_TARGET),
                     '-c:a', 'libmp3lame', '-b:a', '128k',
                     '-f', 'mp3', 'pipe:1',
                 ], { maxBuffer: 50 * 1024 });
                 if (result.status === 0 && result.stdout.length > 0) {
                     silenceBuffer = result.stdout as Buffer;
-                    console.log(`[PostTTS] Generated ${SILENCE_DURATION}s silence buffer (${silenceBuffer.length} bytes)`);
+                    // Calculate actual duration from MP3 bitrate: duration = (bytes * 8) / bitrate
+                    actualSilenceDuration = (silenceBuffer.length * 8) / 128000;
+                    console.log(`[PostTTS] Silence buffer: ${silenceBuffer.length} bytes, actual duration: ${actualSilenceDuration.toFixed(3)}s`);
                 }
             }
         } catch (err: any) {
@@ -427,7 +478,7 @@ export async function generateConversationAudio(
             // Insert silence gap before this message (except the first)
             if (i > 0 && silenceBuffer) {
                 audioBuffers.push(silenceBuffer);
-                cumulativeOffset += SILENCE_DURATION;
+                cumulativeOffset += actualSilenceDuration;
             }
 
             const startIndex = allTimestamps.length;
@@ -450,10 +501,15 @@ export async function generateConversationAudio(
             audioBuffers.push(result.buffer);
             allTimestamps.push(...offsetTimestamps);
 
-            // Duration from the last word timestamp
-            const msgDuration = result.wordTimestamps.length > 0
+            // Calculate actual clip duration from buffer size (128kbps MP3)
+            // This is more accurate than word timestamps which may not include trailing audio
+            const actualClipDuration = (result.buffer.length * 8) / 128000;
+            const timestampDuration = result.wordTimestamps.length > 0
                 ? result.wordTimestamps[result.wordTimestamps.length - 1].end
                 : 0;
+            // Use the longer of the two — timestamps tell us word positions,
+            // but the actual audio may extend beyond the last word
+            const msgDuration = Math.max(actualClipDuration, timestampDuration);
             
             const endIndex = allTimestamps.length - 1;
             const endTime = cumulativeOffset + msgDuration;
@@ -468,7 +524,7 @@ export async function generateConversationAudio(
 
             cumulativeOffset += msgDuration;
 
-            console.log(`[PostTTS] Message ${i + 1}/${messages.length} (${msg.role}): ${wordCount(cleanText)}w, ${msgDuration.toFixed(1)}s`);
+            console.log(`[PostTTS] Message ${i + 1}/${messages.length} (${msg.role}): ${wordCount(cleanText)}w, clip=${actualClipDuration.toFixed(2)}s, timestamps=${timestampDuration.toFixed(2)}s, used=${msgDuration.toFixed(2)}s`);
         }
 
         if (audioBuffers.length === 0) {

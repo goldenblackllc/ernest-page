@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import { generateConversationAudio, getEarnestVoiceId, BETH_VOICE_ID } from '@/lib/ai/postTTS';
+import { generateConversationAudio, getEarnestVoiceForUser } from '@/lib/ai/postTTS';
 import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { generateImage } from '@/lib/ai/generateImage';
@@ -89,9 +89,7 @@ export async function POST(req: Request) {
 
         // ── STEP 2: Generate Dual-Voice TTS Audio ──
         const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
-        const idealSelfVoiceId = isFemale
-            ? BETH_VOICE_ID
-            : await getEarnestVoiceId();
+        const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
 
         let conversationAudio: { audioUrl: string; wordTimestamps: { word: string; start: number; end: number }[]; messageBoundaries: any[] } | null = null;
         if (characterVoiceId && idealSelfVoiceId) {

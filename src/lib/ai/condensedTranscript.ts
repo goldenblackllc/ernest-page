@@ -35,6 +35,7 @@ const CONDENSED_TRANSCRIPT_PROMPT = `You are an editor. You're given a raw chat 
 Your job: **rewrite the conversation so it's clean, condensed, and readable to a stranger.** Preserve the back-and-forth structure. Keep it as a conversation. Just make it a GOOD conversation — one that flows, makes sense, and captures the journey the person went through.
 
 WHAT TO DO:
+- The first user message must start with "Dear Earnest," — this sets up the advice column format so the reader expects a response.
 - Cut the fat: repetition, filler, circling, tangents that go nowhere.
 - Clean up the user's stream-of-consciousness into clear, natural sentences — but keep their voice and their real words where possible.
 - Preserve the Ideal Self's key insights and the moments where something shifts for the user.
