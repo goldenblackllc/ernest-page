@@ -8,7 +8,7 @@ import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models
 import { generateImage } from '@/lib/ai/generateImage';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
-import { getVisualStyle } from '@/lib/ai/visualStyles';
+import { VISUAL_STYLES, getVisualStyle } from '@/lib/ai/visualStyles';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -109,7 +109,8 @@ export async function POST(req: Request) {
         // ── STEP 3: Regenerate Images (cinematic prompts from character bible) ──
         const imagen_urls: string[] = [];
         let imagen_url: string | null = null;
-        const existingStyle = postData.visual_style || 'life-magazine';
+        const existingStyle = postData.visual_style
+            || VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)].id;
         const chosenStyle = getVisualStyle(existingStyle);
 
         try {
