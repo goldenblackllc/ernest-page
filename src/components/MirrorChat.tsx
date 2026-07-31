@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { CharacterBible, CharacterIdentity } from "@/types/character";
-import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X, Volume2, VolumeX, Play, Camera } from "lucide-react";
+import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, Settings, X, Volume2, VolumeX, Play, Pause, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -634,10 +634,10 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         if (blob) await playAudioBlob(blob);
     };
 
-    // Auto-speak: when a new assistant message arrives and autoSpeak is on,
-    // fetch full TTS audio, release the message when ready, then play.
+    // Always generate TTS when a new assistant message arrives (if voiceId exists).
+    // Audio is always fetched and cached — autoSpeak only controls whether it auto-plays.
     useEffect(() => {
-        if (!autoSpeak || !voiceId || isLoading) return;
+        if (!voiceId || isLoading) return;
 
         const lastMsg = messages[messages.length - 1];
         if (!lastMsg || lastMsg.role !== 'assistant') return;
@@ -650,66 +650,76 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         (async () => {
             const blob = await fetchTTSAudio(lastMsg.content);
             ttsInFlightMsgIdRef.current = null;
-            // Cache the blob for replay (toggle off/on, visibility resume, replay button)
+            // Cache the blob for replay / manual play
             cachedBlobRef.current = blob;
             cachedBlobMsgIdRef.current = lastMsg.id;
             // Release: clear the hold flag and set released ID
             expectingVoiceRef.current = false;
             setReleasedMsgId(lastMsg.id);
             setIsLoadingTTS(false);
-            // Play audio simultaneously with text reveal
-            if (blob) await playAudioBlob(blob);
+            // Auto-play only if speaker is on
+            if (blob && autoSpeak) await playAudioBlob(blob);
         })();
-    }, [messages, isLoading, autoSpeak, voiceId]);
-
-    // Re-speak: when autoSpeak is toggled ON, replay from cache if available
-    const prevAutoSpeakRef = useRef(autoSpeak);
-    useEffect(() => {
-        const wasOff = !prevAutoSpeakRef.current;
-        prevAutoSpeakRef.current = autoSpeak;
-
-        if (!autoSpeak || !wasOff || !voiceId) return;
-
-        const lastMsg = messages[messages.length - 1];
-        if (!lastMsg || lastMsg.role !== 'assistant' || isLoading) return;
-
-        // If we have a cached blob for this message, replay instantly — no API call
-        if (cachedBlobRef.current && cachedBlobMsgIdRef.current === lastMsg.id) {
-            playAudioBlob(cachedBlobRef.current);
-            return;
-        }
-
-        // If auto-speak is already fetching this message, let it finish — don't duplicate
-        if (ttsInFlightMsgIdRef.current === lastMsg.id) {
-            return;
-        }
-
-        // Cache miss — fetch fresh from ElevenLabs
-        speakText(lastMsg.content);
-    }, [autoSpeak]);
-
-    // Replay the cached audio for the last assistant message (tap-to-play button)
-    const replayLastAudio = () => {
-        if (!cachedBlobRef.current) return;
-        playAudioBlob(cachedBlobRef.current);
-    };
+    }, [messages, isLoading, voiceId]);
 
     // Compute whether to hold the last assistant message during render (no flash).
-    // expectingVoiceRef is set in handleSubmit BEFORE the response arrives,
-    // so the hold is active on the very first render that includes the new message.
+    // Only hold when autoSpeak is on — when speaker is off, show the message immediately
+    // and let the play button indicate TTS loading state.
     const lastMsg = messages[messages.length - 1];
-    const shouldHoldLastMessage = !!(expectingVoiceRef.current
+    const shouldHoldLastMessage = !!(autoSpeak
+        && expectingVoiceRef.current
         && !isLoading
         && lastMsg?.role === 'assistant'
         && lastMsg.id !== releasedMsgId);
 
-    // Stop audio & clean up on toggle off, unmount, or close
+    // Pause audio without destroying the element (supports resume)
+    const pauseAudio = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        setIsSpeaking(false);
+    };
+
+    // Stop audio & destroy the element (used for full cleanup)
     const stopSpeaking = () => {
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
         }
         setIsSpeaking(false);
+    };
+
+    // Resume paused audio
+    const resumeAudio = () => {
+        if (audioRef.current && audioRef.current.paused && !audioRef.current.ended) {
+            audioRef.current.play().catch(() => setIsSpeaking(false));
+            setIsSpeaking(true);
+        }
+    };
+
+    // Smart play/pause handler for the inline button
+    const handlePlayPause = () => {
+        // Currently playing → pause
+        if (isSpeaking && audioRef.current) {
+            pauseAudio();
+            return;
+        }
+        // Paused mid-playback → resume from where we left off
+        if (audioRef.current && audioRef.current.paused
+            && !audioRef.current.ended && audioRef.current.currentTime > 0) {
+            resumeAudio();
+            return;
+        }
+        // Cached blob ready → play from start
+        if (cachedBlobRef.current) {
+            playAudioBlob(cachedBlobRef.current);
+            return;
+        }
+        // No blob yet (edge case) → fetch and play
+        const lastAssistant = messages[messages.length - 1];
+        if (lastAssistant?.role === 'assistant') {
+            speakText(lastAssistant.content);
+        }
     };
 
     // Full cleanup — wipe cached blob (used on close/unmount)
@@ -719,8 +729,9 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         cachedBlobMsgIdRef.current = null;
     };
 
+    // When speaker is toggled off, pause playback (don't destroy — play button stays available)
     useEffect(() => {
-        if (!autoSpeak) stopSpeaking();
+        if (!autoSpeak) pauseAudio();
     }, [autoSpeak]);
 
     useEffect(() => {
@@ -1011,14 +1022,28 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                                 )}
                                             </div>
 
-                                            {/* Replay button — shown on last assistant message when cached audio exists */}
-                                            {m.role === 'assistant' && idx === filteredArr.length - 1 && voiceId && cachedBlobRef.current && cachedBlobMsgIdRef.current === m.id && !isSpeaking && !isLoadingTTS && (
+                                            {/* Play/Pause button — always visible on last assistant message when voice exists */}
+                                            {m.role === 'assistant' && idx === filteredArr.length - 1 && voiceId && (
                                                 <button
-                                                    onClick={replayLastAudio}
-                                                    className="ml-1 shrink-0 self-end w-7 h-7 flex items-center justify-center text-zinc-600 hover:text-white border border-zinc-700/50 hover:border-zinc-500 rounded-full transition-all"
-                                                    aria-label="Replay audio"
+                                                    onClick={handlePlayPause}
+                                                    disabled={isLoadingTTS}
+                                                    className={cn(
+                                                        "ml-1 shrink-0 self-end w-7 h-7 flex items-center justify-center border rounded-full transition-all",
+                                                        isLoadingTTS
+                                                            ? "text-zinc-600 border-zinc-700/50 cursor-wait"
+                                                            : isSpeaking
+                                                                ? "text-white border-zinc-500 bg-zinc-800"
+                                                                : "text-zinc-600 hover:text-white border-zinc-700/50 hover:border-zinc-500"
+                                                    )}
+                                                    aria-label={isLoadingTTS ? 'Loading audio' : isSpeaking ? 'Pause audio' : 'Play audio'}
                                                 >
-                                                    <Play className="w-3 h-3" />
+                                                    {isLoadingTTS ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : isSpeaking ? (
+                                                        <Pause className="w-3 h-3" />
+                                                    ) : (
+                                                        <Play className="w-3 h-3" />
+                                                    )}
                                                 </button>
                                             )}
 

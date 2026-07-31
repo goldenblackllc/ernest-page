@@ -15,8 +15,8 @@ const NANO_BANANA_MODEL = 'gemini-3.1-flash-image';
 
 interface GenerateImageOptions {
     prompt: string;
-    /** Aspect ratio — default '9:16' for vertical shorts */
-    aspectRatio?: '1:1' | '9:16' | '16:9' | '4:3' | '3:4';
+    /** Aspect ratio — default '4:5' for social media feed */
+    aspectRatio?: '1:1' | '9:16' | '16:9' | '4:3' | '3:4' | '4:5';
     /** Label for logs (e.g. 'Cron', 'RegeneratePost') */
     logPrefix?: string;
     /**
@@ -55,7 +55,7 @@ interface GenerateImageResult {
  * producing consistent characters across multiple generations.
  */
 export async function generateImage(options: GenerateImageOptions): Promise<GenerateImageResult | null> {
-    const { prompt, aspectRatio = '9:16', logPrefix = 'ImageGen', referenceImages, referenceMode = 'full' } = options;
+    const { prompt, aspectRatio = '4:5', logPrefix = 'ImageGen', referenceImages, referenceMode = 'full' } = options;
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     if (!apiKey) {
@@ -98,6 +98,7 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
             : aspectRatio === '16:9' ? ' 16:9 landscape orientation. Do not generate in portrait or square format.'
             : aspectRatio === '4:3' ? ' 4:3 landscape orientation.'
             : aspectRatio === '3:4' ? ' 3:4 portrait orientation.'
+            : aspectRatio === '4:5' ? ' 4:5 portrait orientation (1080×1350). Do not generate in landscape or square format.'
             : '';
 
         parts.push({ text: referencePrefix + prompt + aspectRatioHint });

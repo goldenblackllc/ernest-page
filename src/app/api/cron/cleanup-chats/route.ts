@@ -9,6 +9,8 @@ import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 import { generatePostAudio, generateShortAudio } from '@/lib/ai/postTTS';
+import { generateConversationAudio, getEarnestVoiceId, BETH_VOICE_ID } from '@/lib/ai/postTTS';
+import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
 import { generateShortScript } from '@/lib/ai/shortScript';
 import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
@@ -391,6 +393,25 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     post = pass1;
                 }
 
+                // ── CONDENSED TRANSCRIPT (runs after letter/response for backward compat) ──
+                let condensedMessages: Array<{ role: 'user' | 'ideal_self'; text: string }> | null = null;
+                let condensedEditorialNote: string | null = null;
+                if (post.is_publishable && transcript) {
+                    try {
+                        console.log(`[Cron] Generating condensed transcript for user ${uid}...`);
+                        const condensed = await generateCondensedTranscript(transcript);
+                        condensedMessages = condensed.messages;
+                        condensedEditorialNote = condensed.editorial_note;
+                        // Use condensed pseudonym if it's better than the letter pseudonym
+                        if (condensed.pseudonym && !post.pseudonym) {
+                            post.pseudonym = condensed.pseudonym;
+                        }
+                        console.log(`[Cron] Condensed: ${condensed.messages.length} messages`);
+                    } catch (err: any) {
+                        console.error(`[Cron] Condensed transcript failed (non-fatal):`, err.message);
+                    }
+                }
+
                 // Stamp the randomly pre-selected visual style onto the post
                 post.visual_style = randomStyle.id;
 
@@ -462,7 +483,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 schema: z.object({
                                     prompts: z.array(z.string()).min(8).max(8),
                                 }),
-                                prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 9:16 portrait orientation. No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
+                                prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 4:5 portrait orientation. No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
                             });
                             prompts = (aiResult.object as any).prompts;
                             console.log(`[Cron] Generated ${prompts.length} cinematic prompts`);
@@ -475,9 +496,12 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             `${chosenStyle.variations![i % chosenStyle.variations!.length]} ${JSON.stringify(compiledBible)}`
                         );
                     } else {
-                        // Photographer styles — imagenTag + letter (image model decides the scene)
+                        // Photographer styles — imagenTag + conversation (or letter fallback)
                         const tag = chosenStyle?.imagenTag || '';
-                        const prompt = tag ? `${tag} ${post.letter}` : post.letter;
+                        const conversationContext = condensedMessages && condensedMessages.length > 0
+                            ? condensedMessages.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n')
+                            : post.letter;
+                        const prompt = tag ? `${tag}\n${conversationContext}` : conversationContext;
                         prompts = Array(NUM_IMAGES).fill(prompt);
                     }
 
@@ -600,7 +624,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             pseudonym: post.pseudonym,
                             letter: post.letter,
                             response: post.response,
-
+                            ...(condensedMessages && { condensed_transcript: condensedMessages }),
                         },
                         imagen_prompt: prompts[0] || null,
                         imagen_prompts: prompts,
@@ -616,6 +640,8 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         // Geolocation for proximity filtering
                         ...geoFields,
                         content_raw: transcript,
+                        ...(condensedMessages && { condensed_transcript: condensedMessages }),
+                        ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
                         status: "completed",
                         created_at: new Date(),
                         is_public: imagen_url ? (visibility !== 'private') : false,
@@ -657,24 +683,50 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     }
 
                     // ─── POST AUDIO GENERATION ───
-                    // Generate TTS audio for the letter and response using the character's voice.
-                    // Must be awaited — Vercel kills pending promises after the function returns.
                     const characterVoiceId = userData?.character_bible?.voice_id;
-                    if (characterVoiceId && post.letter && post.response) {
+                    if (characterVoiceId) {
                         try {
-                            const audioResult = await generatePostAudio(
-                                post.letter,
-                                post.response,
-                                characterVoiceId,
-                                postDocRef.id,
-                            );
-                            if (audioResult) {
-                                await postDocRef.update({
-                                    audio_url: audioResult.audioUrl,
-                                    audio_letter_ratio: audioResult.letterWordRatio,
-                                    audio_word_timestamps: audioResult.wordTimestamps,
-                                });
-                                console.log(`[Cron] Audio attached to post ${postDocRef.id}`);
+                            if (condensedMessages && condensedMessages.length > 0) {
+                                // Dual-voice conversation audio for condensed transcript
+                                const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
+                                const idealSelfVoiceId = isFemale
+                                    ? BETH_VOICE_ID
+                                    : await getEarnestVoiceId();
+                                
+                                if (idealSelfVoiceId) {
+                                    console.log(`[Cron] Generating dual-voice audio (gender: ${gender || 'default male'})...`);
+                                    const audioResult = await generateConversationAudio(
+                                        condensedMessages,
+                                        characterVoiceId,
+                                        idealSelfVoiceId,
+                                        postDocRef.id,
+                                    );
+                                    if (audioResult) {
+                                        await postDocRef.update({
+                                            audio_url: audioResult.audioUrl,
+                                            audio_word_timestamps: audioResult.wordTimestamps,
+                                            audio_message_boundaries: audioResult.messageBoundaries,
+                                            audio_letter_ratio: audioResult.messageBoundaries[0]?.endTime / audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5,
+                                        });
+                                        console.log(`[Cron] Conversation audio attached to post ${postDocRef.id}`);
+                                    }
+                                }
+                            } else if (post.letter && post.response) {
+                                // Fallback: single-voice audio for letter/response
+                                const audioResult = await generatePostAudio(
+                                    post.letter,
+                                    post.response,
+                                    characterVoiceId,
+                                    postDocRef.id,
+                                );
+                                if (audioResult) {
+                                    await postDocRef.update({
+                                        audio_url: audioResult.audioUrl,
+                                        audio_letter_ratio: audioResult.letterWordRatio,
+                                        audio_word_timestamps: audioResult.wordTimestamps,
+                                    });
+                                    console.log(`[Cron] Audio attached to post ${postDocRef.id}`);
+                                }
                             }
                         } catch (err) {
                             console.error(`[Cron] Post audio failed for ${postDocRef.id}:`, err);
@@ -747,7 +799,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 async function generateSingleImage(prompt: string, postId: string, referenceImages?: Buffer[], referenceMode?: 'full' | 'face-only'): Promise<{ buffer: Buffer; prompt: string } | null> {
     const result = await generateImage({
         prompt,
-        aspectRatio: '9:16',
+        aspectRatio: '4:5',
         logPrefix: 'Cron',
         referenceImages,
         referenceMode,

@@ -1,29 +1,27 @@
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import sharp from 'sharp';
+import { generateConversationAudio, getEarnestVoiceId, BETH_VOICE_ID } from '@/lib/ai/postTTS';
+import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
-import { generatePostAudio, generateShortAudio, ShortAudioResult } from '@/lib/ai/postTTS';
-import { generateShortScript } from '@/lib/ai/shortScript';
-import { assembleShortVideo } from '@/lib/video/assembleShortVideo';
-import { validateGeneratedImage } from '@/lib/ai/validateImage';
-import { z } from 'zod';
 import { generateImage } from '@/lib/ai/generateImage';
+import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
-import { computeAge } from '@/lib/utils/parseBirthDate';
-import { PHOTOGRAPHER_CATALOG, getVisualStyle, VISUAL_STYLES } from '@/lib/ai/visualStyles';
-
+import { getVisualStyle } from '@/lib/ai/visualStyles';
+import sharp from 'sharp';
+import { z } from 'zod';
 
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 240;
 
 /**
  * POST /api/admin/regenerate-post
  *
  * Regenerates EVERYTHING for an existing post:
- *   1. Ghost-written letter + response (from stored transcript)
- *   2. TTS audio + word timestamps
- *   3. Background image (clean, no verdict overlay)
+ *   1. Condensed transcript (from stored raw transcript)
+ *   2. Dual-voice TTS audio (user voice + ideal self voice)
+ *   3. Images (cinematic prompts from character bible, 3:4 aspect ratio)
  *
  * Requires the post to have `content_raw` (the original chat transcript).
  *
@@ -64,266 +62,191 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'User data not found' }, { status: 404 });
         }
 
-        const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
-        const archetype = userData?.character_bible?.source_code?.archetype || "Mirror Reflection";
-        const identity = userData?.identity;
         const characterVoiceId = userData?.character_bible?.voice_id;
-
-        // Build character appearance context for editorial storyboard images
-        // The character appears IN the images as the subject of the story.
+        const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
+        const identity = userData?.identity;
         const gender = identity?.gender || '';
-        const ethnicity = identity?.ethnicity || '';
-        const computedAge = computeAge(identity?.age);
-        const demographicParts = [
-            computedAge ? `approximately ${computedAge} years old` : '',
-            ethnicity,
-            gender,
-        ].filter(Boolean);
-        const dreamSelf = identity?.dream_self || '';
-        const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
-        const appearanceHint = demographicTag
-            ? `\nCHARACTER APPEARANCE — MANDATORY: The main character's fixed traits (face, ethnicity, age, gender): ${demographicTag}. You MUST include "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.${dreamSelf ? `\nTheir ASPIRATIONAL self-presentation (use for LATER beats only — pivot, move, outcome): "${dreamSelf}"` : ''}
-TRANSFORMATION ARC: If the letter describes a physical state that differs from the aspirational self (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2 (struggle). Transition in Beat 3 (pivot). By Beats 4-5 (move, outcome), the character should embody their resolved/aspirational state. This visual transformation IS the story. The face stays the same — only the body, posture, and energy transform.`
+
+        console.log(`[RegeneratePost] Starting condensed transcript regeneration for post ${postId}`);
+
+        // ── STEP 1: Generate Condensed Transcript ──
+        console.log('[RegeneratePost] Generating condensed transcript via Opus...');
+        const condensed = await generateCondensedTranscript(transcript);
+
+        const messageCount = condensed.messages.length;
+        const wordCount = condensed.messages.reduce((sum, m) => sum + m.text.split(/\s+/).filter(Boolean).length, 0);
+        console.log(`[RegeneratePost] Condensed: ${messageCount} messages, ${wordCount} words, pseudonym: ${condensed.pseudonym}`);
+
+        // Derive backward-compatible letter/response from condensed transcript
+        const userMessages = condensed.messages.filter(m => m.role === 'user');
+        const idealSelfMessages = condensed.messages.filter(m => m.role === 'ideal_self');
+        const derivedLetter = userMessages.length > 0
+            ? `Dear Earnest,\n\n${userMessages[0].text}\n\n— ${condensed.pseudonym}`
+            : '';
+        const derivedResponse = idealSelfMessages.length > 0
+            ? `${condensed.pseudonym},\n\n${idealSelfMessages[idealSelfMessages.length - 1].text}\n\n— Earnest Page`
             : '';
 
-        console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
+        // ── STEP 2: Generate Dual-Voice TTS Audio ──
+        const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
+        const idealSelfVoiceId = isFemale
+            ? BETH_VOICE_ID
+            : await getEarnestVoiceId();
 
-        // ── STEP 1: Ghost-write letter (Pass 1) ──
-        const letterPrompt = `You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received this raw chat transcript between a user (Character B) and their Ideal Self (Character A).
-The output must be in English.
-
-CHARACTER BIBLE:
-${JSON.stringify(compiledBible)}
-
-CHAT TRANSCRIPT:
-${transcript}
-
-STEP 1: THE EDITORIAL JUDGMENT
-This transcript is already published — regenerate it as publishable (is_publishable: true).
-
-STEP 2: WRITE THE LETTER
-Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
-
-HOW CONVERSATIONS WORK — understand this before writing:
-Every conversation follows the same two-phase structure:
-  Phase 1 — UNDERSTANDING: The user states what they want or how they feel. Character A asks clarifying questions. The situation becomes clear. This phase is about the user's reality.
-  Phase 2 — ADVICE: Character A delivers insight, recommendations, or a reframe. The user reacts, clarifies, and the advice gets refined. This phase is Character A's contribution.
-The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
-
-IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
-- WANT or FEELING: What did the user come in with? Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
-- SITUATION: What details emerged during Phase 1 that help a reader understand the context? Look for specifics the user shared.
-
-INCLUDE THE FULL SITUATION: If the user revealed a passion, a desire, a thing they love doing, or something they discovered about themselves during the conversation, that is PART OF THEIR SITUATION — not advice. Include it in the letter. The letter should contain everything the response will need to reference. A cold reader will only ever see the letter and response — never the transcript.
-
-CRITICAL RULE: The user is a reliable narrator of their own state. If they say they want something, that is what they want — do not reinterpret it as uncertainty. Character A may explore, question, and probe — but Character A's framework is not the user's experience. The letter represents the USER, not Character A's interpretation of the user.
-
-YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: preserve what they actually wanted or felt, add the situation details that make it vivid, and stop. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after."
-
-- title: Write a curiosity-driven hook title (6-10 words, max 75 characters).
-- pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. It must hook in under 8 words. Then 2-3 sentences of SITUATION. The letter must present the situation as UNRESOLVED. VOICE: First person, present tense. Raw and conversational. No clinical language. NEVER reference the chat or session. FORMATTING: Start with 'Dear Earnest,\\n\\n'. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash.
-- visual_style: Pick the ONE photographer id from the list below whose vision best serves this story. Return ONLY the id string (e.g., "slim-aarons", "platon", "saul-leiter").
-${PHOTOGRAPHER_CATALOG}
-- photo_vibe: One word capturing the emotional tone.
-
-PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (title, letter):
-
-FIRST — identify what to KEEP (these add value and do NOT identify the user):
-  • Public figures and celebrities BY THEIR REAL NAMES — Jeremy Clarkson stays "Jeremy Clarkson", Brené Brown stays "Brené Brown". NEVER replace a public figure with "a celebrity", "a public figure I admire", "someone I look up to", or any generic substitute.
-  • Brand and product names (e.g., "Hugo Boss", "Nike", "Tesla")
-  • Cultural references — books, films, songs, TV shows, podcasts, by their real titles
-  • Generic industry or category names (e.g., "tech", "finance", "healthcare")
-THEN — replace everything that identifies THE USER PERSONALLY:
-  • Names of people the user personally knows → relationship role
-  • Employer, workplace, school, clients → generic labels
-  • Locations, addresses, phone numbers, handles
-The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it.
-
-${appearanceHint}
-
-OUTPUT FIELDS:
-- is_publishable, title, pseudonym, letter, visual_style, photo_vibe, language`;
-
-        const letterResult = await generateWithFallback({
-            primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
-            schema: z.object({
-                is_publishable: z.literal(true),
-                title: z.string().max(75),
-                pseudonym: z.string(),
-                letter: z.string(),
-                photo_vibe: z.string(),
-                visual_style: z.string(),
-                language: z.string().optional(),
-            }),
-            prompt: letterPrompt,
-        });
-
-        const pass1 = letterResult.object as any;
-        console.log(`[RegeneratePost] Pass 1 complete — letter: ${pass1.letter.split(' ').length} words`);
-
-        // ── STEP 2: Ghost-write response (Pass 2) ──
-        const responsePrompt = `You are writing as Earnest Page — an advice columnist. You have just received the following letter. Now write your response.
-The output must be in English.
-
-CHARACTER BIBLE (this is Earnest Page's voice and worldview — write in this voice):
-${JSON.stringify(compiledBible)}
-
-THE LETTER:
-${pass1.letter}
-
-CHAT TRANSCRIPT (for context — the advice that emerged in this conversation):
-${transcript}
-
-HOW TO READ THE TRANSCRIPT:
-The conversation has two phases. Phase 1 is understanding — Character A asks questions and the user's situation becomes clear. Phase 2 is advice — Character A delivers insight, recommendations, or a concrete plan. The letter above captures Phase 1 (the user's want or feeling + their situation). Your response should deliver the substance of Phase 2 (the advice, the answer, the path forward).
-
-YOUR JOB: Write Earnest Page's response to this letter. The letter captures where the user arrived — what they wanted or how they felt. The conversation transcript shows the advice Character A gave. Your response delivers that advice — warm, specific, actionable, in Character A's exact voice. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
-
-SINGLE-INSIGHT FOCUS: The response should orbit ONE central reframe — the single belief or pattern that is actually blocking them. Don't scatter across multiple points. Setup → reframe → directive. The reframe is the line that should stop a reader cold.
-
-SELF-CONTAINMENT — NON-NEGOTIABLE: The response must only reference situations, details, and context that appear IN THE LETTER. The reader has never seen the transcript. If the transcript contains insights, translate them into advice that makes sense given only what the letter says. Never say "you already named it" or reference something the letter doesn't mention.
-
-NO WANT-SUBSTITUTION: Do not tell the writer what they "really" want. If the advice involves reframing a desire, name the specific feeling behind their stated want — don't replace their want with a different one.
-
-PII SCRUBBING — THIS IS NON-NEGOTIABLE:
-FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES. Brand names, product recommendations, cultural references — keep them all verbatim.
-THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
-
-- response: LENGTH: 85-115 words. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — the thing the user needs to hear. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the insight. Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction or challenge. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\\n\\n'. Write the body. End with '\\n\\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them.`;
-
-        const responseResult = await generateWithFallback({
-            primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
-            schema: z.object({ response: z.string() }),
-            prompt: responsePrompt,
-        });
-
-        const pass2 = responseResult.object as any;
-        console.log(`[RegeneratePost] Pass 2 complete — response: ${pass2.response.split(' ').length} words`);
-
-        // ── STEP 3: Generate TTS audio ──
-        // Image generation is SKIPPED — we use Pexels stock video in the short-form pipeline.
-
-        let audio: { audioUrl: string; letterWordRatio: number; wordTimestamps: { word: string; start: number; end: number }[] } | null = null;
-        if (characterVoiceId) {
+        let conversationAudio: { audioUrl: string; wordTimestamps: { word: string; start: number; end: number }[]; messageBoundaries: any[] } | null = null;
+        if (characterVoiceId && idealSelfVoiceId) {
             try {
-                audio = await generatePostAudio(pass1.letter, pass2.response, characterVoiceId, postId);
+                console.log(`[RegeneratePost] Generating dual-voice audio (user: ${characterVoiceId}, ideal_self: ${idealSelfVoiceId}, gender: ${gender || 'default male'})...`);
+                conversationAudio = await generateConversationAudio(
+                    condensed.messages,
+                    characterVoiceId,
+                    idealSelfVoiceId,
+                    postId,
+                );
             } catch (err: any) {
-                console.error(`[RegeneratePost] TTS failed:`, err.message);
+                console.error(`[RegeneratePost] Conversation TTS failed:`, err.message);
             }
         }
 
-        // Preserve existing images — don't clear them since we're not generating new ones
+        // ── STEP 3: Regenerate Images (cinematic prompts from character bible) ──
         const imagen_urls: string[] = [];
-        const imagen_url = null;
+        let imagen_url: string | null = null;
+        const existingStyle = postData.visual_style || 'life-magazine';
+        const chosenStyle = getVisualStyle(existingStyle);
 
-        // ── STEP 4: Write everything to Firestore in one update ──
-        const publicPost: any = {
-            title: pass1.title,
-            pseudonym: pass1.pseudonym,
-            letter: pass1.letter,
-            response: pass2.response,
+        try {
+            // Load user reference image for face consistency
+            const referenceImage = await loadUserReferenceImage(uid);
+            const NUM_IMAGES = 8;
+            let prompts: string[] = [];
+            let useReferenceImages: Buffer[] | undefined = referenceImage ? [referenceImage] : undefined;
 
-        };
-        // Include imagen_url in public_post when we have new images
-        if (imagen_urls.length > 0) {
-            publicPost.imagen_url = imagen_url;
-        } else {
-            // Preserve old imagen_url from existing post data
-            publicPost.imagen_url = postData.public_post?.imagen_url || postData.imagen_url || null;
+            console.log(`[RegeneratePost] Style — selected: "${existingStyle}", resolved: "${chosenStyle?.id || 'NONE'}" (category: ${chosenStyle?.category || 'unknown'})`);
+
+            if (chosenStyle?.category === 'landscape') {
+                const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                prompts = Array(NUM_IMAGES).fill(prompt);
+                useReferenceImages = undefined;
+            } else if (chosenStyle?.category === 'landscape-with-person') {
+                const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                prompts = Array(NUM_IMAGES).fill(prompt);
+            } else if (chosenStyle?.category === 'cinematic') {
+                const styleDirection = chosenStyle.id === 'life-magazine'
+                    ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
+                    : `You are a Visual Director for an advice column called Earnest Page. You're creating 8 photographs that capture moments from this person's life.`;
+
+                const aiResult = await generateWithFallback({
+                    primaryModelId: OPUS_MODEL,
+                    fallbackModelId: OPUS_FALLBACK,
+                    schema: z.object({
+                        prompts: z.array(z.string()).min(8).max(8),
+                    }),
+                    prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 3:4 portrait orientation. No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
+                });
+                prompts = (aiResult.object as any).prompts;
+                console.log(`[RegeneratePost] Generated ${prompts.length} cinematic prompts`);
+            } else if (chosenStyle?.variations && chosenStyle.variations.length > 0) {
+                prompts = Array.from({ length: NUM_IMAGES }, (_, i) =>
+                    `${chosenStyle.variations![i % chosenStyle.variations!.length]} ${JSON.stringify(compiledBible)}`
+                );
+            } else {
+                // Photographer styles — imagenTag + condensed conversation
+                const tag = chosenStyle?.imagenTag || '';
+                const conversationText = condensed.messages
+                    .map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`)
+                    .join('\n');
+                const prompt = tag ? `${tag}\n${conversationText}` : conversationText;
+                prompts = Array(NUM_IMAGES).fill(prompt);
+            }
+
+            // Sequential image generation with stagger to avoid rate limits
+            const IMAGE_STAGGER_MS = 1500;
+            for (let i = 0; i < prompts.length; i++) {
+                if (i > 0) await new Promise(r => setTimeout(r, IMAGE_STAGGER_MS));
+                try {
+                    const result = await generateImage({
+                        prompt: prompts[i],
+                        aspectRatio: '4:5',
+                        logPrefix: 'RegeneratePost',
+                        referenceImages: useReferenceImages,
+                        referenceMode: i < 2 ? 'face-only' : 'full',
+                    });
+                    if (result) {
+                        const isValid = await validateGeneratedImage(result.buffer, prompts[i]);
+                        if (isValid) {
+                            const compressed = await sharp(result.buffer)
+                                .jpeg({ quality: 85 })
+                                .toBuffer();
+                            const bucket = storage.bucket();
+                            const imgPath = `post-images/${postId}_${i}_${Date.now()}.jpg`;
+                            const file = bucket.file(imgPath);
+                            await file.save(compressed, { metadata: { contentType: 'image/jpeg' } });
+                            try { await file.makePublic(); } catch { /* UBLA */ }
+                            const url = `https://storage.googleapis.com/${bucket.name}/${imgPath}`;
+                            imagen_urls.push(url);
+                            console.log(`[RegeneratePost] Image ${i + 1}/${prompts.length} uploaded`);
+                        }
+                    }
+                } catch (err: any) {
+                    console.error(`[RegeneratePost] Image ${i + 1} failed:`, err.message);
+                }
+            }
+            imagen_url = imagen_urls[0] || null;
+            console.log(`[RegeneratePost] Generated ${imagen_urls.length}/${prompts.length} images`);
+        } catch (err: any) {
+            console.error(`[RegeneratePost] Image generation failed (non-fatal):`, err.message);
         }
+
+        // ── STEP 4: Write everything to Firestore ──
+        const publicPost: any = {
+            pseudonym: condensed.pseudonym,
+            letter: derivedLetter,
+            response: derivedResponse,
+            condensed_transcript: condensed.messages,
+        };
+        publicPost.imagen_url = imagen_url || postData.public_post?.imagen_url || postData.imagen_url || null;
 
         const updateData: any = {
             public_post: publicPost,
-            imagen_prompts: [`${getVisualStyle(pass1.visual_style || '')?.imagenTag || ''} ${pass1.letter}`.trim()],
-            visual_style: pass1.visual_style || null,
-            language: pass1.language || null,
+            condensed_transcript: condensed.messages,
+            condensed_editorial_note: condensed.editorial_note,
+            // Clear old short-form fields
+            short_video_url: FieldValue.delete(),
+            short_audio_url: FieldValue.delete(),
+            short_audio_word_timestamps: FieldValue.delete(),
+            short_audio_letter_ratio: FieldValue.delete(),
+            short_audio_question_duration: FieldValue.delete(),
+            short_audio_answer_duration: FieldValue.delete(),
+            short_question: FieldValue.delete(),
+            short_answer: FieldValue.delete(),
         };
 
-        // Preserve existing images — don't overwrite since we're not generating new ones
-        // (existing imagen_urls stay on the post document)
-
-        if (audio) {
-            updateData.audio_url = audio.audioUrl;
-            updateData.audio_letter_ratio = audio.letterWordRatio;
-            updateData.audio_word_timestamps = audio.wordTimestamps;
+        if (imagen_urls.length > 0) {
+            updateData.imagen_url = imagen_url;
+            updateData.imagen_urls = imagen_urls;
         }
 
-        // ── Generate Q&A short-form content + video ──
-        if (pass1.letter && pass2.response && characterVoiceId) {
-            try {
-                console.log('[RegeneratePost] Generating Q&A short script...');
-                const shortScript = await generateShortScript(pass1.letter, pass2.response);
-                
-                if (shortScript.question && shortScript.answer) {
-                    console.log(`[RegeneratePost] Short script: Q=${shortScript.question.split(/\s+/).length}w, A=${shortScript.answer.split(/\s+/).length}w`);
-                    
-                    // Store the short script
-                    updateData.short_question = shortScript.question;
-                    updateData.short_answer = shortScript.answer;
-                    
-                    // Generate two-voice audio
-                    console.log('[RegeneratePost] Generating two-voice short audio...');
-                    const shortAudio = await generateShortAudio(
-                        shortScript.question,
-                        shortScript.answer,
-                        characterVoiceId,
-                        postId,
-                    );
-                    
-                    if (shortAudio) {
-                        // Build combined word timestamps with answer offset
-                        const offsetAnswerTimestamps = shortAudio.answerTimestamps.map(w => ({
-                            word: w.word,
-                            start: w.start + shortAudio.questionDuration,
-                            end: w.end + shortAudio.questionDuration,
-                        }));
-                        const allShortTimestamps = [...shortAudio.questionTimestamps, ...offsetAnswerTimestamps];
-                        const totalShortDuration = shortAudio.questionDuration + shortAudio.answerDuration;
-                        
-                        updateData.short_audio_url = shortAudio.audioUrl;
-                        updateData.short_audio_word_timestamps = allShortTimestamps;
-                        updateData.short_audio_letter_ratio = shortAudio.questionDuration / totalShortDuration;
-                        updateData.short_audio_question_duration = shortAudio.questionDuration;
-                        updateData.short_audio_answer_duration = shortAudio.answerDuration;
-                        
-                        console.log(`[RegeneratePost] Short audio: ${totalShortDuration.toFixed(1)}s total`);
-                        
-                        // ── Assemble the final video ──
-                        console.log('[RegeneratePost] Assembling short video...');
-                        const videoResult = await assembleShortVideo({
-                            postId,
-                            scriptQuestion: shortScript.question,
-                            scriptAnswer: shortScript.answer,
-                            questionDuration: shortAudio.questionDuration,
-                            answerDuration: shortAudio.answerDuration,
-                            questionTimestamps: shortAudio.questionTimestamps,
-                            answerTimestamps: shortAudio.answerTimestamps,
-                            combinedAudioBuffer: Buffer.concat([shortAudio.questionBuffer, shortAudio.answerBuffer]),
-                        });
-                        updateData.short_video_url = videoResult.videoUrl;
-                        console.log(`[RegeneratePost] Short video stored: ${videoResult.videoUrl}`);
-                    }
-                }
-            } catch (err: any) {
-                console.error('[RegeneratePost] Short format generation failed (non-fatal):', err.message);
+        if (conversationAudio) {
+            updateData.audio_url = conversationAudio.audioUrl;
+            updateData.audio_word_timestamps = conversationAudio.wordTimestamps;
+            updateData.audio_message_boundaries = conversationAudio.messageBoundaries;
+            const firstMsgBoundary = conversationAudio.messageBoundaries[0];
+            const lastBoundary = conversationAudio.messageBoundaries[conversationAudio.messageBoundaries.length - 1];
+            if (firstMsgBoundary && lastBoundary) {
+                updateData.audio_letter_ratio = firstMsgBoundary.endTime / lastBoundary.endTime;
             }
         }
 
         await postDoc.ref.update(updateData);
-        const promptCount = (pass1.imagen_prompts || []).length;
-        console.log(`[RegeneratePost] Full regeneration complete for ${postId} (images: ${imagen_urls.length}/${promptCount}, audio: ${!!audio})`);
+        console.log(`[RegeneratePost] Full regeneration complete for ${postId} (messages: ${messageCount}, words: ${wordCount}, audio: ${!!conversationAudio}, images: ${imagen_urls.length})`);
 
         return NextResponse.json({
             success: true,
-            letter: pass1.letter,
-            response: pass2.response,
-            imagen_url,
-            imagen_count: imagen_urls.length,
-            imagen_requested: promptCount,
-            audio_regenerated: !!audio,
+            pseudonym: condensed.pseudonym,
+            message_count: messageCount,
+            word_count: wordCount,
+            audio_regenerated: !!conversationAudio,
+            images_generated: imagen_urls.length,
         });
     } catch (error: any) {
         console.error('[RegeneratePost] Error:', error);

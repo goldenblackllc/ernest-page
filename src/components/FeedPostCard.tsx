@@ -44,6 +44,7 @@ interface FeedPostProps {
             letter?: string;
             response?: string;
             imagen_url?: string;
+            condensed_transcript?: { role: 'user' | 'ideal_self'; text: string }[];
         };
         imageUrl?: string;
         imagen_url?: string;
@@ -66,6 +67,8 @@ interface FeedPostProps {
         audio_url?: string;
         audio_letter_ratio?: number;
         audio_word_timestamps?: { word: string; start: number; end: number }[];
+        audio_message_boundaries?: { role: string; startIndex: number; endIndex: number; startTime: number; endTime: number }[];
+        condensed_transcript?: { role: 'user' | 'ideal_self'; text: string }[];
         letter_audio_url?: string;
         response_audio_url?: string;
         // Q&A short format fields
@@ -133,18 +136,22 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const isAutoPlaySuppressedRef = useRef(false);
     const hasCompletedRef = useRef(false);
 
-    // Support Q&A short format (preferred), unified (audio_url), and legacy (letter_audio_url + response_audio_url)
-    const unifiedAudioUrl = post.short_audio_url || post.audio_url;
+    const hasCondensedTranscript = Boolean(post.public_post?.condensed_transcript?.length || post.condensed_transcript?.length);
+    // For condensed transcript posts, use the conversation audio (audio_url) not the short Q&A clip
+    const unifiedAudioUrl = hasCondensedTranscript
+        ? (post.audio_url || post.short_audio_url)
+        : (post.short_audio_url || post.audio_url);
     const legacyHasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
     const hasAudio = Boolean(unifiedAudioUrl) || legacyHasAudio;
     const heroUrl = post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
+
     // Multi-image array: user photo first (if exists), then AI images, fallback to single
     const imageUrls = (() => {
         const aiImages = post.imagen_urls?.length ? post.imagen_urls : (post.imagen_url ? [post.imagen_url] : []);
         if (post.user_photo_url) return [post.user_photo_url, ...aiImages];
         return aiImages;
     })();
-    const canPlayShort = Boolean(post.short_video_url) || (hasAudio && (Boolean(heroUrl) || imageUrls.length > 0));
+    const canPlayShort = hasAudio && (Boolean(heroUrl) || imageUrls.length > 0);
 
     // Share handler — Web Share API with clipboard fallback
     const [shareToast, setShareToast] = useState(false);
@@ -705,7 +712,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         const allChunks = [...letterChunks, ...responseChunks];
 
         // Build timestamp-based chunks at sentence boundaries if word timestamps are available
-        const wordTimestamps = post.short_audio_word_timestamps || post.audio_word_timestamps;
+        const wordTimestamps = hasCondensedTranscript
+            ? (post.audio_word_timestamps || post.short_audio_word_timestamps)
+            : (post.short_audio_word_timestamps || post.audio_word_timestamps);
         const timestampChunks: { text: string; start: number; end: number; words: { word: string; start: number; end: number }[] }[] | null = (() => {
             if (!wordTimestamps || wordTimestamps.length === 0) return null;
 
@@ -857,36 +866,14 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         return (
             <div ref={cardRef} className="bg-black border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-lg relative font-sans">
-                {/* Short-form video container — 4:5 aspect ratio */}
+                {/* Short-form container — 4:5 aspect ratio (matches generated images) */}
                 <div
-                    className="relative w-full cursor-pointer overflow-hidden"
-                    style={{ aspectRatio: '4 / 5' }}
+                    className="relative w-full cursor-pointer overflow-hidden aspect-[4/5]"
                     onClick={toggleAudio}
                     title="Tap to pause/resume"
                 >
                     {/* Visual: video player when available, image crossfade fallback */}
-                    {post.short_video_url ? (
-                        <video
-                            ref={videoRef}
-                            src={post.short_video_url}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            loop
-                            muted={isMuted}
-                            playsInline
-                            preload="metadata"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (videoRef.current) {
-                                    if (videoRef.current.paused) {
-                                        pauseAll();
-                                        videoRef.current.play().catch(() => {});
-                                    } else {
-                                        videoRef.current.pause();
-                                    }
-                                }
-                            }}
-                        />
-                    ) : imageUrls.length > 1 ? (
+                    {imageUrls.length > 1 ? (
                         <>
                             {imageUrls.map((url, i) => (
                                 <img
@@ -966,7 +953,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
 
                     {/* Subtitle text — karaoke word-highlight style (hidden when video has baked-in subs) */}
-                    {!post.short_video_url && (
+                    {(
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-5">
                         <div className={`text-center max-w-[94%] transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
                             <p className="text-[1.75rem] sm:text-4xl lg:text-5xl font-black text-white leading-snug" style={{ whiteSpace: 'pre-line', textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
@@ -1228,69 +1215,137 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 {isTextView && (
                     <div className="border-t border-white/5 bg-zinc-950">
                         <div className="p-4 space-y-4">
+                            {(() => {
+                                const transcript = post.public_post?.condensed_transcript || post.condensed_transcript;
+                                
+                                if (transcript && transcript.length > 0) {
+                                    // ── CONDENSED TRANSCRIPT TEXT VIEW ──
+                                    return (
+                                        <>
+                                            {transcript.map((msg: { role: string; text: string }, idx: number) => (
+                                                <div key={idx} className="space-y-1.5">
+                                                    {idx > 0 && <div className="border-t border-white/5" />}
+                                                    <div className="flex items-center justify-between pt-1">
+                                                        <span className={cn(
+                                                            "text-[10px] font-bold uppercase tracking-widest",
+                                                            msg.role === 'user' ? 'text-zinc-500' : 'text-amber-500/70'
+                                                        )}>
+                                                            {msg.role === 'user'
+                                                                ? (post.public_post?.pseudonym || publicPseudonym || 'You')
+                                                                : '✦ Ideal Self'}
+                                                        </span>
+                                                        <button
+                                                            onClick={async () => {
+                                                                await navigator.clipboard.writeText(msg.text);
+                                                                setCopiedField(`msg-${idx}`);
+                                                                setTimeout(() => setCopiedField(null), 2000);
+                                                            }}
+                                                            className="p-1 rounded text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
+                                                            title="Copy message"
+                                                        >
+                                                            {copiedField === `msg-${idx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                                </div>
+                                            ))}
+                                            
+                                            {/* Copy all as caption */}
+                                            <button
+                                                onClick={async () => {
+                                                    const caption = transcript
+                                                        .map((m: { role: string; text: string }) =>
+                                                            `${m.role === 'user' ? (post.public_post?.pseudonym || publicPseudonym || 'You') : '✦ Ideal Self'}:\n${m.text}`)
+                                                        .join('\n\n');
+                                                    await navigator.clipboard.writeText(caption);
+                                                    setCopiedField('all');
+                                                    setTimeout(() => setCopiedField(null), 2000);
+                                                }}
+                                                className={cn(
+                                                    "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all duration-200",
+                                                    copiedField === 'all'
+                                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                                        : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+                                                )}
+                                            >
+                                                {copiedField === 'all' ? (
+                                                    <><Check className="w-3.5 h-3.5" /> Copied!</>
+                                                ) : (
+                                                    <><Copy className="w-3.5 h-3.5" /> Copy Full Transcript</>
+                                                )}
+                                            </button>
+                                        </>
+                                    );
+                                }
+                                
+                                // ── LEGACY LETTER/RESPONSE TEXT VIEW ──
+                                return (
+                                    <>
+                                        {/* Letter */}
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Letter</span>
+                                                <button
+                                                    onClick={async () => {
+                                                        await navigator.clipboard.writeText(publicLetter || '');
+                                                        setCopiedField('letter');
+                                                        setTimeout(() => setCopiedField(null), 2000);
+                                                    }}
+                                                    className="p-1 rounded text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
+                                                    title="Copy letter"
+                                                >
+                                                    {copiedField === 'letter' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                                </button>
+                                            </div>
+                                            <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{publicLetter}</p>
+                                        </div>
 
-                            {/* Letter */}
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Letter</span>
-                                    <button
-                                        onClick={async () => {
-                                            await navigator.clipboard.writeText(publicLetter || '');
-                                            setCopiedField('letter');
-                                            setTimeout(() => setCopiedField(null), 2000);
-                                        }}
-                                        className="p-1 rounded text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
-                                        title="Copy letter"
-                                    >
-                                        {copiedField === 'letter' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                    </button>
-                                </div>
-                                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{publicLetter}</p>
-                            </div>
+                                        {/* Divider */}
+                                        <div className="border-t border-white/5" />
 
-                            {/* Divider */}
-                            <div className="border-t border-white/5" />
+                                        {/* Response */}
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Response</span>
+                                                <button
+                                                    onClick={async () => {
+                                                        await navigator.clipboard.writeText(publicResponse || '');
+                                                        setCopiedField('response');
+                                                        setTimeout(() => setCopiedField(null), 2000);
+                                                    }}
+                                                    className="p-1 rounded text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
+                                                    title="Copy response"
+                                                >
+                                                    {copiedField === 'response' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                                </button>
+                                            </div>
+                                            <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{publicResponse}</p>
+                                        </div>
 
-                            {/* Response */}
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Response</span>
-                                    <button
-                                        onClick={async () => {
-                                            await navigator.clipboard.writeText(publicResponse || '');
-                                            setCopiedField('response');
-                                            setTimeout(() => setCopiedField(null), 2000);
-                                        }}
-                                        className="p-1 rounded text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
-                                        title="Copy response"
-                                    >
-                                        {copiedField === 'response' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                    </button>
-                                </div>
-                                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{publicResponse}</p>
-                            </div>
-
-                            {/* Copy all as caption */}
-                            <button
-                                onClick={async () => {
-                                    const caption = `${publicLetter || ''}\n\n${publicResponse || ''}`;
-                                    await navigator.clipboard.writeText(caption.trim());
-                                    setCopiedField('all');
-                                    setTimeout(() => setCopiedField(null), 2000);
-                                }}
-                                className={cn(
-                                    "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all duration-200",
-                                    copiedField === 'all'
-                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                        : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
-                                )}
-                            >
-                                {copiedField === 'all' ? (
-                                    <><Check className="w-3.5 h-3.5" /> Copied!</>
-                                ) : (
-                                    <><Copy className="w-3.5 h-3.5" /> Copy Full Caption</>
-                                )}
-                            </button>
+                                        {/* Copy all as caption */}
+                                        <button
+                                            onClick={async () => {
+                                                const caption = `${publicLetter || ''}\n\n${publicResponse || ''}`;
+                                                await navigator.clipboard.writeText(caption.trim());
+                                                setCopiedField('all');
+                                                setTimeout(() => setCopiedField(null), 2000);
+                                            }}
+                                            className={cn(
+                                                "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all duration-200",
+                                                copiedField === 'all'
+                                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                                    : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+                                            )}
+                                        >
+                                            {copiedField === 'all' ? (
+                                                <><Check className="w-3.5 h-3.5" /> Copied!</>
+                                            ) : (
+                                                <><Copy className="w-3.5 h-3.5" /> Copy Full Caption</>
+                                            )}
+                                        </button>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}
@@ -1595,10 +1650,88 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 </div>
                             )}
 
-                            {/* Public Letter & Response — Q&A Layout */}
+                            {/* Post Content — Condensed Transcript or Legacy Letter/Response */}
                             <div className={cn("px-3 sm:px-4 pb-3 sm:pb-4 mt-1", !isExpanded && "mb-2")}>
-                                {/* Letter Block (The User's Tension) */}
                                 {(() => {
+                                    // Detect condensed transcript format
+                                    const transcript = post.public_post?.condensed_transcript || post.condensed_transcript;
+                                    
+                                    if (transcript && transcript.length > 0) {
+                                        // ── CONDENSED TRANSCRIPT VIEW ──
+                                        const previewCount = 2; // Show first 2 messages before "Read More"
+                                        const visibleMessages = isExpanded ? transcript : transcript.slice(0, previewCount);
+                                        const bgImages = post.imagen_urls?.length ? post.imagen_urls : (post.imagen_url ? [post.imagen_url] : []);
+                                        
+                                        return (
+                                            <>
+                                                <div className="space-y-0">
+                                                    {visibleMessages.map((msg: { role: string; text: string }, idx: number) => {
+                                                        // Every 3 messages, show a rotating background image
+                                                        const showImage = bgImages.length > 0 && idx > 0 && idx % 3 === 0;
+                                                        const imgIndex = Math.floor(idx / 3) % bgImages.length;
+                                                        
+                                                        return (
+                                                            <div key={idx}>
+                                                                {/* Interspersed image */}
+                                                                {showImage && isExpanded && (
+                                                                    <div className="my-4 -mx-3 sm:-mx-4">
+                                                                        <div className="relative w-full aspect-[21/9] overflow-hidden">
+                                                                            <img
+                                                                                src={bgImages[imgIndex]}
+                                                                                alt=""
+                                                                                className="w-full h-full object-cover"
+                                                                            />
+                                                                            <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1a] via-transparent to-[#1a1a1a] opacity-40" />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {/* Message bubble */}
+                                                                <div className={cn(
+                                                                    "py-3",
+                                                                    idx > 0 && "border-t border-white/5"
+                                                                )}>
+                                                                    <div className="flex items-center gap-1.5 mb-1.5">
+                                                                        <span className={cn(
+                                                                            "text-[10px] font-bold uppercase tracking-widest",
+                                                                            msg.role === 'user' ? 'text-zinc-500' : 'text-amber-500/70'
+                                                                        )}>
+                                                                            {msg.role === 'user' ? (post.public_post?.pseudonym || post.pseudonym || 'Anonymous') : '✦ Ideal Self'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className={cn(
+                                                                        "text-sm sm:text-[15px] leading-relaxed whitespace-pre-wrap",
+                                                                        msg.role === 'user'
+                                                                            ? 'text-zinc-300'
+                                                                            : 'text-zinc-100'
+                                                                    )}>
+                                                                        {msg.text}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                
+                                                {!isExpanded && transcript.length > previewCount ? (
+                                                    <button
+                                                        onClick={() => setIsExpanded(true)}
+                                                        className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors duration-200"
+                                                    >
+                                                        {t('readMore')} ({transcript.length - previewCount} more)
+                                                    </button>
+                                                ) : isExpanded ? (
+                                                    <button
+                                                        onClick={() => setIsExpanded(false)}
+                                                        className="text-sm font-semibold text-zinc-400 hover:text-white mt-3 transition-colors duration-200"
+                                                    >
+                                                        {t('showLess')}
+                                                    </button>
+                                                ) : null}
+                                            </>
+                                        );
+                                    }
+                                    
+                                    // ── LEGACY LETTER/RESPONSE VIEW ──
                                     const sourceLetter = translatedData?.letter || publicLetter || '';
                                     const lines = sourceLetter.split('\n');
                                     const firstLine = lines[0]?.trim() || '';
@@ -1606,47 +1739,45 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     const greeting = hasGreeting ? firstLine : null;
                                     const body = hasGreeting ? lines.slice(1).join('\n').trimStart() : publicLetter;
                                     return (
-                                        <div className="mb-4">
-                                            {greeting && (
-                                                <p className="text-sm sm:text-[15px] italic text-zinc-400 whitespace-pre-wrap leading-relaxed mb-1">
-                                                    {greeting}
+                                        <>
+                                            <div className="mb-4">
+                                                {greeting && (
+                                                    <p className="text-sm sm:text-[15px] italic text-zinc-400 whitespace-pre-wrap leading-relaxed mb-1">
+                                                        {greeting}
+                                                    </p>
+                                                )}
+                                                <p className={cn(
+                                                    "text-sm sm:text-[15px] not-italic leading-relaxed text-zinc-300 whitespace-pre-wrap",
+                                                    !isExpanded && "line-clamp-3"
+                                                )}>
+                                                    {body}
                                                 </p>
+                                            </div>
+
+                                            {!isExpanded ? (
+                                                <button
+                                                    onClick={() => setIsExpanded(true)}
+                                                    className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors duration-200"
+                                                >
+                                                    {t('readMore')}
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <div className="text-zinc-100 not-italic text-sm sm:text-[15px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{(translatedData?.response || publicResponse || '').replace(/^THE COUNSEL:\s*/i, '')}</ReactMarkdown>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => setIsExpanded(false)}
+                                                        className="text-sm font-semibold text-zinc-400 hover:text-white mt-3 transition-colors duration-200"
+                                                    >
+                                                        {t('showLess')}
+                                                    </button>
+                                                </>
                                             )}
-                                            <p className={cn(
-                                                "text-sm sm:text-[15px] not-italic leading-relaxed text-zinc-300 whitespace-pre-wrap",
-                                                !isExpanded && "line-clamp-3"
-                                            )}>
-                                                {body}
-                                            </p>
-                                        </div>
+                                        </>
                                     );
                                 })()}
-
-                                {!isExpanded ? (
-                                    <button
-                                        onClick={() => setIsExpanded(true)}
-                                        className="text-sm font-semibold text-zinc-400 hover:text-white mt-1 transition-colors duration-200"
-                                    >
-                                        {t('readMore')}
-                                    </button>
-                                ) : (
-                                    <>
-
-
-
-                                        {/* Response Block (The Ideal Self's Advice) */}
-                                        <div className="text-zinc-100 not-italic text-sm sm:text-[15px] leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&>p]:mb-4 [&>p:last-child]:mb-0">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{(translatedData?.response || publicResponse || '').replace(/^THE COUNSEL:\s*/i, '')}</ReactMarkdown>
-                                        </div>
-
-                                        <button
-                                            onClick={() => setIsExpanded(false)}
-                                            className="text-sm font-semibold text-zinc-400 hover:text-white mt-3 transition-colors duration-200"
-                                        >
-                                            {t('showLess')}
-                                        </button>
-                                    </>
-                                )}
                             </div>
                         </div>
 

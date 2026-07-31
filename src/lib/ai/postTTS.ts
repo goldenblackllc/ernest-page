@@ -321,6 +321,178 @@ export async function generatePostAudio(
     }
 }
 
+/** Beth's ElevenLabs voice ID — used for the Ideal Self voice on female users' posts */
+export const BETH_VOICE_ID = '19STyYD15bswVz51nqLf';
+
+export interface MessageBoundary {
+    role: 'user' | 'ideal_self';
+    /** Index into the wordTimestamps array where this message starts */
+    startIndex: number;
+    /** Index into the wordTimestamps array where this message ends (inclusive) */
+    endIndex: number;
+    /** Start time in seconds */
+    startTime: number;
+    /** End time in seconds */
+    endTime: number;
+}
+
+export interface ConversationAudioResult {
+    audioUrl: string;
+    wordTimestamps: WordTimestamp[];
+    messageBoundaries: MessageBoundary[];
+}
+
+/**
+ * Generate a multi-voice audio file from a condensed transcript conversation.
+ *
+ * Each message is spoken by the appropriate voice:
+ * - 'user' messages → the poster's own voice (userVoiceId)
+ * - 'ideal_self' messages → David's voice (male users) or Beth's voice (female users)
+ *
+ * Messages are concatenated with a brief pause (~300ms silence) between them.
+ *
+ * @param messages  Array of condensed transcript messages with role and text
+ * @param userVoiceId  The post author's ElevenLabs voice ID
+ * @param idealSelfVoiceId  The Ideal Self's ElevenLabs voice ID (David or Beth)
+ * @param postId  Post document ID (used for storage path)
+ * @returns ConversationAudioResult or null if generation fails
+ */
+export async function generateConversationAudio(
+    messages: Array<{ role: 'user' | 'ideal_self'; text: string }>,
+    userVoiceId: string,
+    idealSelfVoiceId: string,
+    postId: string,
+): Promise<ConversationAudioResult | null> {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+        console.error('[PostTTS] ELEVENLABS_API_KEY not configured');
+        return null;
+    }
+
+    if (!userVoiceId || userVoiceId.length < 10) {
+        console.log('[PostTTS] No valid user voice ID — skipping conversation audio');
+        return null;
+    }
+
+    if (!idealSelfVoiceId || idealSelfVoiceId.length < 10) {
+        console.log('[PostTTS] No valid ideal self voice ID — skipping conversation audio');
+        return null;
+    }
+
+    try {
+        const audioBuffers: Buffer[] = [];
+        const allTimestamps: WordTimestamp[] = [];
+        const messageBoundaries: MessageBoundary[] = [];
+        let cumulativeOffset = 0;
+
+        // Generate a real silent MP3 using ffmpeg (1.2 seconds)
+        const SILENCE_DURATION = 1.2;
+        let silenceBuffer: Buffer | null = null;
+        try {
+            const pathMod = await import('path');
+            const { spawnSync } = await import('child_process');
+            let ffmpegPath = pathMod.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+            const { existsSync } = await import('fs');
+            if (!existsSync(ffmpegPath)) {
+                try {
+                    const { execSync } = await import('child_process');
+                    ffmpegPath = execSync('which ffmpeg', { encoding: 'utf8' }).trim();
+                } catch {
+                    console.warn('[PostTTS] ffmpeg not found — no silence gaps between messages');
+                }
+            }
+            if (ffmpegPath) {
+                const result = spawnSync(ffmpegPath, [
+                    '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono`,
+                    '-t', String(SILENCE_DURATION),
+                    '-c:a', 'libmp3lame', '-b:a', '128k',
+                    '-f', 'mp3', 'pipe:1',
+                ], { maxBuffer: 50 * 1024 });
+                if (result.status === 0 && result.stdout.length > 0) {
+                    silenceBuffer = result.stdout as Buffer;
+                    console.log(`[PostTTS] Generated ${SILENCE_DURATION}s silence buffer (${silenceBuffer.length} bytes)`);
+                }
+            }
+        } catch (err: any) {
+            console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
+        }
+
+        for (let i = 0; i < messages.length; i++) {
+            const msg = messages[i];
+            const voiceId = msg.role === 'user' ? userVoiceId : idealSelfVoiceId;
+            const cleanText = cleanTextForTTS(msg.text);
+
+            if (!cleanText) continue;
+
+            // Insert silence gap before this message (except the first)
+            if (i > 0 && silenceBuffer) {
+                audioBuffers.push(silenceBuffer);
+                cumulativeOffset += SILENCE_DURATION;
+            }
+
+            const startIndex = allTimestamps.length;
+            const startTime = cumulativeOffset;
+
+            // Generate TTS for this message
+            const result = await generateTTSAudio(cleanText, voiceId, apiKey);
+            if (!result) {
+                console.error(`[PostTTS] Failed to generate audio for message ${i} (${msg.role})`);
+                continue;
+            }
+
+            // Offset timestamps by cumulative duration
+            const offsetTimestamps = result.wordTimestamps.map(w => ({
+                word: w.word,
+                start: w.start + cumulativeOffset,
+                end: w.end + cumulativeOffset,
+            }));
+
+            audioBuffers.push(result.buffer);
+            allTimestamps.push(...offsetTimestamps);
+
+            // Duration from the last word timestamp
+            const msgDuration = result.wordTimestamps.length > 0
+                ? result.wordTimestamps[result.wordTimestamps.length - 1].end
+                : 0;
+            
+            const endIndex = allTimestamps.length - 1;
+            const endTime = cumulativeOffset + msgDuration;
+
+            messageBoundaries.push({
+                role: msg.role,
+                startIndex,
+                endIndex: Math.max(startIndex, endIndex),
+                startTime,
+                endTime,
+            });
+
+            cumulativeOffset += msgDuration;
+
+            console.log(`[PostTTS] Message ${i + 1}/${messages.length} (${msg.role}): ${wordCount(cleanText)}w, ${msgDuration.toFixed(1)}s`);
+        }
+
+        if (audioBuffers.length === 0) {
+            console.error('[PostTTS] No audio buffers generated for conversation');
+            return null;
+        }
+
+        // Concatenate all audio buffers (including silence gaps)
+        const combinedBuffer = Buffer.concat(audioBuffers);
+        const audioUrl = await uploadAudio(combinedBuffer, `post-audio/${postId}_conv_${Date.now()}.mp3`);
+
+        console.log(`[PostTTS] Conversation audio generated for post ${postId}: ${messages.length} messages, ${allTimestamps.length} words`);
+
+        return {
+            audioUrl,
+            wordTimestamps: allTimestamps,
+            messageBoundaries,
+        };
+    } catch (err) {
+        console.error('[PostTTS] Conversation audio generation failed:', err);
+        return null;
+    }
+}
+
 export interface ShortAudioResult {
     /** MP3 buffer for the question portion (character voice) */
     questionBuffer: Buffer;
@@ -404,7 +576,7 @@ async function generateTTSChunkWithSpeed(
  * Retrieve the Earnest (admin) voice ID from Firestore.
  * Falls back to null if ADMIN_UID is not set or voice is not configured.
  */
-async function getEarnestVoiceId(): Promise<string | null> {
+export async function getEarnestVoiceId(): Promise<string | null> {
     const adminUid = process.env.ADMIN_UID;
     if (!adminUid) {
         console.error('[PostTTS] ADMIN_UID not configured');
