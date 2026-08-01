@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, VolumeX, Share2, Download, Loader2, FileText, Copy, Check, ImagePlus } from "lucide-react";
+import { User, Clock, Trash2, Lock, ChevronDown, ChevronUp, Heart, RefreshCw, RotateCcw, MessageCircle, ArrowUp, Play, Pause, Volume2, VolumeX, Share2, Download, Loader2, FileText, Copy, Check, ImagePlus, SkipBack, SkipForward, Maximize, Minimize } from "lucide-react";
 import { useAudioMute, PAUSE_ALL_AUDIO_EVENT } from "@/context/AudioMuteContext";
 import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
@@ -128,7 +128,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioPhase, setAudioPhase] = useState<'idle' | 'letter' | 'response'>('idle');
     const [audioProgress, setAudioProgress] = useState(0);
+    const [audioDuration, setAudioDuration] = useState(0);
+    const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+    const [controlsVisible, setControlsVisible] = useState(true);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
+    const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
 
     // Stable refs — prevent IntersectionObserver re-creation on every state change
@@ -144,6 +149,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         : (post.short_audio_url || post.audio_url);
     const legacyHasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
     const hasAudio = Boolean(unifiedAudioUrl) || legacyHasAudio;
+
+    // Posts without audio are still processing — don't render
+    if (!hasAudio) return null;
+
     const heroUrl = post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
 
     // Multi-image array: user photo first (if exists), then AI images, fallback to single
@@ -153,17 +162,33 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         return aiImages;
     })();
 
-    // ═══ IMAGE CAROUSEL TIMER (5-second cycle, loops) ═══
+    // ═══ IMAGE CAROUSEL TIMER (10-second cycle, only while playing — B-roll effect) ═══
     const [carouselIndex, setCarouselIndex] = useState(0);
     useEffect(() => {
-        if (imageUrls.length <= 1) return;
+        if (imageUrls.length <= 1 || !isPlaying) return;
         const timer = setInterval(() => {
             setCarouselIndex(prev => (prev + 1) % imageUrls.length);
         }, 10000);
         return () => clearInterval(timer);
-    }, [imageUrls.length]);
+    }, [imageUrls.length, isPlaying]);
 
+    // Show YouTube-style landscape card when post has both audio AND images
     const canPlayShort = hasAudio && (Boolean(heroUrl) || imageUrls.length > 0);
+    // Alias for clarity in render — controls only render when canPlayShort
+    const hasPlaybackControls = canPlayShort;
+
+    // Preload audio metadata so duration shows before play (YouTube-style: "0:00 / 2:34")
+    useEffect(() => {
+        if (!unifiedAudioUrl || audioDuration > 0) return;
+        const probe = new Audio();
+        probe.preload = 'metadata';
+        probe.src = unifiedAudioUrl;
+        probe.onloadedmetadata = () => {
+            setAudioDuration(probe.duration);
+            probe.src = ''; // release network connection
+        };
+        return () => { probe.src = ''; };
+    }, [unifiedAudioUrl]);
 
     // Share handler — Web Share API with clipboard fallback
     const [shareToast, setShareToast] = useState(false);
@@ -214,10 +239,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 audioRef.current = audio;
                 setAudioPhase('letter');
 
+                audio.onloadedmetadata = () => {
+                    setAudioDuration(audio.duration);
+                };
+
                 audio.ontimeupdate = () => {
                     if (audio.duration) {
                         const progress = audio.currentTime / audio.duration;
                         setAudioProgress(progress);
+                        setAudioCurrentTime(audio.currentTime);
+                        setAudioDuration(audio.duration);
                         // Estimate phase from letter word ratio
                         const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
                         setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
@@ -228,6 +259,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     setIsPlaying(false);
                     setAudioPhase('idle');
                     setAudioProgress(0);
+                    setAudioCurrentTime(0);
                     audioRef.current = null;
                     hasCompletedRef.current = true;
                 };
@@ -289,65 +321,77 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         }
     }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio, isMuted, pauseAll]);
 
-    // Keep refs in sync so IntersectionObserver callback reads fresh values
-    useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-    useEffect(() => { toggleAudioRef.current = toggleAudio; }, [toggleAudio]);
-    useEffect(() => { isAutoPlaySuppressedRef.current = isAutoPlaySuppressed; }, [isAutoPlaySuppressed]);
+    // ═══ YOUTUBE-STYLE PLAYBACK CONTROLS ═══
 
-    // Auto-play when card scrolls into view, pause when it leaves (Instagram Reels behavior)
-    // Deps only include stable values — refs prevent observer re-creation on play/pause
+    // Seek to a specific time (scrubber drag)
+    const handleSeek = useCallback((time: number) => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
+            setAudioCurrentTime(time);
+            if (audioRef.current.duration) {
+                setAudioProgress(time / audioRef.current.duration);
+            }
+        }
+    }, []);
+
+    // Skip forward/back by N seconds
+    const handleSkip = useCallback((delta: number) => {
+        if (audioRef.current) {
+            const newTime = Math.max(0, Math.min(audioRef.current.duration || 0, audioRef.current.currentTime + delta));
+            audioRef.current.currentTime = newTime;
+            setAudioCurrentTime(newTime);
+            if (audioRef.current.duration) {
+                setAudioProgress(newTime / audioRef.current.duration);
+            }
+        }
+    }, []);
+
+    // Auto-hide controls after 3 seconds of inactivity while playing
+    const showControls = useCallback(() => {
+        setControlsVisible(true);
+        if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+        if (isPlaying) {
+            controlsTimerRef.current = setTimeout(() => setControlsVisible(false), 3000);
+        }
+    }, [isPlaying]);
+
+    // Show controls when not playing, auto-hide when playing
     useEffect(() => {
-        if (!canPlayShort || !cardRef.current) return;
+        if (!isPlaying) {
+            setControlsVisible(true);
+            if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+        } else {
+            controlsTimerRef.current = setTimeout(() => setControlsVisible(false), 3000);
+        }
+        return () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); };
+    }, [isPlaying]);
 
-        let pauseTimer: ReturnType<typeof setTimeout> | null = null;
+    // Fullscreen toggle
+    const toggleFullscreen = useCallback(() => {
+        if (!cardRef.current) return;
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        } else {
+            cardRef.current.requestFullscreen().catch(() => {});
+        }
+    }, []);
 
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    // Card scrolled back into view — cancel any pending pause
-                    if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
-                    // Video mode: play the video element directly
-                    if (videoRef.current) {
-                        pauseAll(); // pause all other cards first
-                        videoRef.current.play().catch(() => {});
-                        return;
-                    }
-                    // Audio mode: start playback (unless suppressed, already playing, or already completed)
-                    if (!isPlayingRef.current && !isAutoPlaySuppressedRef.current && !hasCompletedRef.current) {
-                        toggleAudioRef.current();
-                    }
-                } else {
-                    // Debounce the pause — prevents flicker when card bounces near threshold
-                    if (pauseTimer) clearTimeout(pauseTimer);
-                    pauseTimer = setTimeout(() => {
-                        // Pause video if playing
-                        if (videoRef.current) {
-                            videoRef.current.pause();
-                            videoRef.current.currentTime = 0;
-                        }
-                        // Pause audio if playing
-                        if (isPlayingRef.current && audioRef.current) {
-                            audioRef.current.pause();
-                            audioRef.current.currentTime = 0;
-                            audioRef.current = null;
-                            setIsPlaying(false);
-                            setAudioPhase('idle');
-                            setAudioProgress(0);
-                        }
-                        // Reset completion flag so re-scrolling to this card can auto-play again
-                        hasCompletedRef.current = false;
-                    }, 300);
-                }
-            },
-            { threshold: 0.6 }
-        );
-
-        observer.observe(cardRef.current);
-        return () => {
-            observer.disconnect();
-            if (pauseTimer) clearTimeout(pauseTimer);
+    // Sync fullscreen state
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
         };
-    }, [canPlayShort]);
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
+    // Format time as M:SS
+    const formatTime = (seconds: number) => {
+        if (!seconds || !isFinite(seconds)) return '0:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
 
     // Sync global mute state to active audio/video element
     useEffect(() => {
@@ -871,13 +915,15 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
         return (
             <div ref={cardRef} className="bg-black border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-lg relative font-sans">
-                {/* Short-form container — 4:5 aspect ratio (matches generated images) */}
+                {/* Landscape video-style container — 16:9 aspect ratio (YouTube format) */}
                 <div
-                    className="relative w-full cursor-pointer overflow-hidden aspect-[4/5]"
-                    onClick={toggleAudio}
-                    title="Tap to pause/resume"
+                    className="relative w-full overflow-hidden aspect-video bg-black"
+                    onClick={hasPlaybackControls ? (e) => { e.stopPropagation(); toggleAudio(); showControls(); } : undefined}
+                    onMouseMove={hasPlaybackControls ? showControls : undefined}
+                    onTouchStart={hasPlaybackControls ? showControls : undefined}
+                    style={{ cursor: hasPlaybackControls ? 'pointer' : 'default' }}
                 >
-                    {/* Visual: video player when available, image crossfade fallback */}
+                    {/* Visual: B-roll image carousel with pillarboxing for portrait images */}
                     {imageUrls.length > 1 ? (
                         <>
                             {imageUrls.map((url, i) => (
@@ -885,7 +931,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     key={url}
                                     src={url}
                                     alt=""
-                                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+                                    className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
                                     style={{ opacity: i === currentImageIndex ? 1 : 0 }}
                                 />
                             ))}
@@ -894,15 +940,15 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         <img
                             src={currentImageUrl}
                             alt=""
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-contain"
                         />
                     )}
 
                     {/* Top: Author + Title */}
-                    <div className="absolute top-0 left-0 right-0 p-4 z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
+                    <div className={`absolute top-0 left-0 right-0 p-3 sm:p-4 z-10 transition-opacity duration-300 ${controlsVisible ? 'opacity-100' : 'opacity-0'}`} style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
                         {/* Author row */}
-                        <div className="flex items-center gap-2.5 mb-3">
-                            <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
                                 {post.author_avatar_url ? (
                                     <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
@@ -925,17 +971,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 </div>
                                 <span className="text-[10px] text-white/50">{timeAgo}</span>
                             </div>
-                            {/* Mute toggle — always visible, like Instagram Reels */}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                                className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10 transition-all duration-200 active:scale-95"
-                            >
-                                {isMuted ? (
-                                    <VolumeX className="w-3.5 h-3.5 text-white/70" />
-                                ) : (
-                                    <Volume2 className={`w-3.5 h-3.5 text-white ${isPlaying ? 'animate-pulse' : ''}`} />
-                                )}
-                            </button>
                             {/* Visibility control */}
                             {user?.uid === post.uid && (
                                 <select
@@ -951,17 +986,22 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 </select>
                             )}
                         </div>
-
-
                     </div>
 
+                    {/* Large centered play button — visible when idle and audio available (YouTube thumbnail style) */}
+                    {hasPlaybackControls && !isPlaying && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 transition-transform duration-200 hover:scale-110">
+                                <Play className="w-7 h-7 sm:w-9 sm:h-9 text-white ml-1" fill="white" />
+                            </div>
+                        </div>
+                    )}
 
-
-                    {/* Subtitle text — karaoke word-highlight style (hidden when video has baked-in subs) */}
-                    {(
-                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none px-5">
-                        <div className={`text-center max-w-[94%] transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
-                            <p className="text-[1.75rem] sm:text-4xl lg:text-5xl font-black text-white leading-snug" style={{ whiteSpace: 'pre-line', textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
+                    {/* Subtitle text — lower-third style (above control bar) — only when audio is available */}
+                    {hasPlaybackControls && isPlaying && (
+                    <div className={`absolute left-0 right-0 z-10 pointer-events-none px-4 sm:px-8 transition-all duration-300 ${controlsVisible ? 'bottom-16 sm:bottom-[4.5rem]' : 'bottom-4 sm:bottom-6'}`}>
+                        <div className={`text-center max-w-[90%] mx-auto transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
+                            <p className="text-base sm:text-xl lg:text-2xl font-bold text-white leading-snug" style={{ whiteSpace: 'pre-line', textShadow: '-1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {subtitle?.words && subtitle.activeWordIndex !== undefined && subtitle.activeWordIndex >= 0 ? (
                                     subtitle.words.map((w: { word: string }, i: number) => (
                                         <span
@@ -979,14 +1019,88 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     </div>
                     )}
 
+                    {/* YouTube-style control bar — only when audio is available */}
+                    {hasPlaybackControls && (
+                    <div className={`absolute bottom-0 left-0 right-0 z-20 transition-opacity duration-300 ${controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                        {/* Gradient backdrop */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
 
-                    {/* Progress bar */}
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10 z-20">
-                        <div
-                            className="h-full bg-white/70 transition-all duration-200"
-                            style={{ width: `${audioProgress * 100}%` }}
-                        />
+                        <div className="relative px-3 sm:px-4 pb-2 pt-6">
+                            {/* Scrubber / progress bar */}
+                            <div className="group flex items-center mb-1.5">
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={audioDuration || 100}
+                                    step={0.1}
+                                    value={audioCurrentTime}
+                                    onChange={(e) => { e.stopPropagation(); handleSeek(parseFloat(e.target.value)); }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-full h-1 group-hover:h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer transition-all duration-150 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:group-hover:opacity-100 [&::-webkit-slider-thumb]:transition-opacity"
+                                    style={{
+                                        background: `linear-gradient(to right, rgba(255,255,255,0.8) ${audioProgress * 100}%, rgba(255,255,255,0.2) ${audioProgress * 100}%)`
+                                    }}
+                                />
+                            </div>
+
+                            {/* Control buttons row */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                {/* Play / Pause */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleAudio(); }}
+                                    className="text-white hover:text-white/80 transition-colors p-1"
+                                    title={isPlaying ? 'Pause' : 'Play'}
+                                >
+                                    {isPlaying ? <Pause className="w-5 h-5" fill="white" /> : <Play className="w-5 h-5" fill="white" />}
+                                </button>
+
+                                {/* Skip back 10s */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleSkip(-10); }}
+                                    className="text-white/70 hover:text-white transition-colors p-1"
+                                    title="Back 10 seconds"
+                                >
+                                    <SkipBack className="w-4 h-4" />
+                                </button>
+
+                                {/* Skip forward 10s */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleSkip(10); }}
+                                    className="text-white/70 hover:text-white transition-colors p-1"
+                                    title="Forward 10 seconds"
+                                >
+                                    <SkipForward className="w-4 h-4" />
+                                </button>
+
+                                {/* Time display */}
+                                <span className="text-xs text-white/60 font-mono tabular-nums ml-1">
+                                    {formatTime(audioCurrentTime)} / {formatTime(audioDuration)}
+                                </span>
+
+                                {/* Spacer */}
+                                <div className="flex-1" />
+
+                                {/* Mute toggle */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                                    className="text-white/70 hover:text-white transition-colors p-1"
+                                    title={isMuted ? 'Unmute' : 'Mute'}
+                                >
+                                    {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                                </button>
+
+                                {/* Fullscreen toggle */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                                    className="text-white/70 hover:text-white transition-colors p-1"
+                                    title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                                >
+                                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
                     </div>
+                    )}
                 </div>
 
                 {/* Compact footer — likes | transcript toggle | delete + share */}
@@ -1071,8 +1185,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     {/* Right: download + delete + share */}
                     <div className="flex items-center gap-2">
-                        {/* MP4 Download — author only */}
-                        {isAuthor && canPlayShort && (
+                        {/* MP4 Download — author only, requires audio */}
+                        {isAuthor && hasPlaybackControls && (
                             <button
                                 onClick={async (e) => {
                                     e.stopPropagation();

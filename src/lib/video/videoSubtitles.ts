@@ -230,17 +230,17 @@ export function generateAssSubtitles(
 ): string {
     const totalEnd = formatAssTime(totalDuration);
 
-    // ASS uses PlayResX/PlayResY for layout coordinates — match 1080×1920 video
+    // ASS uses PlayResX/PlayResY for layout coordinates — match 1920×1080 video
     // Alignment codes: 2=bottom-center
     //
-    // SOCIAL MEDIA SAFE ZONES (9:16 / 1080×1920):
+    // SOCIAL MEDIA SAFE ZONES (16:9 / 1920×1080):
     //   Top ~500px: platform headers (profile pic, username, search, navigation)
     //   Bottom ~480px: platform footers (username, caption, action buttons, nav bar)
     //   Right ~120px: action buttons (like, comment, share)
     //
     // Typography: HK Grotesk SemiBold — clean geometric sans, refined for subtitles.
     // Parameters tuned for a polished, readable subtitle feel:
-    //   - 80pt (smaller than the old 100 — refined, not shouty)
+    //   - 65pt (refined for landscape)
     //   - Warm white (&H00EBF0F5 in ASS BGR) instead of pure white
     //   - 3px outline (thin, just enough contrast against any background)
     //   - 2px shadow at 63% opacity (subtle depth, not "stamped on")
@@ -248,13 +248,13 @@ export function generateAssSubtitles(
     const header = `[Script Info]
 Title: Earnest Page Video
 ScriptType: v4.00+
-PlayResX: 1080
-PlayResY: 1920
+PlayResX: 1920
+PlayResY: 1080
 WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Sub,HK Grotesk,100,&H00F5F0EB,&H004DC8FC,&H80000000,&HA0000000,-1,0,0,0,100,100,1,0,1,4,2,2,100,200,350
+Style: Sub,HK Grotesk,65,&H00F5F0EB,&H004DC8FC,&H80000000,&HA0000000,-1,0,0,0,100,100,1,0,1,4,2,2,120,120,120,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;

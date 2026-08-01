@@ -12,6 +12,7 @@ import { DEFAULT_TONE } from "@/lib/ai/engagementTones";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useTranslations } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
+import { cacheTTSBlob, getCachedTTSBlob, clearTTSCache } from "@/lib/ttsCache";
 
 type SessionRouting = 'public' | 'private' | 'burn';
 
@@ -644,11 +645,22 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         if (lastMsg.id === lastSpokenIdRef.current) return;
 
         lastSpokenIdRef.current = lastMsg.id;
-        setIsLoadingTTS(true);
         ttsInFlightMsgIdRef.current = lastMsg.id;
 
         (async () => {
-            const blob = await fetchTTSAudio(lastMsg.content);
+            // Check IndexedDB cache first — survives iOS page eviction on app switch
+            const cached = await getCachedTTSBlob(lastMsg.id);
+
+            let blob: Blob | null;
+            if (cached) {
+                blob = cached;
+            } else {
+                setIsLoadingTTS(true);
+                blob = await fetchTTSAudio(lastMsg.content);
+                // Persist to IndexedDB so it survives app switches
+                if (blob) cacheTTSBlob(lastMsg.id, blob).catch(() => {});
+            }
+
             ttsInFlightMsgIdRef.current = null;
             // Cache the blob for replay / manual play
             cachedBlobRef.current = blob;
@@ -727,6 +739,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         stopSpeaking();
         cachedBlobRef.current = null;
         cachedBlobMsgIdRef.current = null;
+        clearTTSCache().catch(() => {});
     };
 
     // When speaker is toggled off, pause playback (don't destroy — play button stays available)

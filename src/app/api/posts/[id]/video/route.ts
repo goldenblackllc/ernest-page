@@ -4,7 +4,6 @@ import { getAuth } from 'firebase-admin/auth';
 import { generateSubtitles, generateAssSubtitles, buildChunksFromTimestamps } from '@/lib/video/videoSubtitles';
 import { renderFrame, renderTextFrame, renderEndFrame } from '@/lib/video/renderFrame';
 import { fetchStockVideo } from '@/lib/video/stockVideo';
-import { generateShortScript } from '@/lib/ai/shortScript';
 import { generateShortAudio } from '@/lib/ai/postTTS';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
@@ -454,66 +453,30 @@ async function generateShortVideo(
         if (!letterText || !responseText) {
             return NextResponse.json({ error: 'Post missing letter or response' }, { status: 400 });
         }
-        // ── Use pre-stored short data or generate on-the-fly ──
-        let scriptQuestion: string;
-        let scriptAnswer: string;
-        let questionDuration: number;
-        let answerDuration: number;
-        let questionTimestamps: { word: string; start: number; end: number }[];
-        let answerTimestamps: { word: string; start: number; end: number }[];
-        let combinedAudioBuffer: Buffer;
-
+        // ── Use pre-stored short data ──
         const hasStoredShort = post.short_question && post.short_answer && post.short_audio_url;
 
-        if (hasStoredShort && post.short_audio_question_duration && post.short_audio_answer_duration) {
-            // ── Fast path: use pre-stored data from regeneration ──
-            console.log('[ShortVideo] Using pre-stored Q&A short data');
-            scriptQuestion = post.short_question;
-            scriptAnswer = post.short_answer;
-            questionDuration = post.short_audio_question_duration;
-            answerDuration = post.short_audio_answer_duration;
-
-            // Download the stored combined audio
-            const audioRes = await fetch(post.short_audio_url);
-            if (!audioRes.ok) throw new Error(`Failed to download stored short audio: ${audioRes.status}`);
-            combinedAudioBuffer = Buffer.from(await audioRes.arrayBuffer());
-
-            // Reconstruct timestamps from stored combined timestamps
-            const allTimestamps = post.short_audio_word_timestamps as { word: string; start: number; end: number }[] || [];
-            questionTimestamps = allTimestamps.filter((w: any) => w.end <= questionDuration + 0.1);
-            answerTimestamps = allTimestamps
-                .filter((w: any) => w.start >= questionDuration - 0.1)
-                .map((w: any) => ({ word: w.word, start: w.start - questionDuration, end: w.end - questionDuration }));
-        } else {
-            // ── Slow path: generate on-the-fly for old posts ──
-            // Get character voice ID
-            const userDoc = await db.collection('users').doc(uid).get();
-            const characterVoiceId = userDoc.data()?.character_bible?.voice_id;
-            if (!characterVoiceId) {
-                return NextResponse.json({ error: 'Character voice not configured' }, { status: 400 });
-            }
-
-            console.log('[ShortVideo] Step 1: Generating Q&A script...');
-            const script = await generateShortScript(letterText, responseText);
-            if (!script.question || !script.answer) {
-                return NextResponse.json({ error: 'Failed to generate short script' }, { status: 500 });
-            }
-            scriptQuestion = script.question;
-            scriptAnswer = script.answer;
-            console.log(`[ShortVideo] Script: Q=${scriptQuestion.split(/\s+/).length}w, A=${scriptAnswer.split(/\s+/).length}w`);
-
-            console.log('[ShortVideo] Step 2: Generating two-voice audio...');
-            const audioResult = await generateShortAudio(scriptQuestion, scriptAnswer, characterVoiceId, postId);
-            if (!audioResult) {
-                return NextResponse.json({ error: 'Failed to generate short audio' }, { status: 500 });
-            }
-            questionDuration = audioResult.questionDuration;
-            answerDuration = audioResult.answerDuration;
-            questionTimestamps = audioResult.questionTimestamps;
-            answerTimestamps = audioResult.answerTimestamps;
-            combinedAudioBuffer = Buffer.concat([audioResult.questionBuffer, audioResult.answerBuffer]);
-            console.log(`[ShortVideo] Audio: question=${questionDuration.toFixed(1)}s, answer=${answerDuration.toFixed(1)}s`);
+        if (!hasStoredShort || !post.short_audio_question_duration || !post.short_audio_answer_duration) {
+            return NextResponse.json({ error: 'Short video data not available for this post' }, { status: 400 });
         }
+
+        console.log('[ShortVideo] Using pre-stored Q&A short data');
+        const scriptQuestion: string = post.short_question;
+        const scriptAnswer: string = post.short_answer;
+        const questionDuration: number = post.short_audio_question_duration;
+        const answerDuration: number = post.short_audio_answer_duration;
+
+        // Download the stored combined audio
+        const audioRes = await fetch(post.short_audio_url);
+        if (!audioRes.ok) throw new Error(`Failed to download stored short audio: ${audioRes.status}`);
+        const combinedAudioBuffer = Buffer.from(await audioRes.arrayBuffer());
+
+        // Reconstruct timestamps from stored combined timestamps
+        const allTimestamps = post.short_audio_word_timestamps as { word: string; start: number; end: number }[] || [];
+        const questionTimestamps = allTimestamps.filter((w: any) => w.end <= questionDuration + 0.1);
+        const answerTimestamps = allTimestamps
+            .filter((w: any) => w.start >= questionDuration - 0.1)
+            .map((w: any) => ({ word: w.word, start: w.start - questionDuration, end: w.end - questionDuration }));
 
         // ── Write audio to disk ──
         const combinedAudioPath = join(workDir, 'combined.mp3');
@@ -646,10 +609,10 @@ async function generateShortVideo(
                 '-stream_loop', '-1', '-t', stockVideoDuration.toFixed(3), '-i', stockVideoPath!,
                 '-loop', '1', '-framerate', '2', '-t', endFrameDuration.toFixed(3), '-i', endFramePath,
                 '-i', combinedAudioPath,
-                // Scale stock video to 1080x1920, pad if needed to maintain aspect ratio
+                // Scale stock video to 1920x1080, pad if needed to maintain aspect ratio
                 '-filter_complex',
                 `[0:v]setsar=1[v0];` +
-                `[1:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[scaled];` +
+                `[1:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1[scaled];` +
                 `[2:v]setsar=1[v2];` +
                 `[v0][scaled][v2]concat=n=3:v=1:a=0[vid];` +
                 `[vid]ass=${assPath}:fontsdir=${fontsDir}[vout]`,

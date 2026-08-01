@@ -209,14 +209,14 @@ export function DigestCard({ title, content, imageUrl, audioUrl }: DigestCardPro
             <div ref={cardRef} className="bg-black border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-lg relative font-sans">
                 <div
                     className="relative w-full cursor-pointer overflow-hidden"
-                    style={{ aspectRatio: '4 / 5' }}
+                    style={{ aspectRatio: '16 / 9' }}
                     onClick={toggleAudio}
                     title="Tap to pause/resume"
                 >
                     <img
                         src={imageUrl!}
                         alt={title}
-                        className="absolute inset-0 w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-contain"
                     />
 
                     {/* Top: Label + Title + Mute */}

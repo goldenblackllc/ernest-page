@@ -159,7 +159,7 @@ export default function StyleBoard() {
                   return (
                     <div key={i} style={{
                       width: '120px',
-                      aspectRatio: '9/16',
+                      aspectRatio: '16/9',
                       backgroundColor: imgUrl ? 'transparent' : '#111',
                       border: imgUrl ? 'none' : '2px dashed #333',
                       borderRadius: '8px',

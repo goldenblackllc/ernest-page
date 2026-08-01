@@ -152,7 +152,7 @@ export async function assembleShortVideo(opts: AssembleShortVideoOptions): Promi
                 '-i', combinedAudioPath,
                 '-filter_complex',
                 `[0:v]setsar=1[v0];` +
-                `[1:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[scaled];` +
+                `[1:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1[scaled];` +
                 `[2:v]setsar=1[v2];` +
                 `[v0][scaled][v2]concat=n=3:v=1:a=0[vid];` +
                 `[vid]ass=${assPath}:fontsdir=${fontsDir}[vout]`,

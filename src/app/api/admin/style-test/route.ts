@@ -140,7 +140,7 @@ SCALE types:
 
 RULES:
 - Highly photorealistic. Cinematic lighting. Instagram-quality.
-- 9:16 portrait orientation. No text or watermarks.
+- 16:9 landscape orientation (1920×1080). No text or watermarks.
 - Each of the 5 images MUST use a DIFFERENT scale. Vary the vibes.
 - The images should feel like snapshots from a real person's life — intimate, authentic, with depth.
 - Ground every image in specific details from the character.
@@ -172,7 +172,7 @@ Return exactly 5 detailed Imagen prompts. Each should be a self-contained image 
 
       const result = await generateImage({
         prompt: finalPrompt,
-        aspectRatio: '9:16',
+        aspectRatio: '16:9',
         logPrefix: 'StyleTest',
         referenceImages: useReferenceImages,
         referenceMode: 'full',
@@ -181,7 +181,7 @@ Return exactly 5 detailed Imagen prompts. Each should be a self-contained image 
       if (!result) throw new Error(`Generation failed for image ${idx}`);
 
       const finalBuffer = await sharp(result.buffer)
-        .resize(1080, 1920, { fit: 'cover', position: 'center' })
+        .resize(1920, 1080, { fit: 'cover', position: 'center' })
         .png()
         .toBuffer();
 

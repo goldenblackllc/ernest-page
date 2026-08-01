@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import { generateConversationAudio, getEarnestVoiceForUser } from '@/lib/ai/postTTS';
+import { generateConversationAudio, resolvePostVoices } from '@/lib/ai/postTTS';
 import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { generateImage } from '@/lib/ai/generateImage';
@@ -21,7 +21,7 @@ export const maxDuration = 240;
  * Regenerates EVERYTHING for an existing post:
  *   1. Condensed transcript (from stored raw transcript)
  *   2. Dual-voice TTS audio (user voice + ideal self voice)
- *   3. Images (cinematic prompts from character bible, 3:4 aspect ratio)
+ *   3. Images (cinematic prompts from character bible, 16:9 aspect ratio)
  *
  * Requires the post to have `content_raw` (the original chat transcript).
  *
@@ -73,32 +73,36 @@ export async function POST(req: Request) {
         console.log('[RegeneratePost] Generating condensed transcript via Opus...');
         const condensed = await generateCondensedTranscript(transcript);
 
+        if (!condensed.is_publishable || !condensed.messages) {
+            return NextResponse.json({ error: 'Transcript not publishable' }, { status: 400 });
+        }
+
         const messageCount = condensed.messages.length;
         const wordCount = condensed.messages.reduce((sum, m) => sum + m.text.split(/\s+/).filter(Boolean).length, 0);
-        console.log(`[RegeneratePost] Condensed: ${messageCount} messages, ${wordCount} words, pseudonym: ${condensed.pseudonym}`);
+        console.log(`[RegeneratePost] Condensed: ${messageCount} messages, ${wordCount} words`);
 
         // Derive backward-compatible letter/response from condensed transcript
         const userMessages = condensed.messages.filter(m => m.role === 'user');
         const idealSelfMessages = condensed.messages.filter(m => m.role === 'ideal_self');
         const derivedLetter = userMessages.length > 0
-            ? `Dear Earnest,\n\n${userMessages[0].text}\n\n— ${condensed.pseudonym}`
+            ? `Dear Earnest,\n\n${userMessages[0].text}`
             : '';
         const derivedResponse = idealSelfMessages.length > 0
-            ? `${condensed.pseudonym},\n\n${idealSelfMessages[idealSelfMessages.length - 1].text}\n\n— Earnest Page`
+            ? idealSelfMessages[idealSelfMessages.length - 1].text
             : '';
 
         // ── STEP 2: Generate Dual-Voice TTS Audio ──
         const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
-        const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
+        const voices = await resolvePostVoices(characterVoiceId, isFemale);
 
         let conversationAudio: { audioUrl: string; wordTimestamps: { word: string; start: number; end: number }[]; messageBoundaries: any[] } | null = null;
-        if (characterVoiceId && idealSelfVoiceId) {
+        if (voices && characterVoiceId) {
             try {
-                console.log(`[RegeneratePost] Generating dual-voice audio (user: ${characterVoiceId}, ideal_self: ${idealSelfVoiceId}, gender: ${gender || 'default male'})...`);
+                console.log(`[RegeneratePost] Generating dual-voice audio (user: ${voices.userVoiceId}, ideal_self: ${voices.earnestVoiceId}, gender: ${gender || 'default male'})...`);
                 conversationAudio = await generateConversationAudio(
                     condensed.messages,
-                    characterVoiceId,
-                    idealSelfVoiceId,
+                    voices.userVoiceId,
+                    voices.earnestVoiceId,
                     postId,
                 );
             } catch (err: any) {
@@ -140,7 +144,7 @@ export async function POST(req: Request) {
                     schema: z.object({
                         prompts: z.array(z.string()).min(8).max(8),
                     }),
-                    prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 3:4 portrait orientation. No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
+                    prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 16:9 landscape orientation (1920×1080). No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
                 });
                 prompts = (aiResult.object as any).prompts;
                 console.log(`[RegeneratePost] Generated ${prompts.length} cinematic prompts`);
@@ -165,7 +169,7 @@ export async function POST(req: Request) {
                 try {
                     const result = await generateImage({
                         prompt: prompts[i],
-                        aspectRatio: '4:5',
+                        aspectRatio: '16:9',
                         logPrefix: 'RegeneratePost',
                         referenceImages: useReferenceImages,
                         referenceMode: i < 2 ? 'face-only' : 'full',
@@ -198,7 +202,6 @@ export async function POST(req: Request) {
 
         // ── STEP 4: Write everything to Firestore ──
         const publicPost: any = {
-            pseudonym: condensed.pseudonym,
             letter: derivedLetter,
             response: derivedResponse,
             condensed_transcript: condensed.messages,
@@ -209,15 +212,6 @@ export async function POST(req: Request) {
             public_post: publicPost,
             condensed_transcript: condensed.messages,
             condensed_editorial_note: condensed.editorial_note,
-            // Clear old short-form fields
-            short_video_url: FieldValue.delete(),
-            short_audio_url: FieldValue.delete(),
-            short_audio_word_timestamps: FieldValue.delete(),
-            short_audio_letter_ratio: FieldValue.delete(),
-            short_audio_question_duration: FieldValue.delete(),
-            short_audio_answer_duration: FieldValue.delete(),
-            short_question: FieldValue.delete(),
-            short_answer: FieldValue.delete(),
         };
 
         if (imagen_urls.length > 0) {
@@ -241,7 +235,6 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             success: true,
-            pseudonym: condensed.pseudonym,
             message_count: messageCount,
             word_count: wordCount,
             audio_regenerated: !!conversationAudio,

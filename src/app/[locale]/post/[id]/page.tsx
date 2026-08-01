@@ -257,19 +257,19 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
             {heroUrl && <meta property="og:image" content={heroUrl} />}
             <meta property="og:type" content="article" />
 
-            <div className="w-full max-w-[420px]">
+            <div className="w-full max-w-[960px]">
                 {isShort ? (
                     /* Short-form rendering */
                     <div className="bg-black border border-white/10 rounded-xl overflow-hidden shadow-lg relative font-sans">
                         <div
                             className="relative w-full cursor-pointer overflow-hidden"
-                            style={{ aspectRatio: '4 / 5' }}
+                            style={{ aspectRatio: '16 / 9' }}
                             onClick={toggleAudio}
                         >
                             <img
                                 src={heroUrl}
                                 alt={publicTitle || ""}
-                                className="absolute inset-0 w-full h-full object-cover"
+                                className="absolute inset-0 w-full h-full object-contain"
                             />
                             {/* Gradient overlays */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/50 z-10" />

@@ -67,7 +67,7 @@ export async function searchPexelsVideo(keyword: string): Promise<PexelsVideo[]>
   }
 
   try {
-    const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(keyword)}&orientation=portrait&size=medium&per_page=15`;
+    const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(keyword)}&orientation=landscape&size=medium&per_page=15`;
     const response = await fetch(url, {
       headers: {
         'Authorization': process.env.PEXELS_API_KEY,

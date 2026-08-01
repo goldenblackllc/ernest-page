@@ -8,10 +8,8 @@ import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/securit
 import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
-import { generatePostAudio, generateShortAudio } from '@/lib/ai/postTTS';
 import { generateConversationAudio, getEarnestVoiceForUser } from '@/lib/ai/postTTS';
 import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
-import { generateShortScript } from '@/lib/ai/shortScript';
 import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { generateImage } from '@/lib/ai/generateImage';
@@ -61,6 +59,8 @@ export async function GET(req: Request) {
                 // Filter for expired or closed chats
                 const relevantChats = chatsSnap.docs.filter(chatDoc => {
                     const data = chatDoc.data();
+                    // Skip chats in retry cooldown — wait for retryAfter to expire
+                    if (data.retryAfter && data.retryAfter > now) return false;
                     const isExpired = data.updatedAt && data.updatedAt <= (now - timeoutMs);
                     const isClosed = data.isClosed === true;
                     // Skip chats already claimed by another cron run (unless claim is stale >10min)
@@ -189,86 +189,7 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
             const currentDossier = identity?.dossier || '';
             const sessionCount = (identity?.session_count || 0) + 1;
 
-            // ─── PARALLEL AI CALLS: post synthesis + dossier update + session recap ───
-            // Each task gets its own focused call with only the context it needs.
-
-            let languageCommand = "The output must be in English.";
-            if (preferredLocale === "es") {
-                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in SPANISH (Español).";
-            } else if (preferredLocale === "fr") {
-                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in FRENCH (Français).";
-            } else if (preferredLocale === "de") {
-                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in GERMAN (Deutsch).";
-            } else if (preferredLocale === "pt") {
-                languageCommand = "[LANGUAGE MANDATE]\nThe letter and response MUST be written entirely in PORTUGUESE (Português).";
-            }
-
-            // ══════════════════════════════════════════════════════════════
-            // TWO-PASS GHOST-WRITING PIPELINE
-            //
-            // Pass 1: Extract the user's opening tension and write the LETTER.
-            //         The letter is frozen at the user's unresolved state.
-            //         Also: editorial judgment, title, pseudonym, image prompt.
-            //
-            // Pass 2: Write Earnest's RESPONSE, given the generated letter.
-            //         The response delivers the resolution from the conversation.
-            // ══════════════════════════════════════════════════════════════
-
-            // ── Pass 1: Letter + Editorial Judgment + Image (Sonnet) ──
-            const letterPrompt = `You are the Executive Editor of an elite advice and lifestyle column on a mainstream social media app. You just received this raw chat transcript between a user (Character B) and their Ideal Self (Character A).
-${languageCommand}
-
-CHARACTER BIBLE:
-${JSON.stringify(compiledBible)}
-
-CHAT TRANSCRIPT:
-${transcript}
-
-STEP 1: THE EDITORIAL JUDGMENT
-Determine if this transcript has "Editorial Value."
-* Meaningless (is_publishable: false): Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, OR conversations where the user never states what they want or how they feel. If there is no clear want or feeling, there is no story.
-* Valuable (is_publishable: true): The user arrives with either a WANT (something they are trying to do, get, or figure out) or a SITUATION THEY ARE STUCK ON (something that is not working, a pattern they are repeating, a wall they keep hitting), and Character A helps them see the situation clearly and delivers a concrete approach. The reader must be able to recognize themselves in the situation in under 60 seconds.
-
-STEP 2: WRITE THE LETTER (If Publishable)
-Your ONLY writing job in this step is the LETTER — the user's side. You are NOT writing Earnest's response. That comes later in a separate step.
-
-HOW CONVERSATIONS WORK — understand this before writing:
-Every conversation follows the same two-phase structure:
-  Phase 1 — UNDERSTANDING: The user states what they want or how they feel. Character A asks clarifying questions. The situation becomes clear. This phase is about the user's reality.
-  Phase 2 — ADVICE: Character A delivers insight, recommendations, or a reframe. The user reacts, clarifies, and the advice gets refined. This phase is Character A's contribution.
-The LETTER draws ONLY from Phase 1. The RESPONSE (written separately) draws from Phase 2.
-
-IDENTIFY THE USER'S ARRIVAL STATE — read ONLY the user's messages (Character B):
-- WANT or FEELING: What did the user come in with? This is almost always stated in their first message or two. It is either a concrete want ("I need a new suit", "I want to lose weight", "I'm trying to decide whether to quit") or a negative feeling ("I feel off today", "I'm overwhelmed", "something isn't right in my relationship"). Read their words literally. If they are clear, they are clear. If they are confused, they are confused. Do NOT go deeper than the user went.
-- SITUATION: What details emerged during Phase 1 that help a reader understand the context? Look for specifics the user shared — numbers, timelines, constraints, relationships, stakes.
-
-INCLUDE THE FULL SITUATION: If the user revealed a passion, a desire, a thing they love doing, or something they discovered about themselves during the conversation, that is PART OF THEIR SITUATION — not advice. Include it in the letter. The letter should contain everything the response will need to reference. A cold reader will only ever see the letter and response — never the transcript.
-
-CRITICAL RULE: The user is a reliable narrator of their own state. If they say they want something, that is what they want — do not reinterpret it as uncertainty. If they say they feel confused, the confusion IS the story — do not diagnose a cause and present the cause as their real problem. Character A may explore, question, and probe — but Character A's framework is not the user's experience. The letter represents the USER, not Character A's interpretation of the user.
-
-YOUR EDITORIAL MANDATE: Write the letter the user would have written if they could articulate their situation cleanly. This means: preserve what they actually wanted or felt, add the situation details that make it vivid, and stop. Do NOT resolve it. Do NOT include anything from Phase 2. The letter is the "before" — the response is the "after." The letter should make the reader think "that's me" or "that's my friend" — not "that poor person."
-
-- pseudonym: A clever 2-3 word sign-off (e.g., 'Curious Creator').
-
-PII SCRUBBING — THIS IS NON-NEGOTIABLE AND APPLIES TO ALL FIELDS (letter):
-
-FIRST — identify what to KEEP (these add value and do NOT identify the user):
-  • Public figures and celebrities BY THEIR REAL NAMES — Jeremy Clarkson stays "Jeremy Clarkson", Brené Brown stays "Brené Brown". NEVER replace a public figure with "a celebrity", "a public figure I admire", "someone I look up to", or any generic substitute.
-  • Brand and product names mentioned as recommendations or aspirations (e.g., "Hugo Boss", "Nike", "Tesla", "Jura")
-  • Cultural references — books, films, songs, TV shows, podcasts, by their real titles
-  • Generic industry or category names (e.g., "tech", "finance", "healthcare")
-THEN — replace everything that identifies THE USER PERSONALLY:
-  • Names of people the user PERSONALLY KNOWS → relationship role (e.g., "Max" → "my son", "Iris" → "my sister", "John at work" → "my colleague")
-  • The user's employer, workplace, school, or client companies → "my company", "my workplace", "my school"
-  • Specific locations tied to the user → "my city", "my neighborhood"
-  • Addresses, phone numbers, email addresses, social media handles
-The test: does this name exist on Wikipedia? If yes, keep it verbatim. If no, replace it with a relationship role. The post must be fully anonymous — but anonymity means hiding WHO wrote it, not stripping useful content.
-
-- letter: LENGTH: 40-80 words. Tight and punchy — this is social media, not a newspaper. The letter will be read aloud in ~15-30 seconds. STRUCTURE: Lead with the GUT PUNCH — the single sharpest, most relatable line. This is the first thing a viewer reads as a subtitle. It must hook in under 8 words. (GOOD: "I keep going back." "I hate my body." "I just graduated and I can't find a job." BAD: "I find myself increasingly torn between..."). Then 2-3 sentences of SITUATION — just enough context to understand. The letter must present the situation as UNRESOLVED — before any advice was given. If you include ANY resolution, reframe, insight, or advice from Phase 2, you have failed. VOICE: Write in first person, present tense. Raw and conversational — like texting a friend at 2am, not writing to a therapist. No clinical language ("boundaries", "trauma", "healing journey"). NEVER reference the chat or session. NEVER narrate in third person. FORMATTING: Start with 'Dear Earnest,\\n\\n' followed by the gut punch. End with '\\n\\n— ' followed by the pseudonym in Title Case. No "Sincerely" — just the em dash. Write strictly in the requested language.
-
-OUTPUT FIELDS:
-- photo_vibe: One word capturing the emotional tone (e.g., warmth, defiance, clarity, resolve).
-- language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
+            // ─── PARALLEL AI CALLS: condensed transcript + dossier update + session recap ───
 
             const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
 
@@ -286,33 +207,13 @@ ${transcript}`;
                 // ── Check for cached AI results from a previous image-retry run ──
                 const cachedPost = chatData.cachedPost;
 
-                // ── PARALLEL BATCH: Pass 1 (letter) + Dossier + Recap ──
+                // ── PARALLEL BATCH: Condensed Transcript + Dossier + Recap ──
                 // Skip AI generation if we already have cached results from a prior run
-                const [letterResult, dossierResult, recapResult] = cachedPost
+                const [condensedResult, dossierResult, recapResult] = cachedPost
                     ? [null, null, null]
                     : await Promise.all([
-                        // Pass 1: Letter + editorial judgment + image prompt
-                        generateWithFallback({
-                            primaryModelId: OPUS_MODEL,
-                            fallbackModelId: OPUS_FALLBACK,
-                            schema: z.discriminatedUnion('is_publishable', [
-                                z.object({
-                                    is_publishable: z.literal(true),
-                                    pseudonym: z.string(),
-                                    letter: z.string(),
-                                    photo_vibe: z.string(),
-                                    language: z.string().optional(),
-                                }),
-                                z.object({
-                                    is_publishable: z.literal(false),
-                                    pseudonym: z.string().optional(),
-                                    letter: z.string().optional(),
-                                    photo_vibe: z.string().optional(),
-                                    language: z.string().optional(),
-                                }),
-                            ]),
-                            prompt: letterPrompt,
-                        }),
+                        // Condensed transcript (editorial judgment + ghost-written conversation + language)
+                        generateCondensedTranscript(transcript),
                         // Dossier Rewrite — Opus
                         generateWithFallback({
                             primaryModelId: OPUS_MODEL,
@@ -333,87 +234,38 @@ ${transcript}`;
                         }),
                     ]);
 
-                const pass1 = cachedPost || (letterResult!.object as any);
+                const condensed = cachedPost || condensedResult;
                 const dossier = cachedPost ? null : (dossierResult!.object as any);
                 const recap = cachedPost ? null : (recapResult!.object as any);
 
-                // ── Pass 2: Response (sequential — needs the letter from Pass 1) ──
-                // Skip Pass 2 on image-retry runs — cachedPost already includes the response.
-                let post: any;
-                if (cachedPost) {
-                    post = cachedPost;
-                } else if (pass1.is_publishable && pass1.letter && pass1.pseudonym) {
-                    const responsePrompt = `You are writing as Earnest Page — an advice columnist. You have just received the following letter. Now write your response.
-${languageCommand}
-
-CHARACTER BIBLE (this is Earnest Page's voice and worldview — write in this voice):
-${JSON.stringify(compiledBible)}
-
-THE LETTER:
-${pass1.letter}
-
-CHAT TRANSCRIPT (for context — the advice that emerged in this conversation):
-${transcript}
-
-HOW TO READ THE TRANSCRIPT:
-The conversation has two phases. Phase 1 is understanding — Character A asks questions and the user's situation becomes clear. Phase 2 is advice — Character A delivers insight, recommendations, or a concrete plan. The letter above captures Phase 1 (the user's want or feeling + their situation). Your response should deliver the substance of Phase 2 (the advice, the answer, the path forward).
-
-YOUR JOB: Write Earnest Page's response to this letter. The letter captures where the user arrived — what they wanted or how they felt. The conversation transcript shows the advice Character A gave. Your response delivers that advice — warm, specific, actionable, in Character A's exact voice. Match the nature of the advice: if the conversation delivered practical recommendations (go here, buy this, do that), the response should be practical. If it delivered an emotional reframe, the response should be an emotional reframe. Do not force emotional depth onto practical advice, and do not reduce emotional insight to bullet points.
-
-SINGLE-INSIGHT FOCUS: The response should orbit ONE central reframe — the single belief or pattern that is actually blocking them. Don't scatter across multiple points. Setup → reframe → directive. The reframe is the line that should stop a reader cold.
-
-SELF-CONTAINMENT — NON-NEGOTIABLE: The response must only reference situations, details, and context that appear IN THE LETTER. The reader has never seen the transcript. If the transcript contains insights, translate them into advice that makes sense given only what the letter says. Never say "you already named it" or reference something the letter doesn't mention.
-
-NO WANT-SUBSTITUTION: Do not tell the writer what they "really" want. If the advice involves reframing a desire, name the specific feeling behind their stated want — don't replace their want with a different one. "You want money because you think it'll prove you're not failing" is good. "You don't want money — you want peace" is bad.
-
-PII SCRUBBING — THIS IS NON-NEGOTIABLE:
-FIRST — identify what to KEEP: Public figures and celebrities BY THEIR REAL NAMES (Jeremy Clarkson stays "Jeremy Clarkson", never "a celebrity" or "someone I admire"). Brand names, product recommendations, cultural references — keep them all verbatim.
-THEN — replace what identifies THE USER: Names of people the user personally knows → relationship roles. Employer, school, clients → generic labels. The test: Wikipedia name? Keep it. Personal contact? Replace it.
-
-- response: LENGTH: 85-115 words. STRUCTURE: Open with the CONFRONTATIONAL TRUTH — the thing the user needs to hear. No throat-clearing, no "I hear you", no acknowledgment of their feelings. Go straight to the insight. Three-four sentences delivering the real advice that emerged in the conversation — be specific, give the reader something concrete they can use. One closing line with a direct instruction or challenge. The response is the PAYOFF — it answers the letter. Write strictly in Character A's exact voice. FORMATTING: Start with '${pass1.pseudonym},\n\n' (direct address, no "Dear"). Write the body. End with '\n\n— Earnest Page'. No "Sincerely" — just the em dash. Strip away all standard AI formatting like bullet points unless the character would use them. Write strictly in the requested language.`;
-
-                    const responseResult = await generateWithFallback({
-                        primaryModelId: OPUS_MODEL,
-                        fallbackModelId: OPUS_FALLBACK,
-                        schema: z.object({
-                            response: z.string(),
-                        }),
-                        prompt: responsePrompt,
-                    });
-
-                    const pass2 = responseResult.object as any;
-
-                    // Merge Pass 1 + Pass 2 into unified post object
-                    post = {
-                        ...pass1,
-                        response: pass2.response,
-                    };
-                } else {
-                    // Not publishable — pass through as-is
-                    post = pass1;
-                }
-
-                // ── CONDENSED TRANSCRIPT (runs after letter/response for backward compat) ──
+                // Extract condensed transcript data
                 let condensedMessages: Array<{ role: 'user' | 'ideal_self'; text: string }> | null = null;
                 let condensedEditorialNote: string | null = null;
-                if (post.is_publishable && transcript) {
-                    try {
-                        console.log(`[Cron] Generating condensed transcript for user ${uid}...`);
-                        const condensed = await generateCondensedTranscript(transcript);
-                        condensedMessages = condensed.messages;
-                        condensedEditorialNote = condensed.editorial_note;
-                        // Use condensed pseudonym if it's better than the letter pseudonym
-                        if (condensed.pseudonym && !post.pseudonym) {
-                            post.pseudonym = condensed.pseudonym;
-                        }
-                        console.log(`[Cron] Condensed: ${condensed.messages.length} messages`);
-                    } catch (err: any) {
-                        console.error(`[Cron] Condensed transcript failed (non-fatal):`, err.message);
-                    }
+
+                if (condensed && condensed.is_publishable && condensed.messages) {
+                    condensedMessages = condensed.messages;
+                    condensedEditorialNote = condensed.editorial_note || null;
+                    console.log(`[Cron] Condensed: ${condensed.messages.length} messages`);
                 }
 
-                // Stamp the randomly pre-selected visual style onto the post
-                post.visual_style = randomStyle.id;
+                // Derive backward-compatible letter/response from condensed transcript
+                const userMsgs = condensedMessages?.filter((m: any) => m.role === 'user') || [];
+                const idealSelfMsgs = condensedMessages?.filter((m: any) => m.role === 'ideal_self') || [];
+                const derivedLetter = userMsgs.length > 0
+                    ? `Dear Earnest,\n\n${userMsgs[0].text}`
+                    : '';
+                const derivedResponse = idealSelfMsgs.length > 0
+                    ? idealSelfMsgs[idealSelfMsgs.length - 1].text
+                    : '';
+
+                // Build post object for downstream compatibility
+                const post: any = {
+                    is_publishable: condensed?.is_publishable || false,
+                    letter: derivedLetter,
+                    response: derivedResponse,
+                    language: condensed?.language || null,
+                    visual_style: randomStyle.id,
+                };
 
                 // ─── DOSSIER + RECAPS WRITE (runs in parallel with image gen below) ───
                 // Skip dossier/recap writes on image-retry runs (already written on first pass)
@@ -444,7 +296,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 
                 // ─── POST CREATION (with parallel image gen) ───
                 const MAX_IMAGE_RETRIES = 5;
-                if (post.is_publishable && post.letter) {
+                if (post.is_publishable && condensedMessages && condensedMessages.length > 0) {
                     const postDocRef = db.collection('posts').doc();
 
                     // ─── IMAGE PROMPT CONSTRUCTION (server-side, based on style category) ───
@@ -483,7 +335,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 schema: z.object({
                                     prompts: z.array(z.string()).min(8).max(8),
                                 }),
-                                prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 4:5 portrait orientation. No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
+                                prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 16:9 landscape orientation (1920×1080). No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
                             });
                             prompts = (aiResult.object as any).prompts;
                             console.log(`[Cron] Generated ${prompts.length} cinematic prompts`);
@@ -496,11 +348,9 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             `${chosenStyle.variations![i % chosenStyle.variations!.length]} ${JSON.stringify(compiledBible)}`
                         );
                     } else {
-                        // Photographer styles — imagenTag + conversation (or letter fallback)
+                        // Photographer styles — imagenTag + conversation context
                         const tag = chosenStyle?.imagenTag || '';
-                        const conversationContext = condensedMessages && condensedMessages.length > 0
-                            ? condensedMessages.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n')
-                            : post.letter;
+                        const conversationContext = condensedMessages!.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n');
                         const prompt = tag ? `${tag}\n${conversationContext}` : conversationContext;
                         prompts = Array(NUM_IMAGES).fill(prompt);
                     }
@@ -517,17 +367,17 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                             author: userData?.displayName || "Anonymous",
                             type: 'checkin',
                             public_post: {
-                                pseudonym: post.pseudonym,
                                 letter: post.letter,
                                 response: post.response,
+                                ...(condensedMessages && { condensed_transcript: condensedMessages }),
                             },
                             imagen_prompt: null,
                             imagen_prompts: [],
-                            photo_vibe: post.photo_vibe || null,
                             language: post.language || null,
                             imagen_url: null,
                             imagen_urls: [],
                             content_raw: transcript,
+                            ...(condensedMessages && { condensed_transcript: condensedMessages }),
                             status: "completed",
                             created_at: new Date(),
                             is_public: false,
@@ -612,6 +462,36 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                     const userPhotoUrl = chatData.user_photo_url || null;
 
                     // Create Post in DB
+                    // ─── GENERATE AUDIO FIRST (before writing post) ───
+                    // We generate all content before creating the post document.
+                    // If anything fails, no post is created and the chat retries after cooldown.
+                    const audioFields: Record<string, any> = {};
+                    const characterVoiceId = userData?.character_bible?.voice_id;
+
+                    if (characterVoiceId && condensedMessages && condensedMessages.length > 0) {
+                        // Dual-voice conversation audio for condensed transcript
+                        const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
+                        const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
+                        
+                        if (idealSelfVoiceId) {
+                            console.log(`[Cron] Generating dual-voice audio (gender: ${gender || 'default male'})...`);
+                            const audioResult = await generateConversationAudio(
+                                condensedMessages,
+                                characterVoiceId,
+                                idealSelfVoiceId,
+                                postDocRef.id,
+                            );
+                            if (audioResult) {
+                                audioFields.audio_url = audioResult.audioUrl;
+                                audioFields.audio_word_timestamps = audioResult.wordTimestamps;
+                                audioFields.audio_message_boundaries = audioResult.messageBoundaries;
+                                audioFields.audio_letter_ratio = audioResult.messageBoundaries[0]?.endTime / audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5;
+                                console.log(`[Cron] Conversation audio generated for post ${postDocRef.id}`);
+                            }
+                        }
+                    }
+
+                    // ─── WRITE POST (single atomic write with all content) ───
                     await postDocRef.set({
                         id: postDocRef.id,
                         uid,
@@ -621,7 +501,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         author: userData?.displayName || "Anonymous",
                         type: 'checkin',
                         public_post: {
-                            pseudonym: post.pseudonym,
                             letter: post.letter,
                             response: post.response,
                             ...(condensedMessages && { condensed_transcript: condensedMessages }),
@@ -629,7 +508,6 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         imagen_prompt: prompts[0] || null,
                         imagen_prompts: prompts,
                         visual_style: post.visual_style || null,
-                        photo_vibe: post.photo_vibe || null,
                         language: post.language || null,
                         imagen_url: imagen_url,
                         imagen_urls: imagen_urls,
@@ -642,6 +520,8 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                         content_raw: transcript,
                         ...(condensedMessages && { condensed_transcript: condensedMessages }),
                         ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
+                        // Audio fields (generated above)
+                        ...audioFields,
                         status: "completed",
                         created_at: new Date(),
                         is_public: imagen_url ? (visibility !== 'private') : false,
@@ -657,116 +537,28 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                                 service: 'gmail',
                                 auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
                             });
-                            const postTitle = post.pseudonym || 'New Post';
-                            const postPseudonym = post.pseudonym || 'Anonymous';
+                            const postAuthor = userData?.displayName || 'Anonymous';
                             const postVisibility = visibility || 'private';
+                            const firstUserMsg = userMsgs.length > 0 ? userMsgs[0].text : '';
+                            const emailPreview = firstUserMsg.substring(0, 300) + (firstUserMsg.length > 300 ? '...' : '');
                             await transporter.sendMail({
                                 from: `Earnest Page <${ADMIN_EMAIL}>`,
                                 to: ADMIN_EMAIL,
-                                subject: `📝 New Post — ${postTitle}`,
+                                subject: `📝 New Post — ${postAuthor}`,
                                 html: `
 <div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
     <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
-    <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postTitle}</h2>
-    <p style="font-size: 13px; color: #a1a1aa; margin: 0 0 16px 0;">by ${postPseudonym}</p>
+    <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postAuthor}</h2>
     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
         <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${postVisibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${postVisibility}</td></tr>
-        <tr><td style="padding: 6px 0; color: #71717a;">Author</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${userData?.displayName || 'Anonymous'}</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Post ID</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 11px;">${postDocRef.id}</td></tr>
     </table>
-    ${post.letter ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${post.letter.substring(0, 300)}${post.letter.length > 300 ? '...' : ''}</div>` : ''}
+    ${emailPreview ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${emailPreview}</div>` : ''}
 </div>`,
                             });
                         }
                     } catch (emailErr) {
                         console.error(`[Cron] Post notification email failed:`, emailErr);
-                    }
-
-                    // ─── POST AUDIO GENERATION ───
-                    const characterVoiceId = userData?.character_bible?.voice_id;
-                    if (characterVoiceId) {
-                        try {
-                            if (condensedMessages && condensedMessages.length > 0) {
-                                // Dual-voice conversation audio for condensed transcript
-                                const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
-                                const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
-                                
-                                if (idealSelfVoiceId) {
-                                    console.log(`[Cron] Generating dual-voice audio (gender: ${gender || 'default male'})...`);
-                                    const audioResult = await generateConversationAudio(
-                                        condensedMessages,
-                                        characterVoiceId,
-                                        idealSelfVoiceId,
-                                        postDocRef.id,
-                                    );
-                                    if (audioResult) {
-                                        await postDocRef.update({
-                                            audio_url: audioResult.audioUrl,
-                                            audio_word_timestamps: audioResult.wordTimestamps,
-                                            audio_message_boundaries: audioResult.messageBoundaries,
-                                            audio_letter_ratio: audioResult.messageBoundaries[0]?.endTime / audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5,
-                                        });
-                                        console.log(`[Cron] Conversation audio attached to post ${postDocRef.id}`);
-                                    }
-                                }
-                            } else if (post.letter && post.response) {
-                                // Fallback: single-voice audio for letter/response
-                                const audioResult = await generatePostAudio(
-                                    post.letter,
-                                    post.response,
-                                    characterVoiceId,
-                                    postDocRef.id,
-                                );
-                                if (audioResult) {
-                                    await postDocRef.update({
-                                        audio_url: audioResult.audioUrl,
-                                        audio_letter_ratio: audioResult.letterWordRatio,
-                                        audio_word_timestamps: audioResult.wordTimestamps,
-                                    });
-                                    console.log(`[Cron] Audio attached to post ${postDocRef.id}`);
-                                }
-                            }
-                        } catch (err) {
-                            console.error(`[Cron] Post audio failed for ${postDocRef.id}:`, err);
-                        }
-
-                        // ── Generate Q&A short-form content ──
-                        try {
-                            console.log(`[CleanupChats] Generating Q&A short for post ${postDocRef.id}...`);
-                            const shortScript = await generateShortScript(post.letter, post.response);
-                            
-                            if (shortScript.question && shortScript.answer) {
-                                const shortAudio = await generateShortAudio(
-                                    shortScript.question,
-                                    shortScript.answer,
-                                    characterVoiceId,
-                                    postDocRef.id,
-                                );
-                                
-                                if (shortAudio) {
-                                    const offsetAnswerTimestamps = shortAudio.answerTimestamps.map((w: any) => ({
-                                        word: w.word,
-                                        start: w.start + shortAudio.questionDuration,
-                                        end: w.end + shortAudio.questionDuration,
-                                    }));
-                                    const allShortTimestamps = [...shortAudio.questionTimestamps, ...offsetAnswerTimestamps];
-                                    const totalShortDuration = shortAudio.questionDuration + shortAudio.answerDuration;
-                                    
-                                    await postDocRef.update({
-                                        short_question: shortScript.question,
-                                        short_answer: shortScript.answer,
-                                        short_audio_url: shortAudio.audioUrl,
-                                        short_audio_word_timestamps: allShortTimestamps,
-                                        short_audio_letter_ratio: shortAudio.questionDuration / totalShortDuration,
-                                        short_audio_question_duration: shortAudio.questionDuration,
-                                        short_audio_answer_duration: shortAudio.answerDuration,
-                                    });
-                                    console.log(`[CleanupChats] Short format stored for post ${postDocRef.id}`);
-                                }
-                            }
-                        } catch (err: any) {
-                            console.error(`[CleanupChats] Short format failed (non-fatal): ${err.message}`);
-                        }
                     }
 
                     processed++;
@@ -776,11 +568,18 @@ THEN — replace what identifies THE USER: Names of people the user personally k
                 }
                 // Success — delete the processed chat session
                 await chatDoc.ref.delete();
-            } catch (e) {
+            } catch (e: any) {
                 console.error(`[Cron] Processing failed for user ${uid}:`, e);
-                // Release the claim so the next cron run can retry — do NOT delete the chat
+                // Set a 1-hour retry cooldown — prevents the next cron run from
+                // immediately reprocessing and spamming external APIs.
+                // The post_id on the chat ensures retries update the existing post.
                 try {
-                    await chatDoc.ref.update({ processing: false, processingStartedAt: FieldValue.delete() });
+                    await chatDoc.ref.update({
+                        processing: false,
+                        retryAfter: Date.now() + 60 * 60 * 1000, // 1 hour from now
+                        lastError: (e?.message || String(e)).slice(0, 500),
+                        lastErrorAt: Date.now(),
+                    });
                 } catch { /* silent — chat may already be gone */ }
                 continue;
             }
@@ -797,7 +596,7 @@ THEN — replace what identifies THE USER: Names of people the user personally k
 async function generateSingleImage(prompt: string, postId: string, referenceImages?: Buffer[], referenceMode?: 'full' | 'face-only'): Promise<{ buffer: Buffer; prompt: string } | null> {
     const result = await generateImage({
         prompt,
-        aspectRatio: '4:5',
+        aspectRatio: '16:9',
         logPrefix: 'Cron',
         referenceImages,
         referenceMode,
@@ -805,7 +604,7 @@ async function generateSingleImage(prompt: string, postId: string, referenceImag
     if (!result) return null;
 
     const finalBuffer = await sharp(result.buffer)
-        .resize(1080, 1920, { fit: 'cover', position: 'center' })
+        .resize(1920, 1080, { fit: 'cover', position: 'center' })
         .png()
         .toBuffer();
 

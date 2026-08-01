@@ -109,7 +109,7 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                 const referenceMode = idx < 2 ? 'face-only' as const : 'full' as const;
                 const result = await generateImage({
                     prompt,
-                    aspectRatio: '9:16',
+                    aspectRatio: '16:9',
                     logPrefix: 'RegenerateImage',
                     referenceImages,
                     referenceMode,
@@ -117,7 +117,7 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                 if (!result) return null;
 
                 const finalBuffer = await sharp(result.buffer)
-                    .resize(1080, 1920, { fit: 'cover', position: 'center' })
+                    .resize(1920, 1080, { fit: 'cover', position: 'center' })
                     .png()
                     .toBuffer();
 
@@ -225,7 +225,7 @@ Then BECOME that photographer — write every imagen prompt through their creati
 
 ALL prompts must follow these rules:
 - Never CGI, 3D-rendered, or illustrated
-- 9:16 portrait orientation (1080×1920)
+- 16:9 landscape orientation (1920×1080)
 - No text or watermarks in the image
 - Keep the center area relatively uncluttered (subtitle text overlays there during video playback)
 ${characterHint}

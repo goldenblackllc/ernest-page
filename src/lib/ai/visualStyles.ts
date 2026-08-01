@@ -82,7 +82,7 @@ export const VISUAL_STYLES: VisualStyle[] = [
         category: 'landscape',
         bestFor: 'Any story — scenic locations from the character\'s life without the person.',
         vision: '',
-        imagenTag: 'Imagine we publish conversations between a person and their consultant in an advice column. Generate a beautiful landscape photograph to accompany this conversation, based on this person\'s character:',
+        imagenTag: 'Imagine we publish conversations between a person and their consultant in an advice column. Generate a beautiful landscape photograph to accompany this conversation, based on this person\'s character. Do NOT include any people, faces, or human figures in the image — only the environment, scenery, and atmosphere:',
     },
     {
         id: 'landscape-portrait',

@@ -7,19 +7,33 @@ import { z } from 'zod';
  * Takes a raw chat transcript and produces a cleaned, condensed conversation
  * that preserves the journey while being readable to a stranger.
  * 
+ * Also performs editorial judgment (is_publishable) and language detection.
+ * 
  * Used by both cleanup-chats (cron) and regenerate-post (admin).
  */
 
 // ─── Zod Schema ──────────────────────────────────────────────────────────────
 
-export const CondensedTranscriptSchema = z.object({
-    pseudonym: z.string().describe('Clever 2-3 word pseudonym for the user, e.g. "Curious Creator"'),
-    messages: z.array(z.object({
-        role: z.enum(['user', 'ideal_self']),
-        text: z.string(),
-    })).describe('The condensed conversation — alternating user and ideal_self messages'),
-    editorial_note: z.string().describe('Brief note on what you preserved and what you cut'),
-});
+export const CondensedTranscriptSchema = z.discriminatedUnion('is_publishable', [
+    z.object({
+        is_publishable: z.literal(true),
+        messages: z.array(z.object({
+            role: z.enum(['user', 'ideal_self']),
+            text: z.string(),
+        })).describe('The condensed conversation — alternating user and ideal_self messages'),
+        editorial_note: z.string().describe('Brief note on what you preserved and what you cut'),
+        language: z.string().optional().describe('Primary language of the conversation (e.g., "English", "Español", "日本語")'),
+    }),
+    z.object({
+        is_publishable: z.literal(false),
+        messages: z.array(z.object({
+            role: z.enum(['user', 'ideal_self']),
+            text: z.string(),
+        })).optional(),
+        editorial_note: z.string().optional(),
+        language: z.string().optional(),
+    }),
+]);
 
 export type CondensedTranscript = z.infer<typeof CondensedTranscriptSchema>;
 
@@ -32,6 +46,14 @@ export interface CondensedMessage {
 
 const CONDENSED_TRANSCRIPT_PROMPT = `You are an editor. You're given a raw chat transcript between a person and their Ideal Self (an AI advisor). The transcript is often messy — stream of consciousness, repetition, circling, tangents.
 
+STEP 1: EDITORIAL JUDGMENT
+Determine if this transcript is worth publishing.
+- is_publishable: false — Pleasantries ("Hi", "Thanks"), system tests, circular banter with no substance, or conversations where the user never states what they want or how they feel. If there's no real conversation, reject it.
+- is_publishable: true — The user says something real. They have a want, a feeling, a situation, or a question. The bar is LOW — almost everything should be published. Only reject genuine garbage.
+
+If is_publishable is false, return minimal data and stop.
+
+STEP 2: REWRITE THE CONVERSATION
 Your job: **rewrite the conversation so it's clean, condensed, and readable to a stranger.** Preserve the back-and-forth structure. Keep it as a conversation. Just make it a GOOD conversation — one that flows, makes sense, and captures the journey the person went through.
 
 WHAT TO DO:
@@ -55,7 +77,10 @@ PII SCRUBBING:
 TONE:
 - The Ideal Self should sound like a direct, wise friend — not a therapist. No jargon: "boundaries", "trauma", "healing journey", "reframe", "belief system" are BANNED.
 - Keep the user's actual words and phrasing where possible. The authenticity matters.
-- Do NOT reference the chat, the session, or the platform.`;
+- Do NOT reference the chat, the session, or the platform.
+
+STEP 3: DETECT LANGUAGE
+- language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
 
 // ─── Main Function ───────────────────────────────────────────────────────────
 
@@ -63,7 +88,7 @@ TONE:
  * Generate a condensed transcript from a raw chat transcript.
  * 
  * @param rawTranscript - The raw chat transcript (content_raw from Firestore)
- * @returns The condensed transcript with pseudonym, messages, and editorial note
+ * @returns The condensed transcript with messages, editorial note, and language
  */
 export async function generateCondensedTranscript(
     rawTranscript: string,

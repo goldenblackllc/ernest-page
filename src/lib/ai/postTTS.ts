@@ -321,55 +321,132 @@ export async function generatePostAudio(
     }
 }
 
-/** British Earnest voices (default) */
+/** Reserved Earnest voices */
 export const BETH_VOICE_ID = '19STyYD15bswVz51nqLf'; // Female British
 // Male British = getEarnestVoiceId() (David's voice from Firestore)
 
-/** American Earnest voices (fallback when user's accent is British) */
-export const AMERICAN_MALE_VOICE_ID = 'ZMK5OD2jmsdse3EKE4W5';
-export const AMERICAN_FEMALE_VOICE_ID = 'yHZVd5I4cP7s0hjt1Mss';
+/**
+ * Pick the Earnest voice for a user based on gender.
+ * Male users hear the British male Earnest; female users hear Beth.
+ */
+export async function getEarnestVoiceForUser(
+    _userVoiceId: string,
+    isFemale: boolean,
+): Promise<string | null> {
+    return isFemale ? BETH_VOICE_ID : await getEarnestVoiceId();
+}
 
 /**
- * Detect a voice's accent via the ElevenLabs API.
- * Returns the accent label (e.g. 'american', 'british', 'australian') or null.
+ * Fetch a voice's labels (gender, age, accent) from the ElevenLabs API.
  */
-async function getVoiceAccent(voiceId: string, apiKey: string): Promise<string | null> {
+async function getVoiceLabels(
+    voiceId: string,
+    apiKey: string,
+): Promise<{ gender?: string; age?: string; accent?: string } | null> {
     try {
         const res = await fetch(`https://api.elevenlabs.io/v1/voices/${voiceId}`, {
             headers: { 'xi-api-key': apiKey },
         });
         if (!res.ok) return null;
         const data = await res.json();
-        return data.labels?.accent?.toLowerCase() || null;
+        return {
+            gender: data.labels?.gender?.toLowerCase() || undefined,
+            age: data.labels?.age?.toLowerCase() || undefined,
+            accent: data.labels?.accent?.toLowerCase() || undefined,
+        };
     } catch {
         return null;
     }
 }
 
 /**
- * Pick the right Earnest voice for a user based on their voice's accent.
- * If the user's accent is British, use American Earnest (and vice versa).
- * This ensures the two voices in the conversation sound clearly distinct.
+ * Search the ElevenLabs shared voice library for a voice matching
+ * the given labels, excluding any voice IDs in `excludeIds`.
  */
-export async function getEarnestVoiceForUser(
+async function findAlternativeVoice(
+    labels: { gender?: string; age?: string; accent?: string },
+    excludeIds: Set<string>,
+    apiKey: string,
+): Promise<string | null> {
+    const params = new URLSearchParams({
+        page_size: '10',
+        language: 'en',
+        sort: 'usage_character_count_1y',
+        ...(labels.gender && { gender: labels.gender }),
+        ...(labels.age && { age: labels.age }),
+        ...(labels.accent && { accent: labels.accent }),
+    });
+
+    try {
+        const res = await fetch(
+            `https://api.elevenlabs.io/v1/shared-voices?${params}`,
+            { headers: { 'xi-api-key': apiKey } },
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        const candidate = (data.voices || []).find(
+            (v: any) => v.voice_id && !excludeIds.has(v.voice_id),
+        );
+        if (candidate) {
+            console.log(`[PostTTS] Found alternative voice: ${candidate.name} (${candidate.voice_id})`);
+            return candidate.voice_id;
+        }
+    } catch (err) {
+        console.error('[PostTTS] Alternative voice search failed:', err);
+    }
+    return null;
+}
+
+/**
+ * Resolve the two voices for a post's dual-voice audio.
+ *
+ * Earnest's voice is always the gender-matched British voice.
+ * If the user's character voice collides with Earnest's, we find an
+ * alternative voice for the user/asker side that matches the same
+ * gender, age, and accent — so the swap is seamless.
+ *
+ * @returns { userVoiceId, earnestVoiceId } — ready to pass to generateConversationAudio
+ */
+export async function resolvePostVoices(
     userVoiceId: string,
     isFemale: boolean,
-): Promise<string | null> {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) return isFemale ? BETH_VOICE_ID : await getEarnestVoiceId();
+): Promise<{ userVoiceId: string; earnestVoiceId: string } | null> {
+    const earnestVoiceId = await getEarnestVoiceForUser(userVoiceId, isFemale);
+    if (!earnestVoiceId) return null;
 
-    const userAccent = await getVoiceAccent(userVoiceId, apiKey);
-    console.log(`[PostTTS] User voice ${userVoiceId} accent: ${userAccent || 'unknown'}`);
-
-    const isBritish = userAccent && ['british', 'english', 'british english'].includes(userAccent);
-
-    if (isBritish) {
-        // User is British → use American Earnest
-        return isFemale ? AMERICAN_FEMALE_VOICE_ID : AMERICAN_MALE_VOICE_ID;
-    } else {
-        // User is American or other → use British Earnest (default)
-        return isFemale ? BETH_VOICE_ID : await getEarnestVoiceId();
+    // No collision — use as-is
+    if (userVoiceId !== earnestVoiceId) {
+        return { userVoiceId, earnestVoiceId };
     }
+
+    // Collision — find an alternative for the user/asker side
+    console.log(`[PostTTS] Voice collision: user voice ${userVoiceId} matches Earnest — finding alternative`);
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+        console.warn('[PostTTS] No API key — cannot resolve voice collision');
+        return { userVoiceId, earnestVoiceId };
+    }
+
+    const labels = await getVoiceLabels(userVoiceId, apiKey);
+    if (!labels) {
+        console.warn('[PostTTS] Could not fetch voice labels — using same voice for both');
+        return { userVoiceId, earnestVoiceId };
+    }
+
+    // Exclude both Earnest voices so we don't swap into the other one
+    const earnestMaleId = await getEarnestVoiceId();
+    const excludeIds = new Set(
+        [BETH_VOICE_ID, earnestMaleId, userVoiceId].filter(Boolean) as string[],
+    );
+
+    const altVoiceId = await findAlternativeVoice(labels, excludeIds, apiKey);
+    if (altVoiceId) {
+        return { userVoiceId: altVoiceId, earnestVoiceId };
+    }
+
+    // Could not find alternative — proceed with same voice (better than no audio)
+    console.warn('[PostTTS] No alternative voice found — both sides will use same voice');
+    return { userVoiceId, earnestVoiceId };
 }
 
 export interface MessageBoundary {

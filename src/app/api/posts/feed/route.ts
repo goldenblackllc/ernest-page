@@ -150,9 +150,13 @@ export async function GET(req: Request) {
             const distanceKm = distanceBetween([myLat!, myLng!], [p.lat, p.lng]);
             return distanceKm >= 321.9; // keep only posts >= 200 miles away
         });
+        // 6c. Filter incomplete posts — posts without audio are still processing
+        const complete = proximityFiltered.filter(p => {
+            return p.audio_url || p.short_audio_url || (p.letter_audio_url && p.response_audio_url);
+        });
 
         // 7. Slice to feed limit
-        const page = proximityFiltered.slice(0, FEED_LIMIT);
+        const page = complete.slice(0, FEED_LIMIT);
 
         // 8. If this is a newer_than check, return just the count (lightweight)
         if (newerThanDate) {
