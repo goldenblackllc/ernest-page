@@ -998,6 +998,15 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         </div>
                     )}
 
+                    {/* Bold title overlay — lower-third on thumbnail, DigestCard-style outlined text, fades on play */}
+                    {post.title && !isPlaying && (
+                        <div className="absolute left-0 right-0 bottom-14 sm:bottom-16 z-10 pointer-events-none px-4 sm:px-6">
+                            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-snug" style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
+                                {post.title}
+                            </h3>
+                        </div>
+                    )}
+
                     {/* Subtitle text — lower-third style (above control bar) — only when audio is available */}
                     {hasPlaybackControls && isPlaying && (
                     <div className={`absolute left-0 right-0 z-10 pointer-events-none px-4 sm:px-8 transition-all duration-300 ${controlsVisible ? 'bottom-16 sm:bottom-[4.5rem]' : 'bottom-4 sm:bottom-6'}`}>
