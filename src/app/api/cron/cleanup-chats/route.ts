@@ -165,26 +165,9 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
 
             const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
-            // Fetch recent posts to avoid repeating the same photo style
-            let recentStyles: string[] = [];
-            try {
-                const recentSnap = await db.collection("posts")
-                    .where("authorId", "==", uid)
-                    .orderBy("created_at", "desc")
-                    .limit(3)
-                    .get();
-                recentStyles = recentSnap.docs
-                    .map(d => d.data().visual_style || d.data().photo_style)
-                    .filter(Boolean);
-            } catch { /* ignore — index may not exist yet */ }
-
-            // Randomly select a visual style, excluding recently used ones for variety
-            const availableStyles = recentStyles.length > 0
-                ? VISUAL_STYLES.filter(s => !recentStyles.includes(s.id))
-                : VISUAL_STYLES;
-            const stylePool = availableStyles.length > 0 ? availableStyles : VISUAL_STYLES;
-            const randomStyle = stylePool[Math.floor(Math.random() * stylePool.length)];
-            console.log(`[Cron] Style — randomly selected: "${randomStyle.id}" (${randomStyle.name}), excluded: [${recentStyles.join(', ')}]`);
+            // Randomly select a visual style
+            const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
+            console.log(`[Cron] Style — selected: "${randomStyle.id}" (${randomStyle.name})`);
 
             const currentDossier = identity?.dossier || '';
             const sessionCount = (identity?.session_count || 0) + 1;
