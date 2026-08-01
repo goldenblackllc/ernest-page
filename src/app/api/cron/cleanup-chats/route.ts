@@ -245,7 +245,7 @@ ${transcript}`;
                 if (condensed && condensed.is_publishable && condensed.messages) {
                     condensedMessages = condensed.messages;
                     condensedEditorialNote = condensed.editorial_note || null;
-                    console.log(`[Cron] Condensed: ${condensed.messages.length} messages`);
+                    console.log(`[Cron] Condensed: ${condensed.messages.length} messages, title: "${condensed.title}"`);
                 }
 
                 // Derive backward-compatible letter/response from condensed transcript
@@ -261,6 +261,7 @@ ${transcript}`;
                 // Build post object for downstream compatibility
                 const post: any = {
                     is_publishable: condensed?.is_publishable || false,
+                    title: (condensed as any)?.title || null,
                     letter: derivedLetter,
                     response: derivedResponse,
                     language: condensed?.language || null,
@@ -365,6 +366,7 @@ ${transcript}`;
                             authorHash: null,
                             region: userData?.region || null,
                             author: userData?.displayName || "Anonymous",
+                        title: post.title || null,
                             type: 'checkin',
                             public_post: {
                                 letter: post.letter,
@@ -389,6 +391,10 @@ ${transcript}`;
                         processed++;
                         continue;
                     }
+
+                    // ─── PARALLEL: Images + TTS + Dossier ───
+                    // Images and TTS are independent — run them concurrently to stay
+                    // well under the 300s Vercel timeout.
 
                     // Sequential image generation with stagger delay to avoid 429 rate limits.
                     const IMAGE_STAGGER_MS = 1500;
@@ -415,7 +421,35 @@ ${transcript}`;
                         }
                     })();
 
-                    await Promise.allSettled([imageSequence, dossierPromise]);
+                    // TTS audio generation — runs in parallel with images
+                    const audioFields: Record<string, any> = {};
+                    const characterVoiceId = userData?.character_bible?.voice_id;
+
+                    const ttsPromise = (characterVoiceId && condensedMessages && condensedMessages.length > 0)
+                        ? (async () => {
+                            const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
+                            const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
+
+                            if (idealSelfVoiceId) {
+                                console.log(`[Cron] Generating dual-voice audio (gender: ${gender || 'default male'})...`);
+                                const audioResult = await generateConversationAudio(
+                                    condensedMessages,
+                                    characterVoiceId,
+                                    idealSelfVoiceId,
+                                    postDocRef.id,
+                                );
+                                if (audioResult) {
+                                    audioFields.audio_url = audioResult.audioUrl;
+                                    audioFields.audio_word_timestamps = audioResult.wordTimestamps;
+                                    audioFields.audio_message_boundaries = audioResult.messageBoundaries;
+                                    audioFields.audio_letter_ratio = audioResult.messageBoundaries[0]?.endTime / audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5;
+                                    console.log(`[Cron] Conversation audio generated for post ${postDocRef.id}`);
+                                }
+                            }
+                        })()
+                        : Promise.resolve();
+
+                    await Promise.allSettled([imageSequence, ttsPromise, dossierPromise]);
                     const imagen_url = imagen_urls[0] || null;
 
                     // ─── IMAGE RETRY QUEUE ───
@@ -462,34 +496,7 @@ ${transcript}`;
                     const userPhotoUrl = chatData.user_photo_url || null;
 
                     // Create Post in DB
-                    // ─── GENERATE AUDIO FIRST (before writing post) ───
-                    // We generate all content before creating the post document.
-                    // If anything fails, no post is created and the chat retries after cooldown.
-                    const audioFields: Record<string, any> = {};
-                    const characterVoiceId = userData?.character_bible?.voice_id;
-
-                    if (characterVoiceId && condensedMessages && condensedMessages.length > 0) {
-                        // Dual-voice conversation audio for condensed transcript
-                        const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
-                        const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
-                        
-                        if (idealSelfVoiceId) {
-                            console.log(`[Cron] Generating dual-voice audio (gender: ${gender || 'default male'})...`);
-                            const audioResult = await generateConversationAudio(
-                                condensedMessages,
-                                characterVoiceId,
-                                idealSelfVoiceId,
-                                postDocRef.id,
-                            );
-                            if (audioResult) {
-                                audioFields.audio_url = audioResult.audioUrl;
-                                audioFields.audio_word_timestamps = audioResult.wordTimestamps;
-                                audioFields.audio_message_boundaries = audioResult.messageBoundaries;
-                                audioFields.audio_letter_ratio = audioResult.messageBoundaries[0]?.endTime / audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5;
-                                console.log(`[Cron] Conversation audio generated for post ${postDocRef.id}`);
-                            }
-                        }
-                    }
+                    // Audio + images were generated in parallel above.
 
                     // ─── WRITE POST (single atomic write with all content) ───
                     await postDocRef.set({
@@ -499,6 +506,7 @@ ${transcript}`;
                         authorHash: authorHash,
                         region: userData?.region || null,
                         author: userData?.displayName || "Anonymous",
+                        title: post.title || null,
                         type: 'checkin',
                         public_post: {
                             letter: post.letter,

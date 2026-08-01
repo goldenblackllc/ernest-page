@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import { generateConversationAudio, resolvePostVoices } from '@/lib/ai/postTTS';
+import { generateConversationAudio, resolvePostVoices, type ConversationAudioResult } from '@/lib/ai/postTTS';
 import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { generateImage } from '@/lib/ai/generateImage';
@@ -79,7 +79,8 @@ export async function POST(req: Request) {
 
         const messageCount = condensed.messages.length;
         const wordCount = condensed.messages.reduce((sum, m) => sum + m.text.split(/\s+/).filter(Boolean).length, 0);
-        console.log(`[RegeneratePost] Condensed: ${messageCount} messages, ${wordCount} words`);
+        const postTitle = condensed.title || null;
+        console.log(`[RegeneratePost] Condensed: ${messageCount} messages, ${wordCount} words, title: "${postTitle}"`);
 
         // Derive backward-compatible letter/response from condensed transcript
         const userMessages = condensed.messages.filter(m => m.role === 'user');
@@ -91,113 +92,127 @@ export async function POST(req: Request) {
             ? idealSelfMessages[idealSelfMessages.length - 1].text
             : '';
 
-        // ── STEP 2: Generate Dual-Voice TTS Audio ──
+        // ── STEPS 2 + 3: TTS Audio + Images (in parallel) ──
+        // These are independent — run concurrently to stay under maxDuration.
+
+        // TTS promise
         const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
         const voices = await resolvePostVoices(characterVoiceId, isFemale);
 
-        let conversationAudio: { audioUrl: string; wordTimestamps: { word: string; start: number; end: number }[]; messageBoundaries: any[] } | null = null;
-        if (voices && characterVoiceId) {
-            try {
-                console.log(`[RegeneratePost] Generating dual-voice audio (user: ${voices.userVoiceId}, ideal_self: ${voices.earnestVoiceId}, gender: ${gender || 'default male'})...`);
-                conversationAudio = await generateConversationAudio(
-                    condensed.messages,
-                    voices.userVoiceId,
-                    voices.earnestVoiceId,
-                    postId,
-                );
-            } catch (err: any) {
-                console.error(`[RegeneratePost] Conversation TTS failed:`, err.message);
-            }
-        }
+        let conversationAudio: ConversationAudioResult | null = null;
 
-        // ── STEP 3: Regenerate Images (cinematic prompts from character bible) ──
+        const ttsPromise = (voices && characterVoiceId)
+            ? (async (): Promise<ConversationAudioResult | null> => {
+                try {
+                    console.log(`[RegeneratePost] Generating dual-voice audio (user: ${voices.userVoiceId}, ideal_self: ${voices.earnestVoiceId}, gender: ${gender || 'default male'})...`);
+                    return await generateConversationAudio(
+                        condensed.messages,
+                        voices.userVoiceId,
+                        voices.earnestVoiceId,
+                        postId,
+                    );
+                } catch (err: any) {
+                    console.error(`[RegeneratePost] Conversation TTS failed:`, err.message);
+                    return null;
+                }
+            })()
+            : Promise.resolve(null as ConversationAudioResult | null);
+
+        // Image generation promise
         const imagen_urls: string[] = [];
         let imagen_url: string | null = null;
         const existingStyle = postData.visual_style
             || VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)].id;
         const chosenStyle = getVisualStyle(existingStyle);
 
-        try {
-            // Load user reference image for face consistency
-            const referenceImage = await loadUserReferenceImage(uid);
-            const NUM_IMAGES = 8;
-            let prompts: string[] = [];
-            let useReferenceImages: Buffer[] | undefined = referenceImage ? [referenceImage] : undefined;
+        const imagePromise = (async () => {
+            try {
+                // Load user reference image for face consistency
+                const referenceImage = await loadUserReferenceImage(uid);
+                const NUM_IMAGES = 8;
+                let prompts: string[] = [];
+                let useReferenceImages: Buffer[] | undefined = referenceImage ? [referenceImage] : undefined;
 
-            console.log(`[RegeneratePost] Style — selected: "${existingStyle}", resolved: "${chosenStyle?.id || 'NONE'}" (category: ${chosenStyle?.category || 'unknown'})`);
+                console.log(`[RegeneratePost] Style — selected: "${existingStyle}", resolved: "${chosenStyle?.id || 'NONE'}" (category: ${chosenStyle?.category || 'unknown'})`);
 
-            if (chosenStyle?.category === 'landscape') {
-                const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
-                prompts = Array(NUM_IMAGES).fill(prompt);
-                useReferenceImages = undefined;
-            } else if (chosenStyle?.category === 'landscape-with-person') {
-                const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
-                prompts = Array(NUM_IMAGES).fill(prompt);
-            } else if (chosenStyle?.category === 'cinematic') {
-                const styleDirection = chosenStyle.id === 'life-magazine'
-                    ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
-                    : `You are a Visual Director for an advice column called Earnest Page. You're creating 8 photographs that capture moments from this person's life.`;
+                if (chosenStyle?.category === 'landscape') {
+                    const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                    prompts = Array(NUM_IMAGES).fill(prompt);
+                    useReferenceImages = undefined;
+                } else if (chosenStyle?.category === 'landscape-with-person') {
+                    const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
+                    prompts = Array(NUM_IMAGES).fill(prompt);
+                } else if (chosenStyle?.category === 'cinematic') {
+                    const styleDirection = chosenStyle.id === 'life-magazine'
+                        ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
+                        : `You are a Visual Director for an advice column called Earnest Page. You're creating 8 photographs that capture moments from this person's life.`;
 
-                const aiResult = await generateWithFallback({
-                    primaryModelId: OPUS_MODEL,
-                    fallbackModelId: OPUS_FALLBACK,
-                    schema: z.object({
-                        prompts: z.array(z.string()).min(8).max(8),
-                    }),
-                    prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 16:9 landscape orientation (1920×1080). No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
-                });
-                prompts = (aiResult.object as any).prompts;
-                console.log(`[RegeneratePost] Generated ${prompts.length} cinematic prompts`);
-            } else if (chosenStyle?.variations && chosenStyle.variations.length > 0) {
-                prompts = Array.from({ length: NUM_IMAGES }, (_, i) =>
-                    `${chosenStyle.variations![i % chosenStyle.variations!.length]} ${JSON.stringify(compiledBible)}`
-                );
-            } else {
-                // Photographer styles — imagenTag + condensed conversation
-                const tag = chosenStyle?.imagenTag || '';
-                const conversationText = condensed.messages
-                    .map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`)
-                    .join('\n');
-                const prompt = tag ? `${tag}\n${conversationText}` : conversationText;
-                prompts = Array(NUM_IMAGES).fill(prompt);
-            }
-
-            // Sequential image generation with stagger to avoid rate limits
-            const IMAGE_STAGGER_MS = 1500;
-            for (let i = 0; i < prompts.length; i++) {
-                if (i > 0) await new Promise(r => setTimeout(r, IMAGE_STAGGER_MS));
-                try {
-                    const result = await generateImage({
-                        prompt: prompts[i],
-                        aspectRatio: '16:9',
-                        logPrefix: 'RegeneratePost',
-                        referenceImages: useReferenceImages,
-                        referenceMode: i < 2 ? 'face-only' : 'full',
+                    const aiResult = await generateWithFallback({
+                        primaryModelId: OPUS_MODEL,
+                        fallbackModelId: OPUS_FALLBACK,
+                        schema: z.object({
+                            prompts: z.array(z.string()).min(8).max(8),
+                        }),
+                        prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 16:9 landscape orientation (1920×1080). No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
                     });
-                    if (result) {
-                        const isValid = await validateGeneratedImage(result.buffer, prompts[i]);
-                        if (isValid) {
-                            const compressed = await sharp(result.buffer)
-                                .jpeg({ quality: 85 })
-                                .toBuffer();
-                            const bucket = storage.bucket();
-                            const imgPath = `post-images/${postId}_${i}_${Date.now()}.jpg`;
-                            const file = bucket.file(imgPath);
-                            await file.save(compressed, { metadata: { contentType: 'image/jpeg' } });
-                            try { await file.makePublic(); } catch { /* UBLA */ }
-                            const url = `https://storage.googleapis.com/${bucket.name}/${imgPath}`;
-                            imagen_urls.push(url);
-                            console.log(`[RegeneratePost] Image ${i + 1}/${prompts.length} uploaded`);
-                        }
-                    }
-                } catch (err: any) {
-                    console.error(`[RegeneratePost] Image ${i + 1} failed:`, err.message);
+                    prompts = (aiResult.object as any).prompts;
+                    console.log(`[RegeneratePost] Generated ${prompts.length} cinematic prompts`);
+                } else if (chosenStyle?.variations && chosenStyle.variations.length > 0) {
+                    prompts = Array.from({ length: NUM_IMAGES }, (_, i) =>
+                        `${chosenStyle.variations![i % chosenStyle.variations!.length]} ${JSON.stringify(compiledBible)}`
+                    );
+                } else {
+                    // Photographer styles — imagenTag + condensed conversation
+                    const tag = chosenStyle?.imagenTag || '';
+                    const conversationText = condensed.messages
+                        .map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`)
+                        .join('\n');
+                    const prompt = tag ? `${tag}\n${conversationText}` : conversationText;
+                    prompts = Array(NUM_IMAGES).fill(prompt);
                 }
+
+                // Sequential image generation with stagger to avoid rate limits
+                const IMAGE_STAGGER_MS = 1500;
+                for (let i = 0; i < prompts.length; i++) {
+                    if (i > 0) await new Promise(r => setTimeout(r, IMAGE_STAGGER_MS));
+                    try {
+                        const result = await generateImage({
+                            prompt: prompts[i],
+                            aspectRatio: '16:9',
+                            logPrefix: 'RegeneratePost',
+                            referenceImages: useReferenceImages,
+                            referenceMode: i < 2 ? 'face-only' : 'full',
+                        });
+                        if (result) {
+                            const isValid = await validateGeneratedImage(result.buffer, prompts[i]);
+                            if (isValid) {
+                                const compressed = await sharp(result.buffer)
+                                    .jpeg({ quality: 85 })
+                                    .toBuffer();
+                                const bucket = storage.bucket();
+                                const imgPath = `post-images/${postId}_${i}_${Date.now()}.jpg`;
+                                const file = bucket.file(imgPath);
+                                await file.save(compressed, { metadata: { contentType: 'image/jpeg' } });
+                                try { await file.makePublic(); } catch { /* UBLA */ }
+                                const url = `https://storage.googleapis.com/${bucket.name}/${imgPath}`;
+                                imagen_urls.push(url);
+                                console.log(`[RegeneratePost] Image ${i + 1}/${prompts.length} uploaded`);
+                            }
+                        }
+                    } catch (err: any) {
+                        console.error(`[RegeneratePost] Image ${i + 1} failed:`, err.message);
+                    }
+                }
+                imagen_url = imagen_urls[0] || null;
+                console.log(`[RegeneratePost] Generated ${imagen_urls.length}/${prompts.length} images`);
+            } catch (err: any) {
+                console.error(`[RegeneratePost] Image generation failed (non-fatal):`, err.message);
             }
-            imagen_url = imagen_urls[0] || null;
-            console.log(`[RegeneratePost] Generated ${imagen_urls.length}/${prompts.length} images`);
-        } catch (err: any) {
-            console.error(`[RegeneratePost] Image generation failed (non-fatal):`, err.message);
+        })();
+
+        const [ttsResult] = await Promise.allSettled([ttsPromise, imagePromise]);
+        if (ttsResult.status === 'fulfilled' && ttsResult.value) {
+            conversationAudio = ttsResult.value;
         }
 
         // ── STEP 4: Write everything to Firestore ──
@@ -209,6 +224,7 @@ export async function POST(req: Request) {
         publicPost.imagen_url = imagen_url || postData.public_post?.imagen_url || postData.imagen_url || null;
 
         const updateData: any = {
+            title: postTitle,
             public_post: publicPost,
             condensed_transcript: condensed.messages,
             condensed_editorial_note: condensed.editorial_note,
@@ -235,6 +251,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             success: true,
+            title: postTitle,
             message_count: messageCount,
             word_count: wordCount,
             audio_regenerated: !!conversationAudio,
