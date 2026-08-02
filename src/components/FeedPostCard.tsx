@@ -88,9 +88,10 @@ interface FeedPostProps {
     onFollowClick?: (authorId: string) => void;
     onRequestDelete?: (postId: string) => void;
     onAudioPlayingChange?: (isPlaying: boolean) => void;
+    digestMode?: boolean;
 }
 
-export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelete, onAudioPlayingChange }: FeedPostProps) {
+export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelete, onAudioPlayingChange, digestMode }: FeedPostProps) {
     // Helper: convert created_at (Timestamp | plain object | null) to Date
     const createdAtDate = (() => {
         if (!post.created_at) return null;
@@ -945,8 +946,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         />
                     )}
 
-                    {/* Top: Author + Title */}
-                    <div className={`absolute top-0 left-0 right-0 p-3 sm:p-4 z-10 transition-opacity duration-300 ${controlsVisible ? 'opacity-100' : 'opacity-0'}`} style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
+                    {/* Top: Author identity — always visible (not tied to playback controls) */}
+                    <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
                         {/* Author row */}
                         <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
@@ -961,7 +962,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     <span className="text-sm font-semibold text-white/90 truncate">
                                         {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
                                     </span>
-                                    {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
+                                    {!isAuthor && !customAlias && postAuthorId && onFollowClick && !digestMode && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onFollowClick(postAuthorId); }}
                                             className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-0.5 rounded transition-all tracking-wide shrink-0"
@@ -973,7 +974,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 <span className="text-[10px] text-white/50">{timeAgo}</span>
                             </div>
                             {/* Visibility control */}
-                            {user?.uid === post.uid && (
+                            {user?.uid === post.uid && !digestMode && (
                                 <select
                                     value={localVisibility}
                                     onChange={(e) => { e.stopPropagation(); handleVisibilityChange(e.target.value as 'private' | 'community' | 'public'); }}
@@ -1001,7 +1002,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     {/* Bold title overlay — lower-third on thumbnail, DigestCard-style outlined text, fades on play */}
                     {post.title && !isPlaying && (
                         <div className="absolute left-0 right-0 bottom-14 sm:bottom-16 z-10 pointer-events-none px-4 sm:px-6">
-                            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-snug" style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
+                            {digestMode && (
+                                <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-bold mb-1">
+                                    {t('digestLabel')}
+                                </p>
+                            )}
+                            <h3 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-snug" style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
                                 {post.title}
                             </h3>
                         </div>
@@ -1113,54 +1119,49 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     )}
                 </div>
 
-                {/* Title + Author row (YouTube-style, below the player) */}
+                {/* Title row (below the player) — author info is always visible on the video overlay */}
                 {post.title && (
                     <div className="px-4 pt-3 pb-1 bg-black">
+                        {digestMode && (
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-bold mb-1">
+                                {t('digestLabel')}
+                            </p>
+                        )}
                         <h3 className="text-[15px] font-semibold text-white/95 leading-snug line-clamp-2">
                             {post.title}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1.5">
-                            <div className="w-6 h-6 rounded-full bg-zinc-800 border border-white/15 overflow-hidden flex items-center justify-center shrink-0">
-                                {post.author_avatar_url ? (
-                                    <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                    <User className="w-3 h-3 text-zinc-500" />
-                                )}
-                            </div>
-                            <span className="text-xs text-white/50">
-                                {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
-                            </span>
-                            <span className="text-[10px] text-white/30">•</span>
-                            <span className="text-[10px] text-white/30">{timeAgo}</span>
-                        </div>
                     </div>
                 )}
 
                 {/* Compact footer — likes | transcript toggle | delete + share */}
-                <div className="flex items-center px-4 py-2.5 bg-black/60 border-t border-white/5 gap-3">
+                <div className="flex items-center px-4 py-2.5 bg-black/60 border-t border-zinc-700 gap-3">
                     {/* Left: social actions */}
                     <div className="flex items-center gap-4 flex-1">
-                        <button
-                            onClick={toggleLike}
-                            className={cn(
-                                "flex items-center gap-1.5 transition-all duration-200",
-                                localLiked ? "text-red-500" : "text-zinc-400 hover:text-white"
-                            )}
-                        >
-                            <Heart className={cn("w-5 h-5", localLiked && "fill-current")} />
-                            {totalLikes > 0 && (
-                                <span className="text-xs font-medium">{totalLikes}</span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setIsCommentOpen(!isCommentOpen)}
-                            className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors"
-                        >
-                            <MessageCircle className="w-5 h-5" />
-                            {post.comments && post.comments > 0 && (
-                                <span className="text-xs font-medium">{post.comments}</span>
-                            )}
-                        </button>
+                        {!digestMode && (
+                            <button
+                                onClick={toggleLike}
+                                className={cn(
+                                    "flex items-center gap-1.5 transition-all duration-200",
+                                    localLiked ? "text-red-500" : "text-zinc-400 hover:text-white"
+                                )}
+                            >
+                                <Heart className={cn("w-5 h-5", localLiked && "fill-current")} />
+                                {totalLikes > 0 && (
+                                    <span className="text-xs font-medium">{totalLikes}</span>
+                                )}
+                            </button>
+                        )}
+                        {!digestMode && (
+                            <button
+                                onClick={() => setIsCommentOpen(!isCommentOpen)}
+                                className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors"
+                            >
+                                <MessageCircle className="w-5 h-5" />
+                                {post.comments && post.comments > 0 && (
+                                    <span className="text-xs font-medium">{post.comments}</span>
+                                )}
+                            </button>
+                        )}
                         {/* Restart — shown once audio has started */}
                         {audioPhase !== 'idle' && (
                             <button
@@ -1219,7 +1220,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     {/* Right: download + delete + share */}
                     <div className="flex items-center gap-2">
                         {/* MP4 Download — author only, requires audio */}
-                        {isAuthor && hasPlaybackControls && (
+                        {isAuthor && hasPlaybackControls && !digestMode && (
                             <button
                                 onClick={async (e) => {
                                     e.stopPropagation();
@@ -1295,7 +1296,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 )}
                             </button>
                         )}
-                        {isDev && user?.uid === post.uid && (
+                        {isDev && user?.uid === post.uid && !digestMode && (
                             <div className="relative">
                                 <button
                                     onClick={async (e) => {
@@ -1345,21 +1346,23 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 )}
                             </div>
                         )}
-                        {user?.uid === post.uid && (
+                        {user?.uid === post.uid && !digestMode && (
                             <button onClick={handleDelete} className="text-zinc-600 hover:text-zinc-400 transition-colors">
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         )}
-                        <button
-                            onClick={handleShare}
-                            className="text-zinc-400 hover:text-white transition-colors relative"
-                            title="Share"
-                        >
-                            <Share2 className="w-4 h-4" />
-                            {shareToast && (
-                                <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
-                            )}
-                        </button>
+                        {!digestMode && (
+                            <button
+                                onClick={handleShare}
+                                className="text-zinc-400 hover:text-white transition-colors relative"
+                                title="Share"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                {shareToast && (
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -1661,7 +1664,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
                         </span>
                         <div className="shrink-0 flex items-center gap-2">
-                            {!isAuthor && !customAlias && postAuthorId && onFollowClick && (
+                            {!isAuthor && !customAlias && postAuthorId && onFollowClick && !digestMode && (
                                 <button
                                     onClick={() => onFollowClick(postAuthorId)}
                                     className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded transition-all tracking-wide"
@@ -1669,7 +1672,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     {t('followAuthor')}
                                 </button>
                             )}
-                            {user?.uid === post.uid && (
+                            {user?.uid === post.uid && !digestMode && (
                                     <select
                                         value={localVisibility}
                                         onChange={(e) => handleVisibilityChange(e.target.value as 'private' | 'community' | 'public')}
@@ -1698,6 +1701,18 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
             {/* Body */}
             <div className="p-0 flex flex-col pt-4">
+                {post.title && (
+                    <div className="px-3 sm:px-4 mb-2">
+                        {digestMode && (
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-bold mb-1">
+                                {t('digestLabel')}
+                            </p>
+                        )}
+                        <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
+                            {post.title}
+                        </h3>
+                    </div>
+                )}
                 {/* 3D Perspective Container */}
                 <div className="relative w-full [perspective:1000px] mb-4">
                     <div className={cn(
@@ -2038,33 +2053,37 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 {/* Bottom Action Bar */}
                 <div className="px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={toggleLike}
-                            className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
-                                totalLikes >= 1 ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
-                            )}
-                            title={t('likeTooltip')}
-                        >
-                            <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
-                            {totalLikes > 1 && (
-                                <span className="text-xs font-medium">
-                                    {totalLikes}
-                                </span>
-                            )}
-                        </button>
+                        {!digestMode && (
+                            <button
+                                onClick={toggleLike}
+                                className={cn("flex items-center gap-1 transition-transform active:scale-75 hover:scale-110",
+                                    totalLikes >= 1 ? "text-red-500" : "text-zinc-500 hover:text-red-500/80"
+                                )}
+                                title={t('likeTooltip')}
+                            >
+                                <Heart className={cn("w-5 h-5", totalLikes >= 1 && "fill-red-500")} />
+                                {totalLikes > 1 && (
+                                    <span className="text-xs font-medium">
+                                        {totalLikes}
+                                    </span>
+                                )}
+                            </button>
+                        )}
 
-                        <button
-                            onClick={handleToggleComments}
-                            className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors active:scale-75 hover:scale-110"
-                            title={t('commentTooltip')}
-                        >
-                            <MessageCircle className={cn("w-5 h-5", commentCount >= 1 && "fill-zinc-400")} />
-                            {commentCount > 1 && (
-                                <span className="text-xs font-medium">
-                                    {commentCount}
-                                </span>
-                            )}
-                        </button>
+                        {!digestMode && (
+                            <button
+                                onClick={handleToggleComments}
+                                className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors active:scale-75 hover:scale-110"
+                                title={t('commentTooltip')}
+                            >
+                                <MessageCircle className={cn("w-5 h-5", commentCount >= 1 && "fill-zinc-400")} />
+                                {commentCount > 1 && (
+                                    <span className="text-xs font-medium">
+                                        {commentCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
 
                         {/* Flip Toggle */}
                         {isAuthor && hasPrivateData && (
@@ -2087,7 +2106,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     </div>
 
-                    {isDev && user?.uid === post.uid && (
+                    {isDev && user?.uid === post.uid && !digestMode && (
                         <div className="flex items-center gap-1">
                             {/* Regenerate post */}
                             <div className="relative">
@@ -2142,7 +2161,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             </div>
                         </div>
                     )}
-                    {user?.uid === post.uid && (
+                    {user?.uid === post.uid && !digestMode && (
                         <button
                             onClick={handleDelete}
                             className="text-zinc-400 hover:text-white transition-colors duration-200 p-1"
@@ -2151,16 +2170,18 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             <Trash2 className="w-4 h-4" />
                         </button>
                     )}
-                    <button
-                        onClick={handleShare}
-                        className="text-zinc-400 hover:text-white transition-colors duration-200 p-1 ml-auto relative"
-                        title="Share"
-                    >
-                        <Share2 className="w-4 h-4" />
-                        {shareToast && (
-                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
-                        )}
-                    </button>
+                    {!digestMode && (
+                        <button
+                            onClick={handleShare}
+                            className="text-zinc-400 hover:text-white transition-colors duration-200 p-1 ml-auto relative"
+                            title="Share"
+                        >
+                            <Share2 className="w-4 h-4" />
+                            {shareToast && (
+                                <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">Link copied</span>
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 {/* Comment section */}

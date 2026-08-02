@@ -113,6 +113,7 @@ export interface CharacterProfile {
         content: string;
         full_content?: string;
         image_url?: string | null;
+        imagen_urls?: string[];
         audio_url?: string | null;
         date: string;
         updated_at: string;

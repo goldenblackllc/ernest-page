@@ -111,7 +111,7 @@ export function PublicFeed() {
     if (posts.length === 0) return null;
 
     return (
-        <section className="space-y-0">
+        <section className="space-y-3 sm:space-y-4">
             {posts.map((post) => (
                 <FeedPostCard
                     key={post.id}

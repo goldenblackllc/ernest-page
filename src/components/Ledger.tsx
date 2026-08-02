@@ -3,7 +3,6 @@ import { doc, onSnapshot, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
-import { DigestCard } from "@/components/DigestCard";
 import { CheckInCard } from "@/components/CheckInCard";
 import { VoiceBrowser } from "@/components/VoiceBrowser";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
@@ -627,13 +626,25 @@ export function Ledger() {
                 />
             )}
 
-            {/* Daily Digest Card — only shown when complete (title + image) */}
-            {profile?.daily_digest?.title && profile?.daily_digest?.image_url && (
-                <DigestCard
-                    title={profile.daily_digest.title}
-                    content={profile.daily_digest.full_content || profile.daily_digest.content}
-                    imageUrl={profile.daily_digest.image_url}
-                    audioUrl={profile.daily_digest.audio_url}
+            {/* Daily Digest Card — renders as a FeedPostCard in digestMode */}
+            {profile?.daily_digest?.title
+             && profile?.daily_digest?.image_url
+             && profile?.daily_digest?.audio_url && (
+                <FeedPostCard
+                    digestMode
+                    post={{
+                        id: `digest-${profile.daily_digest.date}`,
+                        type: 'checkin',
+                        uid: user?.uid,
+                        author_avatar_url: profile.character_bible?.compiled_output?.avatar_url,
+                        title: profile.daily_digest.title,
+                        short_question: profile.daily_digest.title,
+                        short_answer: profile.daily_digest.full_content || profile.daily_digest.content,
+                        short_audio_url: profile.daily_digest.audio_url ?? undefined,
+                        imagen_url: profile.daily_digest.image_url ?? undefined,
+                        imagen_urls: profile.daily_digest.imagen_urls ?? undefined,
+                        created_at: null,
+                    }}
                 />
             )}
 

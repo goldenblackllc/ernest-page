@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db, storage } from '@/lib/firebase/admin';
+import { db } from '@/lib/firebase/admin';
 import { generatePostAudio } from '@/lib/ai/postTTS';
-import { validateGeneratedImage } from '@/lib/ai/validateImage';
-import { generateImage } from '@/lib/ai/generateImage';
-import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
+import { generateStoryboardImages } from '@/lib/ai/generatePostImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
@@ -156,9 +154,7 @@ export async function GET(req: Request) {
     }
 }
 
-// ─── Generate a single digest card (image + write) ───────────────────────────
-const MAX_IMAGE_ATTEMPTS = 3;
-const IMAGE_RETRY_DELAY_MS = 2000;
+
 
 async function generateDigestCard(user: {
     uid: string;
@@ -180,84 +176,35 @@ async function generateDigestCard(user: {
     const existingDigest = userDoc.data()?.daily_digest;
 
     if (existingDigest?.date === today) {
-        const hasImage = Boolean(existingDigest.image_url);
+        const hasImages = Boolean(existingDigest.imagen_urls?.length || existingDigest.image_url);
         const hasAudio = Boolean(existingDigest.audio_url) || !user.voiceId; // audio not needed if no voice
 
-        if (hasImage && hasAudio) {
+        if (hasImages && hasAudio) {
             console.log(`[Daily Digest] Skipping ${user.uid} — today's card is complete`);
             return false; // Already complete, skip
         }
-        console.log(`[Daily Digest] Re-running ${user.uid} — missing: ${!hasImage ? 'image' : ''} ${!hasAudio ? 'audio' : ''}`);
+        console.log(`[Daily Digest] Re-running ${user.uid} — missing: ${!hasImages ? 'images' : ''} ${!hasAudio ? 'audio' : ''}`);
     }
 
     // Use existing content if re-running, otherwise use newly picked content
     const title = existingDigest?.date === today ? existingDigest.title : user.title;
     const content = existingDigest?.date === today ? existingDigest.content : user.content;
 
-    // ─── IMAGE GENERATION (with retry) ───
-    let imageUrl: string | null = existingDigest?.date === today ? (existingDigest.image_url || null) : null;
+    // ─── IMAGE GENERATION (shared pipeline — same as post cards) ───
+    let imagen_urls: string[] = existingDigest?.date === today
+        ? (existingDigest.imagen_urls || []) : [];
 
-    if (!imageUrl) {
-        const contentSnippet = content.substring(0, 200).replace(/[*#_]/g, '');
-        const identityContext = (user.archetype || user.identityTitle)
-            ? ` The user's identity: archetype "${user.archetype}", roles "${user.identityTitle}". Let this inform the visual world — setting, objects, and atmosphere should reflect who this person is.`
-            : '';
-        const imagenPrompt = `Create an art-directed editorial photograph inspired by this passage: "${contentSnippet}". Shot in the style of a luxury lifestyle magazine — warm natural light with intentional shadows, rich textures, shallow depth of field. Aspirational and emotionally resonant. Include environmental texture that creates mood — steam, morning light through a window, soft bokeh, tactile surfaces. NEVER include visible faces or readable text.${identityContext}${user.demographicHint} ECOSYSTEM BRAND RULES (apply ONLY when the subject naturally calls for it — do NOT force these into unrelated images): If the image involves coffee, espresso, or a coffee machine, depict a sleek Jura automatic bean-to-cup machine (modern Swiss design, minimalist, silver/black) — NEVER a traditional espresso machine with a portafilter or group head. If the image involves a cup of coffee, always show rich golden-brown crema on top — NEVER flat black coffee or drip coffee.`;
+    if (imagen_urls.length === 0) {
+        imagen_urls = await generateStoryboardImages({
+            content: `${title}: ${content}`,
+            demographicHint: user.demographicHint,
+            uid: user.uid,
+            filePrefix: `digest_${user.uid}`,
+            numImages: 3,
+        });
 
-        // Load user's reference image for character consistency anchoring
-        const referenceImage = await loadUserReferenceImage(user.uid);
-        const referenceImages = referenceImage ? [referenceImage] : undefined;
-
-        for (let attempt = 1; attempt <= MAX_IMAGE_ATTEMPTS; attempt++) {
-            try {
-                const imageGenResult = await generateImage({
-                    prompt: imagenPrompt,
-                    aspectRatio: '16:9',
-                    logPrefix: 'Daily Digest',
-                    referenceImages,
-                });
-
-                if (imageGenResult) {
-                    const buffer = imageGenResult.buffer;
-
-                    // Validate image quality before uploading
-                    const validation = await validateGeneratedImage(buffer, imagenPrompt);
-                    if (!validation.pass) {
-                        console.warn(`[Daily Digest] Image validation failed for ${user.uid} (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, validation.summary);
-                        continue;
-                    }
-
-                    const bucket = storage.bucket();
-                    const fileName = `digest-images/${user.uid}_${Date.now()}.jpg`;
-                    const file = bucket.file(fileName);
-
-                    await file.save(buffer, {
-                        metadata: { contentType: 'image/jpeg' },
-                        public: true
-                    });
-
-                    imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                    console.log(`[Daily Digest] Image generated for ${user.uid} on attempt ${attempt}`);
-                    break; // Success — exit retry loop
-                } else {
-                    console.error(`[Daily Digest] Image generation failed (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS})`);
-                }
-            } catch (imgErr: any) {
-                if (imgErr.isQuotaError) {
-                    console.warn(`[Daily Digest] Image quota exhausted for ${user.uid} — deferring to next cron run`);
-                    throw imgErr; // Bubble up to batch loop to stop all processing
-                }
-                console.error(`[Daily Digest] Image generation failed (attempt ${attempt}/${MAX_IMAGE_ATTEMPTS}):`, imgErr);
-            }
-
-            // Wait before retrying (skip delay on last attempt)
-            if (attempt < MAX_IMAGE_ATTEMPTS) {
-                await new Promise(resolve => setTimeout(resolve, IMAGE_RETRY_DELAY_MS));
-            }
-        }
-
-        if (!imageUrl) {
-            console.warn(`[Daily Digest] Image failed after ${MAX_IMAGE_ATTEMPTS} attempts for ${user.uid} — will retry on next cron run`);
+        if (imagen_urls.length === 0) {
+            console.warn(`[Daily Digest] Images failed for ${user.uid} — will retry on next cron run`);
             return false; // Don't write a broken card — keep yesterday's digest visible
         }
     }
@@ -288,7 +235,8 @@ async function generateDigestCard(user: {
         title,
         content,
         full_content: content,
-        image_url: imageUrl,
+        image_url: imagen_urls[0] || null,
+        imagen_urls,
         audio_url: audioUrl,
         date: today,
         updated_at: new Date().toISOString(),
