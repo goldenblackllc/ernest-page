@@ -128,8 +128,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const { isMuted, toggleMute, pauseAll, isAutoPlaySuppressed } = useAudioMute();
 
     // ═══ AUDIO PLAYBACK STATE ═══
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    // audioRef holds either an HTMLAudioElement (legacy format) or a WebAudioPlayer (unified format)
+    const audioRef = useRef<any>(null);
     const videoRef = useRef<HTMLVideoElement | null>(null);
+    const webAudioCtxRef = useRef<AudioContext | null>(null);
+    const decodedBufferRef = useRef<AudioBuffer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioPhase, setAudioPhase] = useState<'idle' | 'letter' | 'response'>('idle');
     const [audioProgress, setAudioProgress] = useState(0);
@@ -140,7 +143,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const cardRef = useRef<HTMLDivElement>(null);
     const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const seekingRef = useRef(false);
-    const blobUrlRef = useRef<string | null>(null);
     const [isAudioLoading, setIsAudioLoading] = useState(false);
 
 
@@ -257,55 +259,118 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             // Pause any other playing cards first
             pauseAll();
             if (unifiedAudioUrl) {
-                // ── UNIFIED FORMAT: single audio file ──
-                // Try fetching entire audio as blob for reliable seeking (cloud storage may not support HTTP Range requests).
-                // Falls back to streaming URL if fetch fails (e.g. CORS).
+                // ── UNIFIED FORMAT: Web Audio API for reliable seeking ──
+                // Concatenated MP3s from TTS lack seek headers, so HTMLAudioElement can't seek.
+                // Web Audio API decodes to PCM AudioBuffer which supports perfect random access.
                 setIsAudioLoading(true);
                 try {
-                    let audioSrc = blobUrlRef.current;
-                    if (!audioSrc) {
-                        try {
-                            const response = await fetch(unifiedAudioUrl);
-                            const blob = await response.blob();
-                            audioSrc = URL.createObjectURL(blob);
-                            blobUrlRef.current = audioSrc;
-                        } catch {
-                            // CORS or network error — fall back to streaming URL (seeking may be limited)
-                            audioSrc = unifiedAudioUrl;
-                        }
+                    // Reuse cached decoded buffer if available
+                    let audioBuffer = decodedBufferRef.current;
+                    if (!audioBuffer) {
+                        const response = await fetch(unifiedAudioUrl);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const ctx = new AudioContext();
+                        audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+                        decodedBufferRef.current = audioBuffer;
+                        await ctx.close(); // close temporary decode context
                     }
 
-                    const audio = new Audio(audioSrc);
-                    audio.muted = isMuted;
-                    audioRef.current = audio;
-                    setAudioPhase('letter');
+                    // Create playback context
+                    const playCtx = new AudioContext();
+                    webAudioCtxRef.current = playCtx;
+                    const gainNode = playCtx.createGain();
+                    gainNode.connect(playCtx.destination);
+                    gainNode.gain.value = isMuted ? 0 : 1;
 
-                    audio.onloadedmetadata = () => {
-                        setAudioDuration(audio.duration);
-                    };
+                    // WebAudioPlayer state
+                    let wapSource: AudioBufferSourceNode | null = null;
+                    let wapStartTime = 0;
+                    let wapOffset = 0;
+                    let wapPlaying = false;
+                    let wapRafId = 0;
 
-                    audio.ontimeupdate = () => {
-                        if (audio.duration && !seekingRef.current) {
-                            const progress = audio.currentTime / audio.duration;
+                    const wapTick = () => {
+                        if (!wapPlaying) return;
+                        const ct = wapOffset + (playCtx.currentTime - wapStartTime);
+                        if (!seekingRef.current) {
+                            const progress = ct / audioBuffer!.duration;
                             setAudioProgress(progress);
-                            setAudioCurrentTime(audio.currentTime);
-                            setAudioDuration(audio.duration);
-                            // Estimate phase from letter word ratio
+                            setAudioCurrentTime(ct);
                             const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
                             setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
                         }
+                        wapRafId = requestAnimationFrame(wapTick);
                     };
 
-                    audio.onended = () => {
-                        setIsPlaying(false);
-                        setAudioPhase('idle');
-                        setAudioProgress(0);
-                        setAudioCurrentTime(0);
-                        audioRef.current = null;
-                        hasCompletedRef.current = true;
+                    const wapStop = () => {
+                        wapPlaying = false;
+                        cancelAnimationFrame(wapRafId);
+                        if (wapSource) {
+                            wapSource.onended = null; // Prevent stale onended from firing after seek
+                            try { wapSource.stop(); } catch { /* already stopped */ }
+                            wapSource = null;
+                        }
                     };
 
-                    await audio.play();
+                    const wapPlay = (fromOffset: number) => {
+                        wapSource = playCtx.createBufferSource();
+                        wapSource.buffer = audioBuffer!;
+                        wapSource.connect(gainNode);
+                        wapSource.onended = () => {
+                            if (wapPlaying) {
+                                wapPlaying = false;
+                                cancelAnimationFrame(wapRafId);
+                                setIsPlaying(false);
+                                setAudioPhase('idle');
+                                setAudioProgress(0);
+                                setAudioCurrentTime(0);
+                                audioRef.current = null;
+                                hasCompletedRef.current = true;
+                            }
+                        };
+                        wapOffset = Math.max(0, Math.min(fromOffset, audioBuffer!.duration));
+                        wapStartTime = playCtx.currentTime;
+                        wapSource.start(0, wapOffset);
+                        wapPlaying = true;
+                        wapTick();
+                    };
+
+                    // Expose player interface on audioRef so handleSeek/handleSkip/pause-all work
+                    const player = {
+                        get currentTime() {
+                            if (wapPlaying) return wapOffset + (playCtx.currentTime - wapStartTime);
+                            return wapOffset;
+                        },
+                        set currentTime(t: number) {
+                            const wasPlaying = wapPlaying;
+                            if (wasPlaying) wapStop();
+                            wapOffset = Math.max(0, Math.min(t, audioBuffer!.duration));
+                            if (wasPlaying) wapPlay(wapOffset);
+                        },
+                        get duration() { return audioBuffer!.duration; },
+                        get muted() { return gainNode.gain.value === 0; },
+                        set muted(v: boolean) { gainNode.gain.value = v ? 0 : 1; },
+                        play() {
+                            if (wapPlaying) return Promise.resolve();
+                            if (playCtx.state === 'suspended') playCtx.resume();
+                            wapPlay(wapOffset);
+                            return Promise.resolve();
+                        },
+                        pause() {
+                            if (!wapPlaying) return;
+                            wapOffset += playCtx.currentTime - wapStartTime;
+                            wapStop();
+                        },
+                        // No-op stubs for compatibility
+                        addEventListener() {},
+                        removeEventListener() {},
+                    };
+
+                    audioRef.current = player;
+                    setAudioPhase('letter');
+                    setAudioDuration(audioBuffer.duration);
+
+                    await player.play();
                     setIsPlaying(true);
                 } catch (err) {
                     console.error('Failed to load audio:', err);
@@ -373,43 +438,23 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // Seek to a specific time (scrubber drag)
     const handleSeek = useCallback((time: number) => {
         if (audioRef.current) {
-            seekingRef.current = true;
             audioRef.current.currentTime = time;
             setAudioCurrentTime(time);
             if (audioRef.current.duration) {
                 setAudioProgress(time / audioRef.current.duration);
             }
-            // Wait for the browser to confirm the seek completed, then sync to actual position
-            const audio = audioRef.current;
-            audio.addEventListener('seeked', () => {
-                seekingRef.current = false;
-                setAudioCurrentTime(audio.currentTime);
-                if (audio.duration) {
-                    setAudioProgress(audio.currentTime / audio.duration);
-                }
-            }, { once: true });
         }
     }, []);
 
     // Skip forward/back by N seconds
     const handleSkip = useCallback((delta: number) => {
         if (audioRef.current) {
-            seekingRef.current = true;
             const newTime = Math.max(0, Math.min(audioRef.current.duration || 0, audioRef.current.currentTime + delta));
             audioRef.current.currentTime = newTime;
             setAudioCurrentTime(newTime);
             if (audioRef.current.duration) {
                 setAudioProgress(newTime / audioRef.current.duration);
             }
-            // Wait for the browser to confirm the seek completed, then sync to actual position
-            const audio = audioRef.current;
-            audio.addEventListener('seeked', () => {
-                seekingRef.current = false;
-                setAudioCurrentTime(audio.currentTime);
-                if (audio.duration) {
-                    setAudioProgress(audio.currentTime / audio.duration);
-                }
-            }, { once: true });
         }
     }, []);
 
@@ -470,16 +515,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         }
     }, [isMuted]);
 
-    // Cleanup audio + blob URL on unmount
+    // Cleanup audio + Web Audio context on unmount
     useEffect(() => {
         return () => {
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current = null;
             }
-            if (blobUrlRef.current) {
-                URL.revokeObjectURL(blobUrlRef.current);
-                blobUrlRef.current = null;
+            if (webAudioCtxRef.current) {
+                webAudioCtxRef.current.close().catch(() => {});
+                webAudioCtxRef.current = null;
             }
         };
     }, []);
