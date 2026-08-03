@@ -710,7 +710,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     };
 
     // Smart play/pause handler for the inline button
-    const handlePlayPause = () => {
+    const handlePlayPause = async () => {
         // Currently playing → pause
         if (isSpeaking && audioRef.current) {
             pauseAudio();
@@ -722,16 +722,34 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
             resumeAudio();
             return;
         }
-        // Cached blob ready → play from start
+        // In-memory cached blob ready → play from start
         if (cachedBlobRef.current) {
             playAudioBlob(cachedBlobRef.current);
             return;
         }
-        // No blob yet (edge case) → fetch and play
         const lastAssistant = messages[messages.length - 1];
-        if (lastAssistant?.role === 'assistant') {
-            speakText(lastAssistant.content);
+        if (!lastAssistant || lastAssistant.role !== 'assistant') return;
+        // TTS effect already in-flight for this message — let it finish
+        if (ttsInFlightMsgIdRef.current === lastAssistant.id) return;
+        // Check IndexedDB cache (survives iOS page eviction that wipes refs)
+        setIsLoadingTTS(true);
+        const cached = await getCachedTTSBlob(lastAssistant.id);
+        if (cached) {
+            cachedBlobRef.current = cached;
+            cachedBlobMsgIdRef.current = lastAssistant.id;
+            setIsLoadingTTS(false);
+            await playAudioBlob(cached);
+            return;
         }
+        // Last resort — fetch from TTS API
+        const blob = await fetchTTSAudio(lastAssistant.content);
+        if (blob) {
+            cachedBlobRef.current = blob;
+            cachedBlobMsgIdRef.current = lastAssistant.id;
+            cacheTTSBlob(lastAssistant.id, blob).catch(() => {});
+        }
+        setIsLoadingTTS(false);
+        if (blob) await playAudioBlob(blob);
     };
 
     // Full cleanup — wipe cached blob (used on close/unmount)
