@@ -49,6 +49,9 @@ interface FeedPostProps {
         imageUrl?: string;
         imagen_url?: string;
         imagen_urls?: string[];
+        message_images?: string[];
+        image_prompts?: string[];
+        image_style?: 'per-message';
         user_photo_url?: string;
         hero_source?: 'user' | 'imagen';
 
@@ -136,6 +139,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isFullscreen, setIsFullscreen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const seekingRef = useRef(false);
+    const blobUrlRef = useRef<string | null>(null);
+    const [isAudioLoading, setIsAudioLoading] = useState(false);
 
 
     // Stable refs — prevent IntersectionObserver re-creation on every state change
@@ -158,21 +164,37 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const heroUrl = post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
 
     // Multi-image array: user photo first (if exists), then AI images, fallback to single
+    const isPerMessage = post.image_style === 'per-message' && post.message_images?.length;
     const imageUrls = (() => {
+        if (isPerMessage) return post.message_images!;
         const aiImages = post.imagen_urls?.length ? post.imagen_urls : (post.imagen_url ? [post.imagen_url] : []);
         if (post.user_photo_url) return [post.user_photo_url, ...aiImages];
         return aiImages;
     })();
 
-    // ═══ IMAGE CAROUSEL TIMER (10-second cycle, only while playing — B-roll effect) ═══
+    // ═══ IMAGE INDEX: timer-based for legacy, message-boundary for per-message ═══
     const [carouselIndex, setCarouselIndex] = useState(0);
+
+    // Legacy timer carousel for old posts
     useEffect(() => {
-        if (imageUrls.length <= 1 || !isPlaying) return;
+        if (isPerMessage || imageUrls.length <= 1 || !isPlaying) return;
         const timer = setInterval(() => {
             setCarouselIndex(prev => (prev + 1) % imageUrls.length);
         }, 10000);
         return () => clearInterval(timer);
-    }, [imageUrls.length, isPlaying]);
+    }, [imageUrls.length, isPlaying, isPerMessage]);
+
+    // Per-message: derive image index from audio timestamp + message boundaries
+    const messageImageIndex = (() => {
+        if (!isPerMessage || !post.audio_message_boundaries?.length) return 0;
+        const currentTime = audioCurrentTime;
+        for (let i = post.audio_message_boundaries.length - 1; i >= 0; i--) {
+            if (currentTime >= post.audio_message_boundaries[i].startTime) {
+                return Math.min(i, imageUrls.length - 1);
+            }
+        }
+        return 0;
+    })();
 
     // Show YouTube-style landscape card when post has both audio AND images
     const canPlayShort = hasAudio && (Boolean(heroUrl) || imageUrls.length > 0);
@@ -220,8 +242,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     })();
 
     // Audio toggle handler — supports both unified and legacy formats
-    const toggleAudio = useCallback(() => {
-        if (!hasAudio) return;
+    const toggleAudio = useCallback(async () => {
+        if (!hasAudio || isAudioLoading) return;
 
         // If already playing, pause
         if (isPlaying && audioRef.current) {
@@ -236,38 +258,61 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             pauseAll();
             if (unifiedAudioUrl) {
                 // ── UNIFIED FORMAT: single audio file ──
-                const audio = new Audio(unifiedAudioUrl);
-                audio.muted = isMuted;
-                audioRef.current = audio;
-                setAudioPhase('letter');
-
-                audio.onloadedmetadata = () => {
-                    setAudioDuration(audio.duration);
-                };
-
-                audio.ontimeupdate = () => {
-                    if (audio.duration) {
-                        const progress = audio.currentTime / audio.duration;
-                        setAudioProgress(progress);
-                        setAudioCurrentTime(audio.currentTime);
-                        setAudioDuration(audio.duration);
-                        // Estimate phase from letter word ratio
-                        const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
-                        setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
+                // Try fetching entire audio as blob for reliable seeking (cloud storage may not support HTTP Range requests).
+                // Falls back to streaming URL if fetch fails (e.g. CORS).
+                setIsAudioLoading(true);
+                try {
+                    let audioSrc = blobUrlRef.current;
+                    if (!audioSrc) {
+                        try {
+                            const response = await fetch(unifiedAudioUrl);
+                            const blob = await response.blob();
+                            audioSrc = URL.createObjectURL(blob);
+                            blobUrlRef.current = audioSrc;
+                        } catch {
+                            // CORS or network error — fall back to streaming URL (seeking may be limited)
+                            audioSrc = unifiedAudioUrl;
+                        }
                     }
-                };
 
-                audio.onended = () => {
+                    const audio = new Audio(audioSrc);
+                    audio.muted = isMuted;
+                    audioRef.current = audio;
+                    setAudioPhase('letter');
+
+                    audio.onloadedmetadata = () => {
+                        setAudioDuration(audio.duration);
+                    };
+
+                    audio.ontimeupdate = () => {
+                        if (audio.duration && !seekingRef.current) {
+                            const progress = audio.currentTime / audio.duration;
+                            setAudioProgress(progress);
+                            setAudioCurrentTime(audio.currentTime);
+                            setAudioDuration(audio.duration);
+                            // Estimate phase from letter word ratio
+                            const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
+                            setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
+                        }
+                    };
+
+                    audio.onended = () => {
+                        setIsPlaying(false);
+                        setAudioPhase('idle');
+                        setAudioProgress(0);
+                        setAudioCurrentTime(0);
+                        audioRef.current = null;
+                        hasCompletedRef.current = true;
+                    };
+
+                    await audio.play();
+                    setIsPlaying(true);
+                } catch (err) {
+                    console.error('Failed to load audio:', err);
                     setIsPlaying(false);
-                    setAudioPhase('idle');
-                    setAudioProgress(0);
-                    setAudioCurrentTime(0);
-                    audioRef.current = null;
-                    hasCompletedRef.current = true;
-                };
-
-                audio.play().catch(() => setIsPlaying(false));
-                setIsPlaying(true);
+                } finally {
+                    setIsAudioLoading(false);
+                }
             } else if (post.letter_audio_url) {
                 // ── LEGACY FORMAT: two separate audio files ──
                 const audio = new Audio(post.letter_audio_url);
@@ -276,7 +321,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 setAudioPhase('letter');
 
                 audio.ontimeupdate = () => {
-                    if (audio.duration) {
+                    if (audio.duration && !seekingRef.current) {
                         setAudioProgress(audio.currentTime / audio.duration);
                     }
                 };
@@ -290,7 +335,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         setAudioProgress(0);
 
                         responseAudio.ontimeupdate = () => {
-                            if (responseAudio.duration) {
+                            if (responseAudio.duration && !seekingRef.current) {
                                 setAudioProgress(responseAudio.currentTime / responseAudio.duration);
                             }
                         };
@@ -321,30 +366,50 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             audioRef.current.play().catch(() => setIsPlaying(false));
             setIsPlaying(true);
         }
-    }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio, isMuted, pauseAll]);
+    }, [isPlaying, audioPhase, unifiedAudioUrl, post.letter_audio_url, post.response_audio_url, computedLetterRatio, isMuted, pauseAll, isAudioLoading]);
 
     // ═══ YOUTUBE-STYLE PLAYBACK CONTROLS ═══
 
     // Seek to a specific time (scrubber drag)
     const handleSeek = useCallback((time: number) => {
         if (audioRef.current) {
+            seekingRef.current = true;
             audioRef.current.currentTime = time;
             setAudioCurrentTime(time);
             if (audioRef.current.duration) {
                 setAudioProgress(time / audioRef.current.duration);
             }
+            // Wait for the browser to confirm the seek completed, then sync to actual position
+            const audio = audioRef.current;
+            audio.addEventListener('seeked', () => {
+                seekingRef.current = false;
+                setAudioCurrentTime(audio.currentTime);
+                if (audio.duration) {
+                    setAudioProgress(audio.currentTime / audio.duration);
+                }
+            }, { once: true });
         }
     }, []);
 
     // Skip forward/back by N seconds
     const handleSkip = useCallback((delta: number) => {
         if (audioRef.current) {
+            seekingRef.current = true;
             const newTime = Math.max(0, Math.min(audioRef.current.duration || 0, audioRef.current.currentTime + delta));
             audioRef.current.currentTime = newTime;
             setAudioCurrentTime(newTime);
             if (audioRef.current.duration) {
                 setAudioProgress(newTime / audioRef.current.duration);
             }
+            // Wait for the browser to confirm the seek completed, then sync to actual position
+            const audio = audioRef.current;
+            audio.addEventListener('seeked', () => {
+                seekingRef.current = false;
+                setAudioCurrentTime(audio.currentTime);
+                if (audio.duration) {
+                    setAudioProgress(audio.currentTime / audio.duration);
+                }
+            }, { once: true });
         }
     }, []);
 
@@ -405,12 +470,16 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         }
     }, [isMuted]);
 
-    // Cleanup audio on unmount
+    // Cleanup audio + blob URL on unmount
     useEffect(() => {
         return () => {
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current = null;
+            }
+            if (blobUrlRef.current) {
+                URL.revokeObjectURL(blobUrlRef.current);
+                blobUrlRef.current = null;
             }
         };
     }, []);
@@ -840,7 +909,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
             // ── Timestamp-based sync (precise) ──
             if (timestampChunks && audioRef.current) {
-                const currentTime = audioRef.current.currentTime;
+                const currentTime = audioCurrentTime;
                 let chunkIndex = 0;
                 for (let i = 0; i < timestampChunks.length; i++) {
                     if (currentTime >= timestampChunks[i].start) {
@@ -912,7 +981,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         const subtitle = getCurrentSubtitle();
 
         // Image index driven by 5-second carousel timer (loops)
-        const currentImageIndex = imageUrls.length > 0 ? carouselIndex % imageUrls.length : 0;
+        const currentImageIndex = isPerMessage
+            ? messageImageIndex
+            : (imageUrls.length > 0 ? carouselIndex % imageUrls.length : 0);
         const currentImageUrl = imageUrls[currentImageIndex] || heroUrl;
 
         return (
@@ -926,7 +997,29 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     style={{ cursor: hasPlaybackControls ? 'pointer' : 'default' }}
                 >
                     {/* Visual: B-roll image carousel with pillarboxing for portrait images */}
-                    {imageUrls.length > 1 ? (
+                    {isPerMessage ? (
+                        /* Per-message: only render current + next for lazy loading */
+                        <>
+                            {imageUrls[currentImageIndex] && (
+                                <img
+                                    key={`msg-${currentImageIndex}`}
+                                    src={imageUrls[currentImageIndex]}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-contain transition-opacity duration-500"
+                                    style={{ opacity: 1 }}
+                                />
+                            )}
+                            {imageUrls[currentImageIndex + 1] && currentImageIndex + 1 < imageUrls.length && (
+                                <img
+                                    key={`msg-${currentImageIndex + 1}`}
+                                    src={imageUrls[currentImageIndex + 1]}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-contain"
+                                    style={{ opacity: 0 }}
+                                />
+                            )}
+                        </>
+                    ) : imageUrls.length > 1 ? (
                         <>
                             {imageUrls.map((url, i) => (
                                 <img
@@ -994,7 +1087,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     {hasPlaybackControls && !isPlaying && (
                         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 transition-transform duration-200 hover:scale-110">
-                                <Play className="w-7 h-7 sm:w-9 sm:h-9 text-white ml-1" fill="white" />
+                                {isAudioLoading ? (
+                                    <Loader2 className="w-7 h-7 sm:w-9 sm:h-9 text-white animate-spin" />
+                                ) : (
+                                    <Play className="w-7 h-7 sm:w-9 sm:h-9 text-white ml-1" fill="white" />
+                                )}
                             </div>
                         </div>
                     )}
@@ -1037,7 +1134,12 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     {/* YouTube-style control bar — only when audio is available */}
                     {hasPlaybackControls && (
-                    <div className={`absolute bottom-0 left-0 right-0 z-20 transition-opacity duration-300 ${controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                    <div
+                        className={`absolute bottom-0 left-0 right-0 z-20 transition-opacity duration-300 ${controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                    >
                         {/* Gradient backdrop */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
 
@@ -1119,19 +1221,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     )}
                 </div>
 
-                {/* Title row (below the player) — author info is always visible on the video overlay */}
-                {post.title && (
-                    <div className="px-4 pt-3 pb-1 bg-black">
-                        {digestMode && (
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-bold mb-1">
-                                {t('digestLabel')}
-                            </p>
-                        )}
-                        <h3 className="text-[15px] font-semibold text-white/95 leading-snug line-clamp-2">
-                            {post.title}
-                        </h3>
-                    </div>
-                )}
+
 
                 {/* Compact footer — likes | transcript toggle | delete + share */}
                 <div className="flex items-center px-4 py-2.5 bg-black/60 border-t border-zinc-700 gap-3">
