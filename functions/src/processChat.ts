@@ -31,12 +31,23 @@ export const processChat = onDocumentUpdated(
         const after = event.data?.after.data();
         const uid = event.params.uid;
         const sessionId = event.params.sessionId;
+
+        console.log(`[ProcessChat] Trigger fired for user=${uid} session=${sessionId} isClosed=${after?.isClosed} before.isClosed=${before?.isClosed} processing=${after?.processing}`);
         
-        if (!after || after.isClosed !== true) return;
-        if (before?.isClosed === true) return;
+        if (!after || after.isClosed !== true) {
+            console.log(`[ProcessChat] Skipping — isClosed is not true`);
+            return;
+        }
+        if (before?.isClosed === true) {
+            console.log(`[ProcessChat] Skipping — already closed (duplicate trigger)`);
+            return;
+        }
         
         const now = Date.now();
-        if (after.processing === true && (now - (after.processingStartedAt || 0)) < 10 * 60 * 1000) return;
+        if (after.processing === true && (now - (after.processingStartedAt || 0)) < 10 * 60 * 1000) {
+            console.log(`[ProcessChat] Skipping — already processing (started ${Math.round((now - (after.processingStartedAt || 0)) / 1000)}s ago)`);
+            return;
+        }
         
         // Burn protocol
         if (after.sessionRouting === 'burn' || after.burnOnClose === true) {
@@ -47,9 +58,12 @@ export const processChat = onDocumentUpdated(
 
         const messages = after.messages || [];
         if (messages.length === 0) {
+            console.log(`[ProcessChat] Skipping — no messages`);
             await event.data?.after.ref.delete();
             return;
         }
+
+        console.log(`[ProcessChat] Processing chat with ${messages.length} messages for user ${uid}`);
 
         const visibility = after.sessionRouting != null
             ? (after.sessionRouting === 'private' ? 'private' : 'community')
@@ -60,9 +74,11 @@ export const processChat = onDocumentUpdated(
         const userDoc = await db.collection('users').doc(uid).get();
         const userData = userDoc.data();
         if (!userData) {
+            console.log(`[ProcessChat] Skipping — user data not found for ${uid}`);
             await event.data?.after.ref.delete();
             return;
         }
+        console.log(`[ProcessChat] User data loaded for ${uid}`);
 
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
         const identity = userData?.identity;
@@ -90,6 +106,7 @@ export const processChat = onDocumentUpdated(
         const recapPrompt = `Write a 2-3 sentence recap of this session for continuity. What was discussed? What was the emotional tone? What was the outcome or takeaway? Write from the consultant's perspective. Keep it concise — this will be shown to the character at the start of the next session for context.\n\nCHAT TRANSCRIPT:\n${transcript}`;
 
         try {
+            console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + recap)...`);
             const [condensedResult, dossierResult, recapResult] = await Promise.all([
                 generateCondensedTranscript(transcript),
                 generateWithFallback({
@@ -113,6 +130,8 @@ export const processChat = onDocumentUpdated(
             let condensedMessages: Array<{ role: 'user' | 'ideal_self'; text: string }> | null = null;
             let condensedEditorialNote: string | null = null;
 
+            console.log(`[ProcessChat] AI calls complete. is_publishable=${condensed?.is_publishable} title="${condensed?.title}" msgs=${condensed?.messages?.length || 0}`);
+
             if (condensed && condensed.is_publishable && condensed.messages) {
                 condensedMessages = condensed.messages;
                 condensedEditorialNote = condensed.editorial_note || null;
@@ -135,6 +154,7 @@ export const processChat = onDocumentUpdated(
             })() : Promise.resolve();
 
             if (condensed.is_publishable && condensedMessages && condensedMessages.length > 0) {
+                console.log(`[ProcessChat] Chat IS publishable — creating post and running pipeline...`);
                 const postDocRef = db.collection('posts').doc();
                 const characterVoiceId = userData?.character_bible?.voice_id;
 
@@ -159,10 +179,12 @@ export const processChat = onDocumentUpdated(
                 ]);
 
                 if (!pipelineResult) {
+                    console.log(`[ProcessChat] Pipeline returned null — skipping post creation`);
                     await dossierPromise;
                     await event.data?.after.ref.delete();
                     return;
                 }
+                console.log(`[ProcessChat] Pipeline complete — imagePrompts:${pipelineResult.imagePrompts?.length} audio:${!!pipelineResult.audioFields?.audio_url}`);
 
                 const { imagePrompts, audioFields, derivedLetter, derivedResponse } = pipelineResult;
                 const conversationContext = condensedMessages.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n');
@@ -228,8 +250,9 @@ export const processChat = onDocumentUpdated(
                 });
 
                 // Generate images inline
-                console.log(`[ProcessChat] Generating inline images for post ${postDocRef.id}`);
+                console.log(`[ProcessChat] Post ${postDocRef.id} written to Firestore. Starting inline image generation...`);
                 const referenceImage = await loadUserReferenceImage(uid);
+                console.log(`[ProcessChat] Reference image loaded: ${!!referenceImage}`);
                 const referenceImages = referenceImage ? [referenceImage] : undefined;
                 
                 const generatedImageUrls = await generateMessageImages({
@@ -280,8 +303,10 @@ export const processChat = onDocumentUpdated(
                     console.error(`[ProcessChat] Post notification email failed:`, emailErr);
                 }
 
+                console.log(`[ProcessChat] ✅ Complete — post ${postDocRef.id} published with ${generatedImageUrls.filter(Boolean).length} images`);
                 await event.data?.after.ref.delete();
             } else {
+                console.log(`[ProcessChat] Chat NOT publishable — skipping post creation, updating dossier only`);
                 await dossierPromise;
                 await event.data?.after.ref.delete();
             }
