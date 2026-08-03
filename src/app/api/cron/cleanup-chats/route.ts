@@ -8,9 +8,10 @@ import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/securit
 import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
 import { matchSponsor } from '@/config/ecosystem';
-import { generateConversationAudio, getEarnestVoiceForUser } from '@/lib/ai/postTTS';
 import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
-import { generateStoryboardImages } from '@/lib/ai/generatePostImage';
+import { generateMessageImages } from '@/lib/ai/generatePostImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
+import { processPostContent } from '@/lib/ai/processPostContent';
 import { VISUAL_STYLES } from '@/lib/ai/visualStyles';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 import nodemailer from 'nodemailer';
@@ -75,7 +76,9 @@ export async function GET(req: Request) {
         }
 
         if (chatsByUser.size === 0) {
-            return NextResponse.json({ success: true, processedCount: 0, note: 'No chats to process.' });
+            // No chats — but still run Phase 2 (pending image generation)
+            const imagesProcessed = await processPhase2Images();
+            return NextResponse.json({ success: true, processedCount: 0, imagesProcessed, note: 'No chats to process.' });
         }
 
         // Process users in parallel batches of 5
@@ -93,7 +96,10 @@ export async function GET(req: Request) {
             }
         }
 
-        return NextResponse.json({ success: true, processedCount });
+        // ─── PHASE 2: Generate images for posts created in prior runs ───
+        const imagesProcessed = await processPhase2Images();
+
+        return NextResponse.json({ success: true, processedCount, imagesProcessed });
     } catch (error: any) {
         console.error("Cron Cleanup Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -275,82 +281,47 @@ ${transcript}`;
                     })
                     : Promise.resolve();
 
-                // ─── POST CREATION (with parallel image gen) ───
-                const MAX_IMAGE_RETRIES = 5;
+                // ─── POST CREATION (Phase 1: text + audio + image prompts, NO actual images) ───
                 if (post.is_publishable && condensedMessages && condensedMessages.length > 0) {
                     const postDocRef = db.collection('posts').doc();
-
-                    // ─── IMAGE GENERATION (shared pipeline) ───
-                    // Uses the same generateStoryboardImages function as daily digest
-                    const conversationContext = condensedMessages!.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n');
-
-                    const NUM_IMAGES = 8;
-                    const imagen_urls: string[] = [];
-
-                    // ─── PARALLEL: Images + TTS + Dossier ───
-                    // Images and TTS are independent — run them concurrently to stay
-                    // well under the 300s Vercel timeout.
-
-                    const imageSequence = (async () => {
-                        const urls = await generateStoryboardImages({
-                            content: conversationContext,
-                            compiledBible,
-                            demographicHint,
-                            uid,
-                            filePrefix: postDocRef.id,
-                        });
-                        imagen_urls.push(...urls);
-                    })();
-
-                    // TTS audio generation — runs in parallel with images
-                    const audioFields: Record<string, any> = {};
                     const characterVoiceId = userData?.character_bible?.voice_id;
 
-                    const ttsPromise = (characterVoiceId && condensedMessages && condensedMessages.length > 0)
-                        ? (async () => {
-                            const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
-                            const idealSelfVoiceId = await getEarnestVoiceForUser(characterVoiceId, isFemale);
+                    // ─── SHARED PIPELINE: image prompts + TTS ───
+                    // Run the shared pipeline in parallel with dossier update
+                    // Pass preCondensed so we don't re-generate the condensed transcript
+                    const [pipelineResult] = await Promise.all([
+                        processPostContent({
+                            transcript,
+                            uid,
+                            postId: postDocRef.id,
+                            compiledBible,
+                            demographicHint,
+                            characterVoiceId,
+                            gender,
+                            logPrefix: 'Cron',
+                            preCondensed: {
+                                messages: condensedMessages,
+                                title: post.title,
+                                language: post.language,
+                                editorial_note: condensedEditorialNote,
+                            },
+                        }),
+                        dossierPromise,
+                    ]);
 
-                            if (idealSelfVoiceId) {
-                                console.log(`[Cron] Generating dual-voice audio (gender: ${gender || 'default male'})...`);
-                                const audioResult = await generateConversationAudio(
-                                    condensedMessages,
-                                    characterVoiceId,
-                                    idealSelfVoiceId,
-                                    postDocRef.id,
-                                );
-                                if (audioResult) {
-                                    audioFields.audio_url = audioResult.audioUrl;
-                                    audioFields.audio_word_timestamps = audioResult.wordTimestamps;
-                                    audioFields.audio_message_boundaries = audioResult.messageBoundaries;
-                                    audioFields.audio_letter_ratio = audioResult.messageBoundaries[0]?.endTime / audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5;
-                                    console.log(`[Cron] Conversation audio generated for post ${postDocRef.id}`);
-                                }
-                            }
-                        })()
-                        : Promise.resolve();
-
-                    await Promise.allSettled([imageSequence, ttsPromise, dossierPromise]);
-                    const imagen_url = imagen_urls[0] || null;
-
-                    // ─── IMAGE RETRY QUEUE ───
-                    // Quality first: we want ALL the images we asked for.
-                    // If any are missing, re-queue for the next cron run (API may be overloaded).
-                    if (imagen_urls.length < NUM_IMAGES && imageRetries < MAX_IMAGE_RETRIES) {
-                        console.log(`[Cron] ${imagen_urls.length}/${NUM_IMAGES} images succeeded for user ${uid} (attempt ${imageRetries + 1}/${MAX_IMAGE_RETRIES}) — re-queuing for complete set`);
-                        await chatDoc.ref.update({
-                            processing: false,
-                            processingStartedAt: FieldValue.delete(),
-                            imageRetries: imageRetries + 1,
-                            // Cache the AI results so we don't re-generate them on retry
-                            cachedPost: post,
-                        });
-                        continue; // skip deletion — chat stays in queue
+                    if (!pipelineResult) {
+                        // Not publishable (redundant check but safe)
+                        await dossierPromise;
+                        await chatDoc.ref.delete();
+                        continue;
                     }
 
-                    if (imagen_urls.length < NUM_IMAGES) {
-                        console.warn(`[Cron] Only ${imagen_urls.length}/${NUM_IMAGES} images after ${MAX_IMAGE_RETRIES} retries for user ${uid} — saving with partial set`);
-                    }
+                    const { imagePrompts, audioFields } = pipelineResult;
+                    // Use the cron's own condensed transcript (already generated above)
+                    // since it may differ from the pipeline's re-generation
+
+                    // Build conversation text for sponsor matching
+                    const conversationContext = condensedMessages!.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n');
 
                     // Match sponsor from conversation context
                     const sponsor = matchSponsor(conversationContext);
@@ -379,7 +350,7 @@ ${transcript}`;
                     // Create Post in DB
                     // Audio + images were generated in parallel above.
 
-                    // ─── WRITE POST (single atomic write with all content) ───
+                    // ─── WRITE POST (Phase 1: text + audio + prompts, images deferred) ───
                     await postDocRef.set({
                         id: postDocRef.id,
                         uid,
@@ -394,12 +365,17 @@ ${transcript}`;
                             response: post.response,
                             ...(condensedMessages && { condensed_transcript: condensedMessages }),
                         },
+                        // ─── Per-message image system ───
+                        image_style: 'per-message',
+                        image_prompts: imagePrompts,
+                        message_images: [],           // populated in Phase 2
+                        // Legacy fields (kept for backward compat)
                         imagen_prompt: null,
                         imagen_prompts: [],
-                        visual_style: post.visual_style || null,
+                        visual_style: null,
                         language: post.language || null,
-                        imagen_url: imagen_url,
-                        imagen_urls: imagen_urls,
+                        imagen_url: null,
+                        imagen_urls: [],
                         user_photo_url: userPhotoUrl,
                         hero_source: userPhotoUrl ? 'user' : 'imagen',
                         sponsored_by: sponsor?.name || null,
@@ -413,8 +389,9 @@ ${transcript}`;
                         ...audioFields,
                         status: "completed",
                         created_at: new Date(),
-                        is_public: imagen_url ? (visibility !== 'private') : false,
-                        visibility: imagen_url ? visibility : 'private',
+                        // Post is hidden until Phase 2 generates at least 1 image
+                        is_public: false,
+                        visibility: visibility,
                         like_count: 0,
                         comments: 0
                     });
@@ -481,4 +458,115 @@ ${transcript}`;
     return processed;
 }
 
+// ─── PHASE 2: Deferred Image Generation ──────────────────────────────────────
+// Runs after Phase 1 (chat processing). Finds posts that have image_prompts
+// but no message_images yet, and generates the actual images.
+// This runs in its own time budget, separate from the text/audio pipeline.
 
+const MAX_PHASE2_POSTS = 3;      // Process at most 3 posts per cron run
+const MAX_IMAGE_RETRIES = 5;
+
+async function processPhase2Images(): Promise<number> {
+    try {
+        // Find posts with per-message image_style that need images
+        const pendingPosts = await db.collection('posts')
+            .where('image_style', '==', 'per-message')
+            .where('imagen_url', '==', null)
+            .orderBy('created_at', 'asc')
+            .limit(MAX_PHASE2_POSTS)
+            .get();
+
+        if (pendingPosts.empty) return 0;
+
+        let imagesProcessed = 0;
+
+        for (const postDoc of pendingPosts.docs) {
+            const postData = postDoc.data();
+            const imagePrompts = postData.image_prompts || [];
+            const existingImages = postData.message_images || [];
+            const retryCount = postData.image_retries || 0;
+
+            // Skip if no prompts (nothing to generate)
+            if (imagePrompts.length === 0) continue;
+
+            // Skip if all images already filled
+            const filledCount = existingImages.filter(Boolean).length;
+            if (filledCount >= imagePrompts.length) continue;
+
+            // Skip if max retries exceeded
+            if (retryCount >= MAX_IMAGE_RETRIES) {
+                console.warn(`[Phase2] Post ${postDoc.id} exceeded ${MAX_IMAGE_RETRIES} retries — marking with partial images`);
+                const firstImage = existingImages.find(Boolean) || null;
+                if (firstImage) {
+                    await postDoc.ref.update({
+                        imagen_url: firstImage,
+                        is_public: postData.visibility !== 'private',
+                    });
+                }
+                continue;
+            }
+
+            console.log(`[Phase2] Processing images for post ${postDoc.id} (${filledCount}/${imagePrompts.length} done, attempt ${retryCount + 1})`);
+
+            // Load reference image for character consistency
+            const uid = postData.uid;
+            const referenceImage = await loadUserReferenceImage(uid);
+            const referenceImages = referenceImage ? [referenceImage] : undefined;
+
+            // Generate images for prompts that don't have URLs yet
+            const updatedImages = [...existingImages];
+
+            // Ensure array is the right length
+            while (updatedImages.length < imagePrompts.length) {
+                updatedImages.push('');
+            }
+
+            // Only generate missing images
+            const missingIndices = updatedImages
+                .map((url, i) => (!url && imagePrompts[i]) ? i : -1)
+                .filter(i => i >= 0);
+
+            const batchResults = await generateMessageImages({
+                prompts: missingIndices.map(i => imagePrompts[i]),
+                uid,
+                filePrefix: postDoc.id,
+                referenceImages,
+            });
+
+            // Map results back to correct indices
+            for (let j = 0; j < missingIndices.length; j++) {
+                if (batchResults[j]) {
+                    updatedImages[missingIndices[j]] = batchResults[j];
+                }
+            }
+
+            const newFilledCount = updatedImages.filter(Boolean).length;
+            const firstImage = updatedImages.find(Boolean) || null;
+
+            // Update the post
+            const updateFields: Record<string, any> = {
+                message_images: updatedImages,
+                image_retries: retryCount + 1,
+            };
+
+            // Make post public once we have at least 1 image
+            if (firstImage) {
+                updateFields.imagen_url = firstImage;
+                updateFields.is_public = postData.visibility !== 'private';
+            }
+
+            // Also populate legacy imagen_urls for any code that reads it
+            updateFields.imagen_urls = updatedImages.filter(Boolean);
+
+            await postDoc.ref.update(updateFields);
+            imagesProcessed += newFilledCount - filledCount;
+
+            console.log(`[Phase2] Post ${postDoc.id}: ${newFilledCount}/${imagePrompts.length} images done`);
+        }
+
+        return imagesProcessed;
+    } catch (err: any) {
+        console.error('[Phase2] Image processing error:', err.message);
+        return 0;
+    }
+}

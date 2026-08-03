@@ -13,9 +13,9 @@
  * (cron) or update an existing one (regenerate).
  */
 
-import { generateCondensedTranscript } from './condensedTranscript.js';
-import { generateMessageImagePrompts } from './generatePostImage.js';
-import { generateConversationAudio, resolveConversationVoices } from './postTTS.js';
+import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
+import { generateMessageImagePrompts } from '@/lib/ai/generatePostImage';
+import { generateConversationAudio, resolveConversationVoices } from '@/lib/ai/postTTS';
 
 export interface ProcessPostInput {
     /** Raw chat transcript (role: content lines) */

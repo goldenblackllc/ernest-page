@@ -321,21 +321,6 @@ export async function generatePostAudio(
     }
 }
 
-/** Reserved Earnest voices */
-export const BETH_VOICE_ID = '19STyYD15bswVz51nqLf'; // Female British
-// Male British = getEarnestVoiceId() (David's voice from Firestore)
-
-/**
- * Pick the Earnest voice for a user based on gender.
- * Male users hear the British male Earnest; female users hear Beth.
- */
-export async function getEarnestVoiceForUser(
-    _userVoiceId: string,
-    isFemale: boolean,
-): Promise<string | null> {
-    return isFemale ? BETH_VOICE_ID : await getEarnestVoiceId();
-}
-
 /**
  * Fetch a voice's labels (gender, age, accent) from the ElevenLabs API.
  */
@@ -360,18 +345,21 @@ async function getVoiceLabels(
 }
 
 /**
- * Search the ElevenLabs shared voice library for a voice matching
- * the given labels, excluding any voice IDs in `excludeIds`.
+ * Search the ElevenLabs shared voice library for a conversational voice
+ * matching the given labels, excluding any voice IDs in `excludeIds`.
+ * Randomly picks from the top `pickFromTop` results for variety.
  */
-async function findAlternativeVoice(
+async function findConversationalVoice(
     labels: { gender?: string; age?: string; accent?: string },
     excludeIds: Set<string>,
     apiKey: string,
+    pickFromTop: number = 5,
 ): Promise<string | null> {
     const params = new URLSearchParams({
         page_size: '10',
         language: 'en',
         sort: 'usage_character_count_1y',
+        use_cases: 'conversational',
         ...(labels.gender && { gender: labels.gender }),
         ...(labels.age && { age: labels.age }),
         ...(labels.accent && { accent: labels.accent }),
@@ -384,69 +372,56 @@ async function findAlternativeVoice(
         );
         if (!res.ok) return null;
         const data = await res.json();
-        const candidate = (data.voices || []).find(
-            (v: any) => v.voice_id && !excludeIds.has(v.voice_id),
-        );
-        if (candidate) {
-            console.log(`[PostTTS] Found alternative voice: ${candidate.name} (${candidate.voice_id})`);
-            return candidate.voice_id;
+        const candidates = (data.voices || [])
+            .filter((v: any) => v.voice_id && !excludeIds.has(v.voice_id))
+            .slice(0, pickFromTop);
+        if (candidates.length > 0) {
+            const pick = candidates[Math.floor(Math.random() * candidates.length)];
+            console.log(`[PostTTS] Found conversational voice: ${pick.name} (${pick.voice_id}) — picked from ${candidates.length} candidates`);
+            return pick.voice_id;
         }
     } catch (err) {
-        console.error('[PostTTS] Alternative voice search failed:', err);
+        console.error('[PostTTS] Conversational voice search failed:', err);
     }
     return null;
 }
 
 /**
- * Resolve the two voices for a post's dual-voice audio.
+ * Resolve the two voices for a post's dual-voice conversation audio.
  *
- * Earnest's voice is always the gender-matched British voice.
- * If the user's character voice collides with Earnest's, we find an
- * alternative voice for the user/asker side that matches the same
- * gender, age, and accent — so the swap is seamless.
+ * The character's own custom voice is used for ideal_self messages.
+ * For the questioner (user messages), we search ElevenLabs' shared voice
+ * library for a conversational voice matching the character's gender, age,
+ * and accent — then randomly pick from the top 5 results.
  *
- * @returns { userVoiceId, earnestVoiceId } — ready to pass to generateConversationAudio
+ * @param characterVoiceId  The character's custom ElevenLabs voice ID
+ * @returns { characterVoiceId, questionerVoiceId } — ready to pass to generateConversationAudio
  */
-export async function resolvePostVoices(
-    userVoiceId: string,
-    isFemale: boolean,
-): Promise<{ userVoiceId: string; earnestVoiceId: string } | null> {
-    const earnestVoiceId = await getEarnestVoiceForUser(userVoiceId, isFemale);
-    if (!earnestVoiceId) return null;
-
-    // No collision — use as-is
-    if (userVoiceId !== earnestVoiceId) {
-        return { userVoiceId, earnestVoiceId };
-    }
-
-    // Collision — find an alternative for the user/asker side
-    console.log(`[PostTTS] Voice collision: user voice ${userVoiceId} matches Earnest — finding alternative`);
+export async function resolveConversationVoices(
+    characterVoiceId: string,
+): Promise<{ characterVoiceId: string; questionerVoiceId: string } | null> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-        console.warn('[PostTTS] No API key — cannot resolve voice collision');
-        return { userVoiceId, earnestVoiceId };
+        console.warn('[PostTTS] No API key — cannot resolve questioner voice');
+        return null;
     }
 
-    const labels = await getVoiceLabels(userVoiceId, apiKey);
+    const labels = await getVoiceLabels(characterVoiceId, apiKey);
     if (!labels) {
-        console.warn('[PostTTS] Could not fetch voice labels — using same voice for both');
-        return { userVoiceId, earnestVoiceId };
+        console.warn('[PostTTS] Could not fetch character voice labels — using character voice for both');
+        return { characterVoiceId, questionerVoiceId: characterVoiceId };
     }
 
-    // Exclude both Earnest voices so we don't swap into the other one
-    const earnestMaleId = await getEarnestVoiceId();
-    const excludeIds = new Set(
-        [BETH_VOICE_ID, earnestMaleId, userVoiceId].filter(Boolean) as string[],
-    );
+    const excludeIds = new Set([characterVoiceId]);
+    const questionerVoiceId = await findConversationalVoice(labels, excludeIds, apiKey);
 
-    const altVoiceId = await findAlternativeVoice(labels, excludeIds, apiKey);
-    if (altVoiceId) {
-        return { userVoiceId: altVoiceId, earnestVoiceId };
+    if (questionerVoiceId) {
+        return { characterVoiceId, questionerVoiceId };
     }
 
-    // Could not find alternative — proceed with same voice (better than no audio)
-    console.warn('[PostTTS] No alternative voice found — both sides will use same voice');
-    return { userVoiceId, earnestVoiceId };
+    // Fallback: use character voice for both (better than no audio)
+    console.warn('[PostTTS] No conversational voice found — using character voice for both');
+    return { characterVoiceId, questionerVoiceId: characterVoiceId };
 }
 
 export interface MessageBoundary {
@@ -471,21 +446,21 @@ export interface ConversationAudioResult {
  * Generate a multi-voice audio file from a condensed transcript conversation.
  *
  * Each message is spoken by the appropriate voice:
- * - 'user' messages → the poster's own voice (userVoiceId)
- * - 'ideal_self' messages → David's voice (male users) or Beth's voice (female users)
+ * - 'user' messages → questionerVoiceId (random conversational voice)
+ * - 'ideal_self' messages → characterVoiceId (the character's own custom voice)
  *
- * Messages are concatenated with a brief pause (~300ms silence) between them.
+ * Messages are concatenated with a brief pause (~1.2s silence) between them.
  *
  * @param messages  Array of condensed transcript messages with role and text
- * @param userVoiceId  The post author's ElevenLabs voice ID
- * @param idealSelfVoiceId  The Ideal Self's ElevenLabs voice ID (David or Beth)
+ * @param questionerVoiceId  ElevenLabs voice ID for the questioner (user messages)
+ * @param characterVoiceId  The character's custom ElevenLabs voice ID (ideal_self messages)
  * @param postId  Post document ID (used for storage path)
  * @returns ConversationAudioResult or null if generation fails
  */
 export async function generateConversationAudio(
     messages: Array<{ role: 'user' | 'ideal_self'; text: string }>,
-    userVoiceId: string,
-    idealSelfVoiceId: string,
+    questionerVoiceId: string,
+    characterVoiceId: string,
     postId: string,
 ): Promise<ConversationAudioResult | null> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -494,13 +469,13 @@ export async function generateConversationAudio(
         return null;
     }
 
-    if (!userVoiceId || userVoiceId.length < 10) {
-        console.log('[PostTTS] No valid user voice ID — skipping conversation audio');
+    if (!questionerVoiceId || questionerVoiceId.length < 10) {
+        console.log('[PostTTS] No valid questioner voice ID — skipping conversation audio');
         return null;
     }
 
-    if (!idealSelfVoiceId || idealSelfVoiceId.length < 10) {
-        console.log('[PostTTS] No valid ideal self voice ID — skipping conversation audio');
+    if (!characterVoiceId || characterVoiceId.length < 10) {
+        console.log('[PostTTS] No valid character voice ID — skipping conversation audio');
         return null;
     }
 
@@ -545,28 +520,49 @@ export async function generateConversationAudio(
             console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
         }
 
+        // ─── PARALLEL TTS: Fire all ElevenLabs calls at once ───
+        // API calls are the bottleneck (~2-3s each). Stitching is instant.
+        const ttsInputs = messages.map((msg, i) => ({
+            index: i,
+            role: msg.role,
+            voiceId: msg.role === 'user' ? questionerVoiceId : characterVoiceId,
+            cleanText: cleanTextForTTS(msg.text),
+        })).filter(m => !!m.cleanText);
+
+        console.log(`[PostTTS] Firing ${ttsInputs.length} TTS calls in parallel...`);
+        const ttsResults = await Promise.allSettled(
+            ttsInputs.map(async ({ index, voiceId, cleanText }) => {
+                const result = await generateTTSAudio(cleanText!, voiceId, apiKey);
+                return { index, result };
+            })
+        );
+
+        // Collect successful results, keyed by original index
+        const ttsResultMap = new Map<number, Awaited<ReturnType<typeof generateTTSAudio>>>();
+        for (const settled of ttsResults) {
+            if (settled.status === 'fulfilled' && settled.value.result) {
+                ttsResultMap.set(settled.value.index, settled.value.result);
+            }
+        }
+        console.log(`[PostTTS] ${ttsResultMap.size}/${ttsInputs.length} TTS calls succeeded`);
+
+        // ─── SEQUENTIAL STITCH: Assemble in order with timestamps ───
         for (let i = 0; i < messages.length; i++) {
             const msg = messages[i];
-            const voiceId = msg.role === 'user' ? userVoiceId : idealSelfVoiceId;
-            const cleanText = cleanTextForTTS(msg.text);
-
-            if (!cleanText) continue;
+            const result = ttsResultMap.get(i);
+            if (!result) {
+                console.error(`[PostTTS] No audio for message ${i} (${msg.role}) — skipping`);
+                continue;
+            }
 
             // Insert silence gap before this message (except the first)
-            if (i > 0 && silenceBuffer) {
+            if (audioBuffers.length > 0 && silenceBuffer) {
                 audioBuffers.push(silenceBuffer);
                 cumulativeOffset += actualSilenceDuration;
             }
 
             const startIndex = allTimestamps.length;
             const startTime = cumulativeOffset;
-
-            // Generate TTS for this message
-            const result = await generateTTSAudio(cleanText, voiceId, apiKey);
-            if (!result) {
-                console.error(`[PostTTS] Failed to generate audio for message ${i} (${msg.role})`);
-                continue;
-            }
 
             // Offset timestamps by cumulative duration
             const offsetTimestamps = result.wordTimestamps.map(w => ({
@@ -579,15 +575,12 @@ export async function generateConversationAudio(
             allTimestamps.push(...offsetTimestamps);
 
             // Calculate actual clip duration from buffer size (128kbps MP3)
-            // This is more accurate than word timestamps which may not include trailing audio
             const actualClipDuration = (result.buffer.length * 8) / 128000;
             const timestampDuration = result.wordTimestamps.length > 0
                 ? result.wordTimestamps[result.wordTimestamps.length - 1].end
                 : 0;
-            // Use the longer of the two — timestamps tell us word positions,
-            // but the actual audio may extend beyond the last word
             const msgDuration = Math.max(actualClipDuration, timestampDuration);
-            
+
             const endIndex = allTimestamps.length - 1;
             const endTime = cumulativeOffset + msgDuration;
 
@@ -601,7 +594,8 @@ export async function generateConversationAudio(
 
             cumulativeOffset += msgDuration;
 
-            console.log(`[PostTTS] Message ${i + 1}/${messages.length} (${msg.role}): ${wordCount(cleanText)}w, clip=${actualClipDuration.toFixed(2)}s, timestamps=${timestampDuration.toFixed(2)}s, used=${msgDuration.toFixed(2)}s`);
+            const cleanText = cleanTextForTTS(msg.text);
+            console.log(`[PostTTS] Message ${i + 1}/${messages.length} (${msg.role}): ${wordCount(cleanText || '')}w, clip=${actualClipDuration.toFixed(2)}s, used=${msgDuration.toFixed(2)}s`);
         }
 
         if (audioBuffers.length === 0) {
@@ -626,173 +620,3 @@ export async function generateConversationAudio(
     }
 }
 
-export interface ShortAudioResult {
-    /** MP3 buffer for the question portion (character voice) */
-    questionBuffer: Buffer;
-    /** MP3 buffer for the answer portion (Earnest voice, speed 1.1) */
-    answerBuffer: Buffer;
-    /** Word-level timestamps for question audio (times relative to question start) */
-    questionTimestamps: WordTimestamp[];
-    /** Word-level timestamps for answer audio (times relative to answer start) */
-    answerTimestamps: WordTimestamp[];
-    /** Duration of the question audio in seconds */
-    questionDuration: number;
-    /** Duration of the answer audio in seconds */
-    answerDuration: number;
-    /** Firebase Storage URL of the combined (question+answer) audio file */
-    audioUrl: string;
-}
-
-/**
- * Generate a single TTS audio chunk with an optional speed override.
- * Used internally by generateShortAudio for the Earnest voice at speed 1.1.
- */
-async function generateTTSChunkWithSpeed(
-    chunk: string,
-    voiceId: string,
-    apiKey: string,
-    timeOffset: number,
-    speed: number = 1.0,
-): Promise<ChunkResult | null> {
-    const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`,
-        {
-            method: 'POST',
-            headers: {
-                'xi-api-key': apiKey,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                text: chunk,
-                model_id: 'eleven_v3',
-                voice_settings: {
-                    stability: 0.5,
-                    similarity_boost: 0.8,
-                    style: 0.45,
-                    use_speaker_boost: true,
-                    speed,
-                },
-            }),
-        }
-    );
-
-    if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        console.error(`[PostTTS] ElevenLabs error (speed=${speed}): ${res.status}`, errText);
-        return null;
-    }
-
-    const json = await res.json() as {
-        audio_base64: string;
-        alignment: {
-            characters: string[];
-            character_start_times_seconds: number[];
-            character_end_times_seconds: number[];
-        };
-    };
-
-    const audioBuffer = Buffer.from(json.audio_base64, 'base64');
-    const wordTimestamps = parseWordTimestamps(
-        json.alignment.characters,
-        json.alignment.character_start_times_seconds,
-        json.alignment.character_end_times_seconds,
-        timeOffset,
-    );
-
-    const charEndTimes = json.alignment.character_end_times_seconds;
-    const duration = charEndTimes.length > 0 ? charEndTimes[charEndTimes.length - 1] : 0;
-
-    return { audioBuffer, wordTimestamps, duration };
-}
-
-/**
- * Retrieve the Earnest (admin) voice ID from Firestore.
- * Falls back to null if ADMIN_UID is not set or voice is not configured.
- */
-export async function getEarnestVoiceId(): Promise<string | null> {
-    const adminUid = process.env.ADMIN_UID;
-    if (!adminUid) {
-        console.error('[PostTTS] ADMIN_UID not configured');
-        return null;
-    }
-    const userDoc = await db.collection('users').doc(adminUid).get();
-    if (!userDoc.exists) return null;
-    return userDoc.data()?.character_bible?.voice_id || null;
-}
-
-/**
- * Generate two separate audio tracks for a Q&A short-form video.
- *
- * - Question: spoken by the character's own voice (standard speed)
- * - Answer: spoken by the Earnest voice (speed 1.1 for slightly faster delivery)
- *
- * Both tracks include word-level timestamps for karaoke subtitles.
- * A combined audio file (question + answer) is uploaded to Firebase Storage.
- *
- * @param questionText  The Q&A short question text
- * @param answerText    The Q&A short answer text
- * @param characterVoiceId  The post author's ElevenLabs voice ID
- * @param postId        Post document ID (used for storage path)
- * @returns ShortAudioResult or null if generation fails
- */
-export async function generateShortAudio(
-    questionText: string,
-    answerText: string,
-    characterVoiceId: string,
-    postId: string,
-): Promise<ShortAudioResult | null> {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) {
-        console.error('[PostTTS] ELEVENLABS_API_KEY not configured');
-        return null;
-    }
-
-    try {
-        // Get the Earnest voice for the answer
-        const earnestVoiceId = await getEarnestVoiceId();
-        if (!earnestVoiceId) {
-            console.error('[PostTTS] Could not retrieve Earnest voice ID');
-            return null;
-        }
-
-        const cleanQuestion = cleanTextForTTS(questionText);
-        const cleanAnswer = cleanTextForTTS(answerText);
-
-        if (!cleanQuestion || !cleanAnswer) {
-            console.error('[PostTTS] Empty question or answer text');
-            return null;
-        }
-
-        // Generate both audio tracks in parallel
-        const [questionResult, answerResult] = await Promise.all([
-            // Question: character's voice, standard speed
-            generateTTSChunkWithTimestamps(cleanQuestion, characterVoiceId, apiKey, 0),
-            // Answer: Earnest voice, speed 1.1
-            generateTTSChunkWithSpeed(cleanAnswer, earnestVoiceId, apiKey, 0, 1.1),
-        ]);
-
-        if (!questionResult || !answerResult) {
-            console.error('[PostTTS] Failed to generate one or both short audio tracks');
-            return null;
-        }
-
-        // Upload combined audio (question + answer concatenated)
-        const combinedBuffer = Buffer.concat([questionResult.audioBuffer, answerResult.audioBuffer]);
-        const audioUrl = await uploadAudio(combinedBuffer, `short-audio/${postId}_${Date.now()}.mp3`);
-
-        console.log(`[PostTTS] Short audio generated for post ${postId} (question: ${questionResult.duration.toFixed(1)}s, answer: ${answerResult.duration.toFixed(1)}s)`);
-
-        return {
-            questionBuffer: questionResult.audioBuffer,
-            answerBuffer: answerResult.audioBuffer,
-            questionTimestamps: questionResult.wordTimestamps,
-            answerTimestamps: answerResult.wordTimestamps,
-            questionDuration: questionResult.duration,
-            answerDuration: answerResult.duration,
-            audioUrl,
-        };
-    } catch (err) {
-        console.error('[PostTTS] Short audio generation failed:', err);
-        return null;
-    }
-}
