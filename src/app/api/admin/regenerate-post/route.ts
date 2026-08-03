@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db, storage } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import { generateConversationAudio, resolvePostVoices, type ConversationAudioResult } from '@/lib/ai/postTTS';
-import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
-import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
-import { generateImage } from '@/lib/ai/generateImage';
-import { validateGeneratedImage } from '@/lib/ai/validateImage';
-import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
-import { VISUAL_STYLES, getVisualStyle } from '@/lib/ai/visualStyles';
-import sharp from 'sharp';
-import { z } from 'zod';
+import { processPostContent } from '@/lib/ai/processPostContent';
 
 export const runtime = 'nodejs';
 export const maxDuration = 240;
@@ -18,10 +9,12 @@ export const maxDuration = 240;
 /**
  * POST /api/admin/regenerate-post
  *
- * Regenerates EVERYTHING for an existing post:
+ * Regenerates EVERYTHING for an existing post using the same shared
+ * pipeline as the cleanup-chats cron:
  *   1. Condensed transcript (from stored raw transcript)
- *   2. Dual-voice TTS audio (user voice + ideal self voice)
- *   3. Images (cinematic prompts from character bible, 16:9 aspect ratio)
+ *   2. Per-message image prompts (AI visual director)
+ *   3. Dual-voice TTS audio
+ *   4. Actual image generation (inline — not deferred like cron)
  *
  * Requires the post to have `content_raw` (the original chat transcript).
  *
@@ -67,195 +60,92 @@ export async function POST(req: Request) {
         const identity = userData?.identity;
         const gender = identity?.gender || '';
 
-        console.log(`[RegeneratePost] Starting condensed transcript regeneration for post ${postId}`);
+        // Build demographic hint for image prompts
+        const age = identity?.birthdate ? (() => {
+            const bd = new Date(identity.birthdate);
+            return Math.floor((Date.now() - bd.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        })() : null;
+        const demographicHint = [
+            identity?.gender,
+            age ? `approximately ${age} years old` : null,
+            identity?.ethnicity,
+        ].filter(Boolean).join(', ');
 
-        // ── STEP 1: Generate Condensed Transcript ──
-        console.log('[RegeneratePost] Generating condensed transcript via Opus...');
-        const condensed = await generateCondensedTranscript(transcript);
+        console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
 
-        if (!condensed.is_publishable || !condensed.messages) {
+        // ── STEP 1+2+3: Shared pipeline (condensed + prompts + TTS) ──
+        // Same function the cron uses — no separate pipeline to maintain
+        const pipelineResult = await processPostContent({
+            transcript,
+            uid,
+            postId,
+            compiledBible,
+            demographicHint,
+            characterVoiceId,
+            gender,
+            logPrefix: 'RegeneratePost',
+        });
+
+        if (!pipelineResult) {
             return NextResponse.json({ error: 'Transcript not publishable' }, { status: 400 });
         }
 
-        const messageCount = condensed.messages.length;
-        const wordCount = condensed.messages.reduce((sum, m) => sum + m.text.split(/\s+/).filter(Boolean).length, 0);
-        const postTitle = condensed.title || null;
-        console.log(`[RegeneratePost] Condensed: ${messageCount} messages, ${wordCount} words, title: "${postTitle}"`);
+        const { condensed, imagePrompts, audioFields, derivedLetter, derivedResponse } = pipelineResult;
 
-        // Derive backward-compatible letter/response from condensed transcript
-        const userMessages = condensed.messages.filter(m => m.role === 'user');
-        const idealSelfMessages = condensed.messages.filter(m => m.role === 'ideal_self');
-        const derivedLetter = userMessages.length > 0
-            ? `Dear Earnest,\n\n${userMessages[0].text}`
-            : '';
-        const derivedResponse = idealSelfMessages.length > 0
-            ? idealSelfMessages[idealSelfMessages.length - 1].text
-            : '';
-
-        // ── STEPS 2 + 3: TTS Audio + Images (in parallel) ──
-        // These are independent — run concurrently to stay under maxDuration.
-
-        // TTS promise
-        const isFemale = gender.toLowerCase() === 'female' || gender.toLowerCase() === 'woman';
-        const voices = await resolvePostVoices(characterVoiceId, isFemale);
-
-        let conversationAudio: ConversationAudioResult | null = null;
-
-        const ttsPromise = (voices && characterVoiceId)
-            ? (async (): Promise<ConversationAudioResult | null> => {
-                try {
-                    console.log(`[RegeneratePost] Generating dual-voice audio (user: ${voices.userVoiceId}, ideal_self: ${voices.earnestVoiceId}, gender: ${gender || 'default male'})...`);
-                    return await generateConversationAudio(
-                        condensed.messages,
-                        voices.userVoiceId,
-                        voices.earnestVoiceId,
-                        postId,
-                    );
-                } catch (err: any) {
-                    console.error(`[RegeneratePost] Conversation TTS failed:`, err.message);
-                    return null;
-                }
-            })()
-            : Promise.resolve(null as ConversationAudioResult | null);
-
-        // Image generation promise
-        const imagen_urls: string[] = [];
-        let imagen_url: string | null = null;
-        const existingStyle = postData.visual_style
-            || VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)].id;
-        const chosenStyle = getVisualStyle(existingStyle);
-
-        const imagePromise = (async () => {
-            try {
-                // Load user reference image for face consistency
-                const referenceImage = await loadUserReferenceImage(uid);
-                const NUM_IMAGES = 8;
-                let prompts: string[] = [];
-                let useReferenceImages: Buffer[] | undefined = referenceImage ? [referenceImage] : undefined;
-
-                console.log(`[RegeneratePost] Style — selected: "${existingStyle}", resolved: "${chosenStyle?.id || 'NONE'}" (category: ${chosenStyle?.category || 'unknown'})`);
-
-                if (chosenStyle?.category === 'landscape') {
-                    const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
-                    prompts = Array(NUM_IMAGES).fill(prompt);
-                    useReferenceImages = undefined;
-                } else if (chosenStyle?.category === 'landscape-with-person') {
-                    const prompt = `${chosenStyle.imagenTag} ${JSON.stringify(compiledBible)}`;
-                    prompts = Array(NUM_IMAGES).fill(prompt);
-                } else if (chosenStyle?.category === 'cinematic') {
-                    const styleDirection = chosenStyle.id === 'life-magazine'
-                        ? `You are a photo editor at Life Magazine in its golden era. You're commissioning 8 photographs for a photo essay about this person's life. Think like the great Life photographers — Gordon Parks, Margaret Bourke-White, W. Eugene Smith. Some images should be in vivid color, others in dramatic black and white. Each image should tell a story on its own — intimate, human, unforgettable. Documentary realism with cinematic beauty.`
-                        : `You are a Visual Director for an advice column called Earnest Page. You're creating 8 photographs that capture moments from this person's life.`;
-
-                    const aiResult = await generateWithFallback({
-                        primaryModelId: OPUS_MODEL,
-                        fallbackModelId: OPUS_FALLBACK,
-                        schema: z.object({
-                            prompts: z.array(z.string()).min(8).max(8),
-                        }),
-                        prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 16:9 landscape orientation (1920×1080). No text or watermarks.\n- Vary the scales and vibes across all 8 images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${JSON.stringify(compiledBible)}\nReturn exactly 8 detailed Imagen prompts. Each should be a self-contained image description.`,
-                    });
-                    prompts = (aiResult.object as any).prompts;
-                    console.log(`[RegeneratePost] Generated ${prompts.length} cinematic prompts`);
-                } else if (chosenStyle?.variations && chosenStyle.variations.length > 0) {
-                    prompts = Array.from({ length: NUM_IMAGES }, (_, i) =>
-                        `${chosenStyle.variations![i % chosenStyle.variations!.length]} ${JSON.stringify(compiledBible)}`
-                    );
-                } else {
-                    // Photographer styles — imagenTag + condensed conversation
-                    const tag = chosenStyle?.imagenTag || '';
-                    const conversationText = condensed.messages
-                        .map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`)
-                        .join('\n');
-                    const prompt = tag ? `${tag}\n${conversationText}` : conversationText;
-                    prompts = Array(NUM_IMAGES).fill(prompt);
-                }
-
-                // Sequential image generation with stagger to avoid rate limits
-                const IMAGE_STAGGER_MS = 1500;
-                for (let i = 0; i < prompts.length; i++) {
-                    if (i > 0) await new Promise(r => setTimeout(r, IMAGE_STAGGER_MS));
-                    try {
-                        const result = await generateImage({
-                            prompt: prompts[i],
-                            aspectRatio: '16:9',
-                            logPrefix: 'RegeneratePost',
-                            referenceImages: useReferenceImages,
-                            referenceMode: i < 2 ? 'face-only' : 'full',
-                        });
-                        if (result) {
-                            const isValid = await validateGeneratedImage(result.buffer, prompts[i]);
-                            if (isValid) {
-                                const compressed = await sharp(result.buffer)
-                                    .jpeg({ quality: 85 })
-                                    .toBuffer();
-                                const bucket = storage.bucket();
-                                const imgPath = `post-images/${postId}_${i}_${Date.now()}.jpg`;
-                                const file = bucket.file(imgPath);
-                                await file.save(compressed, { metadata: { contentType: 'image/jpeg' } });
-                                try { await file.makePublic(); } catch { /* UBLA */ }
-                                const url = `https://storage.googleapis.com/${bucket.name}/${imgPath}`;
-                                imagen_urls.push(url);
-                                console.log(`[RegeneratePost] Image ${i + 1}/${prompts.length} uploaded`);
-                            }
-                        }
-                    } catch (err: any) {
-                        console.error(`[RegeneratePost] Image ${i + 1} failed:`, err.message);
-                    }
-                }
-                imagen_url = imagen_urls[0] || null;
-                console.log(`[RegeneratePost] Generated ${imagen_urls.length}/${prompts.length} images`);
-            } catch (err: any) {
-                console.error(`[RegeneratePost] Image generation failed (non-fatal):`, err.message);
-            }
-        })();
-
-        const [ttsResult] = await Promise.allSettled([ttsPromise, imagePromise]);
-        if (ttsResult.status === 'fulfilled' && ttsResult.value) {
-            conversationAudio = ttsResult.value;
-        }
-
-        // ── STEP 4: Write everything to Firestore ──
-        const publicPost: any = {
-            letter: derivedLetter,
-            response: derivedResponse,
-            condensed_transcript: condensed.messages,
-        };
-        publicPost.imagen_url = imagen_url || postData.public_post?.imagen_url || postData.imagen_url || null;
-
-        const updateData: any = {
-            title: postTitle,
-            public_post: publicPost,
+        // ── STEP 4: Update the post with text + audio ──
+        const updateData: Record<string, any> = {
+            title: condensed.title,
+            public_post: {
+                letter: derivedLetter,
+                response: derivedResponse,
+                condensed_transcript: condensed.messages,
+            },
             condensed_transcript: condensed.messages,
             condensed_editorial_note: condensed.editorial_note,
+            // Per-message image system — prompts saved, images generated via Cloud Function
+            image_style: 'per-message',
+            image_prompts: imagePrompts,
+            message_images: [],           // Cloud Function will fill these in
+            image_retries: 0,             // Reset retry counter
+            // Clear legacy images
+            imagen_url: null,
+            imagen_urls: [],
+            visual_style: null,
+            language: condensed.language,
         };
 
-        if (imagen_urls.length > 0) {
-            updateData.imagen_url = imagen_url;
-            updateData.imagen_urls = imagen_urls;
+        // Audio fields
+        if (audioFields.audio_url) {
+            Object.assign(updateData, audioFields);
         }
 
-        if (conversationAudio) {
-            updateData.audio_url = conversationAudio.audioUrl;
-            updateData.audio_word_timestamps = conversationAudio.wordTimestamps;
-            updateData.audio_message_boundaries = conversationAudio.messageBoundaries;
-            const firstMsgBoundary = conversationAudio.messageBoundaries[0];
-            const lastBoundary = conversationAudio.messageBoundaries[conversationAudio.messageBoundaries.length - 1];
-            if (firstMsgBoundary && lastBoundary) {
-                updateData.audio_letter_ratio = firstMsgBoundary.endTime / lastBoundary.endTime;
-            }
-        }
+        // Keep post hidden until images are generated
+        updateData.is_public = false;
 
         await postDoc.ref.update(updateData);
-        console.log(`[RegeneratePost] Full regeneration complete for ${postId} (messages: ${messageCount}, words: ${wordCount}, audio: ${!!conversationAudio}, images: ${imagen_urls.length})`);
+
+        // ── STEP 5: Trigger Cloud Function for image generation (fire-and-forget) ──
+        const cloudFunctionUrl = process.env.GENERATE_POST_IMAGES_URL;
+        if (cloudFunctionUrl) {
+            fetch(cloudFunctionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: { postId } }),
+            }).catch(err => console.error('[RegeneratePost] Cloud Function trigger failed:', err));
+            console.log(`[RegeneratePost] Triggered image generation Cloud Function for ${postId}`);
+        } else {
+            console.warn(`[RegeneratePost] GENERATE_POST_IMAGES_URL not set — images will not be generated`);
+        }
+
+        console.log(`[RegeneratePost] Complete for ${postId} (messages: ${condensed.messages.length}, audio: ${!!audioFields.audio_url}, prompts: ${imagePrompts.length})`);
 
         return NextResponse.json({
             success: true,
-            title: postTitle,
-            message_count: messageCount,
-            word_count: wordCount,
-            audio_regenerated: !!conversationAudio,
-            images_generated: imagen_urls.length,
+            title: condensed.title,
+            message_count: condensed.messages.length,
+            audio_regenerated: !!audioFields.audio_url,
+            image_prompts_saved: imagePrompts.length,
+            images_generating: true,
         });
     } catch (error: any) {
         console.error('[RegeneratePost] Error:', error);
