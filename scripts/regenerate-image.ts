@@ -134,10 +134,12 @@ async function main() {
     if (customPrompt) {
         updates.imagen_prompt = customPrompt;
     }
-    // If post was forced private due to missing image, restore visibility
-    if (!postData.is_public && postData.visibility !== 'private') {
+    // If post was forced private due to missing image, restore visibility only if audio also exists
+    if (!postData.is_public && postData.visibility !== 'private' && postData.audio_url) {
         updates.is_public = true;
-        console.log('🔓 Restoring public visibility');
+        console.log('🔓 Restoring public visibility (audio present)');
+    } else if (!postData.is_public && postData.visibility !== 'private') {
+        console.log('⚠️  Post still missing audio — keeping is_public=false');
     }
 
     await postDoc.ref.update(updates);

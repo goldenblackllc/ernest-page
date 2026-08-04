@@ -324,14 +324,16 @@ export interface GenerateMessageImagesOptions {
     filePrefix: string;
     /** Reference images for character consistency */
     referenceImages?: Buffer[];
+    /** Existing image URLs from a previous run — non-empty slots are skipped */
+    existingUrls?: string[];
 }
 
 /**
  * Generate images from stored per-message prompts.
  *
- * Used in Phase 2 (deferred image generation). Takes the prompts
- * produced by generateMessageImagePrompts and generates actual images
- * with validation + retry, uploading each to Cloud Storage.
+ * Supports gap-filling: if `existingUrls` is provided, only generates
+ * images for slots that are empty/falsy. This allows retries across
+ * cron cycles without re-generating images that already succeeded.
  *
  * Returns an array of image URLs (index-aligned with prompts).
  * Missing images are represented as empty strings.
@@ -339,23 +341,38 @@ export interface GenerateMessageImagesOptions {
 export async function generateMessageImages(
     opts: GenerateMessageImagesOptions
 ): Promise<string[]> {
-    const { prompts, uid, filePrefix, referenceImages } = opts;
+    const { prompts, uid, filePrefix, referenceImages, existingUrls } = opts;
 
-    const CONCURRENCY = 3; // Max parallel image generation calls
-    const results: string[] = new Array(prompts.length).fill('');
+    const CONCURRENCY = 3;
+    // Start with existing results (gap-filling) or empty array
+    const results: string[] = existingUrls
+        ? existingUrls.map(u => u || '')
+        : new Array(prompts.length).fill('');
     let quotaExhausted = false;
 
-    // Process images in batches of CONCURRENCY
-    for (let batchStart = 0; batchStart < prompts.length; batchStart += CONCURRENCY) {
+    // Only generate for missing indices
+    const missingIndices = prompts
+        .map((_, i) => (!results[i] && prompts[i]) ? i : -1)
+        .filter(i => i >= 0);
+
+    if (missingIndices.length === 0) {
+        console.log(`[MessageImages] All ${prompts.length} images already present for ${filePrefix}`);
+        return results;
+    }
+
+    console.log(`[MessageImages] Generating ${missingIndices.length}/${prompts.length} missing images for ${filePrefix}`);
+
+    // Process missing images in batches of CONCURRENCY
+    for (let batchStart = 0; batchStart < missingIndices.length; batchStart += CONCURRENCY) {
         if (quotaExhausted) break;
 
-        const batchEnd = Math.min(batchStart + CONCURRENCY, prompts.length);
-        const batchIndices = Array.from({ length: batchEnd - batchStart }, (_, k) => batchStart + k);
+        const batchEnd = Math.min(batchStart + CONCURRENCY, missingIndices.length);
+        const batchSlice = missingIndices.slice(batchStart, batchEnd);
 
-        console.log(`[MessageImages] Batch ${Math.floor(batchStart / CONCURRENCY) + 1}: generating images ${batchStart + 1}-${batchEnd} of ${prompts.length}`);
+        console.log(`[MessageImages] Batch ${Math.floor(batchStart / CONCURRENCY) + 1}: generating images ${batchSlice.map(i => i + 1).join(',')} of ${prompts.length}`);
 
         const batchResults = await Promise.allSettled(
-            batchIndices.map(async (i) => {
+            batchSlice.map(async (i) => {
                 if (quotaExhausted) return null;
                 try {
                     const url = await generateVerdictImage(
@@ -383,6 +400,8 @@ export async function generateMessageImages(
     }
 
     const successCount = results.filter(Boolean).length;
-    console.log(`[MessageImages] Generated ${successCount}/${prompts.length} images for ${filePrefix}`);
+    const prevCount = existingUrls?.filter(Boolean).length || 0;
+    console.log(`[MessageImages] ${filePrefix}: ${successCount}/${prompts.length} total images (${successCount - prevCount} new this run)`);
     return results;
 }
+

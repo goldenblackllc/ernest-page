@@ -263,15 +263,18 @@ export const processChat = onDocumentUpdated(
                 });
                 
                 const firstImage = generatedImageUrls.find(Boolean) || null;
+                const allImagesFilled = generatedImageUrls.filter(Boolean).length >= imagePrompts.length;
+                const hasAudio = !!audioFields.audio_url;
+                const isComplete = allImagesFilled && hasAudio;
                 
-                // Update post with generated images
+                // Update post with generated images — only go public when ALL content is ready
                 await postDocRef.update({
                     message_images: generatedImageUrls,
                     imagen_urls: generatedImageUrls.filter(Boolean),
-                    ...(firstImage && { 
-                        imagen_url: firstImage,
-                        is_public: visibility !== 'private'
-                    }),
+                    images_complete: allImagesFilled,
+                    ...(firstImage && { imagen_url: firstImage }),
+                    // Only publish when every image succeeded AND audio exists
+                    ...(isComplete && { is_public: visibility !== 'private' }),
                 });
 
                 // Email notification
@@ -303,7 +306,7 @@ export const processChat = onDocumentUpdated(
                     console.error(`[ProcessChat] Post notification email failed:`, emailErr);
                 }
 
-                console.log(`[ProcessChat] ✅ Complete — post ${postDocRef.id} published with ${generatedImageUrls.filter(Boolean).length} images`);
+                console.log(`[ProcessChat] ✅ Complete — post ${postDocRef.id}: ${generatedImageUrls.filter(Boolean).length}/${imagePrompts.length} images, audio: ${hasAudio}, public: ${isComplete && visibility !== 'private'}`);
                 await event.data?.after.ref.delete();
             } else {
                 console.log(`[ProcessChat] Chat NOT publishable — skipping post creation, updating dossier only`);

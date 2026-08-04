@@ -369,6 +369,7 @@ ${transcript}`;
                         image_style: 'per-message',
                         image_prompts: imagePrompts,
                         message_images: [],           // populated in Phase 2
+                        images_complete: false,        // Phase 2 retries until all slots filled
                         // Legacy fields (kept for backward compat)
                         imagen_prompt: null,
                         imagen_prompts: [],
@@ -459,19 +460,19 @@ ${transcript}`;
 }
 
 // ─── PHASE 2: Deferred Image Generation ──────────────────────────────────────
-// Runs after Phase 1 (chat processing). Finds posts that have image_prompts
-// but no message_images yet, and generates the actual images.
+// Runs after Phase 1 (chat processing). Finds posts that still have empty
+// image slots (images_complete === false) and generates the missing images.
 // This runs in its own time budget, separate from the text/audio pipeline.
 
 const MAX_PHASE2_POSTS = 3;      // Process at most 3 posts per cron run
-const MAX_IMAGE_RETRIES = 5;
+const MAX_IMAGE_RETRIES = 10;    // Per-post retry cap before giving up on remaining blanks
 
 async function processPhase2Images(): Promise<number> {
     try {
         // Find posts with per-message image_style that need images
         const pendingPosts = await db.collection('posts')
             .where('image_style', '==', 'per-message')
-            .where('imagen_url', '==', null)
+            .where('images_complete', '==', false)
             .orderBy('created_at', 'asc')
             .limit(MAX_PHASE2_POSTS)
             .get();
@@ -493,16 +494,18 @@ async function processPhase2Images(): Promise<number> {
             const filledCount = existingImages.filter(Boolean).length;
             if (filledCount >= imagePrompts.length) continue;
 
-            // Skip if max retries exceeded
+            // Skip if max retries exceeded — stop retrying, accept partial images
             if (retryCount >= MAX_IMAGE_RETRIES) {
-                console.warn(`[Phase2] Post ${postDoc.id} exceeded ${MAX_IMAGE_RETRIES} retries — marking with partial images`);
+                const emptyCount = imagePrompts.length - filledCount;
+                console.warn(`[Phase2] Post ${postDoc.id} exceeded ${MAX_IMAGE_RETRIES} retries — accepting ${emptyCount} blank image(s)`);
                 const firstImage = existingImages.find(Boolean) || null;
-                if (firstImage) {
-                    await postDoc.ref.update({
+                await postDoc.ref.update({
+                    images_complete: true,
+                    ...(firstImage && {
                         imagen_url: firstImage,
                         is_public: postData.visibility !== 'private',
-                    });
-                }
+                    }),
+                });
                 continue;
             }
 
@@ -544,9 +547,11 @@ async function processPhase2Images(): Promise<number> {
             const firstImage = updatedImages.find(Boolean) || null;
 
             // Update the post
+            const allFilled = newFilledCount >= imagePrompts.length;
             const updateFields: Record<string, any> = {
                 message_images: updatedImages,
                 image_retries: retryCount + 1,
+                ...(allFilled && { images_complete: true }),
             };
 
             // Make post public once we have at least 1 image

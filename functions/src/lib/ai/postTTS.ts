@@ -355,34 +355,49 @@ async function findConversationalVoice(
     apiKey: string,
     pickFromTop: number = 5,
 ): Promise<string | null> {
-    const params = new URLSearchParams({
-        page_size: '10',
-        language: 'en',
-        sort: 'trending',
-        use_cases: 'conversational',
-        ...(labels.gender && { gender: labels.gender }),
-        ...(labels.age && { age: labels.age }),
-        ...(labels.accent && { accent: labels.accent }),
-    });
+    // Match the ElevenLabs UI: /v1/shared-voices filtered by use_cases +
+    // demographics, sorted by popularity. No category filter — the UI shows
+    // all categories and quality comes from sorting by most users.
+    //
+    // Progressive relaxation: try full filters first, then drop accent, then
+    // age, then just gender. This ensures we always find a match.
+    const filterSets = [
+        { ...(labels.gender && { gender: labels.gender }), ...(labels.age && { age: labels.age }), ...(labels.accent && { accent: labels.accent }) },
+        { ...(labels.gender && { gender: labels.gender }), ...(labels.age && { age: labels.age }) },
+        { ...(labels.gender && { gender: labels.gender }) },
+        {},
+    ];
 
-    try {
-        const res = await fetch(
-            `https://api.elevenlabs.io/v1/shared-voices?${params}`,
-            { headers: { 'xi-api-key': apiKey } },
-        );
-        if (!res.ok) return null;
-        const data = await res.json();
-        const candidates = (data.voices || [])
-            .filter((v: any) => v.voice_id && !excludeIds.has(v.voice_id))
-            .slice(0, pickFromTop);
-        if (candidates.length > 0) {
-            const pick = candidates[Math.floor(Math.random() * candidates.length)];
-            console.log(`[PostTTS] Found conversational voice: ${pick.name} (${pick.voice_id}) — picked from ${candidates.length} candidates`);
-            return pick.voice_id;
+    for (let i = 0; i < filterSets.length; i++) {
+        const params = new URLSearchParams({
+            page_size: '20',
+            language: 'en',
+            use_cases: 'conversational',
+            sort: 'usage_character_count_1y',
+            ...filterSets[i],
+        });
+
+        try {
+            const res = await fetch(
+                `https://api.elevenlabs.io/v1/shared-voices?${params}`,
+                { headers: { 'xi-api-key': apiKey } },
+            );
+            if (!res.ok) continue;
+            const data = await res.json();
+            const candidates = (data.voices || [])
+                .filter((v: any) => v.voice_id && !excludeIds.has(v.voice_id))
+                .slice(0, pickFromTop);
+            if (candidates.length > 0) {
+                const pick = candidates[Math.floor(Math.random() * candidates.length)];
+                const relaxed = i > 0 ? ` (relaxed filters: attempt ${i + 1}/4)` : '';
+                console.log(`[PostTTS] Found conversational voice: ${pick.name} (${pick.voice_id}) — picked from ${candidates.length} candidates${relaxed}`);
+                return pick.voice_id;
+            }
+        } catch (err) {
+            console.error('[PostTTS] Conversational voice search failed:', err);
         }
-    } catch (err) {
-        console.error('[PostTTS] Conversational voice search failed:', err);
     }
+
     return null;
 }
 
@@ -520,8 +535,10 @@ export async function generateConversationAudio(
             console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
         }
 
-        // ─── PARALLEL TTS: Fire all ElevenLabs calls at once ───
-        // API calls are the bottleneck (~2-3s each). Stitching is instant.
+        // ─── PARALLEL-BY-VOICE TTS ───
+        // ElevenLabs rejects concurrent requests on the SAME voice (409).
+        // Solution: group messages by voice, run each voice's messages sequentially,
+        // but process both voice streams in parallel. ~2x faster than fully sequential.
         const ttsInputs = messages.map((msg, i) => ({
             index: i,
             role: msg.role,
@@ -529,21 +546,37 @@ export async function generateConversationAudio(
             cleanText: cleanTextForTTS(msg.text),
         })).filter(m => !!m.cleanText);
 
-        console.log(`[PostTTS] Firing ${ttsInputs.length} TTS calls in parallel...`);
-        const ttsResults = await Promise.allSettled(
-            ttsInputs.map(async ({ index, voiceId, cleanText }) => {
-                const result = await generateTTSAudio(cleanText!, voiceId, apiKey);
-                return { index, result };
-            })
-        );
-
-        // Collect successful results, keyed by original index
+        console.log(`[PostTTS] Generating ${ttsInputs.length} TTS clips (parallel-by-voice)...`);
         const ttsResultMap = new Map<number, Awaited<ReturnType<typeof generateTTSAudio>>>();
-        for (const settled of ttsResults) {
-            if (settled.status === 'fulfilled' && settled.value.result) {
-                ttsResultMap.set(settled.value.index, settled.value.result);
-            }
+
+        // Group by voice
+        const voiceGroups = new Map<string, typeof ttsInputs>();
+        for (const input of ttsInputs) {
+            const group = voiceGroups.get(input.voiceId) || [];
+            group.push(input);
+            voiceGroups.set(input.voiceId, group);
         }
+
+        // Process each voice's messages sequentially, but run voices in parallel
+        const voiceStreams = [...voiceGroups.entries()].map(async ([voiceId, inputs]) => {
+            for (const { index, cleanText } of inputs) {
+                // Try up to 2 times (initial + 1 retry on 409)
+                let result: Awaited<ReturnType<typeof generateTTSAudio>> = null;
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    result = await generateTTSAudio(cleanText!, voiceId, apiKey);
+                    if (result) break;
+                    if (attempt === 0) {
+                        console.log(`[PostTTS] Retrying message ${index} after 1s...`);
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
+                if (result) {
+                    ttsResultMap.set(index, result);
+                }
+            }
+        });
+
+        await Promise.all(voiceStreams);
         console.log(`[PostTTS] ${ttsResultMap.size}/${ttsInputs.length} TTS calls succeeded`);
 
         // ─── SEQUENTIAL STITCH: Assemble in order with timestamps ───

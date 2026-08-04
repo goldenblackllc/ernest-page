@@ -157,17 +157,22 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
             console.warn(`[RegenerateImage] Only ${imagen_urls.length}/${prompts.length} images succeeded for post ${postId}`);
         }
 
-        // Update the post
+        const allImagesFilled = imagen_urls.length >= prompts.length;
+        const hasAudio = !!postData.audio_url;
+        const isComplete = allImagesFilled && hasAudio;
+
+        // Update the post — only go public when ALL content is ready
         await postDoc.ref.update({
             imagen_url,
             imagen_urls,
             imagen_prompt: prompts[0] || null,
             imagen_prompts: prompts,
             visual_style: visualStyleId,
-            is_public: postData.visibility !== 'private',
+            images_complete: allImagesFilled,
+            ...(isComplete && { is_public: postData.visibility !== 'private' }),
         });
 
-        console.log(`[RegenerateImage] ${imagen_urls.length}/${prompts.length} images updated for post ${postId}`);
+        console.log(`[RegenerateImage] ${imagen_urls.length}/${prompts.length} images updated for post ${postId}, audio: ${hasAudio}, public: ${isComplete}`);
 
         return NextResponse.json({
             success: true,
