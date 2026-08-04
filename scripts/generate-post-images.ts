@@ -74,7 +74,9 @@ async function main() {
 
     if (firstImage) {
         await postDoc.ref.update({
-            message_images: urls,
+            // Replace empty strings with null — Firestore rejects undefined but accepts null.
+            // Preserves array indexing so gap-filling works on re-runs.
+            message_images: urls.map(u => u || null),
             imagen_urls: validUrls,
             imagen_url: firstImage,
             images_complete: allFilled,

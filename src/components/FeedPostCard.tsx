@@ -1085,31 +1085,31 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     )}
 
                     {/* Top: Author identity — always visible (not tied to playback controls) */}
-                    <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
+                    <div className={`absolute top-0 left-0 right-0 z-10 ${isFullscreen ? 'p-6' : 'p-3 sm:p-4'}`} style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
                         {/* Author row */}
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
+                            <div className={`rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0 ${isFullscreen ? 'w-12 h-12' : 'w-8 h-8'}`}>
                                 {post.author_avatar_url ? (
                                     <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <User className="w-4 h-4 text-zinc-400" />
+                                    <User className={`text-zinc-400 ${isFullscreen ? 'w-6 h-6' : 'w-4 h-4'}`} />
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-semibold text-white/90 truncate">
+                                    <span className={`font-semibold text-white/90 truncate ${isFullscreen ? 'text-lg' : 'text-sm'}`}>
                                         {isAuthor ? t('authorMe') : customAlias || publicPseudonym || t('authorAnonymous')}
                                     </span>
                                     {!isAuthor && !customAlias && postAuthorId && onFollowClick && !digestMode && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onFollowClick(postAuthorId); }}
-                                            className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-0.5 rounded transition-all tracking-wide shrink-0"
+                                            className={`font-bold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 rounded transition-all tracking-wide shrink-0 ${isFullscreen ? 'text-sm px-3 py-1' : 'text-[10px] px-2 py-0.5'}`}
                                         >
                                             {t('followAuthor')}
                                         </button>
                                     )}
                                 </div>
-                                <span className="text-[10px] text-white/50">{timeAgo}</span>
+                                <span className={`text-white/50 ${isFullscreen ? 'text-sm' : 'text-[10px]'}`}>{timeAgo}</span>
                             </div>
                             {/* Visibility control */}
                             {user?.uid === post.uid && !digestMode && (
@@ -1117,7 +1117,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     value={localVisibility}
                                     onChange={(e) => { e.stopPropagation(); handleVisibilityChange(e.target.value as 'private' | 'community' | 'public'); }}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="text-[10px] font-bold tracking-wide bg-black/50 backdrop-blur-sm border border-white/20 text-white/70 rounded-md px-1.5 py-1 focus:outline-none transition-all cursor-pointer appearance-none"
+                                    className={`font-bold tracking-wide bg-black/50 backdrop-blur-sm border border-white/20 text-white/70 rounded-md focus:outline-none transition-all cursor-pointer appearance-none ${isFullscreen ? 'text-sm px-3 py-1.5' : 'text-[10px] px-1.5 py-1'}`}
                                     style={{ backgroundImage: 'none' }}
                                 >
                                     <option value="private">🔒 Only Me</option>
@@ -1131,11 +1131,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     {/* Large centered play button — visible when idle and audio available (YouTube thumbnail style) */}
                     {hasPlaybackControls && !isPlaying && (
                         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 transition-transform duration-200 hover:scale-110">
+                            <div className={`rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 transition-transform duration-200 hover:scale-110 ${isFullscreen ? 'w-24 h-24' : 'w-16 h-16 sm:w-20 sm:h-20'}`}>
                                 {isAudioLoading ? (
-                                    <Loader2 className="w-7 h-7 sm:w-9 sm:h-9 text-white animate-spin" />
+                                    <Loader2 className={`text-white animate-spin ${isFullscreen ? 'w-12 h-12' : 'w-7 h-7 sm:w-9 sm:h-9'}`} />
                                 ) : (
-                                    <Play className="w-7 h-7 sm:w-9 sm:h-9 text-white ml-1" fill="white" />
+                                    <Play className={`text-white ml-1 ${isFullscreen ? 'w-12 h-12' : 'w-7 h-7 sm:w-9 sm:h-9'}`} fill="white" />
                                 )}
                             </div>
                         </div>
@@ -1143,13 +1143,13 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     {/* Bold title overlay — lower-third on thumbnail, DigestCard-style outlined text, fades on play */}
                     {post.title && !isPlaying && (
-                        <div className="absolute left-0 right-0 bottom-14 sm:bottom-16 z-10 pointer-events-none px-4 sm:px-6">
+                        <div className={`absolute left-0 right-0 z-10 pointer-events-none ${isFullscreen ? 'bottom-24 px-10' : 'bottom-14 sm:bottom-16 px-4 sm:px-6'}`}>
                             {digestMode && (
-                                <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-bold mb-1">
+                                <p className={`uppercase tracking-[0.2em] text-white/70 font-bold mb-1 ${isFullscreen ? 'text-sm' : 'text-[10px]'}`}>
                                     {t('digestLabel')}
                                 </p>
                             )}
-                            <h3 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-snug" style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
+                            <h3 className={`font-black text-white leading-snug ${isFullscreen ? 'text-5xl sm:text-6xl lg:text-7xl' : 'text-2xl sm:text-4xl lg:text-5xl'}`} style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' }}>
                                 {post.title}
                             </h3>
                         </div>
@@ -1157,9 +1157,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     {/* Subtitle text — lower-third style (above control bar) — only when audio is available */}
                     {hasPlaybackControls && isPlaying && (
-                    <div className={`absolute left-0 right-0 z-10 pointer-events-none px-4 sm:px-8 transition-all duration-300 ${controlsVisible ? 'bottom-16 sm:bottom-[4.5rem]' : 'bottom-4 sm:bottom-6'}`}>
+                    <div className={`absolute left-0 right-0 z-10 pointer-events-none transition-all duration-300 ${isFullscreen ? (controlsVisible ? 'bottom-24' : 'bottom-8') + ' px-12' : (controlsVisible ? 'bottom-16 sm:bottom-[4.5rem]' : 'bottom-4 sm:bottom-6') + ' px-4 sm:px-8'}`}>
                         <div className={`text-center max-w-[90%] mx-auto transition-opacity duration-300 ${subtitle ? 'opacity-100' : 'opacity-0'}`}>
-                            <p className="text-base sm:text-xl lg:text-2xl font-bold text-white leading-snug" style={{ whiteSpace: 'pre-line', textShadow: '-1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <p className={`font-bold text-white leading-snug ${isFullscreen ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-base sm:text-xl lg:text-2xl'}`} style={{ whiteSpace: 'pre-line', textShadow: isFullscreen ? '-2px -2px 0 rgba(0,0,0,0.9), 2px -2px 0 rgba(0,0,0,0.9), -2px 2px 0 rgba(0,0,0,0.9), 2px 2px 0 rgba(0,0,0,0.9), 0 3px 6px rgba(0,0,0,0.5)' : '-1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {subtitle?.words && subtitle.activeWordIndex !== undefined && subtitle.activeWordIndex >= 0 ? (
                                     subtitle.words.map((w: { word: string }, i: number) => (
                                         <span
@@ -1188,7 +1188,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                         {/* Gradient backdrop */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
 
-                        <div className="relative px-3 sm:px-4 pb-2 pt-6">
+                        <div className={`relative ${isFullscreen ? 'px-6 pb-4 pt-8' : 'px-3 sm:px-4 pb-2 pt-6'}`}>
                             {/* Scrubber / progress bar */}
                             <div className="group flex items-center mb-1.5">
                                 <input
@@ -1214,7 +1214,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     className="text-white hover:text-white/80 transition-colors p-1"
                                     title={isPlaying ? 'Pause' : 'Play'}
                                 >
-                                    {isPlaying ? <Pause className="w-5 h-5" fill="white" /> : <Play className="w-5 h-5" fill="white" />}
+                                    {isPlaying ? <Pause className={isFullscreen ? 'w-7 h-7' : 'w-5 h-5'} fill="white" /> : <Play className={isFullscreen ? 'w-7 h-7' : 'w-5 h-5'} fill="white" />}
                                 </button>
 
                                 {/* Skip back 10s */}
@@ -1223,7 +1223,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     className="text-white/70 hover:text-white transition-colors p-1"
                                     title="Back 10 seconds"
                                 >
-                                    <SkipBack className="w-4 h-4" />
+                                    <SkipBack className={isFullscreen ? 'w-6 h-6' : 'w-4 h-4'} />
                                 </button>
 
                                 {/* Skip forward 10s */}
@@ -1232,11 +1232,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     className="text-white/70 hover:text-white transition-colors p-1"
                                     title="Forward 10 seconds"
                                 >
-                                    <SkipForward className="w-4 h-4" />
+                                    <SkipForward className={isFullscreen ? 'w-6 h-6' : 'w-4 h-4'} />
                                 </button>
 
                                 {/* Time display */}
-                                <span className="text-xs text-white/60 font-mono tabular-nums ml-1">
+                                <span className={`text-white/60 font-mono tabular-nums ml-1 ${isFullscreen ? 'text-base' : 'text-xs'}`}>
                                     {formatTime(audioCurrentTime)} / {formatTime(audioDuration)}
                                 </span>
 
@@ -1249,7 +1249,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     className="text-white/70 hover:text-white transition-colors p-1"
                                     title={isMuted ? 'Unmute' : 'Mute'}
                                 >
-                                    {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                                    {isMuted ? <VolumeX className={isFullscreen ? 'w-6 h-6' : 'w-4 h-4'} /> : <Volume2 className={isFullscreen ? 'w-6 h-6' : 'w-4 h-4'} />}
                                 </button>
 
                                 {/* Fullscreen toggle */}
@@ -1258,7 +1258,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     className="text-white/70 hover:text-white transition-colors p-1"
                                     title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
                                 >
-                                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                                    {isFullscreen ? <Minimize className="w-6 h-6" /> : <Maximize className="w-4 h-4" />}
                                 </button>
                             </div>
                         </div>

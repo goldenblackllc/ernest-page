@@ -1,12 +1,13 @@
 /**
  * Visual Styles for Image Generation
  *
- * 8 styles in a flat list, each with equal probability:
- * - 6 photographers: letter + photographer tag → Imagen
- * - 2 landscapes: character bible → Imagen (with or without the person)
+ * 11 styles in a flat list, each with equal probability:
+ * - 8 photographers: letter + photographer tag → Imagen
+ * - 2 landscapes: character bible → Imagen (person always present, prominence varies)
+ * - 1 cinematic: AI-generated prompts from character context
  */
 
-export type StyleCategory = 'photographer' | 'landscape' | 'landscape-with-person' | 'cinematic';
+export type StyleCategory = 'photographer' | 'landscape-with-person' | 'cinematic';
 
 export interface VisualStyle {
     /** Machine-readable identifier stored in Firestore */
@@ -79,10 +80,10 @@ export const VISUAL_STYLES: VisualStyle[] = [
     {
         id: 'landscape',
         name: 'Landscape',
-        category: 'landscape',
-        bestFor: 'Any story — scenic locations from the character\'s life without the person.',
+        category: 'landscape-with-person',
+        bestFor: 'Any story — the person small in a landscape or environment from their life.',
         vision: '',
-        imagenTag: 'Imagine we publish conversations between a person and their consultant in an advice column. Generate a beautiful landscape photograph to accompany this conversation, based on this person\'s character. Do NOT include any people, faces, or human figures in the image — only the environment, scenery, and atmosphere:',
+        imagenTag: 'Imagine we publish conversations between a person and their consultant in an advice column. Generate a photograph of this person in a landscape or environment from their life to accompany this conversation. The person should be present but small in the frame — a figure on a path, a silhouette against the sky, someone seen from a distance. The environment dominates, but the human presence anchors the image. Based on their character:',
     },
     {
         id: 'landscape-portrait',

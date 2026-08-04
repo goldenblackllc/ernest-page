@@ -156,13 +156,7 @@ export async function generateStoryboardImages(opts: StoryboardOptions): Promise
     const contextForBible = compiledBible ? JSON.stringify(compiledBible) : content;
     let prompts: string[] = [];
 
-    if (randomStyle.category === 'landscape') {
-        // Landscape without the person — character bible, no reference images
-        const prompt = `${randomStyle.imagenTag} ${contextForBible}`;
-        prompts = Array(numImages).fill(prompt);
-        useReferenceImages = undefined;
-
-    } else if (randomStyle.category === 'landscape-with-person') {
+    if (randomStyle.category === 'landscape-with-person') {
         // Landscape with the person — character bible, with reference images
         const prompt = `${randomStyle.imagenTag} ${contextForBible}`;
         prompts = Array(numImages).fill(prompt);
@@ -181,7 +175,7 @@ export async function generateStoryboardImages(opts: StoryboardOptions): Promise
                 schema: z.object({
                     prompts: z.array(z.string()).min(numImages).max(numImages),
                 }),
-                prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of an object, texture, or detail from their life.\n- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.\n- "wide": An aspirational landscape, cityscape, or architectural shot from their world.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 16:9 landscape orientation (1920×1080). No text or watermarks.\n- Vary the scales and vibes across all ${numImages} images.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${contextForBible}\nReturn exactly ${numImages} detailed Imagen prompts. Each should be a self-contained image description.`,
+                prompt: `${styleDirection}\n\nFirst, read the character's identity. For each image, choose:\n- A VIBE: the emotional feeling (luxury, grit, serenity, chaos, warmth, ambition, defiance, tenderness, solitude, celebration)\n- A SCALE: the shot type\n\nSCALE types:\n- "macro": Extreme close-up of the person's hands, eyes, or a personal object they're holding or touching. The person's body is partially visible.\n- "lifestyle": The person in a composed scene — their workspace, kitchen, car, bedroom. They're present, doing something, living in the space.\n- "wide": The person small in a wider landscape, cityscape, or architectural shot from their world — a figure in their environment, seen from a distance.\n- "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.\n\nRULES:\n- Highly photorealistic. Cinematic lighting. Instagram-quality.\n- 16:9 landscape orientation (1920×1080). No text or watermarks.\n- Vary the scales and vibes across all ${numImages} images.\n- The person MUST be visible in every image — sometimes close, sometimes distant, sometimes just hands or a silhouette — but always present.\n- The images should feel like snapshots from a real person's life — intimate, authentic, with depth.\n- Ground every image in specific details from the character.\n\nCHARACTER:\n${contextForBible}\nReturn exactly ${numImages} detailed Imagen prompts. Each should be a self-contained image description.`,
             });
             prompts = (aiResult.object as any).prompts;
             console.log(`[Storyboard] Generated ${prompts.length} cinematic prompts`);
@@ -275,7 +269,7 @@ For each message, create an image prompt that:
 3. Carries forward the context of everything said before it — each image should make sense as part of the unfolding conversation.
 4. Follows the camera perspective for the speaker:
    - PERSON messages: The character is IN the scene, active, close. We're right there with them in the moment they're describing. First-person energy.
-   - CONSULTANT messages: The camera pulls wider. More environment, more context, more space. The character may or may not be in frame — the image can focus on the environment, an object, or a wider view of their world.
+   - CONSULTANT messages: The camera pulls wider. The character is still visible but smaller in the frame — seen from a distance, from behind, as a silhouette, or partially obscured by the environment. The world is the subject, but the person is still present.
 
 Rules:
 - Photorealistic. Cinematic lighting. 16:9 landscape orientation (1280×720).

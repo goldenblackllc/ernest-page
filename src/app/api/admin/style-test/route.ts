@@ -95,9 +95,6 @@ export async function POST(req: NextRequest) {
     if (style.category === 'photographer') {
       styledPrompt = `${style.imagenTag} ${letter}`;
       useReferenceImages = referenceImages;
-    } else if (style.category === 'landscape') {
-      styledPrompt = `${style.imagenTag} ${JSON.stringify(compiledBible)}`;
-      useReferenceImages = undefined;
     } else if (style.category === 'landscape-with-person') {
       styledPrompt = `${style.imagenTag} ${JSON.stringify(compiledBible)}`;
       useReferenceImages = referenceImages;
@@ -133,15 +130,16 @@ First, read the character's identity. For each image, choose:
 - A SCALE: the shot type
 
 SCALE types:
-- "macro": Extreme close-up of an object, texture, or detail from their life.
-- "lifestyle": A composed scene or environment that tells a story — their workspace, kitchen, car, bedroom.
-- "wide": An aspirational landscape, cityscape, or architectural shot from their world.
+- "macro": Extreme close-up of the person's hands, eyes, or a personal object they're holding or touching. The person's body is partially visible.
+- "lifestyle": The person in a composed scene — their workspace, kitchen, car, bedroom. They're present, doing something, living in the space.
+- "wide": The person small in a wider landscape, cityscape, or architectural shot from their world — a figure in their environment, seen from a distance.
 - "human": The person in the scene — hands doing something, walking, sitting, from behind, over-the-shoulder.
 
 RULES:
 - Highly photorealistic. Cinematic lighting. Instagram-quality.
 - 16:9 landscape orientation (1920×1080). No text or watermarks.
 - Each of the 5 images MUST use a DIFFERENT scale. Vary the vibes.
+- The person MUST be visible in every image — sometimes close, sometimes distant, sometimes just hands or a silhouette — but always present.
 - The images should feel like snapshots from a real person's life — intimate, authentic, with depth.
 - Ground every image in specific details from the character.
 
@@ -155,7 +153,7 @@ Return exactly 5 detailed Imagen prompts. Each should be a self-contained image 
     }
 
     // Determine content suffix for non-cinematic styles
-    const contentSuffix = (style.category === 'landscape' || style.category === 'landscape-with-person')
+    const contentSuffix = (style.category === 'landscape-with-person')
       ? ` ${JSON.stringify(compiledBible)}`
       : ` ${letter}`;
 
