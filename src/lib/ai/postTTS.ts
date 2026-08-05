@@ -348,6 +348,10 @@ async function getVoiceLabels(
  * Search the ElevenLabs shared voice library for a conversational voice
  * matching the given labels, excluding any voice IDs in `excludeIds`.
  * Randomly picks from the top `pickFromTop` results for variety.
+ *
+ * NOTE: The API's `use_cases` query param doesn't reliably filter by the
+ * voice's actual `use_case` field. We fetch without that param and filter
+ * client-side by `use_case === "conversational"` to match the website.
  */
 async function findConversationalVoice(
     labels: { gender?: string; age?: string; accent?: string },
@@ -355,10 +359,6 @@ async function findConversationalVoice(
     apiKey: string,
     pickFromTop: number = 5,
 ): Promise<string | null> {
-    // Match the ElevenLabs UI: /v1/shared-voices filtered by use_cases +
-    // demographics, sorted by popularity. No category filter — the UI shows
-    // all categories and quality comes from sorting by most users.
-    //
     // Progressive relaxation: try full filters first, then drop accent, then
     // age, then just gender. This ensures we always find a match.
     const filterSets = [
@@ -370,10 +370,9 @@ async function findConversationalVoice(
 
     for (let i = 0; i < filterSets.length; i++) {
         const params = new URLSearchParams({
-            page_size: '20',
+            page_size: '50',
             language: 'en',
-            use_cases: 'conversational',
-            sort: 'usage_character_count_1y',
+            sort: 'cloned_by_count',
             ...filterSets[i],
         });
 
@@ -385,7 +384,11 @@ async function findConversationalVoice(
             if (!res.ok) continue;
             const data = await res.json();
             const candidates = (data.voices || [])
-                .filter((v: any) => v.voice_id && !excludeIds.has(v.voice_id))
+                .filter((v: any) =>
+                    v.voice_id &&
+                    !excludeIds.has(v.voice_id) &&
+                    v.use_case === 'conversational',
+                )
                 .slice(0, pickFromTop);
             if (candidates.length > 0) {
                 const pick = candidates[Math.floor(Math.random() * candidates.length)];
