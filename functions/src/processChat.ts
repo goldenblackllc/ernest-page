@@ -9,8 +9,7 @@ import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt } from './lib/ai/dossierPrompt.js';
 import { matchSponsor } from './lib/config/ecosystem.js';
 import { generateCondensedTranscript } from './lib/ai/condensedTranscript.js';
-import { generateMessageImages } from './lib/ai/generatePostImage.js';
-import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
+
 import { processPostContent } from './lib/ai/processPostContent.js';
 import { VISUAL_STYLES } from './lib/ai/visualStyles.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
@@ -244,39 +243,11 @@ export const processChat = onDocumentUpdated(
                     status: "completed",
                     created_at: FieldValue.serverTimestamp(),
                     is_public: false,
+                    images_complete: false,
                     visibility,
                     like_count: 0,
                     comments: 0
                 });
-
-                // Generate images inline
-                console.log(`[ProcessChat] Post ${postDocRef.id} written to Firestore. Starting inline image generation...`);
-                const referenceImage = await loadUserReferenceImage(uid);
-                console.log(`[ProcessChat] Reference image loaded: ${!!referenceImage}`);
-                const referenceImages = referenceImage ? [referenceImage] : undefined;
-                
-                const generatedImageUrls = await generateMessageImages({
-                    prompts: imagePrompts,
-                    uid,
-                    filePrefix: postDocRef.id,
-                    referenceImages,
-                });
-                
-                const firstImage = generatedImageUrls.find(Boolean) || null;
-                const allImagesFilled = generatedImageUrls.filter(Boolean).length >= imagePrompts.length;
-                const hasAudio = !!audioFields.audio_url;
-                const isComplete = allImagesFilled && hasAudio;
-                
-                // Update post with generated images — only go public when ALL content is ready
-                await postDocRef.update({
-                    message_images: generatedImageUrls,
-                    imagen_urls: generatedImageUrls.filter(Boolean),
-                    images_complete: allImagesFilled,
-                    ...(firstImage && { imagen_url: firstImage }),
-                    // Only publish when every image succeeded AND audio exists
-                    ...(isComplete && { is_public: visibility !== 'private' }),
-                });
-
                 // Email notification
                 try {
                     if (process.env.GMAIL_APP_PASSWORD) {
@@ -292,11 +263,12 @@ export const processChat = onDocumentUpdated(
                             subject: `📝 New Post — ${postAuthor}`,
                             html: `
 <div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
-    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
+    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Created</p>
     <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postAuthor}</h2>
     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
         <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${visibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${visibility}</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Post ID</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 11px;">${postDocRef.id}</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Images</td><td style="padding: 6px 0; text-align: right; color: #fbbf24; font-weight: 600;">⏳ ${imagePrompts.length} pending</td></tr>
     </table>
     ${firstUserMsg ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${firstUserMsg}</div>` : ''}
 </div>`,
@@ -306,7 +278,7 @@ export const processChat = onDocumentUpdated(
                     console.error(`[ProcessChat] Post notification email failed:`, emailErr);
                 }
 
-                console.log(`[ProcessChat] ✅ Complete — post ${postDocRef.id}: ${generatedImageUrls.filter(Boolean).length}/${imagePrompts.length} images, audio: ${hasAudio}, public: ${isComplete && visibility !== 'private'}`);
+                console.log(`[ProcessChat] ✅ Post ${postDocRef.id} created — ${imagePrompts.length} image prompts, audio: ${!!audioFields.audio_url}, images deferred to Phase 2`);
                 await event.data?.after.ref.delete();
             } else {
                 console.log(`[ProcessChat] Chat NOT publishable — skipping post creation, updating dossier only`);
