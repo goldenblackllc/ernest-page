@@ -59,19 +59,29 @@ export async function GET(req: Request) {
             });
         };
 
-        // Bucket A: My posts (all of them)
+        // Bucket A: My posts (all of them, but only if images are ready)
         try {
             let queryA = postsRef
                 .where("authorId", "==", uid)
                 .orderBy("created_at", "desc");
             if (newerThanDate) queryA = queryA.where("created_at", ">", newerThanDate);
             const snapA = await queryA.limit(FEED_LIMIT).get();
-            addPosts(snapA.docs);
+            snapA.docs.forEach(doc => {
+                const data = doc.data();
+                // Hide posts still processing images
+                if (data.images_complete === false) return;
+                if (!seenIds.has(doc.id)) {
+                    seenIds.add(doc.id);
+                    allPosts.push({ id: doc.id, ...data });
+                }
+            });
         } catch (indexErr) {
             console.warn("Bucket A index missing, using fallback:", indexErr);
             const snapA = await postsRef.where("authorId", "==", uid).get();
             snapA.docs.forEach(doc => {
                 const data = doc.data();
+                // Hide posts still processing images
+                if (data.images_complete === false) return;
                 const time = data.created_at?.toMillis?.() || 0;
                 if (!newerThanDate || time > newerThanDate.getTime()) {
                     if (!seenIds.has(doc.id)) {
