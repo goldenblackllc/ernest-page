@@ -238,7 +238,9 @@ export function Ledger() {
         const unsub = onSnapshot(doc(db, "posts", pendingPostId), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
-                if (data.status === 'completed' || data.status === 'failed') {
+                // Wait until images are fully generated (Phase 2 complete) or the post failed
+                const isReady = data.images_complete === true || data.status === 'failed';
+                if (isReady) {
                     setPendingPostId(null);
                     // Refresh from the top to show the new post
                     setLoading(true);
