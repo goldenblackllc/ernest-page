@@ -110,8 +110,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isFlipped, setIsFlipped] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [localVisibility, setLocalVisibility] = useState<'private' | 'community' | 'public'>(post.visibility || (post.is_public ? 'community' : 'private'));
-    const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
-    const [videoToast, setVideoToast] = useState<string | null>(null);
+
     const [isTextView, setIsTextView] = useState(false);
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
@@ -1354,83 +1353,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     {/* Right: download + delete + share */}
                     <div className="flex items-center gap-2">
-                        {/* MP4 Download — author only, requires audio */}
-                        {isAuthor && hasPlaybackControls && !digestMode && (
-                            <button
-                                onClick={async (e) => {
-                                    e.stopPropagation();
-                                    if (isGeneratingVideo || !user) return;
-                                    setIsGeneratingVideo(true);
-                                    setVideoToast(null);
-                                    try {
-                                        const idToken = await user.getIdToken();
-                                        const res = await fetch(`/api/posts/${post.id}/video?format=short`, {
-                                            headers: { Authorization: `Bearer ${idToken}` },
-                                        });
-                                        if (!res.ok) throw new Error('Failed to download video');
-                                        const blob = await res.blob();
 
-                                        const blobUrl = URL.createObjectURL(blob);
-                                        const filename = `earnest-page-${post.id}.mp4`;
-
-                                        const isIOS = /iPhone|iPad/i.test(navigator.userAgent);
-                                        let shared = false;
-
-                                        // Try native share with file (iOS can save to camera roll)
-                                        if (isIOS && navigator.share) {
-                                            try {
-                                                const file = new File([blob], filename, { type: 'video/mp4' });
-                                                if (navigator.canShare?.({ files: [file] })) {
-                                                    await navigator.share({ files: [file] });
-                                                    shared = true;
-                                                }
-                                            } catch (shareErr: any) {
-                                                // AbortError = user cancelled share sheet, still counts as handled
-                                                if (shareErr?.name === 'AbortError') {
-                                                    shared = true;
-                                                } else {
-                                                    console.warn('Native share failed, using fallback:', shareErr);
-                                                }
-                                            }
-                                        }
-
-                                        if (!shared) {
-                                            if (isIOS) {
-                                                // iOS ignores <a download> — open in new tab so user can long-press to save
-                                                window.open(blobUrl, '_blank');
-                                            } else {
-                                                // Desktop / Android — programmatic download
-                                                const a = document.createElement('a');
-                                                a.href = blobUrl;
-                                                a.download = filename;
-                                                a.click();
-                                            }
-                                        }
-                                        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-                                        setVideoToast('Video ready!');
-                                        setTimeout(() => setVideoToast(null), 3000);
-                                    } catch (err) {
-                                        console.error('Video download failed:', err);
-                                        setVideoToast('Failed');
-                                        setTimeout(() => setVideoToast(null), 3000);
-                                    } finally {
-                                        setIsGeneratingVideo(false);
-                                    }
-                                }}
-                                className="text-zinc-400 hover:text-white transition-colors relative"
-                                title="Download video"
-                                disabled={isGeneratingVideo}
-                            >
-                                {isGeneratingVideo ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Download className="w-4 h-4" />
-                                )}
-                                {videoToast && (
-                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap">{videoToast}</span>
-                                )}
-                            </button>
-                        )}
                         {isDev && user?.uid === post.uid && !digestMode && (
                             <div className="relative">
                                 <button

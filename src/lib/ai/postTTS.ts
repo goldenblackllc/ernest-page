@@ -224,7 +224,11 @@ async function generateTTSAudio(
 
             audioBuffers.push(result.audioBuffer);
             allTimestamps.push(...result.wordTimestamps);
-            cumulativeOffset += result.duration;
+            // Use actual MP3 buffer duration (not just last-character timestamp)
+            // to account for trailing silence and MP3 frame padding that
+            // accumulates across chunks and causes subtitle drift.
+            const actualClipDuration = (result.audioBuffer.length * 8) / 128000;
+            cumulativeOffset += Math.max(actualClipDuration, result.duration);
         } catch (err) {
             console.error('[PostTTS] TTS chunk failed:', err);
             break;
