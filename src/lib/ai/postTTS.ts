@@ -376,6 +376,7 @@ async function findConversationalVoice(
         const params = new URLSearchParams({
             page_size: '50',
             language: 'en',
+            category: 'high_quality',
             sort: 'usage_character_count_1y',
             ...filterSets[i],
         });
