@@ -89,12 +89,14 @@ export function Ledger() {
 
             const data = await res.json();
 
-            const posts = (data.posts || []).map((post: any) => {
-                if (post.created_at && post.created_at._seconds !== undefined) {
-                    post.created_at = new Timestamp(post.created_at._seconds, post.created_at._nanoseconds || 0);
-                }
-                return post;
-            });
+            const posts = (data.posts || [])
+                .filter((post: any) => post.images_complete !== false) // hide posts still generating images
+                .map((post: any) => {
+                    if (post.created_at && post.created_at._seconds !== undefined) {
+                        post.created_at = new Timestamp(post.created_at._seconds, post.created_at._nanoseconds || 0);
+                    }
+                    return post;
+                });
 
             setEntries(posts);
             setFollowingMap(data.following || {});
