@@ -149,7 +149,7 @@ async function generateTTSChunkWithTimestamps(
     timeOffset: number,
 ): Promise<ChunkResult | null> {
     const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_192`,
         {
             method: 'POST',
             headers: {
@@ -227,7 +227,7 @@ async function generateTTSAudio(
             // Use actual MP3 buffer duration (not just last-character timestamp)
             // to account for trailing silence and MP3 frame padding that
             // accumulates across chunks and causes subtitle drift.
-            const actualClipDuration = (result.audioBuffer.length * 8) / 128000;
+            const actualClipDuration = (result.audioBuffer.length * 8) / 192000;
             cumulativeOffset += Math.max(actualClipDuration, result.duration);
         } catch (err) {
             console.error('[PostTTS] TTS chunk failed:', err);
@@ -361,7 +361,7 @@ async function findConversationalVoice(
     labels: { gender?: string; age?: string; accent?: string },
     excludeIds: Set<string>,
     apiKey: string,
-    pickFromTop: number = 5,
+    pickFromTop: number = 3,
 ): Promise<string | null> {
     // Progressive relaxation: try full filters first, then drop accent, then
     // age, then just gender. This ensures we always find a match.
@@ -528,13 +528,13 @@ export async function generateConversationAudio(
                 const result = spawnSync(ffmpegPath, [
                     '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono`,
                     '-t', String(SILENCE_DURATION_TARGET),
-                    '-c:a', 'libmp3lame', '-b:a', '128k',
+                    '-c:a', 'libmp3lame', '-b:a', '192k',
                     '-f', 'mp3', 'pipe:1',
                 ], { maxBuffer: 50 * 1024 });
                 if (result.status === 0 && result.stdout.length > 0) {
                     silenceBuffer = result.stdout as Buffer;
                     // Calculate actual duration from MP3 bitrate: duration = (bytes * 8) / bitrate
-                    actualSilenceDuration = (silenceBuffer.length * 8) / 128000;
+                    actualSilenceDuration = (silenceBuffer.length * 8) / 192000;
                     console.log(`[PostTTS] Silence buffer: ${silenceBuffer.length} bytes, actual duration: ${actualSilenceDuration.toFixed(3)}s`);
                 }
             }
@@ -614,8 +614,8 @@ export async function generateConversationAudio(
             audioBuffers.push(result.buffer);
             allTimestamps.push(...offsetTimestamps);
 
-            // Calculate actual clip duration from buffer size (128kbps MP3)
-            const actualClipDuration = (result.buffer.length * 8) / 128000;
+            // Calculate actual clip duration from buffer size (192kbps MP3)
+            const actualClipDuration = (result.buffer.length * 8) / 192000;
             const timestampDuration = result.wordTimestamps.length > 0
                 ? result.wordTimestamps[result.wordTimestamps.length - 1].end
                 : 0;
