@@ -12,6 +12,16 @@ function normalizePhoneNumber(input: string, dialCode: string): string {
     const stripped = input.replace(/[\s\-\(\)\.]/g, '');
     // Already has a '+' prefix (e.g. from autofill) — use as-is
     if (stripped.startsWith('+')) return stripped;
+
+    // Deduplicate: if the user typed the dial-code digits at the start
+    // (e.g. "18082765677" with dial "+1"), strip the redundant prefix
+    // so we don't produce "+118082765677".
+    // Only strip when the remaining digits still form a plausible number (7+).
+    const dialDigits = dialCode.replace('+', '');
+    if (stripped.startsWith(dialDigits) && stripped.length > dialDigits.length + 6) {
+        return `${dialCode}${stripped.slice(dialDigits.length)}`;
+    }
+
     return `${dialCode}${stripped}`;
 }
 
