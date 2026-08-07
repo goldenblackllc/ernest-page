@@ -9,32 +9,21 @@ import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constant
 import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 
 function normalizePhoneNumber(input: string, dialCode: string): string {
-    // Strip formatting characters
-    let stripped = input.replace(/[\s\-\(\)\.]/g, '');
-
-    // If the input already has a '+' prefix (e.g. browser autofill), use it as-is
+    const stripped = input.replace(/[\s\-\(\)\.]/g, '');
+    // Already has a '+' prefix (e.g. from autofill) — use as-is
     if (stripped.startsWith('+')) return stripped;
-
-    // Strip redundant leading dial-code digits from the local number.
-    // e.g. dialCode = "+1", user typed "18082765677" → strip leading "1" → "8082765677"
-    const dialDigits = dialCode.replace('+', '');
-    if (stripped.startsWith(dialDigits) && stripped.length > dialDigits.length + 6) {
-        stripped = stripped.slice(dialDigits.length);
-    }
-
     return `${dialCode}${stripped}`;
 }
 
 /**
- * Strips any leading '+', dial-code prefix, or country-code digits from raw
- * user / autofill input so the text field only ever shows the local number.
+ * Cleans autofilled values that arrive with a '+' country-code prefix,
+ * stripping the prefix so the text field only shows the local number.
+ * Normal keystroke typing (no '+') passes through completely untouched.
  */
 function stripDialPrefix(raw: string, dialCode: string): string {
-    let v = raw.replace(/[\s\-\(\)\.]/g, '');
+    if (!raw.startsWith('+')) return raw;
 
-    if (v.startsWith('+')) {
-        v = v.slice(1);
-    }
+    let v = raw.slice(1);
     const dialDigits = dialCode.replace('+', '');
     if (v.startsWith(dialDigits)) {
         v = v.slice(dialDigits.length);
