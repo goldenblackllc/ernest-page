@@ -357,7 +357,7 @@ async function findConversationalVoice(
     labels: { gender?: string; age?: string; accent?: string },
     excludeIds: Set<string>,
     apiKey: string,
-    pickFromTop: number = 3,
+    pickFromTop: number = 5,
 ): Promise<string | null> {
     // Progressive relaxation: try full filters first, then drop accent, then
     // age, then just gender. This ensures we always find a match.
@@ -372,7 +372,7 @@ async function findConversationalVoice(
         const params = new URLSearchParams({
             page_size: '50',
             language: 'en',
-            sort: 'cloned_by_count',
+            sort: 'usage_character_count_1y',
             ...filterSets[i],
         });
 
