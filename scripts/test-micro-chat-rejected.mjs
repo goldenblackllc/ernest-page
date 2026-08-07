@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const REJECTED_POST_IDS = ['GEIGKiU575XTz4GtEeTy', 'VTL7BffaQegNrZ9F7ftr'];
-const MODEL_ID = 'claude-opus-4-8';
+const MODEL_ID = 'claude-opus-4-7';
 
 // ─── Firebase Init ───────────────────────────────────────────────────────────
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
