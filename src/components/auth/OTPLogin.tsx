@@ -5,41 +5,32 @@ import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
-import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
+import { detectCountryFromTimezone } from '@/lib/constants/countryCodes';
 import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
+import { parsePhoneNumber, type CountryCode as PhoneCountryCode } from 'libphonenumber-js';
 
-function normalizePhoneNumber(input: string, dialCode: string): string {
-    const stripped = input.replace(/[\s\-\(\)\.]/g, '');
-    // Already has a '+' prefix (e.g. from autofill) — use as-is
-    if (stripped.startsWith('+')) return stripped;
-
-    // Deduplicate: if the user typed the dial-code digits at the start
-    // (e.g. "18082765677" with dial "+1"), strip the redundant prefix
-    // so we don't produce "+118082765677".
-    // Only strip when the remaining digits still form a plausible number (7+).
-    const dialDigits = dialCode.replace('+', '');
-    if (stripped.startsWith(dialDigits) && stripped.length > dialDigits.length + 6) {
-        return `${dialCode}${stripped.slice(dialDigits.length)}`;
-    }
-
-    return `${dialCode}${stripped}`;
+/**
+ * Parses any phone input into E.164 format using libphonenumber-js.
+ */
+function normalizePhoneNumber(input: string, countryCode: string): string {
+    try {
+        const parsed = parsePhoneNumber(input, countryCode as PhoneCountryCode);
+        if (parsed) return parsed.number;
+    } catch { /* fall through */ }
+    return input.replace(/[\s\-\(\)\.]/g, '');
 }
 
 /**
- * Cleans autofilled values that arrive with a '+' country-code prefix,
- * stripping the prefix so the text field only shows the local number.
- * Normal keystroke typing (no '+') passes through completely untouched.
+ * Cleans autofilled values that arrive with a '+' country-code prefix.
+ * Normal keystroke typing (no '+') passes through untouched.
  */
-function stripDialPrefix(raw: string, dialCode: string): string {
+function stripDialPrefix(raw: string, countryCode: string): string {
     if (!raw.startsWith('+')) return raw;
-
-    let v = raw.slice(1);
-    const dialDigits = dialCode.replace('+', '');
-    if (v.startsWith(dialDigits)) {
-        v = v.slice(dialDigits.length);
-    }
-
-    return v;
+    try {
+        const parsed = parsePhoneNumber(raw, countryCode as PhoneCountryCode);
+        if (parsed) return parsed.nationalNumber;
+    } catch { /* fall through */ }
+    return raw;
 }
 
 export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {}) {
@@ -49,7 +40,6 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState(() => detectCountryFromTimezone());
-    const dialCode = getDialCodeForCountry(selectedCountry);
     const router = useRouter();
     const { trackEvent } = useTrackEvent();
 
@@ -69,7 +59,7 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
             setError("Please enter a phone number.");
             return;
         }
-        const normalized = normalizePhoneNumber(phoneNumber, dialCode);
+        const normalized = normalizePhoneNumber(phoneNumber, selectedCountry);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/send-code', {
@@ -94,7 +84,7 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
     const handleVerifyCode = async () => {
         setError(null);
         if (!verificationCode) return;
-        const normalized = normalizePhoneNumber(phoneNumber, dialCode);
+        const normalized = normalizePhoneNumber(phoneNumber, selectedCountry);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/verify-code', {
@@ -138,7 +128,7 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
                             autoComplete="tel-national"
                             placeholder="Phone number"
                             value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(stripDialPrefix(e.target.value, dialCode))}
+                            onChange={(e) => setPhoneNumber(stripDialPrefix(e.target.value, selectedCountry))}
                             className="flex-1 min-w-0 border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400"
                         />
                     </div>

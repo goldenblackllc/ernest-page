@@ -11,26 +11,23 @@ import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
 import { useEffect } from 'react';
-import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constants/countryCodes';
+import { detectCountryFromTimezone } from '@/lib/constants/countryCodes';
 import { GuestMirrorChat } from '@/components/GuestMirrorChat';
 import { PublicFeed } from '@/components/PublicFeed';
+import { parsePhoneNumber, type CountryCode as PhoneCountryCode } from 'libphonenumber-js';
 
-// ─── Phone Number Normalization (runs at submit time) ──────────────
-function normalizePhoneNumber(input: string, dialCode: string): string {
-    const stripped = input.replace(/[\s\-\(\)\.]/g, '');
-    // Already has a '+' prefix (e.g. from autofill) — use as-is
-    if (stripped.startsWith('+')) return stripped;
-
-    // Deduplicate: if the user typed the dial-code digits at the start
-    // (e.g. "18082765677" with dial "+1"), strip the redundant prefix
-    // so we don't produce "+118082765677".
-    // Only strip when the remaining digits still form a plausible number (7+).
-    const dialDigits = dialCode.replace('+', '');
-    if (stripped.startsWith(dialDigits) && stripped.length > dialDigits.length + 6) {
-        return `${dialCode}${stripped.slice(dialDigits.length)}`;
-    }
-
-    return `${dialCode}${stripped}`;
+/**
+ * Parses any phone input into E.164 format using libphonenumber-js.
+ * Handles: local numbers, numbers with redundant country codes,
+ * autofilled international formats, formatted numbers, etc.
+ */
+function normalizePhoneNumber(input: string, countryCode: string): string {
+    try {
+        const parsed = parsePhoneNumber(input, countryCode as PhoneCountryCode);
+        if (parsed) return parsed.number;
+    } catch { /* fall through */ }
+    // Fallback: strip formatting and return raw with no prefix
+    return input.replace(/[\s\-\(\)\.]/g, '');
 }
 
 /**
@@ -38,19 +35,13 @@ function normalizePhoneNumber(input: string, dialCode: string): string {
  * stripping the prefix so the text field only shows the local number.
  * Normal keystroke typing (no '+') passes through completely untouched.
  */
-function stripDialPrefix(raw: string, dialCode: string): string {
-    // Only intervene when the value starts with '+' — the hallmark of
-    // browser autofill or paste with international format.
+function stripDialPrefix(raw: string, countryCode: string): string {
     if (!raw.startsWith('+')) return raw;
-
-    // Strip the '+' and then the dial-code digits if they follow
-    let v = raw.slice(1);
-    const dialDigits = dialCode.replace('+', '');
-    if (v.startsWith(dialDigits)) {
-        v = v.slice(dialDigits.length);
-    }
-
-    return v;
+    try {
+        const parsed = parsePhoneNumber(raw, countryCode as PhoneCountryCode);
+        if (parsed) return parsed.nationalNumber;
+    } catch { /* fall through */ }
+    return raw;
 }
 
 // ─── Animation Variants ────────────────────────────────────────────
@@ -84,7 +75,6 @@ export function LandingPage() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState('US'); // Fallback for SSR
-    const detectedDialCode = getDialCodeForCountry(selectedCountry);
 
     useEffect(() => {
         // Detect timezone-based country after hydration to avoid SSR mismatch
@@ -115,7 +105,7 @@ export function LandingPage() {
             setError(t('landing.auth.errorNoPhone'));
             return;
         }
-        const normalized = normalizePhoneNumber(phoneNumber, detectedDialCode);
+        const normalized = normalizePhoneNumber(phoneNumber, selectedCountry);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/send-code', {
@@ -140,7 +130,7 @@ export function LandingPage() {
     const handleVerifyCode = async () => {
         setError(null);
         if (!verificationCode) return;
-        const normalized = normalizePhoneNumber(phoneNumber, detectedDialCode);
+        const normalized = normalizePhoneNumber(phoneNumber, selectedCountry);
         setLoading(true);
         try {
             const res = await fetch('/api/auth/verify-code', {
@@ -163,7 +153,7 @@ export function LandingPage() {
         }
     };
 
-    const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber, detectedDialCode) : '';
+    const displayNumber = phoneNumber ? normalizePhoneNumber(phoneNumber, selectedCountry) : '';
 
     const openAuthModal = () => setShowAuthModal(true);
     const closeAuthModal = () => setShowAuthModal(false);
@@ -293,7 +283,7 @@ export function LandingPage() {
                                             autoComplete="tel-national"
                                             placeholder={t('landing.auth.phonePlaceholder')}
                                             value={phoneNumber}
-                                            onChange={(e) => setPhoneNumber(stripDialPrefix(e.target.value, detectedDialCode))}
+                                            onChange={(e) => setPhoneNumber(stripDialPrefix(e.target.value, selectedCountry))}
                                             className="flex-1 min-w-0 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                         />
                                     </div>
