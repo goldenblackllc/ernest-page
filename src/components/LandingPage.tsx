@@ -17,9 +17,40 @@ import { PublicFeed } from '@/components/PublicFeed';
 
 // ─── Phone Number Normalization ────────────────────────────────────
 function normalizePhoneNumber(input: string, dialCode: string): string {
-    const stripped = input.replace(/[\s\-\(\)\.]/g, '');
+    // Strip formatting characters
+    let stripped = input.replace(/[\s\-\(\)\.]/g, '');
+
+    // If the input already has a '+' prefix (e.g. browser autofill), use it as-is
     if (stripped.startsWith('+')) return stripped;
+
+    // Strip redundant leading dial-code digits from the local number.
+    // e.g. dialCode = "+1", user typed "18082765677" → strip leading "1" → "8082765677"
+    const dialDigits = dialCode.replace('+', '');
+    if (stripped.startsWith(dialDigits) && stripped.length > dialDigits.length + 6) {
+        stripped = stripped.slice(dialDigits.length);
+    }
+
     return `${dialCode}${stripped}`;
+}
+
+/**
+ * Strips any leading '+', dial-code prefix, or country-code digits from raw
+ * user / autofill input so the text field only ever shows the local number.
+ */
+function stripDialPrefix(raw: string, dialCode: string): string {
+    // Remove formatting chars first
+    let v = raw.replace(/[\s\-\(\)\.]/g, '');
+
+    // Strip leading '+' and/or dial-code digits (e.g. "+1", "1", "+44", "44")
+    if (v.startsWith('+')) {
+        v = v.slice(1); // remove '+'
+    }
+    const dialDigits = dialCode.replace('+', '');
+    if (v.startsWith(dialDigits)) {
+        v = v.slice(dialDigits.length);
+    }
+
+    return v;
 }
 
 // ─── Animation Variants ────────────────────────────────────────────
@@ -259,10 +290,10 @@ export function LandingPage() {
                                         />
                                         <input
                                             type="tel"
-                                            autoComplete="tel"
+                                            autoComplete="tel-national"
                                             placeholder={t('landing.auth.phonePlaceholder')}
                                             value={phoneNumber}
-                                            onChange={(e) => setPhoneNumber(e.target.value)}
+                                            onChange={(e) => setPhoneNumber(stripDialPrefix(e.target.value, detectedDialCode))}
                                             className="flex-1 min-w-0 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                         />
                                     </div>

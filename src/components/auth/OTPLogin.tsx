@@ -9,9 +9,38 @@ import { detectCountryFromTimezone, getDialCodeForCountry } from '@/lib/constant
 import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 
 function normalizePhoneNumber(input: string, dialCode: string): string {
-    const stripped = input.replace(/[\s\-\(\)\.]/g, '');
+    // Strip formatting characters
+    let stripped = input.replace(/[\s\-\(\)\.]/g, '');
+
+    // If the input already has a '+' prefix (e.g. browser autofill), use it as-is
     if (stripped.startsWith('+')) return stripped;
+
+    // Strip redundant leading dial-code digits from the local number.
+    // e.g. dialCode = "+1", user typed "18082765677" → strip leading "1" → "8082765677"
+    const dialDigits = dialCode.replace('+', '');
+    if (stripped.startsWith(dialDigits) && stripped.length > dialDigits.length + 6) {
+        stripped = stripped.slice(dialDigits.length);
+    }
+
     return `${dialCode}${stripped}`;
+}
+
+/**
+ * Strips any leading '+', dial-code prefix, or country-code digits from raw
+ * user / autofill input so the text field only ever shows the local number.
+ */
+function stripDialPrefix(raw: string, dialCode: string): string {
+    let v = raw.replace(/[\s\-\(\)\.]/g, '');
+
+    if (v.startsWith('+')) {
+        v = v.slice(1);
+    }
+    const dialDigits = dialCode.replace('+', '');
+    if (v.startsWith(dialDigits)) {
+        v = v.slice(dialDigits.length);
+    }
+
+    return v;
 }
 
 export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {}) {
@@ -107,10 +136,10 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
                         />
                         <input
                             type="tel"
-                            autoComplete="tel"
+                            autoComplete="tel-national"
                             placeholder="Phone number"
                             value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            onChange={(e) => setPhoneNumber(stripDialPrefix(e.target.value, dialCode))}
                             className="flex-1 min-w-0 border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400"
                         />
                     </div>
