@@ -11,7 +11,7 @@
  *  <1-2 sentences about timbre, pacing, delivery>"
  */
 
-import { generateWithFallback, SONNET_MODEL } from './models';
+import { generateWithFallback, OPUS_MODEL } from './models';
 import { z } from 'zod';
 
 interface VoicePromptInput {
@@ -47,7 +47,7 @@ export async function generateVoiceDesignPrompt(input: VoicePromptInput): Promis
     const language = LANGUAGE_MAP[input.appLanguage] || 'English';
 
     const result = await generateWithFallback({
-        primaryModelId: SONNET_MODEL,
+        primaryModelId: OPUS_MODEL,
         abortSignal: AbortSignal.timeout(15_000),
         prompt: `You are generating a voice design prompt for ElevenLabs' Voice Design API. This prompt will be used to create a synthetic voice for a character.
 

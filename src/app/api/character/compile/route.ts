@@ -2,7 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { db } from '@/lib/firebase/admin';
 import { CharacterBible } from '@/types/character';
-import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { REALITY_RULES } from '@/lib/constants/realityRules';
 import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
@@ -136,7 +136,7 @@ export async function POST(req: Request) {
         // Generate Ideal Bible
 
         const idealResult = await generateWithFallback({
-            primaryModelId: SONNET_MODEL,
+            primaryModelId: OPUS_MODEL,
             abortSignal: AbortSignal.timeout(150_000), // 2.5 min before falling back
             providerOptions,
             system: SYSTEM_PROMPT,
@@ -199,7 +199,7 @@ export async function POST(req: Request) {
             if (!characterName) {
                 try {
                     const nameResult = await generateWithFallback({
-                        primaryModelId: SONNET_MODEL,
+                        primaryModelId: OPUS_MODEL,
                         abortSignal: AbortSignal.timeout(15_000),
                         prompt: `Based on this character archetype "${source_code.archetype || 'Unknown'}" and manifesto "${(source_code.manifesto || '').slice(0, 200)}", generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
                         schema: z.object({ name: z.string().describe("A single first name") }),

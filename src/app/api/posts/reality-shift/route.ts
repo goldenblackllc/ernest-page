@@ -1,7 +1,7 @@
 import { db } from "@/lib/firebase/admin";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue } from "firebase-admin/firestore";
-import { generateTextWithFallback, SONNET_MODEL, SONNET_FALLBACK } from "@/lib/ai/models";
+import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from "@/lib/ai/models";
 
 export const maxDuration = 30;
 
@@ -37,8 +37,8 @@ export async function POST(req: Request) {
 
         // 3. AI-rewrite to scrub PII and frame as a "dispatch"
         const result = await generateTextWithFallback({
-            primaryModelId: SONNET_MODEL,
-            fallbackModelId: SONNET_FALLBACK,
+            primaryModelId: OPUS_MODEL,
+            fallbackModelId: OPUS_FALLBACK,
             system: `You are a privacy filter for Earnest Page. You receive a user's report of something unexpected that happened while completing a directive. Your job is to anonymize it and rewrite it as a standalone first-person moment.
 
 RULES:

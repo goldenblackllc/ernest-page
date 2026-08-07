@@ -6,7 +6,7 @@ import { generateImage } from '@/lib/ai/generateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { VISUAL_STYLES } from '@/lib/ai/visualStyles';
 import type { StyleCategory } from '@/lib/ai/visualStyles';
-import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
         : `You are a Visual Director for an advice column called Earnest Page. You're creating 5 photographs that capture moments from this person's life.`;
 
       const aiResult = await generateWithFallback({
-        primaryModelId: SONNET_MODEL,
+        primaryModelId: OPUS_MODEL,
         schema: z.object({
           prompts: z.array(z.string()).min(5).max(5),
         }),

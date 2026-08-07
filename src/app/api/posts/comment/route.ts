@@ -1,6 +1,6 @@
 import { db } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
-import { generateTextWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateTextWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export const maxDuration = 60;
@@ -130,7 +130,7 @@ Rules:
 
     try {
         const result = await generateTextWithFallback({
-            primaryModelId: SONNET_MODEL,
+            primaryModelId: OPUS_MODEL,
             abortSignal: AbortSignal.timeout(30_000),
             prompt,
         });

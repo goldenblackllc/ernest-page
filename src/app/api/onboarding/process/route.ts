@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/lib/firebase/admin";
-import { generateWithFallback, SONNET_MODEL } from "@/lib/ai/models";
+import { generateWithFallback, OPUS_MODEL } from "@/lib/ai/models";
 import { FieldValue } from "firebase-admin/firestore";
 import { waitUntil } from "@vercel/functions";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
         const prompt = PROCESS_PROMPT.replace("{RANT}", rantWithContext) + `\n\nCRITICAL: ${languageInstruction}`;
 
         const result = await generateWithFallback({
-            primaryModelId: SONNET_MODEL,
+            primaryModelId: OPUS_MODEL,
             prompt,
             schema: z.object({
                 title: z.string().describe("3 visual roles, comma-separated"),

@@ -338,10 +338,15 @@ export async function generateMessageImages(
     const { prompts, uid, filePrefix, referenceImages, existingUrls } = opts;
 
     const CONCURRENCY = 3;
-    // Start with existing results (gap-filling) or empty array
-    const results: string[] = existingUrls
-        ? existingUrls.map(u => u || '')
-        : new Array(prompts.length).fill('');
+    // Start with existing results (gap-filling) or empty array.
+    // Always size to prompts.length so we never create a sparse array
+    // (sparse gaps → undefined → Firestore rejects undefined values).
+    const results: string[] = new Array(prompts.length).fill('');
+    if (existingUrls) {
+        for (let i = 0; i < Math.min(existingUrls.length, prompts.length); i++) {
+            results[i] = existingUrls[i] || '';
+        }
+    }
     let quotaExhausted = false;
 
     // Only generate for missing indices

@@ -17,7 +17,7 @@ import { z } from 'zod';
 // ─── Config ──────────────────────────────────────────────────────────────────
 const EXCLUDE_UID = 'nTsKkFFR2rbfqohxYx1zZN6fJTZ2';
 const POST_LIMIT = 20;
-const MODEL_ID = 'claude-opus-4-7';
+const MODEL_ID = 'claude-opus-4-8';
 
 // ─── Firebase Init ───────────────────────────────────────────────────────────
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');

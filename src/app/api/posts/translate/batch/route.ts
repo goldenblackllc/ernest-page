@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
             try {
                 const result = await generateWithFallback({
-                    primaryModelId: SONNET_MODEL,
+                    primaryModelId: OPUS_MODEL,
                     prompt,
                     schema
                 });

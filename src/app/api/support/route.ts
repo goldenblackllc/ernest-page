@@ -1,4 +1,4 @@
-import { generateTextWithFallback, SONNET_MODEL, SONNET_FALLBACK } from '@/lib/ai/models';
+import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { verifyAuth } from '@/lib/auth/serverAuth';
 
@@ -90,8 +90,8 @@ export async function POST(req: Request) {
         ];
 
         const result = await generateTextWithFallback({
-            primaryModelId: SONNET_MODEL,
-            fallbackModelId: SONNET_FALLBACK,
+            primaryModelId: OPUS_MODEL,
+            fallbackModelId: OPUS_FALLBACK,
             system: SUPPORT_SYSTEM_PROMPT,
             messages,
             abortSignal: AbortSignal.timeout(15000),

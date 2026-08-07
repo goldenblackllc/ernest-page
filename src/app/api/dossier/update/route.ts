@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase/admin";
-import { generateTextWithFallback, SONNET_MODEL } from "@/lib/ai/models";
+import { generateTextWithFallback, OPUS_MODEL } from "@/lib/ai/models";
 import { FieldValue } from "firebase-admin/firestore";
 import { verifyInternalAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
 import { buildDossierPrompt } from "@/lib/ai/dossierPrompt";
@@ -41,7 +41,7 @@ NEW SESSION TRANSCRIPT:
 ${conversation_summary}`;
 
         const result = await generateTextWithFallback({
-            primaryModelId: SONNET_MODEL,
+            primaryModelId: OPUS_MODEL,
             prompt,
         });
 

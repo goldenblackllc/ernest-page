@@ -3,7 +3,7 @@ import { generateImage } from '@/lib/ai/generateImage';
 import { db, storage } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import sharp from 'sharp';
-import { generateWithFallback, SONNET_MODEL } from '@/lib/ai/models';
+import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
@@ -192,7 +192,7 @@ async function generateStoryboardPrompts(
     letter: string, response: string, characterHint: string = '',
 ): Promise<{ imagen_prompts: string[]; visual_style: string }> {
     const result = await generateWithFallback({
-        primaryModelId: SONNET_MODEL,
+        primaryModelId: OPUS_MODEL,
         schema: z.object({
             imagen_prompts: z.array(z.string()).min(7).max(8).describe('7-8 editorial storyboard prompts for Google Imagen.'),
             visual_style: z.string().describe('The id of the chosen visual style'),

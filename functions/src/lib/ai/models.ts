@@ -6,10 +6,8 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
-export const OPUS_MODEL = 'claude-opus-4-7'; // Mirror Chat — Deep Reasoning Engine
-export const OPUS_FALLBACK = 'claude-opus-4-6'; // Stable Fallback for Opus
-export const SONNET_MODEL = 'claude-sonnet-5'; // Creative Writing Engine
-export const SONNET_FALLBACK = 'claude-sonnet-4-6'; // Stable Fallback for Sonnet
+export const OPUS_MODEL = 'claude-opus-4-8'; // Primary — Deep Reasoning Engine (all features)
+export const OPUS_FALLBACK = 'claude-opus-4-7'; // Stable Fallback for Opus
 export const BACKUP_MODEL = 'gemini-3.1-pro-preview';
 
 function getProviderModel(modelName: string) {
@@ -20,8 +18,8 @@ function getProviderModel(modelName: string) {
 }
 
 export async function generateWithFallback(options: any) {
-    const primary = options.primaryModelId || SONNET_MODEL;
-    const fallback = options.fallbackModelId || SONNET_FALLBACK;
+    const primary = options.primaryModelId || OPUS_MODEL;
+    const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, ...aiOptions } = options;
 
     try {
@@ -44,8 +42,8 @@ export async function generateWithFallback(options: any) {
 }
 
 export async function streamWithFallback(options: any) {
-    const primary = options.primaryModelId || SONNET_MODEL;
-    const fallback = options.fallbackModelId || SONNET_FALLBACK;
+    const primary = options.primaryModelId || OPUS_MODEL;
+    const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, ...aiOptions } = options;
 
     try {
@@ -68,8 +66,8 @@ export async function streamWithFallback(options: any) {
 }
 
 export async function generateTextWithFallback(options: any) {
-    const primary = options.primaryModelId || SONNET_MODEL;
-    const fallback = options.fallbackModelId || SONNET_FALLBACK;
+    const primary = options.primaryModelId || OPUS_MODEL;
+    const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, ...aiOptions } = options;
 
     try {
