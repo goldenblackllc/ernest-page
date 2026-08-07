@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
-import { generatePostAudio } from '@/lib/ai/postTTS';
-import { generateStoryboardImages } from '@/lib/ai/generatePostImage';
+import { generateConversationAudio } from '@/lib/ai/postTTS';
+import { generateMessageImagePrompts, generateMessageImages } from '@/lib/ai/generatePostImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
         let cardsGenerated = 0;
 
         // Build list of eligible users with their digest data
-        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference; demographicHint: string; archetype: string; identityTitle: string; voiceId: string | null; nextRotationIndex: number }[] = [];
+        const eligibleUsers: { uid: string; title: string; content: string; ref: FirebaseFirestore.DocumentReference; demographicHint: string; archetype: string; identityTitle: string; voiceId: string | null; nextRotationIndex: number; compiledBible: any[] }[] = [];
 
         for (const userDoc of usersSnapshot.docs) {
             const uid = userDoc.id;
@@ -118,7 +119,7 @@ export async function GET(req: Request) {
 
             const voiceId = userData?.character_bible?.voice_id || null;
 
-            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle, voiceId, nextRotationIndex: nextIndex });
+            eligibleUsers.push({ uid, title: pick.title, content: pick.content, ref: userDoc.ref, demographicHint, archetype, identityTitle, voiceId, nextRotationIndex: nextIndex, compiledBible });
         }
 
         // ─── SEQUENTIAL PROCESSING: generate one at a time to avoid 429 rate limits ──
@@ -166,6 +167,7 @@ async function generateDigestCard(user: {
     identityTitle: string;
     voiceId: string | null;
     nextRotationIndex: number;
+    compiledBible: any[];
 }): Promise<boolean> {
     // ─── IDEMPOTENCY CHECK ───
     // If this user already has a complete digest card for today, skip.
@@ -176,7 +178,11 @@ async function generateDigestCard(user: {
     const existingDigest = userDoc.data()?.daily_digest;
 
     if (existingDigest?.date === today) {
-        const hasImages = Boolean(existingDigest.imagen_urls?.length || existingDigest.image_url);
+        const hasImages = Boolean(
+            existingDigest.message_images?.some((u: string) => !!u) ||
+            existingDigest.imagen_urls?.length ||
+            existingDigest.image_url
+        );
         const hasAudio = Boolean(existingDigest.audio_url) || !user.voiceId; // audio not needed if no voice
 
         if (hasImages && hasAudio) {
@@ -190,40 +196,60 @@ async function generateDigestCard(user: {
     const title = existingDigest?.date === today ? existingDigest.title : user.title;
     const content = existingDigest?.date === today ? existingDigest.content : user.content;
 
-    // ─── IMAGE GENERATION (shared pipeline — same as post cards) ───
-    let imagen_urls: string[] = existingDigest?.date === today
-        ? (existingDigest.imagen_urls || []) : [];
+    // ─── Structure content as a single message (same pipeline as post feed) ───
+    const messages: Array<{ role: 'user' | 'ideal_self'; text: string }> = [
+        { role: 'ideal_self', text: `About me and my life. ${title}. ${content}` }
+    ];
 
-    if (imagen_urls.length === 0) {
-        imagen_urls = await generateStoryboardImages({
-            content: `${title}: ${content}`,
+    // ─── IMAGE GENERATION (per-message AI director — same as post feed) ───
+    let image_prompts: string[] = existingDigest?.date === today
+        ? (existingDigest.image_prompts || []) : [];
+    let message_images: string[] = existingDigest?.date === today
+        ? (existingDigest.message_images || []) : [];
+
+    if (image_prompts.length === 0) {
+        image_prompts = await generateMessageImagePrompts({
+            messages,
+            compiledBible: user.compiledBible,
             demographicHint: user.demographicHint,
-            uid: user.uid,
-            filePrefix: `digest_${user.uid}`,
-            numImages: 3,
         });
-
-        if (imagen_urls.length === 0) {
-            console.warn(`[Daily Digest] Images failed for ${user.uid} — will retry on next cron run`);
-            return false; // Don't write a broken card — keep yesterday's digest visible
-        }
     }
 
-    // ─── TTS Audio Generation ───
+    if (image_prompts.length > 0 && (!message_images.length || message_images.some(u => !u))) {
+        const referenceImage = await loadUserReferenceImage(user.uid);
+        const referenceImages = referenceImage ? [referenceImage] : undefined;
+
+        message_images = await generateMessageImages({
+            prompts: image_prompts,
+            uid: user.uid,
+            filePrefix: `digest_${user.uid}`,
+            referenceImages,
+            existingUrls: message_images.length > 0 ? message_images : undefined,
+        });
+    }
+
+    if (!message_images.some(Boolean)) {
+        console.warn(`[Daily Digest] Images failed for ${user.uid} — will retry on next cron run`);
+        return false; // Don't write a broken card — keep yesterday's digest visible
+    }
+
+    // ─── TTS Audio (conversation audio — same as post feed, character voice for both) ───
     let audioUrl: string | null = existingDigest?.date === today ? (existingDigest.audio_url || null) : null;
+    let audioWordTimestamps: any[] | null = existingDigest?.date === today ? (existingDigest.audio_word_timestamps || null) : null;
+    let audioMessageBoundaries: any[] | null = existingDigest?.date === today ? (existingDigest.audio_message_boundaries || null) : null;
 
     if (!audioUrl && user.voiceId) {
         try {
-            // Narrate as: "About me and my life. [Title]. [Content]"
-            const narrationText = `About me and my life. ${title}. ${content}`;
-            const audioResult = await generatePostAudio(
-                narrationText,
-                '',  // No response — single narration track
-                user.voiceId,
+            const audioResult = await generateConversationAudio(
+                messages,
+                user.voiceId,  // character voice for questioner (single voice — digest is character only)
+                user.voiceId,  // character voice
                 `digest_${user.uid}_${Date.now()}`,
             );
-            if (audioResult?.audioUrl) {
+            if (audioResult) {
                 audioUrl = audioResult.audioUrl;
+                audioWordTimestamps = audioResult.wordTimestamps;
+                audioMessageBoundaries = audioResult.messageBoundaries;
                 console.log(`[Daily Digest] Audio generated for ${user.uid}`);
             }
         } catch (audioErr) {
@@ -235,9 +261,18 @@ async function generateDigestCard(user: {
         title,
         content,
         full_content: content,
-        image_url: imagen_urls[0] || null,
-        imagen_urls,
+        // Legacy compat fields
+        image_url: message_images[0] || null,
+        imagen_urls: message_images.filter(Boolean),
+        // Per-message fields (same shape as post feed)
+        image_style: 'per-message' as const,
+        image_prompts,
+        message_images,
+        condensed_transcript: messages,
+        // Audio
         audio_url: audioUrl,
+        audio_word_timestamps: audioWordTimestamps,
+        audio_message_boundaries: audioMessageBoundaries,
         date: today,
         updated_at: new Date().toISOString(),
     };

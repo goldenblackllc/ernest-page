@@ -647,6 +647,14 @@ export function Ledger() {
                         short_audio_url: profile.daily_digest.audio_url ?? undefined,
                         imagen_url: profile.daily_digest.image_url ?? undefined,
                         imagen_urls: profile.daily_digest.imagen_urls ?? undefined,
+                        // Per-message fields (same shape as post feed)
+                        image_style: profile.daily_digest.image_style ?? undefined,
+                        message_images: profile.daily_digest.message_images ?? undefined,
+                        condensed_transcript: profile.daily_digest.condensed_transcript ?? undefined,
+                        // Audio sync fields (enables karaoke subtitles + image-audio sync)
+                        audio_url: profile.daily_digest.audio_url ?? undefined,
+                        audio_word_timestamps: profile.daily_digest.audio_word_timestamps ?? undefined,
+                        audio_message_boundaries: profile.daily_digest.audio_message_boundaries ?? undefined,
                         created_at: null,
                     }}
                 />

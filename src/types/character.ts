@@ -114,7 +114,15 @@ export interface CharacterProfile {
         full_content?: string;
         image_url?: string | null;
         imagen_urls?: string[];
+        // Per-message fields (same shape as post feed)
+        image_style?: 'per-message';
+        image_prompts?: string[];
+        message_images?: string[];
+        condensed_transcript?: Array<{ role: 'user' | 'ideal_self'; text: string }>;
+        // Audio
         audio_url?: string | null;
+        audio_word_timestamps?: Array<{ word: string; start: number; end: number }>;
+        audio_message_boundaries?: Array<{ role: string; startIndex: number; endIndex: number; startTime: number; endTime: number }>;
         date: string;
         updated_at: string;
     };
