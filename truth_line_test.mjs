@@ -73,7 +73,7 @@ async function run() {
         const data = doc.data();
         if (data.uid === ADMIN_UID) continue;
         
-        const transcript = data.condensed_transcript || data.public_post?.condensed_transcript;
+        const transcript = data.public_post?.condensed_transcript;
         const contentRaw = data.content_raw;
         
         if (transcript && transcript.length > 0) {

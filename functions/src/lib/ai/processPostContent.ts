@@ -59,10 +59,6 @@ export interface ProcessPostResult {
     imagePrompts: string[];
     /** Audio fields ready to spread into the post document */
     audioFields: Record<string, any>;
-    /** Backward-compatible "Dear Earnest,\n\n..." letter */
-    derivedLetter: string;
-    /** Backward-compatible response (last ideal_self message) */
-    derivedResponse: string;
 }
 
 /**
@@ -120,15 +116,7 @@ export async function processPostContent(
         console.log(`[${logPrefix}] Condensed: ${messages.length} messages, title: "${title}"`);
     }
 
-    // Derive backward-compatible letter/response
-    const userMsgs = messages.filter(m => m.role === 'user');
-    const idealSelfMsgs = messages.filter(m => m.role === 'ideal_self');
-    const derivedLetter = userMsgs.length > 0
-        ? `Dear Earnest,\n\n${userMsgs[0].text}`
-        : '';
-    const derivedResponse = idealSelfMsgs.length > 0
-        ? idealSelfMsgs[idealSelfMsgs.length - 1].text
-        : '';
+
 
     // ── Steps 2 + 3: Image prompts + TTS (in parallel) ──
 
@@ -182,7 +170,5 @@ export async function processPostContent(
         },
         imagePrompts,
         audioFields,
-        derivedLetter,
-        derivedResponse,
     };
 }

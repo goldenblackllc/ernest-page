@@ -9,6 +9,7 @@ import { validateGeneratedImage } from '@/lib/ai/validateImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 import { PHOTOGRAPHER_CATALOG, getVisualStyle } from '@/lib/ai/visualStyles';
+import { getPostText } from '@/lib/getPostText';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -47,8 +48,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
-        const letter = postData.public_post?.letter || '';
-        const response = postData.public_post?.response || '';
+        const { letter, response } = getPostText(postData);
 
         // Determine the imagen_prompts — use override if provided, otherwise generate fresh via AI.
         let prompts: string[];

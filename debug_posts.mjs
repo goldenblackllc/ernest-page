@@ -20,8 +20,7 @@ async function run() {
     console.log('=== SPECIFIC POST D1zKNvkjqGHrJHO8DVQS ===');
     console.log('uid:', data.uid);
     console.log('is admin?:', data.uid === ADMIN_UID);
-    console.log('has condensed_transcript?:', !!data.condensed_transcript);
-    console.log('has public_post.condensed_transcript?:', !!data.public_post?.condensed_transcript);
+    console.log('has condensed_transcript?:', !!data.public_post?.condensed_transcript);
     console.log('has content_raw?:', !!data.content_raw);
     console.log('title:', data.title);
     console.log('keys:', Object.keys(data).sort().join(', '));
@@ -38,7 +37,7 @@ async function run() {
     for (const d of allSnap.docs) {
         const p = d.data();
         if (p.uid === ADMIN_UID) adminCount++; else otherCount++;
-        const t = p.condensed_transcript || p.public_post?.condensed_transcript;
+        const t = p.public_post?.condensed_transcript;
         if (t && t.length > 0) withTranscript++; else withoutTranscript++;
         if (p.content_raw) withContentRaw++;
     }
@@ -56,7 +55,7 @@ async function run() {
     for (const d of allSnap.docs) {
         const p = d.data();
         if (p.uid === ADMIN_UID) continue;
-        const t = p.condensed_transcript || p.public_post?.condensed_transcript;
+        const t = p.public_post?.condensed_transcript;
         if (!t || t.length === 0) {
             console.log(`  ${d.id}: title="${p.title}", has content_raw=${!!p.content_raw}, keys: ${Object.keys(p).filter(k => k.includes('transcript') || k.includes('letter') || k.includes('response') || k.includes('condensed')).join(', ')}`);
             if (++shown >= 5) break;

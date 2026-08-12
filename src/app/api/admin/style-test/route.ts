@@ -8,6 +8,7 @@ import { VISUAL_STYLES } from '@/lib/ai/visualStyles';
 import type { StyleCategory } from '@/lib/ai/visualStyles';
 import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
+import { getPostText } from '@/lib/getPostText';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       post: {
-        letter: postData.public_post?.letter || '',
+        letter: getPostText(postData).letter,
         uid: postData.uid,
       },
       styles
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
     
     const postData = postDoc.data() || {};
-    const letter = postData.public_post?.letter || '';
+    const { letter } = getPostText(postData);
     const postUid = postData.uid;
 
     if (!postUid) {

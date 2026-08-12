@@ -90,17 +90,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Transcript not publishable' }, { status: 400 });
         }
 
-        const { condensed, imagePrompts, audioFields, derivedLetter, derivedResponse } = pipelineResult;
+        const { condensed, imagePrompts, audioFields } = pipelineResult;
 
         // ── STEP 4: Update the post with text + audio ──
         const updateData: Record<string, any> = {
             title: condensed.title,
             public_post: {
-                letter: derivedLetter,
-                response: derivedResponse,
+                ...((existingData as any).public_post || {}),
+                title: condensed.title || (existingData as any).public_post?.title || null,
                 condensed_transcript: condensed.messages,
             },
-            condensed_transcript: condensed.messages,
             condensed_editorial_note: condensed.editorial_note,
             // Per-message image system — prompts saved, images generated via Cloud Function
             image_style: 'per-message',

@@ -154,7 +154,7 @@ async function main() {
     }
 
     // Verify condensed transcript
-    const ct = postData.condensed_transcript || postData.public_post?.condensed_transcript;
+    const ct = postData.public_post?.condensed_transcript;
     if (ct) {
         console.log(`\n   📖 Condensed transcript: ${ct.length} messages`);
         console.log(`   Prompt/message match: ${postData.image_prompts?.length === ct.length ? '✅' : '❌'} (${postData.image_prompts?.length} prompts, ${ct.length} messages)`);

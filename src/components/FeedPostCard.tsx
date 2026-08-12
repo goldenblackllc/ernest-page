@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
+import { getPostText } from '@/lib/getPostText';
 
 
 interface ConversationMessage {
@@ -72,7 +73,6 @@ interface FeedPostProps {
         audio_letter_ratio?: number;
         audio_word_timestamps?: { word: string; start: number; end: number }[];
         audio_message_boundaries?: { role: string; startIndex: number; endIndex: number; startTime: number; endTime: number }[];
-        condensed_transcript?: { role: 'user' | 'ideal_self'; text: string }[];
         letter_audio_url?: string;
         response_audio_url?: string;
         // Q&A short format fields
@@ -151,7 +151,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const isAutoPlaySuppressedRef = useRef(false);
     const hasCompletedRef = useRef(false);
 
-    const hasCondensedTranscript = Boolean(post.public_post?.condensed_transcript?.length || post.condensed_transcript?.length);
+    const hasCondensedTranscript = Boolean(post.public_post?.condensed_transcript?.length);
     // For condensed transcript posts, use the conversation audio (audio_url) not the short Q&A clip
     const unifiedAudioUrl = hasCondensedTranscript
         ? (post.audio_url || post.short_audio_url)
@@ -231,8 +231,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     }, [post.id]);
 
     // Compute letter word ratio for phase boundary estimation
-    const letterText = post.public_post?.letter || post.letter || post.tension || '';
-    const responseText = post.public_post?.response || post.response || post.counsel || '';
+    const { letter: letterText, response: responseText } = getPostText(post);
     const computedLetterRatio = (() => {
         if (post.short_audio_letter_ratio != null) return post.short_audio_letter_ratio;
         if (post.audio_letter_ratio != null) return post.audio_letter_ratio;
@@ -669,8 +668,9 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
     // Public face content — prefer Q&A short format when available
     const hasShortFormat = Boolean(post.short_question && post.short_answer);
-    const publicLetter = hasShortFormat ? post.short_question : (post.public_post?.letter || post.letter || post.tension);
-    const publicResponse = hasShortFormat ? post.short_answer : (post.public_post?.response || post.response || post.counsel);
+    const { letter: _derivedLetter, response: _derivedResponse } = getPostText(post);
+    const publicLetter = hasShortFormat ? post.short_question : _derivedLetter;
+    const publicResponse = hasShortFormat ? post.short_answer : _derivedResponse;
     const publicPseudonym = post.author_title || post.public_post?.pseudonym || post.pseudonym || "Anonymous";
 
     const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : t('justNow');
@@ -1429,7 +1429,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     <div className="border-t border-white/5 bg-zinc-950">
                         <div className="p-4 space-y-4">
                             {(() => {
-                                const transcript = post.public_post?.condensed_transcript || post.condensed_transcript;
+                                const transcript = post.public_post?.condensed_transcript;
                                 
                                 if (transcript && transcript.length > 0) {
                                     // ── CONDENSED TRANSCRIPT TEXT VIEW ──
@@ -1879,7 +1879,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                             <div className={cn("px-3 sm:px-4 pb-3 sm:pb-4 mt-1", !isExpanded && "mb-2")}>
                                 {(() => {
                                     // Detect condensed transcript format
-                                    const transcript = post.public_post?.condensed_transcript || post.condensed_transcript;
+                                    const transcript = post.public_post?.condensed_transcript;
                                     
                                     if (transcript && transcript.length > 0) {
                                         // ── CONDENSED TRANSCRIPT VIEW ──

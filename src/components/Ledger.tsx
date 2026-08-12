@@ -36,6 +36,11 @@ export function Ledger() {
     const [pendingPostId, setPendingPostId] = useState<string | null>(null);
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<string | null>(null);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const currentPageRef = useRef(0);
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const fetchingRef = useRef(false);
 
     const handleConfirmDelete = async () => {
         if (!postToDelete) return;
@@ -72,15 +77,17 @@ export function Ledger() {
         })();
     }, [user]);
 
-    // Fetch feed (full refresh, no pagination)
+    // Fetch feed (supports pagination via page param)
     const locale = useLocale();
-    const fetchFeed = useCallback(async () => {
+    const fetchFeed = useCallback(async (page: number = 0) => {
         if (!user) return;
+        if (fetchingRef.current) return;
+        fetchingRef.current = true;
 
         try {
             const idToken = await user.getIdToken();
 
-            const res = await fetch(`/api/posts/feed?locale=${locale}`, {
+            const res = await fetch(`/api/posts/feed?locale=${locale}&page=${page}`, {
                 headers: { 'Authorization': `Bearer ${idToken}` },
                 cache: 'no-store',
             });
@@ -98,28 +105,43 @@ export function Ledger() {
                     return post;
                 });
 
-            setEntries(posts);
-            setFollowingMap(data.following || {});
+            if (page === 0) {
+                setEntries(posts);
+            } else {
+                setEntries(prev => {
+                    const existingIds = new Set(prev.map(p => p.id));
+                    const newPosts = posts.filter((p: any) => !existingIds.has(p.id));
+                    return [...prev, ...newPosts];
+                });
+            }
 
-            // Persist to module-level cache for instant re-mount
-            const newNewest = posts.length > 0
-                ? (() => {
-                    const newest = posts[0];
-                    const time = newest.created_at?.toMillis?.() || (newest.created_at?._seconds ? newest.created_at._seconds * 1000 : 0);
-                    return time ? new Date(time).toISOString() : newestPostTimeRef.current;
-                })()
-                : newestPostTimeRef.current;
-            newestPostTimeRef.current = newNewest;
-            setFeedCache(posts, data.following || {}, newNewest);
+            setHasMore(data.hasMore ?? false);
+            currentPageRef.current = page;
+
+            if (page === 0) {
+                setFollowingMap(data.following || {});
+
+                // Persist to module-level cache for instant re-mount
+                const newNewest = posts.length > 0
+                    ? (() => {
+                        const newest = posts[0];
+                        const time = newest.created_at?.toMillis?.() || (newest.created_at?._seconds ? newest.created_at._seconds * 1000 : 0);
+                        return time ? new Date(time).toISOString() : newestPostTimeRef.current;
+                    })()
+                    : newestPostTimeRef.current;
+                newestPostTimeRef.current = newNewest;
+                setFeedCache(posts, data.following || {}, newNewest);
+            }
 
             // Auto-translate posts that don't have a cached translation yet
             const needsTranslation: string[] = data.needsTranslation || [];
             if (needsTranslation.length > 0) {
+                const idTokenForTranslate = await user.getIdToken();
                 fetch('/api/posts/translate/batch', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${idToken}`,
+                        'Authorization': `Bearer ${idTokenForTranslate}`,
                     },
                     body: JSON.stringify({ postIds: needsTranslation, targetLocale: locale }),
                 })
@@ -140,6 +162,8 @@ export function Ledger() {
             console.error("Failed to fetch feed:", error);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
+            fetchingRef.current = false;
         }
     }, [user, locale]);
 
@@ -148,14 +172,27 @@ export function Ledger() {
     // When we have cached data, render it instantly but always fetch fresh data.
     useEffect(() => {
         if (!user) return;
-        if (loading) {
-            // No cache — full load with skeleton
-            fetchFeed();
-        } else {
-            // Cache hit — background refresh (stale-while-revalidate)
-            fetchFeed();
-        }
-    }, [user, loading, fetchFeed]);
+        currentPageRef.current = 0;
+        fetchFeed(0);
+    }, [user, fetchFeed]);
+
+    // Infinite scroll — load next page when sentinel becomes visible
+    useEffect(() => {
+        if (!sentinelRef.current || !hasMore || loading) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !fetchingRef.current) {
+                    setLoadingMore(true);
+                    fetchFeed(currentPageRef.current + 1);
+                }
+            },
+            { rootMargin: '400px' }
+        );
+
+        observer.observe(sentinelRef.current);
+        return () => observer.disconnect();
+    }, [hasMore, loading, fetchFeed]);
 
     // Visibility-aware poll for new posts (every 15 minutes, only when tab visible)
     useEffect(() => {
@@ -671,8 +708,17 @@ export function Ledger() {
                 </React.Fragment>
             ))}
 
+            {/* Sentinel for infinite scroll */}
+            <div ref={sentinelRef} className="h-1" />
+
+            {loadingMore && (
+                <div className="flex justify-center py-6">
+                    <Loader2 className="w-5 h-5 text-zinc-600 animate-spin" />
+                </div>
+            )}
+
             {/* End of feed */}
-            {entries.length > 0 && (
+            {!hasMore && entries.length > 0 && (
                 <div className="text-center py-8">
                     <p className="text-xs text-zinc-600">{t('caughtUp')}</p>
                 </div>

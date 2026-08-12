@@ -5,6 +5,7 @@ import { Play, Pause, Heart, MessageCircle, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { use } from "react";
+import { getPostText } from '@/lib/getPostText';
 
 export default function PostPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
     const { id } = use(params);
@@ -59,10 +60,9 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
 
         // Compute letter ratio for phase boundary
         const letterRatio = post.audio_letter_ratio ?? (() => {
-            const letter = post.public_post?.letter || '';
-            const response = post.public_post?.response || '';
-            const lw = letter.split(/\s+/).filter(Boolean).length;
-            const rw = response.split(/\s+/).filter(Boolean).length;
+            const { letter, response } = getPostText(post);
+            const lw = (letter || '').split(/\s+/).filter(Boolean).length;
+            const rw = (response || '').split(/\s+/).filter(Boolean).length;
             return (lw + rw) > 0 ? lw / (lw + rw) : 0.5;
         })();
 
@@ -152,8 +152,7 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
     }
 
     const publicTitle = post.public_post?.title;
-    const publicLetter = post.public_post?.letter;
-    const publicResponse = post.public_post?.response;
+    const { letter: publicLetter, response: publicResponse } = getPostText(post);
     const heroUrl = post.imagen_url || post.public_post?.imagen_url;
     const hasAudio = Boolean(post.audio_url || (post.letter_audio_url && post.response_audio_url));
 

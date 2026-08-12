@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
+import { getPostText } from '@/lib/getPostText';
 
 const SYSTEM_PROMPT = `You are a copywriter for a personal advice brand called "Earnest Page." You convert advice column posts into 15-20 second short-form video scripts.
 
@@ -37,12 +38,13 @@ export async function GET() {
 
     const posts = snap.docs.map(doc => {
         const d = doc.data();
+        const { letter, response } = getPostText(d);
         return {
             id: doc.id,
             uid: d.uid,
             pseudonym: d.public_post?.pseudonym || d.pseudonym || 'Anonymous',
-            letter: d.public_post?.letter || d.letter || d.tension || '',
-            response: d.public_post?.response || d.response || d.counsel || '',
+            letter,
+            response,
         };
     }).filter(p => p.letter && p.response && p.letter.length > 30 && p.uid !== OWNER_UID);
 

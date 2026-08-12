@@ -1,0 +1,6 @@
+CHARACTER: Sarah
+ARCHETYPE: Opera Singer, Traveler, Wife
+TITLE: I want a successful career as an opera singer
+
+CHARACTER'S THUMBNAIL PROMPT:
+A cinematic, warm-toned thumbnail image. Scene: A sophisticated woman in her late 30s, of diverse ethnicity, stands in an elegant, sun-drenched home studio. She is poised, with a posture conveying deep internal calm, strength, and alignment: shoulders gently relaxed, chest open, a serene expression on her face, eyes softly closed or gazing inward. She wears a flowing, deep burgundy gown, hinting at operatic elegance. Golden hour light streams from a large window behind her, creating a warm glow. Through the subtly blurred window, a sophisticated city skyline reminiscent of New York is visible, suggesting opportunity. In the foreground, a vintage wooden music stand holds an open Puccini score. The overall mood is inspiring, empowering, and profoundly serene, capturing a moment of internal discovery. Color palette: Rich golds, soft creams, deep burgundies, and subtle blues in the background. Overlay text: At the top left, in an elegant, thin serif font, white color: 'I want a successful career as an opera singer'. At the bottom center, in a bold, modern sans-serif font, vibrant golden color: 'THE FEELINGS CREATE THE CAREER.'

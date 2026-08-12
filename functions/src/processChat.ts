@@ -185,7 +185,7 @@ export const processChat = onDocumentUpdated(
                 }
                 console.log(`[ProcessChat] Pipeline complete — imagePrompts:${pipelineResult.imagePrompts?.length} audio:${!!pipelineResult.audioFields?.audio_url}`);
 
-                const { imagePrompts, audioFields, derivedLetter, derivedResponse } = pipelineResult;
+                const { imagePrompts, audioFields } = pipelineResult;
                 const conversationContext = condensedMessages.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n');
                 const sponsor = matchSponsor(conversationContext);
 
@@ -218,8 +218,6 @@ export const processChat = onDocumentUpdated(
                     title: condensed.title || null,
                     type: 'checkin',
                     public_post: {
-                        letter: derivedLetter,
-                        response: derivedResponse,
                         condensed_transcript: condensedMessages,
                     },
                     image_style: 'per-message',
@@ -237,7 +235,6 @@ export const processChat = onDocumentUpdated(
                     sponsored_link: sponsor?.link || null,
                     ...geoFields,
                     content_raw: transcript,
-                    condensed_transcript: condensedMessages,
                     ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
                     ...audioFields,
                     status: "completed",
@@ -256,7 +253,8 @@ export const processChat = onDocumentUpdated(
                             auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
                         });
                         const postAuthor = userData?.displayName || 'Anonymous';
-                        const firstUserMsg = derivedLetter.substring(0, 300) + (derivedLetter.length > 300 ? '...' : '');
+                        const firstUserMsgRaw = (condensedMessages.find(m => m.role === 'user')?.text || '');
+                        const firstUserMsg = firstUserMsgRaw.substring(0, 300) + (firstUserMsgRaw.length > 300 ? '...' : '');
                         await transporter.sendMail({
                             from: `Earnest Page <${ADMIN_EMAIL}>`,
                             to: ADMIN_EMAIL,

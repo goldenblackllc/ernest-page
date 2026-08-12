@@ -28,18 +28,18 @@ export function PublicFeed() {
     const [posts, setPosts] = useState<PublicPost[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [nextCursor, setNextCursor] = useState<number | null>(null);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const fetchingRef = useRef(false);
     const sentinelRef = useRef<HTMLDivElement>(null);
 
-    const fetchPosts = useCallback(async (cursor?: number) => {
+    const fetchPosts = useCallback(async (cursor?: string) => {
         if (fetchingRef.current) return;
         fetchingRef.current = true;
 
         try {
             const params = new URLSearchParams({ limit: '10' });
-            if (cursor) params.set('cursor', String(cursor));
+            if (cursor != null) params.set('cursor', cursor);
 
             const res = await fetch(`/api/posts/public?${params}`);
             const data = await res.json();

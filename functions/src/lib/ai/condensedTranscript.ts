@@ -17,7 +17,7 @@ import { z } from 'zod';
 export const CondensedTranscriptSchema = z.discriminatedUnion('is_publishable', [
     z.object({
         is_publishable: z.literal(true),
-        title: z.string().describe('A short, honest title (6-12 words) representing the user\'s initial question or want — what they walked in with'),
+        title: z.string().describe('A punchy first-person hook (3-6 words) — raw, confessional, thumb-stopping'),
         messages: z.array(z.object({
             role: z.enum(['user', 'ideal_self']),
             text: z.string(),
@@ -82,10 +82,13 @@ TONE:
 - Do NOT reference the chat, the session, or the platform.
 
 STEP 3: TITLE
-- Write a short, honest title (6-12 words) that captures the user's INITIAL question or want — what they walked in with at the start of the conversation.
-- The conversation often evolves — the deeper insight or core issue usually emerges later. But the title should reflect where they STARTED, not where they ended up. That's what a reader scanning the feed will relate to.
-- Be direct and specific, not vague or clickbaity. "I keep putting off the hard conversation" is good. "Life advice" is bad.
-- Use the user's own framing when possible.
+- Write a punchy first-person hook — 3 to 6 words MAX. This is a confession, not a description.
+- Think tabloid-honest, gut-punch energy. The reader should feel something immediately.
+- Good: "I'm a coward about conflict" · "I can't stop comparing" · "My anger scares me" · "I married the wrong person" · "I don't miss her"
+- Bad: "Dealing with difficult emotions at work" · "How to handle a tough conversation" · "Life advice" · "Struggling with self-worth and confidence"
+- Use "I" or "My" — this is the user's voice, first person, raw.
+- Capture the emotional core, not the topic summary. What would this person blurt out after two drinks?
+- Never exceed 6 words. Shorter is almost always better.
 
 STEP 4: DETECT LANGUAGE
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;

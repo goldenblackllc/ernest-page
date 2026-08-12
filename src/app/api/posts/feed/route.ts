@@ -4,7 +4,8 @@ import { distanceBetween } from "geofire-common";
 
 export const maxDuration = 30;
 
-const FEED_LIMIT = 20;
+const PAGE_SIZE = 20;
+const MAX_PAGES = 10;
 
 export async function GET(req: Request) {
     try {
@@ -28,6 +29,9 @@ export async function GET(req: Request) {
         const newerThan = url.searchParams.get("newer_than"); // ISO timestamp
         const newerThanDate = newerThan ? new Date(newerThan) : null;
         const localeParam = url.searchParams.get("locale"); // e.g. "es"
+        const pageParam = parseInt(url.searchParams.get("page") || '0', 10);
+        const page = Math.min(Math.max(pageParam, 0), MAX_PAGES - 1);
+        const fetchLimit = PAGE_SIZE * (page + 1) * 4; // overfetch to compensate for post-fetch filtering (proximity, audio, firewall)
 
         // 3. Fetch user profile
         const userDoc = await db.collection("users").doc(uid).get();
@@ -65,7 +69,7 @@ export async function GET(req: Request) {
                 .where("authorId", "==", uid)
                 .orderBy("created_at", "desc");
             if (newerThanDate) queryA = queryA.where("created_at", ">", newerThanDate);
-            const snapA = await queryA.limit(FEED_LIMIT).get();
+            const snapA = await queryA.limit(fetchLimit).get();
             snapA.docs.forEach(doc => {
                 const data = doc.data();
                 // Hide posts still processing images
@@ -101,7 +105,7 @@ export async function GET(req: Request) {
                     .where("is_public", "==", true)
                     .orderBy("created_at", "desc");
                 if (newerThanDate) queryB = queryB.where("created_at", ">", newerThanDate);
-                const snapB = await queryB.limit(FEED_LIMIT).get();
+                const snapB = await queryB.limit(fetchLimit).get();
                 addPosts(snapB.docs);
             } catch {
                 const snapB = await postsRef.where("authorId", "in", chunk).get();
@@ -122,7 +126,7 @@ export async function GET(req: Request) {
         // Bucket C: Discovery (not me, not following, proximity filtered)
         let queryC = postsRef.orderBy("created_at", "desc");
         if (newerThanDate) queryC = queryC.where("created_at", ">", newerThanDate);
-        const snapC = await queryC.limit(FEED_LIMIT * 2).get();
+        const snapC = await queryC.limit(fetchLimit * 5).get();
         const discoveryDocs = snapC.docs.filter((doc) => {
             const data = doc.data();
             if (data.is_public !== true) return false; // skip private posts
@@ -142,7 +146,7 @@ export async function GET(req: Request) {
 
             return true;
         });
-        addPosts(discoveryDocs.slice(0, FEED_LIMIT));
+        addPosts(discoveryDocs.slice(0, fetchLimit));
 
         // 5. Sort all posts chronologically: newest first
         const getPostTime = (p: any) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
@@ -165,18 +169,20 @@ export async function GET(req: Request) {
             return p.audio_url || p.short_audio_url || (p.letter_audio_url && p.response_audio_url);
         });
 
-        // 7. Slice to feed limit
-        const page = complete.slice(0, FEED_LIMIT);
+        // 7. Paginate: slice to the requested page
+        const startIdx = page * PAGE_SIZE;
+        const pageSlice = complete.slice(startIdx, startIdx + PAGE_SIZE);
+        const hasMore = complete.length > startIdx + PAGE_SIZE;
 
         // 8. If this is a newer_than check, return just the count (lightweight)
         if (newerThanDate) {
             return Response.json({
-                newPostCount: page.length,
+                newPostCount: pageSlice.length,
             });
         }
 
         // 9. Batch-fetch author avatars and identity titles
-        const uniqueAuthorIds = [...new Set(page.map(p => p.authorId || p.uid).filter(Boolean))];
+        const uniqueAuthorIds = [...new Set(pageSlice.map(p => p.authorId || p.uid).filter(Boolean))];
         const avatarMap: Record<string, string> = {};
         const titleMap: Record<string, string> = {};
         if (uniqueAuthorIds.length > 0) {
@@ -203,7 +209,7 @@ export async function GET(req: Request) {
 
         // 10. Batch-check which posts the user has liked (subcollection lookup)
         const likedRef = db.collection("users").doc(uid).collection("liked_posts");
-        const likedRefs = page.map((post: any) => likedRef.doc(post.id));
+        const likedRefs = pageSlice.map((post: any) => likedRef.doc(post.id));
         let likedSet = new Set<string>();
         if (likedRefs.length > 0) {
             const likedDocs = await db.getAll(...likedRefs);
@@ -212,7 +218,7 @@ export async function GET(req: Request) {
 
         // 11. Sanitize & inline cached translations
         const needsTranslation: string[] = [];
-        const sanitized = page.map((post: any) => {
+        const sanitized = pageSlice.map((post: any) => {
             const isLikedByMe = likedSet.has(post.id);
 
             const clean: any = { ...post };
@@ -267,6 +273,7 @@ export async function GET(req: Request) {
         return Response.json({
             posts: sanitized,
             following: followingMap,
+            hasMore,
             needsTranslation: shouldTranslate ? needsTranslation : [],
         }, {
             headers: { 'Cache-Control': 'no-store, max-age=0' },

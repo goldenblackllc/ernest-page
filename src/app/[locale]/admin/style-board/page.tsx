@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { getPostText } from '@/lib/getPostText';
 
 // Type definitions based on expected API response
 interface Post {
@@ -129,7 +130,7 @@ export default function StyleBoard() {
         {loadedPost && (
           <div style={{ marginBottom: '32px', padding: '24px', backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '12px' }}>
             <h2 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#a3a3a3' }}>Post Letter:</h2>
-            <p style={{ margin: 0, lineHeight: '1.6', fontSize: '16px', color: '#f5f5f5' }}>{loadedPost.letter}</p>
+            <p style={{ margin: 0, lineHeight: '1.6', fontSize: '16px', color: '#f5f5f5' }}>{getPostText(loadedPost).letter}</p>
           </div>
         )}
 

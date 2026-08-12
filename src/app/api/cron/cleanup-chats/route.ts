@@ -234,22 +234,10 @@ ${transcript}`;
                     console.log(`[Cron] Condensed: ${condensed.messages.length} messages, title: "${condensed.title}"`);
                 }
 
-                // Derive backward-compatible letter/response from condensed transcript
-                const userMsgs = condensedMessages?.filter((m: any) => m.role === 'user') || [];
-                const idealSelfMsgs = condensedMessages?.filter((m: any) => m.role === 'ideal_self') || [];
-                const derivedLetter = userMsgs.length > 0
-                    ? `Dear Earnest,\n\n${userMsgs[0].text}`
-                    : '';
-                const derivedResponse = idealSelfMsgs.length > 0
-                    ? idealSelfMsgs[idealSelfMsgs.length - 1].text
-                    : '';
-
                 // Build post object for downstream compatibility
                 const post: any = {
                     is_publishable: condensed?.is_publishable || false,
                     title: (condensed as any)?.title || null,
-                    letter: derivedLetter,
-                    response: derivedResponse,
                     language: condensed?.language || null,
                     visual_style: randomStyle.id,
                 };
@@ -361,8 +349,6 @@ ${transcript}`;
                         title: post.title || null,
                         type: 'checkin',
                         public_post: {
-                            letter: post.letter,
-                            response: post.response,
                             ...(condensedMessages && { condensed_transcript: condensedMessages }),
                         },
                         // ─── Per-message image system ───
@@ -384,7 +370,6 @@ ${transcript}`;
                         // Geolocation for proximity filtering
                         ...geoFields,
                         content_raw: transcript,
-                        ...(condensedMessages && { condensed_transcript: condensedMessages }),
                         ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
                         // Audio fields (generated above)
                         ...audioFields,
@@ -396,6 +381,18 @@ ${transcript}`;
                         like_count: 0,
                         comments: 0
                     });
+
+                    // ─── SESSION ENGAGEMENT METRICS (privacy-safe, no content exposed) ───
+                    const rawUserMsgs = messages.filter((m: any) => m.role === 'user');
+                    const engagementUserTurns = rawUserMsgs.length;
+                    const engagementAvgLength = engagementUserTurns > 0
+                        ? Math.round(rawUserMsgs.reduce((sum: number, m: any) => sum + (m.content?.length || 0), 0) / engagementUserTurns)
+                        : 0;
+                    const engagementDurationMs = (chatData.updatedAt || 0) - (chatData.createdAt || 0);
+                    const engagementDurationMin = Math.round(engagementDurationMs / 60000);
+                    const engagementVerified = engagementUserTurns >= 4 && engagementAvgLength >= 30 && engagementDurationMin >= 3;
+                    const engagementLabel = engagementVerified ? '✅ VERIFIED' : '⚠️ LOW ENGAGEMENT';
+                    const engagementColor = engagementVerified ? '#34d399' : '#fbbf24';
 
                     // ─── NOTIFY ADMIN OF NEW POST ───
                     try {
@@ -411,13 +408,19 @@ ${transcript}`;
                             await transporter.sendMail({
                                 from: `Earnest Page <${ADMIN_EMAIL}>`,
                                 to: ADMIN_EMAIL,
-                                subject: `📝 New Post — ${postAuthor}`,
+                                subject: `${engagementLabel} 📝 New Post — ${postAuthor}`,
                                 html: `
 <div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
     <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
     <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postAuthor}</h2>
+    <div style="margin: 8px 0 12px 0; padding: 8px 12px; background: ${engagementVerified ? '#052e16' : '#422006'}; border: 1px solid ${engagementColor}; border-radius: 8px; font-size: 13px; color: ${engagementColor}; font-weight: 600;">
+        ${engagementLabel}
+    </div>
     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
         <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${postVisibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${postVisibility}</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Exchanges</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementUserTurns} user messages</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Avg Response</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementAvgLength} chars</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Duration</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementDurationMin} min</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Post ID</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 11px;">${postDocRef.id}</td></tr>
     </table>
     ${emailPreview ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${emailPreview}</div>` : ''}

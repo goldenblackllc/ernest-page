@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase/admin";
-import { Timestamp } from "firebase-admin/firestore";
+import { getPostText } from '@/lib/getPostText';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,11 +18,11 @@ export async function GET(req: Request) {
             .where('visibility', '==', 'public')
             .orderBy('created_at', 'desc');
 
-        // Cursor-based pagination: fetch posts older than the cursor
+        // Cursor-based pagination: cursor is the last document ID
         if (cursorParam) {
-            const cursorSeconds = parseInt(cursorParam, 10);
-            if (!isNaN(cursorSeconds)) {
-                query = query.startAfter(Timestamp.fromMillis(cursorSeconds * 1000));
+            const cursorDoc = await db.collection('posts').doc(cursorParam).get();
+            if (cursorDoc.exists) {
+                query = query.startAfter(cursorDoc);
             }
         }
 
@@ -63,13 +63,14 @@ export async function GET(req: Request) {
         // Sanitize posts — strip all sensitive fields
         const posts = snap.docs.map(doc => {
             const data = doc.data();
+            const { letter, response } = getPostText(data);
             return {
                 id: doc.id,
                 type: data.type || 'checkin',
                 post_type: data.post_type || null,
                 pseudonym: data.public_post?.pseudonym || data.pseudonym || 'Anonymous',
-                letter: data.public_post?.letter || data.letter || data.tension || null,
-                response: data.public_post?.response || data.response || data.counsel || null,
+                letter: letter || null,
+                response: response || null,
                 imagen_url: data.public_post?.imagen_url || data.imagen_url || null,
                 audio_url: data.audio_url || null,
                 audio_letter_ratio: data.audio_letter_ratio ?? null,
@@ -88,11 +89,9 @@ export async function GET(req: Request) {
             };
         });
 
-        // Determine next cursor from the last post
-        const lastPost = posts[posts.length - 1];
-        const nextCursor = posts.length >= limit && lastPost?.created_at
-            ? lastPost.created_at._seconds
-            : null;
+        // Cursor is the last document ID — Firestore handles all tiebreaking natively
+        const lastDoc = snap.docs[snap.docs.length - 1];
+        const nextCursor = posts.length >= limit ? lastDoc.id : null;
 
         return Response.json({ posts, nextCursor });
     } catch (error: any) {
@@ -100,3 +99,4 @@ export async function GET(req: Request) {
         return Response.json({ error: error.message }, { status: 500 });
     }
 }
+

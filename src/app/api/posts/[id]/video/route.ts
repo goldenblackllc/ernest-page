@@ -8,6 +8,7 @@ import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { getPostText } from '@/lib/getPostText';
 
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
@@ -213,8 +214,7 @@ export async function GET(
         }
 
         // Estimate letter/response durations from word ratio
-        const letterText = post.public_post?.letter || post.letter || '';
-        const responseText = post.public_post?.response || post.response || '';
+        const { letter: letterText, response: responseText } = getPostText(post);
         const titleText = post.public_post?.title || post.title || '';
 
         const letterWordRatio = post.audio_letter_ratio ?? (() => {

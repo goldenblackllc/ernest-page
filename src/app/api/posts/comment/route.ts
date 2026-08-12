@@ -2,6 +2,7 @@ import { db } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { generateTextWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
+import { getPostText } from '@/lib/getPostText';
 
 export const maxDuration = 60;
 
@@ -105,7 +106,7 @@ async function generateAIComment(commenterUid: string, origin: string) {
     // Pick a random one
     const targetDoc = candidatePosts[Math.floor(Math.random() * candidatePosts.length)];
     const targetData = targetDoc.data();
-    const targetLetter = targetData.public_post?.letter || targetData.letter || targetData.tension || '';
+    const { letter: targetLetter, response: targetResponse } = getPostText(targetData);
 
     if (!targetLetter) return;
 

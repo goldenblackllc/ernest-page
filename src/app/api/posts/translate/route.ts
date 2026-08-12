@@ -5,6 +5,7 @@ import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import { getPostText } from '@/lib/getPostText';
 
 export const maxDuration = 60;
 
@@ -52,8 +53,7 @@ export async function POST(req: Request) {
         if (isRealityShift) {
             contentToTranslate = `Unexpected Yield: ${postData.unexpected_yield || ''}`;
         } else {
-            const letter = postData.public_post?.letter || postData.letter || postData.tension || '';
-            const response = postData.public_post?.response || postData.response || postData.counsel || '';
+            const { letter, response } = getPostText(postData);
             const title = postData.public_post?.title || postData.title || '';
             const pseudonym = postData.public_post?.pseudonym || postData.pseudonym || '';
             

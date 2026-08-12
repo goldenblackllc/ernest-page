@@ -44,14 +44,19 @@ export async function GET(req: Request) {
                 continue;
             }
 
+            const publicPost: Record<string, any> = {
+                title: data.title || null,
+                pseudonym: data.pseudonym || null,
+                letter: letter,
+                response: data.response || data.counsel || null,
+                imagen_url: data.imagen_url || null,
+            };
+            if (data.condensed_transcript) {
+                publicPost.condensed_transcript = data.condensed_transcript;
+            }
+
             batch.update(doc.ref, {
-                public_post: {
-                    title: data.title || null,
-                    pseudonym: data.pseudonym || null,
-                    letter: letter,
-                    response: data.response || data.counsel || null,
-                    imagen_url: data.imagen_url || null,
-                },
+                public_post: publicPost,
             });
 
             migrated++;
@@ -64,7 +69,36 @@ export async function GET(req: Request) {
             }
         }
 
-        // Commit remaining
+        // Commit remaining from first pass
+        if (batchCount > 0) {
+            await batch.commit();
+        }
+
+        // Second pass: Backfill condensed_transcript on posts with public_post but missing public_post.condensed_transcript
+        let backfilled = 0;
+        batch = db.batch();
+        batchCount = 0;
+
+        for (const doc of postsSnap.docs) {
+            const data = doc.data();
+
+            if (data.condensed_transcript && data.public_post && !data.public_post.condensed_transcript) {
+                batch.update(doc.ref, {
+                    'public_post.condensed_transcript': data.condensed_transcript,
+                });
+
+                backfilled++;
+                batchCount++;
+
+                if (batchCount >= BATCH_SIZE) {
+                    await batch.commit();
+                    batch = db.batch();
+                    batchCount = 0;
+                }
+            }
+        }
+
+        // Commit remaining from second pass
         if (batchCount > 0) {
             await batch.commit();
         }
@@ -72,6 +106,7 @@ export async function GET(req: Request) {
         return NextResponse.json({
             success: true,
             migrated,
+            backfilled,
             skipped,
             total: postsSnap.size,
         });

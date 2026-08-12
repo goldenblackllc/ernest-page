@@ -103,17 +103,14 @@ async function main() {
         process.exit(1);
     }
 
-    const { condensed, imagePrompts, audioFields, derivedLetter, derivedResponse } = pipelineResult;
+    const { condensed, imagePrompts, audioFields } = pipelineResult;
 
     // 4. Update Firestore
     const updateData: Record<string, any> = {
         title: condensed.title,
         public_post: {
-            letter: derivedLetter,
-            response: derivedResponse,
             condensed_transcript: condensed.messages,
         },
-        condensed_transcript: condensed.messages,
         condensed_editorial_note: condensed.editorial_note,
         image_style: 'per-message',
         image_prompts: imagePrompts,

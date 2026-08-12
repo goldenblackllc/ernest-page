@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { generatePostAudio } from '@/lib/ai/postTTS';
+import { getPostText } from '@/lib/getPostText';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -47,8 +48,7 @@ export async function POST(req: Request) {
         }
 
         // Get letter and response text
-        const letter = postData.public_post?.letter || postData.letter;
-        const response = postData.public_post?.response || postData.response;
+        const { letter, response } = getPostText(postData);
 
         if (!letter || !response) {
             return NextResponse.json({ error: 'Post has no letter/response content' }, { status: 400 });
