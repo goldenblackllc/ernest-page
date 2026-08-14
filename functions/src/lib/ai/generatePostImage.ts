@@ -404,3 +404,64 @@ export async function generateMessageImages(
     return results;
 }
 
+// ─── Batch API Support ───────────────────────────────────────────────────────
+
+import { buildBatchRequest, type BuildBatchRequestOptions } from './batchImageGeneration.js';
+
+export interface BuildMessageImageBatchOptions {
+    /** Pre-generated prompts (one per message) */
+    prompts: string[];
+    /** File prefix for GCS uploads and batch request keys */
+    filePrefix: string;
+    /** Reference images for character consistency */
+    referenceImages?: Buffer[];
+    /** Existing image URLs from a previous run — non-empty slots are skipped */
+    existingUrls?: string[];
+}
+
+/**
+ * Build batch request objects for missing per-message images.
+ *
+ * Instead of calling `generateVerdictImage()` directly (synchronous, full price),
+ * this function creates batch request objects that can be submitted to the
+ * Gemini Batch API at 50% cost.
+ *
+ * Returns an array of batch request objects (one per missing image) and
+ * the indices they correspond to.
+ */
+export function buildMessageImageBatchRequests(
+    opts: BuildMessageImageBatchOptions
+): { requests: any[]; missingIndices: number[] } {
+    const { prompts, filePrefix, referenceImages, existingUrls } = opts;
+
+    // Build existing results array to identify gaps
+    const existing: string[] = new Array(prompts.length).fill('');
+    if (existingUrls) {
+        for (let i = 0; i < Math.min(existingUrls.length, prompts.length); i++) {
+            existing[i] = existingUrls[i] || '';
+        }
+    }
+
+    // Only build requests for missing indices
+    const missingIndices = prompts
+        .map((_, i) => (!existing[i] && prompts[i]) ? i : -1)
+        .filter(i => i >= 0);
+
+    if (missingIndices.length === 0) {
+        console.log(`[MessageImages] All ${prompts.length} images already present for ${filePrefix} — nothing to batch`);
+        return { requests: [], missingIndices: [] };
+    }
+
+    console.log(`[MessageImages] Building batch requests for ${missingIndices.length}/${prompts.length} missing images for ${filePrefix}`);
+
+    const requests = missingIndices.map(i => buildBatchRequest({
+        key: `${filePrefix}_msg${i}`,
+        prompt: prompts[i],
+        referenceImages,
+        // First 2 images use face-only mode (transformation arc)
+        referenceMode: i < 2 ? 'face-only' : 'full',
+        aspectRatio: '16:9',
+    }));
+
+    return { requests, missingIndices };
+}

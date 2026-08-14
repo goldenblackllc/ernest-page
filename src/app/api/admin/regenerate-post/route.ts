@@ -96,8 +96,8 @@ export async function POST(req: Request) {
         const updateData: Record<string, any> = {
             title: condensed.title,
             public_post: {
-                ...((existingData as any).public_post || {}),
-                title: condensed.title || (existingData as any).public_post?.title || null,
+                ...((postData as any).public_post || {}),
+                title: condensed.title || (postData as any).public_post?.title || null,
                 condensed_transcript: condensed.messages,
             },
             condensed_editorial_note: condensed.editorial_note,
