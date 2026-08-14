@@ -403,7 +403,7 @@ ${transcript}`;
                             });
                             const postAuthor = userData?.displayName || 'Anonymous';
                             const postVisibility = visibility || 'private';
-                            const firstUserMsg = userMsgs.length > 0 ? userMsgs[0].text : '';
+                            const firstUserMsg = rawUserMsgs.length > 0 ? rawUserMsgs[0].text : '';
                             const emailPreview = firstUserMsg.substring(0, 300) + (firstUserMsg.length > 300 ? '...' : '');
                             await transporter.sendMail({
                                 from: `Earnest Page <${ADMIN_EMAIL}>`,
