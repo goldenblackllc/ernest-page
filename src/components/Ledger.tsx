@@ -687,7 +687,9 @@ export function Ledger() {
                         // Per-message fields (same shape as post feed)
                         image_style: profile.daily_digest.image_style ?? undefined,
                         message_images: profile.daily_digest.message_images ?? undefined,
-                        condensed_transcript: profile.daily_digest.condensed_transcript ?? undefined,
+                        public_post: {
+                            condensed_transcript: profile.daily_digest.condensed_transcript ?? undefined,
+                        },
                         // Audio sync fields (enables karaoke subtitles + image-audio sync)
                         audio_url: profile.daily_digest.audio_url ?? undefined,
                         audio_word_timestamps: profile.daily_digest.audio_word_timestamps ?? undefined,
