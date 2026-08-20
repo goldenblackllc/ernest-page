@@ -10,9 +10,9 @@
  * The thumbnail serves as the hero/preview image in the feed.
  */
 
-import { generateImage } from './generateImage.js';
-import { loadUserReferenceImage } from './loadUserReferenceImage.js';
-import { uploadImageBuffer } from './generatePostImage.js';
+import { generateImage } from '@/lib/ai/generateImage';
+import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
+import { storage } from '@/lib/firebase/admin';
 
 interface GenerateThumbnailOptions {
     /** Condensed transcript messages */
@@ -101,7 +101,7 @@ INSTRUCTIONS:
 async function uploadThumbnailBuffer(buffer: Buffer, postId: string): Promise<string> {
     // Reuse the existing upload infrastructure from generatePostImage
     // but with a distinct path prefix for thumbnails
-    const { storage } = await import('../firebase/admin.js');
+    // storage imported at top level from @/lib/firebase/admin
     const bucket = storage.bucket();
     const fileName = `post-thumbnails/${postId}.jpg`;
     const file = bucket.file(fileName);
