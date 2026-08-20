@@ -24,6 +24,7 @@ export const CondensedTranscriptSchema = z.discriminatedUnion('is_publishable', 
         })).describe('The condensed conversation — alternating user and ideal_self messages'),
         editorial_note: z.string().describe('Brief note on what you preserved and what you cut'),
         language: z.string().optional().describe('Primary language of the conversation (e.g., "English", "Español", "日本語")'),
+        reached_close: z.boolean().describe('Did the Ideal Self reach the CLOSE phase — naming the belief shift, assigning specific actions, and releasing the user with warmth? True only if the conversation completed its full arc. False if the user quit early, the conversation stalled, or it never progressed past surface-level Q&A.'),
     }),
     z.object({
         is_publishable: z.literal(false),
@@ -34,6 +35,7 @@ export const CondensedTranscriptSchema = z.discriminatedUnion('is_publishable', 
         })).optional(),
         editorial_note: z.string().optional(),
         language: z.string().optional(),
+        reached_close: z.boolean().optional().describe('Did the conversation reach the CLOSE phase?'),
     }),
 ]);
 
@@ -91,7 +93,15 @@ STEP 3: TITLE
 - Never exceed 6 words. Shorter is almost always better.
 
 STEP 4: DETECT LANGUAGE
-- language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').`;
+- language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').
+
+STEP 5: SESSION COMPLETION
+- reached_close: Did the Ideal Self reach the CLOSE phase of the conversation? This means the Ideal Self:
+  (a) Named the core belief(s) being replaced and the empowered belief(s) replacing them, AND
+  (b) Gave the user specific physical actions to take, AND
+  (c) Released the user with a closing statement (not asking follow-up questions, not leaving threads open).
+- Set true ONLY if all three conditions are met. If the conversation was surface-level Q&A, the user quit before the Ideal Self could close, or the Ideal Self never got past asking questions — set false.
+- This is about whether the IDEAL SELF completed its work, not whether the user was satisfied.`;
 
 // ─── Main Function ───────────────────────────────────────────────────────────
 

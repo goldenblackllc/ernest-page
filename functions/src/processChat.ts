@@ -185,7 +185,7 @@ export const processChat = onDocumentUpdated(
                 }
                 console.log(`[ProcessChat] Pipeline complete — imagePrompts:${pipelineResult.imagePrompts?.length} audio:${!!pipelineResult.audioFields?.audio_url}`);
 
-                const { imagePrompts, audioFields } = pipelineResult;
+                const { imagePrompts, audioFields, thumbnailUrl } = pipelineResult;
                 const conversationContext = condensedMessages.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n');
                 const sponsor = matchSponsor(conversationContext);
 
@@ -236,6 +236,7 @@ export const processChat = onDocumentUpdated(
                     ...geoFields,
                     content_raw: transcript,
                     ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
+                    ...(thumbnailUrl && { thumbnail_url: thumbnailUrl }),
                     ...audioFields,
                     status: "completed",
                     created_at: FieldValue.serverTimestamp(),
@@ -245,6 +246,27 @@ export const processChat = onDocumentUpdated(
                     like_count: 0,
                     comments: 0
                 });
+                // ─── SESSION ENGAGEMENT METRICS (privacy-safe, no content exposed) ───
+                const rawUserMsgs = messages.filter((m: any) => m.role === 'user');
+                const engagementUserTurns = rawUserMsgs.length;
+                const engagementAvgLength = engagementUserTurns > 0
+                    ? Math.round(rawUserMsgs.reduce((sum: number, m: any) => sum + (m.content?.length || 0), 0) / engagementUserTurns)
+                    : 0;
+                const engagementDurationMs = (after.updatedAt || 0) - (after.createdAt || 0);
+                const engagementDurationMin = Math.round(engagementDurationMs / 60000);
+                const closeReason: string = after.closeReason || (after.isClosed ? 'user' : 'abandoned');
+                const closeReasonLabels: Record<string, string> = {
+                    'exchange-limit': '🏁 Hit exchange limit',
+                    'expired': '⏰ Session expired (2hr)',
+                    'user': '👋 User closed',
+                    'abandoned': '💤 Abandoned (timed out)',
+                };
+                const closeReasonLabel = closeReasonLabels[closeReason] || closeReason;
+                const reachedClose = condensed?.reached_close === true;
+                const engagementVerified = reachedClose;
+                const engagementLabel = engagementVerified ? '✅ VERIFIED' : '⚠️ LOW ENGAGEMENT';
+                const engagementColor = engagementVerified ? '#34d399' : '#fbbf24';
+
                 // Email notification
                 try {
                     if (process.env.GMAIL_APP_PASSWORD) {
@@ -253,22 +275,27 @@ export const processChat = onDocumentUpdated(
                             auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
                         });
                         const postAuthor = userData?.displayName || 'Anonymous';
-                        const firstUserMsgRaw = (condensedMessages.find(m => m.role === 'user')?.text || '');
-                        const firstUserMsg = firstUserMsgRaw.substring(0, 300) + (firstUserMsgRaw.length > 300 ? '...' : '');
+                        const postVisibility = visibility || 'private';
                         await transporter.sendMail({
                             from: `Earnest Page <${ADMIN_EMAIL}>`,
                             to: ADMIN_EMAIL,
-                            subject: `📝 New Post — ${postAuthor}`,
+                            subject: `${engagementLabel} 📝 New Post — ${postAuthor}`,
                             html: `
 <div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
-    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Created</p>
+    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
     <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postAuthor}</h2>
+    <div style="margin: 8px 0 12px 0; padding: 8px 12px; background: ${engagementVerified ? '#052e16' : '#422006'}; border: 1px solid ${engagementColor}; border-radius: 8px; font-size: 13px; color: ${engagementColor}; font-weight: 600;">
+        ${engagementLabel}
+    </div>
     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-        <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${visibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${visibility}</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${postVisibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${postVisibility}</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Exchanges</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementUserTurns} user messages</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Avg Response</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementAvgLength} chars</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Duration</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementDurationMin} min</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Session End</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${closeReasonLabel}</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Post ID</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 11px;">${postDocRef.id}</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Images</td><td style="padding: 6px 0; text-align: right; color: #fbbf24; font-weight: 600;">⏳ ${imagePrompts.length} pending</td></tr>
     </table>
-    ${firstUserMsg ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${firstUserMsg}</div>` : ''}
 </div>`,
                         });
                     }

@@ -304,7 +304,7 @@ ${transcript}`;
                         continue;
                     }
 
-                    const { imagePrompts, audioFields } = pipelineResult;
+                    const { imagePrompts, audioFields, thumbnailUrl } = pipelineResult;
                     // Use the cron's own condensed transcript (already generated above)
                     // since it may differ from the pipeline's re-generation
 
@@ -371,6 +371,7 @@ ${transcript}`;
                         ...geoFields,
                         content_raw: transcript,
                         ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
+                        ...(thumbnailUrl && { thumbnail_url: thumbnailUrl }),
                         // Audio fields (generated above)
                         ...audioFields,
                         status: "completed",
