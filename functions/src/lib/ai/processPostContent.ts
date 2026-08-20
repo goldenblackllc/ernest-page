@@ -16,6 +16,7 @@
 import { generateCondensedTranscript } from './condensedTranscript.js';
 import { generateMessageImagePrompts } from './generatePostImage.js';
 import { generateConversationAudio, resolveConversationVoices } from './postTTS.js';
+import { generateThumbnail } from './generateThumbnail.js';
 
 export interface ProcessPostInput {
     /** Raw chat transcript (role: content lines) */
@@ -59,6 +60,8 @@ export interface ProcessPostResult {
     imagePrompts: string[];
     /** Audio fields ready to spread into the post document */
     audioFields: Record<string, any>;
+    /** Public URL of the generated thumbnail image, or null */
+    thumbnailUrl: string | null;
 }
 
 /**
@@ -118,7 +121,7 @@ export async function processPostContent(
 
 
 
-    // ── Steps 2 + 3: Image prompts + TTS (in parallel) ──
+    // ── Steps 2 + 3 + 4: Image prompts + TTS + Thumbnail (in parallel) ──
 
     const imagePromptsPromise = generateMessageImagePrompts({
         messages,
@@ -152,13 +155,22 @@ export async function processPostContent(
         })()
         : Promise.resolve();
 
-    const [imagePromptsResult] = await Promise.all([
+    const thumbnailPromise = generateThumbnail({
+        messages,
+        title,
+        uid,
+        postId,
+        logPrefix,
+    });
+
+    const [imagePromptsResult, , thumbnailUrl] = await Promise.all([
         imagePromptsPromise,
         ttsPromise,
+        thumbnailPromise,
     ]);
 
     const imagePrompts = imagePromptsResult || [];
-    console.log(`[${logPrefix}] Complete — ${messages.length} messages, ${imagePrompts.length} prompts, audio: ${!!audioFields.audio_url}`);
+    console.log(`[${logPrefix}] Complete — ${messages.length} messages, ${imagePrompts.length} prompts, audio: ${!!audioFields.audio_url}, thumbnail: ${!!thumbnailUrl}`);
 
     return {
         condensed: {
@@ -170,5 +182,6 @@ export async function processPostContent(
         },
         imagePrompts,
         audioFields,
+        thumbnailUrl: thumbnailUrl || null,
     };
 }

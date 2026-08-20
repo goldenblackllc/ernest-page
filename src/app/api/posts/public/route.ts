@@ -72,6 +72,7 @@ export async function GET(req: Request) {
                 letter: letter || null,
                 response: response || null,
                 imagen_url: data.public_post?.imagen_url || data.imagen_url || null,
+                thumbnail_url: data.thumbnail_url || null,
                 audio_url: data.audio_url || null,
                 audio_letter_ratio: data.audio_letter_ratio ?? null,
                 audio_word_timestamps: data.audio_word_timestamps ?? null,

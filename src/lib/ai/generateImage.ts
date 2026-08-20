@@ -6,12 +6,12 @@
  * - Multi-turn editing and subject consistency via visual references
  * - Higher quality output at the cost of ~$0.045–0.067 per image (vs ~$0.00003 for Lite)
  *
- * Previous Lite model retained as fallback constant if needed.
+ * Uses the @google/genai SDK to support the new AQ.-format API keys.
  */
 
+import { GoogleGenAI } from '@google/genai';
+
 const NANO_BANANA_MODEL = 'gemini-3.1-flash-image';
-// Retained for potential fallback on non-character images (landscapes, objects, etc.)
-// const NANO_BANANA_LITE_MODEL = 'gemini-3.1-flash-lite-image';
 
 interface GenerateImageOptions {
     prompt: string;
@@ -64,6 +64,8 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
     }
 
     try {
+        const ai = new GoogleGenAI({ apiKey });
+
         // Build the parts array: reference images first (identity anchors), then text prompt
         const parts: any[] = [];
 
@@ -103,44 +105,16 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
 
         parts.push({ text: referencePrefix + prompt + aspectRatioHint });
 
-        const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${NANO_BANANA_MODEL}:generateContent?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        role: 'user',
-                        parts,
-                    }],
-                    generationConfig: {
-                        responseModalities: ['IMAGE'],
-                        // Aspect ratio hint appended to the prompt since Nano Banana
-                        // uses generationConfig differently from Imagen's parameters
-                    },
-                }),
-            }
-        );
+        const response = await ai.models.generateContent({
+            model: NANO_BANANA_MODEL,
+            contents: [{ role: 'user', parts }],
+            config: { responseModalities: ['IMAGE'] },
+        });
 
-        if (!res.ok) {
-            const errText = await res.text().catch(() => '(unreadable)');
-            console.error(`[${logPrefix}] Nano Banana API error ${res.status}:`, errText.slice(0, 500));
-
-            // Surface quota errors distinctly
-            if (res.status === 429) {
-                const error = new Error('Image generation quota exhausted');
-                (error as any).isQuotaError = true;
-                throw error;
-            }
-            return null;
-        }
-
-        const data = await res.json();
-
-        // Nano Banana returns image data in candidates[0].content.parts[]
-        const responseParts = data.candidates?.[0]?.content?.parts;
+        // Extract image from response
+        const responseParts = response.candidates?.[0]?.content?.parts;
         if (!responseParts || responseParts.length === 0) {
-            console.warn(`[${logPrefix}] No parts in response:`, JSON.stringify(data).slice(0, 300));
+            console.warn(`[${logPrefix}] No parts in response`);
             return null;
         }
 
@@ -150,21 +124,28 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
             // Check for text-only response (possible safety filter)
             const textPart = responseParts.find((p: any) => p.text);
             if (textPart) {
-                console.warn(`[${logPrefix}] Got text instead of image (possible safety filter):`, textPart.text.slice(0, 200));
+                console.warn(`[${logPrefix}] Got text instead of image (possible safety filter):`, (textPart.text as string).slice(0, 200));
             } else {
-                console.warn(`[${logPrefix}] No image data in response parts:`, JSON.stringify(responseParts).slice(0, 300));
+                console.warn(`[${logPrefix}] No image data in response parts`);
             }
             return null;
         }
 
-        const buffer = Buffer.from(imagePart.inlineData.data, 'base64');
+        const buffer = Buffer.from(imagePart.inlineData!.data as string, 'base64');
         return {
             buffer,
-            mimeType: imagePart.inlineData.mimeType,
+            mimeType: imagePart.inlineData!.mimeType as string,
         };
     } catch (err: any) {
-        if (err.isQuotaError) throw err; // let callers handle quota errors
+        // Surface quota errors distinctly
+        if (err.status === 429 || err.message?.includes('quota')) {
+            const error = new Error('Image generation quota exhausted');
+            (error as any).isQuotaError = true;
+            throw error;
+        }
+        if ((err as any).isQuotaError) throw err;
         console.error(`[${logPrefix}] Image generation exception:`, err.message);
         return null;
     }
 }
+

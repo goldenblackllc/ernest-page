@@ -90,7 +90,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Transcript not publishable' }, { status: 400 });
         }
 
-        const { condensed, imagePrompts, audioFields } = pipelineResult;
+        const { condensed, imagePrompts, audioFields, thumbnailUrl } = pipelineResult;
 
         // ── STEP 4: Update the post with text + audio ──
         const updateData: Record<string, any> = {
@@ -116,6 +116,11 @@ export async function POST(req: Request) {
         // Audio fields
         if (audioFields.audio_url) {
             Object.assign(updateData, audioFields);
+        }
+
+        // Thumbnail
+        if (thumbnailUrl) {
+            updateData.thumbnail_url = thumbnailUrl;
         }
 
         // Keep post hidden until images are generated

@@ -55,6 +55,7 @@ interface FeedPostProps {
         image_style?: 'per-message';
         user_photo_url?: string;
         hero_source?: 'user' | 'imagen';
+        thumbnail_url?: string;
 
         sponsored_by?: string;
         sponsored_link?: string;
@@ -162,7 +163,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // Posts without audio are still processing — don't render
     if (!hasAudio) return null;
 
-    const heroUrl = post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
+    const heroUrl = post.thumbnail_url || post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
 
     // Multi-image array: user photo first (if exists), then AI images, fallback to single
     const isPerMessage = post.image_style === 'per-message' && post.message_images?.length;
@@ -1141,7 +1142,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     )}
 
                     {/* Bold title overlay — lower-third on thumbnail, DigestCard-style outlined text, fades on play */}
-                    {post.title && !isPlaying && (
+                    {post.title && !isPlaying && !post.thumbnail_url && (
                         <div className={`absolute left-0 right-0 z-10 pointer-events-none ${isFullscreen ? 'bottom-24 px-10' : 'bottom-14 sm:bottom-16 px-4 sm:px-6'}`}>
                             {digestMode && (
                                 <p className={`uppercase tracking-[0.2em] text-white/70 font-bold mb-1 ${isFullscreen ? 'text-sm' : 'text-[10px]'}`}>
@@ -1759,7 +1760,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
             {/* Body */}
             <div className="p-0 flex flex-col pt-4">
-                {post.title && (
+                {post.title && !post.thumbnail_url && (
                     <div className="px-3 sm:px-4 mb-2">
                         {digestMode && (
                             <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-bold mb-1">

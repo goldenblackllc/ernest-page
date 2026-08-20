@@ -153,7 +153,7 @@ export default function PostPage({ params }: { params: Promise<{ locale: string;
 
     const publicTitle = post.public_post?.title;
     const { letter: publicLetter, response: publicResponse } = getPostText(post);
-    const heroUrl = post.imagen_url || post.public_post?.imagen_url;
+    const heroUrl = post.thumbnail_url || post.imagen_url || post.public_post?.imagen_url;
     const hasAudio = Boolean(post.audio_url || (post.letter_audio_url && post.response_audio_url));
 
     // Subtitle chunks
