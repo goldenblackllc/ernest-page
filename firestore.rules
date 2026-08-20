@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── USERS ───────────────────────────────────────────────────────
+    match /users/{userId} {
+      // Users can read their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Users can create their own document
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Users can update their own document, but NOT server-managed fields
+      allow update: if request.auth != null && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['subscription', 'session_credits', 'sessions_today',
+                      'sessions_today_date', 'daily_digest', 'stripeCustomerId',
+                      'session_purchases', 'session_recaps']);
+
+      // Users can delete their own document (account deletion)
+      allow delete: if request.auth != null && request.auth.uid == userId;
+
+      // ─── ACTIVE CHATS (subcollection) ───
+      match /active_chats/{sessionId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // ─── BLOCKED HASHES (subcollection) ───
+      match /blocked_hashes/{hashId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // ─── LIKED POSTS (subcollection) ───
+      match /liked_posts/{postId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ─── POSTS ───────────────────────────────────────────────────────
+    match /posts/{postId} {
+      // Anyone authenticated can read public posts; authors can read their own
+      allow read: if request.auth != null
+        && (resource.data.is_public == true
+            || resource.data.uid == request.auth.uid
+            || resource.data.authorId == request.auth.uid);
+
+      // Authors can create posts (uid must match)
+      allow create: if request.auth != null
+        && (request.resource.data.uid == request.auth.uid
+            || request.resource.data.authorId == request.auth.uid);
+
+      // Authors can update their own posts (visibility toggle only)
+      allow update: if request.auth != null
+        && (resource.data.uid == request.auth.uid
+            || resource.data.authorId == request.auth.uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['visibility', 'is_public']);
+
+      // Authors can delete their own posts
+      allow delete: if request.auth != null
+        && (resource.data.uid == request.auth.uid
+            || resource.data.authorId == request.auth.uid);
+
+      // ─── COMMENTS (subcollection) ───
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow delete: if request.auth != null
+          && resource.data.commenter_uid == request.auth.uid;
+      }
+    }
+
+    // ─── DEFINITIONS ─────────────────────────────────────────────────
+    match /definitions/{definitionId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ─── ENTRIES ─────────────────────────────────────────────────────
+    match /entries/{entryId} {
+      allow read: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null
+        && (request.resource.data.userId == request.auth.uid
+            || request.resource.data.uid == request.auth.uid);
+      allow update, delete: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || resource.data.uid == request.auth.uid);
+    }
+
+    // ─── MASTER ACTIONS ──────────────────────────────────────────────
+    match /master_actions/{actionId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // ─── GIFTS ───────────────────────────────────────────────────────
+    // Gift codes are managed server-side only
+    match /gifts/{giftCode} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ─── BETA APPLICATIONS ───────────────────────────────────────────
+    match /beta_applications/{applicationId} {
+      allow read: if false;
+      allow create: if request.auth != null;
+    }
+
+    // ─── DEFAULT: Deny everything else ───────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

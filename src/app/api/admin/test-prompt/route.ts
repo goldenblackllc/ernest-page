@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 import { getPostText } from '@/lib/getPostText';
@@ -28,58 +29,69 @@ RULES:
 - No self-help jargon: "reframe," "belief," "boundaries," "toxic," "healing journey."
 - The answer needs ONE quotable line — something people would screenshot.`;
 
-export async function GET() {
-    const snap = await db.collection('posts')
-        .orderBy('created_at', 'desc')
-        .limit(100)
-        .get();
-
-    const OWNER_UID = 'nTsKkFFR2rbfqohxYx1zZN6fJTZ2';
-
-    const posts = snap.docs.map(doc => {
-        const d = doc.data();
-        const { letter, response } = getPostText(d);
-        return {
-            id: doc.id,
-            uid: d.uid,
-            pseudonym: d.public_post?.pseudonym || d.pseudonym || 'Anonymous',
-            letter,
-            response,
-        };
-    }).filter(p => p.letter && p.response && p.letter.length > 30 && p.uid !== OWNER_UID);
-
-    const results = [];
-
-    for (const post of posts) {
-        try {
-            console.log(`[PromptTest] Processing ${post.pseudonym}...`);
-            const result = await generateWithFallback({
-                primaryModelId: OPUS_MODEL,
-                schema: z.object({
-                    question: z.string(),
-                    answer: z.string(),
-                }),
-                prompt: `${SYSTEM_PROMPT}\n\nLETTER:\n${post.letter}\n\nRESPONSE:\n${post.response}`,
-            });
-
-            const { question, answer } = result.object as { question: string; answer: string };
-            const qWords = question.split(/\s+/).length;
-            const aWords = answer.split(/\s+/).length;
-
-            results.push({
-                pseudonym: post.pseudonym,
-                question,
-                answer,
-                qWords,
-                aWords,
-                total: qWords + aWords,
-            });
-            console.log(`[PromptTest] ${post.pseudonym}: Q=${qWords}w A=${aWords}w`);
-        } catch (err: any) {
-            console.error(`[PromptTest] ${post.pseudonym} FAILED:`, err.message);
-            results.push({ pseudonym: post.pseudonym, question: 'FAILED', answer: err.message, qWords: 0, aWords: 0, total: 0 });
+export async function GET(req: Request) {
+    try {
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
+        if (uid !== process.env.ADMIN_UID) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
-    }
 
-    return NextResponse.json({ count: results.length, results });
+        const snap = await db.collection('posts')
+            .orderBy('created_at', 'desc')
+            .limit(100)
+            .get();
+
+        const OWNER_UID = 'nTsKkFFR2rbfqohxYx1zZN6fJTZ2';
+
+        const posts = snap.docs.map(doc => {
+            const d = doc.data();
+            const { letter, response } = getPostText(d);
+            return {
+                id: doc.id,
+                uid: d.uid,
+                pseudonym: d.public_post?.pseudonym || d.pseudonym || 'Anonymous',
+                letter,
+                response,
+            };
+        }).filter(p => p.letter && p.response && p.letter.length > 30 && p.uid !== OWNER_UID);
+
+        const results = [];
+
+        for (const post of posts) {
+            try {
+                console.log(`[PromptTest] Processing ${post.pseudonym}...`);
+                const result = await generateWithFallback({
+                    primaryModelId: OPUS_MODEL,
+                    schema: z.object({
+                        question: z.string(),
+                        answer: z.string(),
+                    }),
+                    prompt: `${SYSTEM_PROMPT}\n\nLETTER:\n${post.letter}\n\nRESPONSE:\n${post.response}`,
+                });
+
+                const { question, answer } = result.object as { question: string; answer: string };
+                const qWords = question.split(/\s+/).length;
+                const aWords = answer.split(/\s+/).length;
+
+                results.push({
+                    pseudonym: post.pseudonym,
+                    question,
+                    answer,
+                    qWords,
+                    aWords,
+                    total: qWords + aWords,
+                });
+                console.log(`[PromptTest] ${post.pseudonym}: Q=${qWords}w A=${aWords}w`);
+            } catch (err: any) {
+                console.error(`[PromptTest] ${post.pseudonym} FAILED:`, err.message);
+                results.push({ pseudonym: post.pseudonym, question: 'FAILED', answer: err.message, qWords: 0, aWords: 0, total: 0 });
+            }
+        }
+
+        return NextResponse.json({ count: results.length, results });
+    } catch (error: any) {
+        console.error('[PromptTest] Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    }
 }

@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
   try {
     const uid = await verifyAuth(req);
     if (!uid) return unauthorizedResponse();
+    if (uid !== process.env.ADMIN_UID) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const postId = searchParams.get('postId');

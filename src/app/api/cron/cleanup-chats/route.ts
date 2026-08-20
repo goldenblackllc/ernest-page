@@ -414,8 +414,7 @@ ${transcript}`;
                             });
                             const postAuthor = userData?.displayName || 'Anonymous';
                             const postVisibility = visibility || 'private';
-                            const firstUserMsg = rawUserMsgs.length > 0 ? rawUserMsgs[0].text : '';
-                            const emailPreview = firstUserMsg.substring(0, 300) + (firstUserMsg.length > 300 ? '...' : '');
+                            const emailPreview = '';
                             await transporter.sendMail({
                                 from: `Earnest Page <${ADMIN_EMAIL}>`,
                                 to: ADMIN_EMAIL,
