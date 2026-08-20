@@ -390,7 +390,18 @@ ${transcript}`;
                         : 0;
                     const engagementDurationMs = (chatData.updatedAt || 0) - (chatData.createdAt || 0);
                     const engagementDurationMin = Math.round(engagementDurationMs / 60000);
-                    const engagementVerified = engagementUserTurns >= 4 && engagementAvgLength >= 30 && engagementDurationMin >= 3;
+                    // How did the session end?
+                    const closeReason: string = chatData.closeReason || (chatData.isClosed ? 'user' : 'abandoned');
+                    const closeReasonLabels: Record<string, string> = {
+                        'exchange-limit': '🏁 Hit exchange limit',
+                        'expired': '⏰ Session expired (2hr)',
+                        'user': '👋 User closed',
+                        'abandoned': '💤 Abandoned (timed out)',
+                    };
+                    const closeReasonLabel = closeReasonLabels[closeReason] || closeReason;
+                    // Did the character complete its work? This is the real signal.
+                    const reachedClose = condensed?.reached_close === true;
+                    const engagementVerified = reachedClose;
                     const engagementLabel = engagementVerified ? '✅ VERIFIED' : '⚠️ LOW ENGAGEMENT';
                     const engagementColor = engagementVerified ? '#34d399' : '#fbbf24';
 
@@ -421,6 +432,7 @@ ${transcript}`;
         <tr><td style="padding: 6px 0; color: #71717a;">Exchanges</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementUserTurns} user messages</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Avg Response</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementAvgLength} chars</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Duration</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementDurationMin} min</td></tr>
+        <tr><td style="padding: 6px 0; color: #71717a;">Session End</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${closeReasonLabel}</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Post ID</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 11px;">${postDocRef.id}</td></tr>
     </table>
     ${emailPreview ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${emailPreview}</div>` : ''}

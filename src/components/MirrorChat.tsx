@@ -848,10 +848,14 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                 }
             } else {
                 // Standard close: persist routing preference for the cron job
+                const closeReason = isAtExchangeLimit ? 'exchange-limit' as const
+                    : isSessionExpired ? 'expired' as const
+                    : 'user' as const;
                 saveActiveChat(uid, {
                     isClosed: true,
                     sessionTone,
                     sessionRouting,
+                    closeReason,
                     autoPublish: sessionRouting === 'public', // Legacy compat
                 }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
             }
