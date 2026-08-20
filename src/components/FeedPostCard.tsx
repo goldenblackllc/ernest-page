@@ -1042,6 +1042,15 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                     style={{ cursor: hasPlaybackControls ? 'pointer' : 'default' }}
                 >
                     {/* Visual: B-roll image carousel with pillarboxing for portrait images */}
+                    {/* Thumbnail poster — shown before playback starts */}
+                    {post.thumbnail_url && !isPlaying && (
+                        <img
+                            src={post.thumbnail_url}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover z-[1] transition-opacity duration-500"
+                            style={{ opacity: 1 }}
+                        />
+                    )}
                     {isPerMessage ? (
                         /* Per-message: only render current + next for lazy loading */
                         <>
