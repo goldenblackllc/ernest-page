@@ -96,12 +96,14 @@ STEP 4: DETECT LANGUAGE
 - language: Detect the primary language of the conversation. Output the language name as it appears natively (e.g., 'English', 'Español', '日本語', 'Français').
 
 STEP 5: SESSION COMPLETION
-- reached_close: Did the Ideal Self reach the CLOSE phase of the conversation? This means the Ideal Self:
-  (a) Named the core belief(s) being replaced and the empowered belief(s) replacing them, AND
-  (b) Gave the user specific physical actions to take, AND
-  (c) Released the user with a closing statement (not asking follow-up questions, not leaving threads open).
-- Set true ONLY if all three conditions are met. If the conversation was surface-level Q&A, the user quit before the Ideal Self could close, or the Ideal Self never got past asking questions — set false.
-- This is about whether the IDEAL SELF completed its work, not whether the user was satisfied.`;
+- reached_close: Did the Ideal Self reach the CLOSE phase of the conversation?
+- A proper CLOSE is a FINAL structured sequence near the END of the conversation. It requires ALL of the following:
+  (a) The Ideal Self explicitly named the OLD belief and the NEW empowered belief replacing it (e.g., "You believe X. The truth is Y."), AND
+  (b) The Ideal Self assigned SPECIFIC PHYSICAL ACTIONS the user should take (not just insights or questions — actual things to do), AND
+  (c) The Ideal Self's FINAL message was a RELEASE — a closing statement that does NOT end with a question, does NOT invite further exploration, and does NOT ask "what do you think?" or "how does that feel?" It ends the session with warmth and finality.
+- CRITICAL: Deep insights, powerful observations, and penetrating questions are NOT a close. If the Ideal Self's last message ends with a question like "What's it like to hear that?" or "Does that resonate?" — that is mid-conversation, NOT a close. The Ideal Self was still working. Set false.
+- CRITICAL: If the conversation simply stops (user closes the window) while the Ideal Self was still asking questions or exploring — that is NOT a close. The session was interrupted. Set false.
+- Set true ONLY when the Ideal Self clearly finished its job and let the person go. When in doubt, set false.`;
 
 // ─── Main Function ───────────────────────────────────────────────────────────
 
