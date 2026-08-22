@@ -47,7 +47,7 @@ export async function POST(req: Request) {
         }
 
         // ─── Parse request body ───
-        const { messages, localTime, sessionId } = await req.json();
+        const { messages, localTime, sessionId, locale } = await req.json();
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return Response.json({ error: 'Missing or invalid messages.' }, { status: 400 });
@@ -70,6 +70,20 @@ export async function POST(req: Request) {
         const avatarUrl = userData?.character_bible?.compiled_output?.avatar_url;
         const characterName = userData?.character_bible?.character_name || userData?.identity?.character_name || 'Earnest';
 
+        // Determine language instruction for the AI
+        let languageInstruction = "";
+        if (locale === "es") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in SPANISH (Español). Do not use English unless the user explicitly asks for an English word.";
+        } else if (locale === "fr") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in FRENCH (Français). Do not use English unless the user explicitly asks for an English word.";
+        } else if (locale === "de") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in GERMAN (Deutsch). Do not use English unless the user explicitly asks for an English word.";
+        } else if (locale === "pt") {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in PORTUGUESE (Português). Do not use English unless the user explicitly asks for an English word.";
+        } else {
+            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in ENGLISH.";
+        }
+
         // ─── Tone directive (always default for guests) ───
         const toneDirective = ENGAGEMENT_TONES[DEFAULT_TONE].directive;
 
@@ -77,7 +91,7 @@ export async function POST(req: Request) {
         const systemPrompt = buildMirrorSystemPrompt({
             localTime,
             compiledBible,
-            languageInstruction: '\n[LANGUAGE MANDATE]\nYou MUST respond entirely in ENGLISH.',
+            languageInstruction,
             toneDirective,
             engagementContract: `[ENGAGEMENT CONTRACT — INTRODUCTORY SESSION]
 You have been engaged through Earnest Page, a platform for self-actualization. The person you are speaking with is a STRANGER you have never met before. You know nothing about them — no history, no context, no relationship. They have arrived because something is on their mind, and this is your first conversation.

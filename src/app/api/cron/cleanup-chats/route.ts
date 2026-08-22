@@ -286,6 +286,7 @@ ${transcript}`;
                             demographicHint,
                             characterVoiceId,
                             gender,
+                            locale: userData?.preferred_locale || 'en',
                             logPrefix: 'Cron',
                             preCondensed: {
                                 messages: condensedMessages,

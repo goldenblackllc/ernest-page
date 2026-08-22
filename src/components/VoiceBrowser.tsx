@@ -4,6 +4,39 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
 import { Loader2, Volume2, Square, Check } from "lucide-react";
+import { useLocale } from 'next-intl';
+
+/** Accent filter options per locale — values must match ElevenLabs shared-voices API accent values */
+const ACCENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
+    en: [
+        { value: 'american', label: 'American' },
+        { value: 'british', label: 'British' },
+        { value: 'african', label: 'African' },
+        { value: 'australian', label: 'Australian' },
+        { value: 'indian', label: 'Indian' },
+    ],
+    es: [
+        { value: 'mexican', label: 'Mexicano' },
+        { value: 'castilian', label: 'Castellano' },
+        { value: 'argentinian', label: 'Argentino' },
+        { value: 'colombian', label: 'Colombiano' },
+        { value: 'chilean', label: 'Chileno' },
+    ],
+    pt: [
+        { value: 'brazilian', label: 'Brasileiro' },
+        { value: 'portuguese', label: 'Português' },
+    ],
+    fr: [
+        { value: 'french', label: 'Français' },
+        { value: 'canadian', label: 'Canadien' },
+        { value: 'african', label: 'Africain' },
+    ],
+    de: [
+        { value: 'german', label: 'Deutsch' },
+        { value: 'austrian', label: 'Österreichisch' },
+        { value: 'swiss', label: 'Schweizerisch' },
+    ],
+};
 
 export interface VoiceResult {
     voice_id: string;
@@ -29,6 +62,7 @@ interface VoiceBrowserProps {
 
 export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = false, compact = false, onVoiceSelected }: VoiceBrowserProps) {
     const { user } = useAuth();
+    const locale = useLocale();
     const [isOpen, setIsOpen] = useState(startOpen);
     const [results, setResults] = useState<VoiceResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -64,6 +98,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
         try {
             const idToken = await user.getIdToken();
             const params = new URLSearchParams();
+            params.set('language', locale);
             if (gender) params.set('gender', gender);
             if (age) params.set('age', age);
             if (accent) params.set('accent', accent);
@@ -83,7 +118,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
         } finally {
             setLoading(false);
         }
-    }, [user, gender, age, accent, query, stopPlaying]);
+    }, [user, gender, age, accent, query, locale, stopPlaying]);
 
     const playPreview = useCallback((voice: VoiceResult) => {
         stopPlaying();
@@ -229,19 +264,16 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                             <option value="middle_aged">Middle Aged</option>
                             <option value="old">Senior</option>
                         </select>
+                        {/* Accent options change based on the active locale/language */}
                         <select
                             value={accent}
                             onChange={e => setAccent(e.target.value)}
                             className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-zinc-500"
                         >
                             <option value="">Any Accent</option>
-                            <option value="american">American</option>
-                            <option value="british">British</option>
-                            <option value="african">African</option>
-                            <option value="australian">Australian</option>
-                            <option value="indian">Indian</option>
-                            <option value="latin american">Latin American</option>
-                            <option value="spanish">Spanish</option>
+                            {(ACCENT_OPTIONS[locale] || ACCENT_OPTIONS['en']).map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                         </select>
                     </div>
 

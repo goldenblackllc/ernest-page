@@ -358,6 +358,7 @@ async function findConversationalVoice(
     excludeIds: Set<string>,
     apiKey: string,
     pickFromTop: number = 5,
+    language: string = 'en',
 ): Promise<string | null> {
     // Progressive relaxation: try full filters first, then drop accent, then
     // age, then just gender. This ensures we always find a match.
@@ -371,7 +372,7 @@ async function findConversationalVoice(
     for (let i = 0; i < filterSets.length; i++) {
         const params = new URLSearchParams({
             page_size: '50',
-            language: 'en',
+            language,
             category: 'high_quality',
             sort: 'usage_character_count_1y',
             ...filterSets[i],
@@ -414,10 +415,12 @@ async function findConversationalVoice(
  * and accent — then randomly pick from the top 5 results.
  *
  * @param characterVoiceId  The character's custom ElevenLabs voice ID
+ * @param language  The language code for the questioner voice (default 'en')
  * @returns { characterVoiceId, questionerVoiceId } — ready to pass to generateConversationAudio
  */
 export async function resolveConversationVoices(
     characterVoiceId: string,
+    language: string = 'en',
 ): Promise<{ characterVoiceId: string; questionerVoiceId: string } | null> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
@@ -432,7 +435,7 @@ export async function resolveConversationVoices(
     }
 
     const excludeIds = new Set([characterVoiceId]);
-    const questionerVoiceId = await findConversationalVoice(labels, excludeIds, apiKey);
+    const questionerVoiceId = await findConversationalVoice(labels, excludeIds, apiKey, 5, language);
 
     if (questionerVoiceId) {
         return { characterVoiceId, questionerVoiceId };

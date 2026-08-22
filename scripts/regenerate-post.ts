@@ -95,6 +95,7 @@ async function main() {
         demographicHint,
         characterVoiceId,
         gender,
+        locale: userData?.preferred_locale || 'en',
         logPrefix: 'RegenerateScript',
     });
 

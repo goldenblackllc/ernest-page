@@ -35,6 +35,8 @@ export interface ProcessPostInput {
     gender: string;
     /** Log prefix for console output */
     logPrefix?: string;
+    /** User's preferred locale / language code (e.g. 'en', 'es') */
+    locale?: string;
     /**
      * Pre-generated condensed transcript. If provided, skips the
      * condensed transcript generation step (cron already has it).
@@ -132,7 +134,8 @@ export async function processPostContent(
     const audioFields: Record<string, any> = {};
     const ttsPromise = (characterVoiceId && messages.length > 0)
         ? (async () => {
-            const voices = await resolveConversationVoices(characterVoiceId);
+            const voiceLanguage = opts.locale || language || 'en';
+            const voices = await resolveConversationVoices(characterVoiceId, voiceLanguage);
 
             if (voices) {
                 console.log(`[${logPrefix}] Generating dual-voice audio...`);

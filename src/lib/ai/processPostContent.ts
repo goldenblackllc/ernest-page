@@ -37,6 +37,8 @@ export interface ProcessPostInput {
     gender: string;
     /** Log prefix for console output */
     logPrefix?: string;
+    /** User's preferred locale / language code (e.g. 'en', 'es') */
+    locale?: string;
     /**
      * Pre-generated condensed transcript. If provided, skips the
      * condensed transcript generation step (cron already has it).
@@ -142,7 +144,8 @@ export async function processPostContent(
                 // Monologue mode (e.g. daily digest): same voice for both roles
                 console.log(`[${logPrefix}] Single-voice mode — using character voice for both roles`);
             } else {
-                const voices = await resolveConversationVoices(characterVoiceId);
+                const voiceLanguage = opts.locale || language || 'en';
+                const voices = await resolveConversationVoices(characterVoiceId, voiceLanguage);
                 if (voices) {
                     questionerVoiceId = voices.questionerVoiceId;
                     resolvedCharacterVoiceId = voices.characterVoiceId;

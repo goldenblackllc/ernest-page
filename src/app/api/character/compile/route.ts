@@ -239,12 +239,13 @@ export async function POST(req: Request) {
 
                     const apiKey = process.env.ELEVENLABS_API_KEY;
                     if (apiKey) {
+                        const preferredLocale = data?.preferred_locale || 'en';
                         const params = new URLSearchParams({
                             page_size: '1',
-                            language: 'en',
+                            language: preferredLocale,
                             gender,
                             age: ageCategory,
-                            accent: 'british',
+                            ...(preferredLocale === 'en' ? { accent: 'british' } : {}),
                             sort: 'usage_character_count_1y',
                         });
 

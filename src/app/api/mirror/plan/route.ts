@@ -9,7 +9,7 @@ export async function POST(req: Request) {
         const uid = await verifyAuth(req);
         if (!uid) return unauthorizedResponse();
 
-        const { messages, localTime } = await req.json();
+        const { messages, localTime, locale } = await req.json();
 
         if (!messages || messages.length < 2) {
             return Response.json({ error: "Insufficient conversation context" }, { status: 400 });
@@ -23,6 +23,21 @@ export async function POST(req: Request) {
 
         const userData = userDoc.data();
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
+        const preferredLocale = userData?.preferred_locale || locale || 'en';
+
+        // Determine language instruction for the AI
+        let languageInstruction = "";
+        if (preferredLocale === "es") {
+            languageInstruction = "You MUST respond entirely in SPANISH (Español). Do not use English unless the user explicitly asks for an English word.";
+        } else if (preferredLocale === "fr") {
+            languageInstruction = "You MUST respond entirely in FRENCH (Français). Do not use English unless the user explicitly asks for an English word.";
+        } else if (preferredLocale === "de") {
+            languageInstruction = "You MUST respond entirely in GERMAN (Deutsch). Do not use English unless the user explicitly asks for an English word.";
+        } else if (preferredLocale === "pt") {
+            languageInstruction = "You MUST respond entirely in PORTUGUESE (Português). Do not use English unless the user explicitly asks for an English word.";
+        } else {
+            languageInstruction = "You MUST respond entirely in ENGLISH.";
+        }
 
         const systemPrompt = `You are a Character Simulation Engine running this Character Bible:
 ${JSON.stringify(compiledBible)}
@@ -53,7 +68,9 @@ RULES:
 - Do NOT add bullet points, numbers, or any other formatting.
 - Do NOT output generic productivity advice. Every directive must be specifically tied to what was discussed.
 
-Example output (for a conversation at 9pm): 'Tonight before you sleep, open your notes app and write the three names that came to mind during our conversation.||Tomorrow morning, before you check your phone, sit with your coffee and read what you wrote last night.||At lunch tomorrow, call your brother. Say exactly this: "I've been thinking about what you said."||Tomorrow evening, take a 20-minute walk with no headphones. Just walk.||Pay attention — something unexpected will happen when you start moving on this. Notice it.'`;
+Example output (for a conversation at 9pm): 'Tonight before you sleep, open your notes app and write the three names that came to mind during our conversation.||Tomorrow morning, before you check your phone, sit with your coffee and read what you wrote last night.||At lunch tomorrow, call your brother. Say exactly this: "I've been thinking about what you said."||Tomorrow evening, take a 20-minute walk with no headphones. Just walk.||Pay attention — something unexpected will happen when you start moving on this. Notice it.'
+
+LANGUAGE: ${languageInstruction}`;
 
         const conversationContext = messages.map((m: any) =>
             `${m.role === 'user' ? 'USER' : 'CHARACTER'}: ${m.content}`

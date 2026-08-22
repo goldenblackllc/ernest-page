@@ -4,7 +4,7 @@ const path = require('path');
 const localesDir = path.join(__dirname, '../src/messages');
 const enKeyData = require(path.join(localesDir, 'en.json'));
 
-const locales = ['es.json', 'pt.json', 'fr.json'];
+const locales = ['es.json', 'pt.json', 'fr.json', 'de.json'];
 
 function fillMissingKeys(sourceObj, targetObj) {
   const result = { ...targetObj };

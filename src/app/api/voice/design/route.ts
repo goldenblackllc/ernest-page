@@ -44,7 +44,7 @@ export async function POST(req: Request) {
             gender: identity.gender || '',
             age: identity.age || '',
             ethnicity: identity.ethnicity || '',
-            appLanguage: 'en',
+            appLanguage: data?.preferred_locale || 'en',
         });
 
         console.log('[VoiceDesign] Prompt:', voiceDesignPrompt);

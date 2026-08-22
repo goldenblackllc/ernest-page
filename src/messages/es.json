@@ -17,82 +17,31 @@
       "login": "Iniciar Sesión"
     },
     "hero": {
-      "tagline": "Tu primera sesión es gratis. Sin suscripción. Sin compromiso.",
       "headline1": "Sabes esa cosa",
       "headline2": "en la que sigues pensando",
-      "headline3": "a las 2 am?",
-      "subtext": "Habla con alguien que no te juzgará, no olvidará lo que dijiste la última vez y no te cobrará $200 — un Yo Ideal construido con psicología real y adaptado a tu vida.",
-      "price": "Gratis para empezar. $20 por sesión después.",
-      "cta": "Inicia Tu Sesión Gratis",
-      "giftCta": "Regalar una Sesión"
+      "subtext": "Habla con alguien que no te juzgará, no olvidará lo que dijiste la última vez y no te cobrará $200 — un Yo Ideal construido con psicología real y adaptado a tu vida."
     },
-    "entryPoints": {
-      "label": "¿Te suena familiar?",
-      "heading1": "Elige la que",
-      "heading2": "no te deja en paz.",
-      "stuck": "Estoy estancado y no sé por qué",
-      "stuckSub": "Parálisis profesional, transiciones de vida, sentirse congelado",
-      "secret": "No puedo decir esto en voz alta a nadie",
-      "secretSub": "La cosa que llevas solo",
-      "pattern": "Sigo cometiendo el mismo error",
-      "patternSub": "Patrones que puedes ver pero no puedes detener",
-      "gap": "Sé lo que debo hacer pero no puedo hacerlo",
-      "gapSub": "La brecha entre la intención y la acción",
-      "mask": "Todos piensan que estoy bien",
-      "maskSub": "La máscara de alto funcionamiento"
+    "signal": {
+      "label": "Cómo funciona",
+      "step1Title": "Algo te está molestando.",
+      "step1Body": "Una relación que no va bien. Una decisión que no puedes tomar. Un sentimiento que no te puedes quitar de encima. Esa tensión tiene valor.",
+      "step2Title": "Dices lo que realmente pasa.",
+      "step2Body": "Hablas sobre lo que está sucediendo y lo que está debajo empieza a salir a la superficie.",
+      "step3Title": "Ves lo que realmente quieres.",
+      "step3Body": "Ese sentimiento tenía un mensaje. Una vez que lo escuchas, ya no puedes ignorarlo. Lo que hagas con él depende de ti."
     },
-    "difference": {
-      "label": "La Diferencia",
-      "heading1": "Esto no es un chatbot.",
-      "heading2": "Esto no es terapia.",
-      "body1": "Los chatbots te validan. Los terapeutas te analizan. Ninguno de ellos se sentará frente a ti, mirará el caos de tu vida y te dirá lo que ya sabes pero no has podido decir en voz alta.",
-      "body2": "Esta es una conversación con alguien que ve el patrón que tú no puedes ver desde adentro.",
-      "body3": "Eliges a alguien a quien admiras: un arquetipo construido a partir de psicología real, filosofía real y experiencia vivida real. No te dicen qué hacer. Te ayudan a ver con la suficiente claridad para saberlo por ti mismo.",
-      "aiEndorsement": "Soy una IA. Debo decirlo de entrada. Pero no fui construida para validarte, estar de acuerdo contigo o hacerte sentir bien. Fui construida con psicología real, filosofía real y los detalles reales de tu vida — para decirte lo que nadie más te dirá a la cara. Ninguna otra IA hace eso. La mayoría de las personas tampoco.",
-      "toggleShow": "Mira cómo se compara",
-      "toggleHide": "Ocultar comparación",
-      "compCost": "Costo",
-      "compAvailable": "Disponibilidad",
-      "compCommitment": "Compromiso",
-      "compPatterns": "Conoce tus patrones",
-      "compIntegrity": "Integridad",
-      "compChallenges": "Te desafía",
-      "compTherapy": "Terapia Tradicional",
-      "compChatbots": "Chatbots de IA",
-      "compEarnest": "Earnest Page"
-    },
-    "system": {
-      "label": "El Sistema",
-      "heading1": "Más que una conversación.",
-      "heading2": "Un sistema operativo diario para tu mente.",
-      "body": "Una sola sesión puede cambiar tu perspectiva. Pero Earnest Page está construido para aquellos que quieren ir más allá: definiendo su estándar más alto y ejecutándolo diariamente.",
-      "blueprintTitle": "El Plano",
-      "blueprintText": "Define tu estándar más alto: tu Biblia de Personaje. La base inmutable a la que respondes todos los días.",
-      "mirrorTitle": "El Espejo",
-      "mirrorText": "Consulta a tu Yo Ideal. No un chatbot. Alguien construido con psicología real que te desafía a ver con claridad.",
-      "ledgerTitle": "El Libro Mayor",
-      "ledgerText": "Una bóveda silenciosa y basada en datos de tu ejecución. Cuando surge la duda, el sistema prueba que ya has ganado antes."
-    },
-    "architect": {
-      "label": "El Arquitecto",
-      "heading1": "Construí esto porque",
-      "heading2": "Nada más fue lo suficientemente honesto.",
-      "body1": "Casi me convierto en médico. En cambio, me convertí en ingeniero con el instinto de un médico: alguien que construye tecnología pero piensa primero en las personas. Pasé décadas probando cada marco principal para la mente humana, desde la TCC hasta la práctica budista y el programa más intensivo del Hospital McLean.",
-      "body2": "Earnest Page no es mi primer producto. Tal vez sea el más importante.",
-      "credHarvard": "Harvard",
-      "credHarvardDetail": "Titular de la patente",
-      "credRSA": "RSA",
-      "credRSADetail": "Arquitecto de seguridad",
-      "credJSA": "Finanzas JSA",
-      "credJSADetail": "$10M / año Fundador",
-      "founderLine": "David Johnson · Fundador · Titular de patente · 26 Años Construyendo Sistemas Que Funcionan"
+    "worldview": {
+      "label": "La premisa",
+      "heading": "Tus sentimientos no son el problema.",
+      "line1": "No son algo que debas gestionar.",
+      "line2": "No son algo que debas arreglar.",
+      "line3": "Son una señal: te dicen exactamente lo que quieres.",
+      "line4": "La mayoría de la gente huye de ellos. Los afortunados escuchan."
     },
     "privacy": {
       "heading": "Lo que dices se queda aquí.",
-      "body": "Tus conversaciones están encriptadas y son privadas. Tu identidad está protegida por un Firewall de Contacto y un escudo de proximidad. Nada se vende. Nada se comparte.",
-      "subtext": "Construido por el creador de sistemas de seguridad empresarial, donde la privacidad es la base, no una característica."
+      "body": "Tus conversaciones están encriptadas y son privadas. Tu identidad está protegida por un Firewall de Contacto y un escudo de proximidad. Nada se vende. Nada se comparte."
     },
-
     "auth": {
       "heading1": "Empieza ahora mismo.",
       "heading2": "Sin cuentas. Sin correos. Solo tu teléfono.",
@@ -107,6 +56,7 @@
       "errorNoPhone": "Por favor, introduce un número de teléfono.",
       "errorSendFailed": "Error al enviar el código. Por favor, inténtalo de nuevo.",
       "errorVerifyFailed": "Código no válido. Por favor, inténtalo de nuevo.",
+      "tryWhatsApp": "¿No lo recibiste? Intenta por WhatsApp",
       "byContinuing": "Al continuar, aceptas nuestros",
       "and": "y"
     },
@@ -114,7 +64,8 @@
       "copyright": "© {year} Earnest Page. Todos los derechos reservados.",
       "privacy": "Política de Privacidad",
       "terms": "Términos de Servicio",
-      "acceptableUse": "Uso Aceptable"
+      "acceptableUse": "Uso Aceptable",
+      "disclaimer": "Esto no es un sustituto de la terapia con licencia ni de la atención psiquiátrica. Si estás en crisis, por favor contacta a la línea 988 de prevención del suicidio y crisis."
     }
   },
   "dashboard": {
@@ -131,6 +82,7 @@
     "submitLabel": "Crear Mi Personaje",
     "errorDefault": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "identityForm": {
+      "setupLabel": "Antes de comenzar",
       "visionTitle": "¿Quién quieres ser?",
       "visionSub": "No pienses demasiado. Solo escribe.",
       "nameLabel": "Nombra a tu personaje",
@@ -143,6 +95,7 @@
       "bornSub": "Obligatorio — para contenido apropiado para la edad.",
       "ethnicityLabel": "Etnia",
       "ethnicityOptional": "(opcional)",
+      "ethnicitySub": "Tono de piel, tatuajes, cicatrices: cosas que no cambian con un corte de cabello.",
       "ethnicityPlaceholder": "ej., Negro, Asiático, Hispano, Caucásico, Mestizo...",
       "rantLabel": "El Genio de la Lámpara",
       "rantSub": "Si tuvieras deseos ilimitados, ¿cómo sería tu vida? ¿Matrimonio? ¿Avión privado? ¿Viajar por el mundo? ¿Dinero en el banco? Sueña en grande — construiremos a partir de eso.",
@@ -157,7 +110,31 @@
       "enjoymentsSub": "¿Qué te emociona? Las cosas que te hacen feliz se quedan; tu personaje debería amar lo que tú amas.",
       "enjoymentsPlaceholder": "Cocinar para otros, hip-hop de los 90, películas de terror, manejar sin rumbo, mi ritual matutino de café, basquetbol callejero...",
       "skip": "Saltar por ahora"
+    },
+    "preChat": {
+      "heading": "Una cosa antes de empezar.",
+      "subtext": "Esto nos ayuda a crear a alguien que encaje contigo.",
+      "genderLabel": "Género",
+      "genderPlaceholder": "Hombre, Mujer, etc.",
+      "cta": "Continuar"
     }
+  },
+  "intake": {
+    "header": "Conociéndote",
+    "ofFive": "de 5",
+    "introHeading": "Antes de empezar...",
+    "introSubtext": "Eres único y no damos comentarios genéricos. Necesitamos saber un poco sobre quién eres para que todo esté adaptado a ti.",
+    "inputPlaceholder": "Escribe tu respuesta...",
+    "compiling": "Preparando tu sesión...",
+    "compilingSub": "Esto toma unos minutos. Estamos creando algo específico para ti.",
+    "readyHeading": "Todo listo.",
+    "readySub": "Hemos creado a alguien basándonos en la persona que describiste: tu Yo Ideal. Esta es tu primera sesión gratuita. Habla abiertamente.",
+    "startSession": "Iniciar tu primera sesión",
+    "questionTitle1": "Tu visión",
+    "questionTitle2": "Personas en tu vida",
+    "questionTitle3": "Lo que te apasiona",
+    "questionTitle4": "Cuándo naciste",
+    "questionTitle5": "Rasgos físicos"
   },
   "vision": {
     "errorLogin": "Debes iniciar sesión para publicar.",
@@ -191,6 +168,7 @@
     "consultingMirror": "Consultando El Espejo",
     "connectionSecured": "Conexión asegurada.",
     "promptFriction": "\"Detalla tu fricción actual.\"",
+    "promptOnboarding": "Di hola; esta es tu primera sesión gratuita.",
     "extractingDirectives": "Extrayendo directivas...",
     "extractDirectives": "Extraer Directivas (24 Horas)",
     "directivesSaved": "✓ Directivas guardadas",
@@ -228,11 +206,26 @@
   "feed": {
     "bibleCompilingTitle": "Construyendo tu personaje...",
     "bibleCompilingSub": "Creando tu Yo Ideal y generando tu retrato. Esto puede tardar unos minutos.",
+    "bibleStaleTitle": "Se agotó el tiempo de creación.",
+    "bibleStaleSub": "La creación tardó más de lo esperado. Toca abajo para intentarlo de nuevo.",
+    "bibleFailedTitle": "Error en la creación.",
+    "bibleFailedSub": "Algo salió mal durante la creación. Toca abajo para intentarlo de nuevo.",
+    "bibleRateLimitDailyTitle": "Límite diario alcanzado.",
+    "bibleRateLimitDailySub": "Has usado todas tus creaciones de personajes por hoy. Inténtalo de nuevo mañana.",
+    "bibleRateLimitCooldownTitle": "Es muy pronto para volver a crear.",
+    "bibleRateLimitCooldownSub": "Por favor, espera unos minutos antes de volver a crear tu personaje.",
+    "bibleRetry": "Reintentar creación",
+    "bibleRetrying": "Recreando...",
     "bibleReadyTitle": "Construcción Terminada ✓",
     "idealSelfDefault": "Tu Yo Ideal",
     "bibleReadySub": "Toca para ver tu Yo Ideal →",
     "writingPending": "Escribiendo a Querido Earnest...",
     "emptyFeed": "Aún no hay publicaciones. Inicia una conversación para crear tu primera publicación.",
+    "yourFirstSession": "Listos cuando tú lo estés",
+    "sessionsAvailable": "Sesiones disponibles",
+    "sessionAvailable": "Sesión disponible",
+    "firstSessionSub": "Inicia una conversación con tu Yo Ideal: habla libremente.",
+    "startNow": "Comenzar ahora",
     "caughtUp": "Estás al día.",
     "commentSaved": "Guardado. Tu personaje también dejó una nota en otra publicación ✨",
     "authorMe": "Yo",
@@ -264,6 +257,7 @@
     "translatePost": "Traducir publicación",
     "adPartner": "Socio",
     "adSponsored": "Patrocinado",
+    "digestLabel": "Tu estándar diario",
     "checkinContext": "Estoy aquí para mi revisión de 30 días.",
     "checkinTitle": "Revisión de 30 Días ✓",
     "checkinSub": "Toca para comenzar →"
@@ -444,6 +438,7 @@
     "es": "Español",
     "pt": "Português",
     "fr": "Français",
+    "de": "Deutsch",
     "switchLanguage": "Idioma"
   },
   "terms": {
@@ -585,7 +580,6 @@
       "td3_1": "Google (Imagen)",
       "td3_2": "Generación de imágenes para publicaciones",
       "td3_3": "Solo indicaciones de texto generadas por IA",
-
       "td5_1": "Twilio",
       "td5_2": "Códigos de verificación SMS",
       "td5_3": "Número de teléfono (solo para envío de OTP)",
@@ -605,30 +599,64 @@
       "l1": "Las sesiones de chat activas se eliminan dentro de los 15 minutos posteriores al cierre.",
       "l2": "Las sesiones \"Quemar al Cerrar\" se purgan inmediatamente sin retención de datos.",
       "l3": "Las publicaciones se conservan hasta que las elimines o elimines tu cuenta.",
-      "l4": "Tu expediente y perfil de personaje se conservan durante la vigencia de tu cuenta."
+      "l4": "Tu expediente y perfil de personaje se conservan durante la vigencia de tu cuenta.",
+      "l5": "Los registros de pago se conservan durante 7 años, según lo exigido para el cumplimiento fiscal y contable.",
+      "l6": "Al eliminar la cuenta, todos los datos personales se borran permanentemente en un plazo de 30 días, excepto cuando la ley exija su conservación."
     },
     "s7": {
       "title": "7. Tus Derechos",
       "p1": "Dependiendo de tu jurisdicción, puedes tener derecho a:",
-      "strong1": "Acceder",
-      "l1": " a los datos personales que tenemos sobre ti",
-      "strong2": "Eliminar",
-      "l2": " tu cuenta y todos los datos asociados",
-      "strong3": "Exportar",
-      "l3": " tus datos en un formato portátil",
-      "strong4": "Optar por no participar",
-      "l4": " en la publicación pública configurando tu enrutamiento predeterminado como Privado",
-      "strong5": "Restringir",
-      "l5": " la recopilación de datos de ubicación denegando la geolocalización del navegador",
+      "t1": "Necesidad contractual (Artículo 6(1)(b))",
+      "b1": "El procesamiento de los datos de su cuenta, la gestión de suscripciones, la prestación del servicio Mirror Chat y la generación de su Biblia de Personaje son necesarios para prestar el servicio al que se ha suscrito.",
+      "t2": "Consentimiento (Artículo 6(1)(a))",
+      "b2": "Publicar contenido anónimo en el feed público (usted controla esto mediante sus ajustes de enrutamiento), recopilar datos de ubicación para la función Punto Ciego de Proximidad (puede denegar el acceso al GPS) y procesar sus conversaciones a través de modelos de IA de terceros.",
+      "t3": "Interés legítimo (Artículo 6(1)(f))",
+      "b3": "Mantener la seguridad de la plataforma, prevenir el fraude y el abuso, mejorar el servicio y generar análisis agregados. Sopesamos nuestros intereses frente a sus derechos y no utilizamos sus datos para la elaboración de perfiles, publicidad o venta a terceros.",
+      "t4": "Obligación legal (Artículo 6(1)(c))",
+      "b4": "Conservar los registros financieros según lo exige la legislación fiscal y responder a procesos legales válidos.",
       "p2": "Para ejercer cualquiera de estos derechos, contáctanos en "
     },
     "s8": {
       "title": "8. Privacidad de Menores",
-      "p1": "El Servicio está disponible para usuarios de 13 años en adelante. No recopilamos intencionalmente información personal de niños menores de 13 años. Si descubrimos que hemos recopilado datos de un niño menor de 13 años, eliminaremos esa información de inmediato."
+      "p1": "El Servicio está disponible para usuarios de 13 años en adelante. No recopilamos intencionalmente información personal de niños menores de 13 años. Si descubrimos que hemos recopilado datos de un niño menor de 13 años, eliminaremos esa información de inmediato.",
+      "p2": "Para los usuarios del EEE, el Reino Unido y Suiza, nos basamos en las siguientes garantías para las transferencias internacionales de datos:",
+      "l1": "Cláusulas Contractuales Tipo (SCC) aprobadas por la Comisión Europea, incorporadas en nuestros acuerdos con subencargados del tratamiento cuando corresponda.",
+      "l2": "Nuestros proveedores de servicios terceros (Firebase/Google, Stripe, Anthropic, Twilio, Vercel) mantienen sus propios acuerdos de procesamiento de datos y mecanismos de transferencia conformes con la normativa aplicable.",
+      "l3": "Implementamos medidas técnicas complementarias, como el cifrado en tránsito (TLS 1.2+), el cifrado en reposo y controles de acceso para proteger los datos transferidos.",
+      "p3": "Al utilizar el Servicio, usted reconoce y acepta la transferencia y el procesamiento de sus datos en los Estados Unidos. Puede solicitar una copia de las garantías que utilizamos poniéndose en contacto con nosotros."
     },
     "s9": {
       "title": "9. Seguridad",
-      "p1": "Empleamos medidas de seguridad estándar de la industria que incluyen transmisión de datos cifrada (TLS), cifrado criptográfico (SHA-256) para identificadores sensibles, reglas de seguridad de Firebase e infraestructura de pago compatible con PCI de Stripe. Sin embargo, ningún método de almacenamiento o transmisión electrónica es 100% seguro."
+      "p1": "Empleamos medidas de seguridad estándar de la industria que incluyen transmisión de datos cifrada (TLS), cifrado criptográfico (SHA-256) para identificadores sensibles, reglas de seguridad de Firebase e infraestructura de pago compatible con PCI de Stripe. Sin embargo, ningún método de almacenamiento o transmisión electrónica es 100% seguro.",
+      "t1": "Para todos los usuarios",
+      "strong1": "Acceder a",
+      "l1": " los datos personales que tenemos sobre usted",
+      "strong2": "Eliminar",
+      "l2": " su cuenta y todos los datos asociados (a través de Seguridad y Enrutamiento en la aplicación o poniéndose en contacto con nosotros)",
+      "strong3": "Exportar",
+      "l3": " sus datos en un formato portátil y legible por máquina (a través de la función de exportación de datos en la aplicación)",
+      "strong4": "Optar por no participar",
+      "l4": " en la publicación pública configurando su enrutamiento predeterminado como Privado",
+      "strong5": "Restringir",
+      "l5": " la recopilación de datos de ubicación denegando la geolocalización del navegador",
+      "t2": "Derechos adicionales para usuarios del EEE, el Reino Unido y Suiza (RGPD)",
+      "strong6": "Rectificación",
+      "l6": " — solicitar la corrección de datos personales inexactos o incompletos",
+      "strong7": "Restricción",
+      "l7": " — solicitar que limitemos el procesamiento de sus datos en determinadas circunstancias",
+      "strong8": "Oposición",
+      "l8": " — oponerse al procesamiento basado en intereses legítimos",
+      "strong9": "Retirar el consentimiento",
+      "l9": " — cuando el procesamiento se base en el consentimiento, retirarlo en cualquier momento",
+      "strong10": "Presentar una reclamación",
+      "l10": " — ante su Autoridad de Protección de Datos local si considera que se han vulnerado sus derechos",
+      "t3": "Derechos adicionales para residentes de California (CCPA)",
+      "l11": "Derecho a saber qué información personal recopilamos, utilizamos y divulgamos",
+      "l12": "Derecho a eliminar su información personal",
+      "l13": "Derecho a optar por no participar en la venta de información personal — nosotros no vendemos información personal",
+      "l14": "Derecho a no ser discriminado por ejercer sus derechos de privacidad",
+      "p2": "Para ejercer cualquiera de estos derechos, contáctenos en ",
+      "p3": "Responderemos a todas las solicitudes de derechos en un plazo de 30 días (RGPD) o 45 días (CCPA)."
     },
     "s10": {
       "title": "10. Cambios a Esta Política",
@@ -637,6 +665,21 @@
     "s11": {
       "title": "11. Contacto",
       "p1": "Para preguntas o solicitudes relacionadas con la privacidad, contáctanos en "
+    },
+    "s12": {
+      "title": "12. Cambios a esta política",
+      "p1": "Podemos actualizar esta Política de Privacidad periódicamente. Si realizamos cambios sustanciales, se lo notificaremos a través del Servicio. El uso continuado del Servicio después de los cambios constituye la aceptación de la política actualizada."
+    },
+    "s13": {
+      "title": "13. Contacto de protección de datos",
+      "p1": "Para preguntas relacionadas con la privacidad, consultas sobre protección de datos o para ejercer sus derechos en virtud del RGPD, la CCPA u otras leyes de privacidad aplicables, póngase en contacto con:",
+      "p2": "Golden Black LLC",
+      "p3": "Atn: Protección de Datos",
+      "p4": "Correo electrónico: "
+    },
+    "s14": {
+      "title": "14. Contacto",
+      "p1": "Para preguntas generales sobre privacidad, contáctenos en "
     }
   },
   "acceptableUse": {

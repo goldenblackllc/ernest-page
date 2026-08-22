@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         const rl = checkRateLimit(`mirror:${uid}`, RATE_LIMITS.mirror);
         if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
-        const { messages, sessionId, sessionTone, localTime } = await req.json();
+        const { messages, sessionId, sessionTone, localTime, locale } = await req.json();
 
         const primaryModel = OPUS_MODEL;
         const fallbackModel = OPUS_FALLBACK;
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
         const dossier = userData?.identity?.dossier || '';
         const sessionRecaps = userData?.session_recaps || [];
-        const preferredLocale = userData?.preferred_locale || 'en';
+        const preferredLocale = userData?.preferred_locale || locale || 'en';
         const characterAge = userData?.identity?.age || '';
         const characterGender = userData?.identity?.gender || '';
 

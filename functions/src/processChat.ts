@@ -166,6 +166,7 @@ export const processChat = onDocumentUpdated(
                         demographicHint,
                         characterVoiceId,
                         gender,
+                        locale: userData?.preferred_locale || 'en',
                         logPrefix: 'ProcessChat',
                         preCondensed: {
                             messages: condensedMessages,

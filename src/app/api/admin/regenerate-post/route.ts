@@ -83,6 +83,7 @@ export async function POST(req: Request) {
             demographicHint,
             characterVoiceId,
             gender,
+            locale: userData?.preferred_locale || 'en',
             logPrefix: 'RegeneratePost',
         });
 

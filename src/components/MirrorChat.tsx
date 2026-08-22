@@ -10,7 +10,7 @@ import { subscribeToActiveChat, getMostRecentActiveChat, saveActiveChat, deleteA
 import { Message } from "@ai-sdk/react";
 import { DEFAULT_TONE } from "@/lib/ai/engagementTones";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
 import { cacheTTSBlob, getCachedTTSBlob, clearTTSCache } from "@/lib/ttsCache";
 
@@ -34,6 +34,7 @@ interface MirrorChatProps {
 export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
     const { user: authUser } = useAuth();
     const t = useTranslations();
+    const locale = useLocale();
     const { suppressAutoPlay, unsuppressAutoPlay } = useAudioMute();
 
     // Suppress feed auto-play while MirrorChat is open
@@ -437,7 +438,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     sessionId,
                     sessionTone,
                     localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-                    messages: newMessages
+                    messages: newMessages,
+                    locale
                 })
             });
         } catch (err) {
@@ -472,7 +474,8 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     sessionId,
                     sessionTone,
                     localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-                    messages: messages
+                    messages: messages,
+                    locale
                 })
             });
         } catch (err) {
@@ -802,6 +805,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                 body: JSON.stringify({
                             messages,
                             localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+                            locale
                         })
             });
             const data = await res.json();
