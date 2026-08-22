@@ -1376,7 +1376,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     setVideoToast(null);
                                     try {
                                         const idToken = await user.getIdToken();
-                                        const res = await fetch(`/api/posts/${post.id}/video`, {
+                                        const res = await fetch(`/api/posts/${post.id}/video?refresh=1`, {
                                             headers: { Authorization: `Bearer ${idToken}` },
                                         });
                                         if (!res.ok) throw new Error('Failed to generate video');
