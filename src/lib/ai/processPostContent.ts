@@ -31,6 +31,8 @@ export interface ProcessPostInput {
     demographicHint: string;
     /** User's cloned voice ID for TTS */
     characterVoiceId?: string;
+    /** Use the character voice for both roles (monologue mode — e.g. daily digest) */
+    singleVoice?: boolean;
     /** User's gender (for voice selection) */
     gender: string;
     /** Log prefix for console output */
@@ -84,6 +86,7 @@ export async function processPostContent(
         compiledBible,
         demographicHint,
         characterVoiceId,
+        singleVoice,
         gender,
         logPrefix = 'ProcessPost',
         preCondensed,
@@ -132,25 +135,35 @@ export async function processPostContent(
     const audioFields: Record<string, any> = {};
     const ttsPromise = (characterVoiceId && messages.length > 0)
         ? (async () => {
-            const voices = await resolveConversationVoices(characterVoiceId);
+            let questionerVoiceId = characterVoiceId;
+            let resolvedCharacterVoiceId = characterVoiceId;
 
-            if (voices) {
-                console.log(`[${logPrefix}] Generating dual-voice audio...`);
-                const audioResult = await generateConversationAudio(
-                    messages,
-                    voices.questionerVoiceId,
-                    voices.characterVoiceId,
-                    postId,
-                );
-                if (audioResult) {
-                    audioFields.audio_url = audioResult.audioUrl;
-                    audioFields.audio_word_timestamps = audioResult.wordTimestamps;
-                    audioFields.audio_message_boundaries = audioResult.messageBoundaries;
-                    audioFields.audio_letter_ratio =
-                        audioResult.messageBoundaries[0]?.endTime /
-                        audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5;
-                    console.log(`[${logPrefix}] Audio generated for ${postId}`);
+            if (singleVoice) {
+                // Monologue mode (e.g. daily digest): same voice for both roles
+                console.log(`[${logPrefix}] Single-voice mode — using character voice for both roles`);
+            } else {
+                const voices = await resolveConversationVoices(characterVoiceId);
+                if (voices) {
+                    questionerVoiceId = voices.questionerVoiceId;
+                    resolvedCharacterVoiceId = voices.characterVoiceId;
                 }
+            }
+
+            console.log(`[${logPrefix}] Generating ${singleVoice ? 'single' : 'dual'}-voice audio...`);
+            const audioResult = await generateConversationAudio(
+                messages,
+                questionerVoiceId,
+                resolvedCharacterVoiceId,
+                postId,
+            );
+            if (audioResult) {
+                audioFields.audio_url = audioResult.audioUrl;
+                audioFields.audio_word_timestamps = audioResult.wordTimestamps;
+                audioFields.audio_message_boundaries = audioResult.messageBoundaries;
+                audioFields.audio_letter_ratio =
+                    audioResult.messageBoundaries[0]?.endTime /
+                    audioResult.messageBoundaries[audioResult.messageBoundaries.length - 1]?.endTime || 0.5;
+                console.log(`[${logPrefix}] Audio generated for ${postId}`);
             }
         })()
         : Promise.resolve();

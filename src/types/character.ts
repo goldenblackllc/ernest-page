@@ -119,6 +119,8 @@ export interface CharacterProfile {
         image_prompts?: string[];
         message_images?: string[];
         condensed_transcript?: Array<{ role: 'user' | 'ideal_self'; text: string }>;
+        // Thumbnail (poster frame — same as post feed)
+        thumbnail_url?: string | null;
         // Audio
         audio_url?: string | null;
         audio_word_timestamps?: Array<{ word: string; start: number; end: number }>;

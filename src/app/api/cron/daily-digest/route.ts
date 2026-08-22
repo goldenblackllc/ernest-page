@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
-import { generateConversationAudio } from '@/lib/ai/postTTS';
-import { generateMessageImagePrompts, generateMessageImages } from '@/lib/ai/generatePostImage';
+import { processPostContent } from '@/lib/ai/processPostContent';
+import { generateMessageImages } from '@/lib/ai/generatePostImage';
 import { loadUserReferenceImage } from '@/lib/ai/loadUserReferenceImage';
 import { computeAge } from '@/lib/utils/parseBirthDate';
 
@@ -201,20 +201,54 @@ async function generateDigestCard(user: {
         { role: 'ideal_self', text: `About me and my life. ${title}. ${content}` }
     ];
 
-    // ─── IMAGE GENERATION (per-message AI director — same as post feed) ───
+    // ─── Shared pipeline: image prompts + TTS + thumbnail (same as post feed) ───
+    // Reuse existing prompts/images from partial runs (idempotency)
     let image_prompts: string[] = existingDigest?.date === today
         ? (existingDigest.image_prompts || []) : [];
     let message_images: string[] = existingDigest?.date === today
         ? (existingDigest.message_images || []) : [];
+    let thumbnailUrl: string | null = existingDigest?.date === today
+        ? (existingDigest.thumbnail_url || null) : null;
 
-    if (image_prompts.length === 0) {
-        image_prompts = await generateMessageImagePrompts({
-            messages,
+    const needsPrompts = image_prompts.length === 0;
+    const needsAudio = !existingDigest?.audio_url && user.voiceId;
+    const needsThumbnail = !thumbnailUrl;
+
+    // Run the shared pipeline if any AI work is needed
+    let audioFields: Record<string, any> = {};
+    if (needsPrompts || needsAudio || needsThumbnail) {
+        const postId = `digest_${user.uid}_${Date.now()}`;
+        const pipelineResult = await processPostContent({
+            transcript: '',  // unused — preCondensed provides messages
+            uid: user.uid,
+            postId,
             compiledBible: user.compiledBible,
             demographicHint: user.demographicHint,
+            characterVoiceId: user.voiceId || undefined,
+            singleVoice: true,  // digest is a monologue — same voice for both roles
+            gender: '',  // unused when singleVoice is true
+            logPrefix: 'Daily Digest',
+            preCondensed: {
+                messages,
+                title,
+            },
         });
+
+        if (pipelineResult) {
+            if (needsPrompts) image_prompts = pipelineResult.imagePrompts;
+            if (needsAudio) audioFields = pipelineResult.audioFields;
+            if (needsThumbnail) thumbnailUrl = pipelineResult.thumbnailUrl;
+        }
+    } else {
+        // Re-running but pipeline already complete — reuse existing audio
+        audioFields = {
+            audio_url: existingDigest?.audio_url || null,
+            audio_word_timestamps: existingDigest?.audio_word_timestamps || null,
+            audio_message_boundaries: existingDigest?.audio_message_boundaries || null,
+        };
     }
 
+    // ─── IMAGE GENERATION (caller responsibility — same pattern as cleanup-chats) ───
     if (image_prompts.length > 0 && (!message_images.length || message_images.some(u => !u))) {
         const referenceImage = await loadUserReferenceImage(user.uid);
         const referenceImages = referenceImage ? [referenceImage] : undefined;
@@ -233,30 +267,6 @@ async function generateDigestCard(user: {
         return false; // Don't write a broken card — keep yesterday's digest visible
     }
 
-    // ─── TTS Audio (conversation audio — same as post feed, character voice for both) ───
-    let audioUrl: string | null = existingDigest?.date === today ? (existingDigest.audio_url || null) : null;
-    let audioWordTimestamps: any[] | null = existingDigest?.date === today ? (existingDigest.audio_word_timestamps || null) : null;
-    let audioMessageBoundaries: any[] | null = existingDigest?.date === today ? (existingDigest.audio_message_boundaries || null) : null;
-
-    if (!audioUrl && user.voiceId) {
-        try {
-            const audioResult = await generateConversationAudio(
-                messages,
-                user.voiceId,  // character voice for questioner (single voice — digest is character only)
-                user.voiceId,  // character voice
-                `digest_${user.uid}_${Date.now()}`,
-            );
-            if (audioResult) {
-                audioUrl = audioResult.audioUrl;
-                audioWordTimestamps = audioResult.wordTimestamps;
-                audioMessageBoundaries = audioResult.messageBoundaries;
-                console.log(`[Daily Digest] Audio generated for ${user.uid}`);
-            }
-        } catch (audioErr) {
-            console.error('[Daily Digest] Audio generation failed:', audioErr);
-        }
-    }
-
     const digestCard = {
         title,
         content,
@@ -269,10 +279,12 @@ async function generateDigestCard(user: {
         image_prompts,
         message_images,
         condensed_transcript: messages,
+        // Thumbnail (same as post feed — enables poster frame + hides title overlay)
+        thumbnail_url: thumbnailUrl,
         // Audio
-        audio_url: audioUrl,
-        audio_word_timestamps: audioWordTimestamps,
-        audio_message_boundaries: audioMessageBoundaries,
+        audio_url: audioFields.audio_url || null,
+        audio_word_timestamps: audioFields.audio_word_timestamps || null,
+        audio_message_boundaries: audioFields.audio_message_boundaries || null,
         date: today,
         updated_at: new Date().toISOString(),
     };

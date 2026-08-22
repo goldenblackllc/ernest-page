@@ -684,6 +684,7 @@ export function Ledger() {
                         short_audio_url: profile.daily_digest.audio_url ?? undefined,
                         imagen_url: profile.daily_digest.image_url ?? undefined,
                         imagen_urls: profile.daily_digest.imagen_urls ?? undefined,
+                        thumbnail_url: profile.daily_digest.thumbnail_url ?? undefined,
                         // Per-message fields (same shape as post feed)
                         image_style: profile.daily_digest.image_style ?? undefined,
                         message_images: profile.daily_digest.message_images ?? undefined,
