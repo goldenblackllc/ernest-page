@@ -745,5 +745,24 @@
       "release": "Suelta para actualizar",
       "refreshing": "Actualizando…"
     }
+  },
+  "voiceBrowser": {
+    "title": "Mi Voz",
+    "close": "Cerrar",
+    "change": "Cambiar",
+    "noVoice": "Ninguna voz seleccionada",
+    "anyGender": "Cualquier Género",
+    "male": "Masculino",
+    "female": "Femenino",
+    "anyAge": "Cualquier Edad",
+    "young": "Joven",
+    "middleAged": "Mediana Edad",
+    "senior": "Mayor",
+    "anyAccent": "Cualquier Acento",
+    "searchPlaceholder": "Buscar voces...",
+    "search": "Buscar",
+    "active": "Activa",
+    "select": "Seleccionar",
+    "noResults": "No se encontraron voces. Prueba con otros filtros."
   }
 }

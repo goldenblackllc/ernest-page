@@ -580,7 +580,6 @@
       "td3_1": "Google (Imagen)",
       "td3_2": "Image generation for posts",
       "td3_3": "AI-generated text prompts only",
-
       "td5_1": "Twilio",
       "td5_2": "SMS verification codes",
       "td5_3": "Phone number (for OTP delivery only)",
@@ -746,5 +745,24 @@
       "release": "Release to refresh",
       "refreshing": "Refreshing…"
     }
+  },
+  "voiceBrowser": {
+    "title": "My Voice",
+    "close": "Close",
+    "change": "Change",
+    "noVoice": "No voice selected",
+    "anyGender": "Any Gender",
+    "male": "Male",
+    "female": "Female",
+    "anyAge": "Any Age",
+    "young": "Young",
+    "middleAged": "Middle Aged",
+    "senior": "Senior",
+    "anyAccent": "Any Accent",
+    "searchPlaceholder": "Search voices...",
+    "search": "Search",
+    "active": "Active",
+    "select": "Select",
+    "noResults": "No voices found. Try different filters."
   }
 }

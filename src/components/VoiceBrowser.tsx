@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
 import { Loader2, Volume2, Square, Check } from "lucide-react";
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 /** Accent filter options per locale — values must match ElevenLabs shared-voices API accent values */
 const ACCENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
@@ -16,25 +16,23 @@ const ACCENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
         { value: 'indian', label: 'Indian' },
     ],
     es: [
+        { value: 'peninsular', label: 'España' },
         { value: 'mexican', label: 'Mexicano' },
-        { value: 'castilian', label: 'Castellano' },
-        { value: 'argentinian', label: 'Argentino' },
+        { value: 'latin american', label: 'Latinoamericano' },
         { value: 'colombian', label: 'Colombiano' },
-        { value: 'chilean', label: 'Chileno' },
+        { value: 'argentine', label: 'Argentino' },
     ],
     pt: [
         { value: 'brazilian', label: 'Brasileiro' },
-        { value: 'portuguese', label: 'Português' },
+        { value: 'european', label: 'Europeu' },
     ],
     fr: [
-        { value: 'french', label: 'Français' },
-        { value: 'canadian', label: 'Canadien' },
-        { value: 'african', label: 'Africain' },
+        { value: 'standard', label: 'Standard' },
+        { value: 'parisian', label: 'Parisien' },
+        { value: 'quebec', label: 'Québécois' },
     ],
     de: [
-        { value: 'german', label: 'Deutsch' },
-        { value: 'austrian', label: 'Österreichisch' },
-        { value: 'swiss', label: 'Schweizerisch' },
+        { value: 'standard', label: 'Standard' },
     ],
 };
 
@@ -63,6 +61,7 @@ interface VoiceBrowserProps {
 export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = false, compact = false, onVoiceSelected }: VoiceBrowserProps) {
     const { user } = useAuth();
     const locale = useLocale();
+    const t = useTranslations('voiceBrowser');
     const [isOpen, setIsOpen] = useState(startOpen);
     const [results, setResults] = useState<VoiceResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -177,13 +176,13 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-1">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold">
-                    My Voice
+                    {t('title')}
                 </p>
                 <button
                     onClick={() => { setIsOpen(!isOpen); if (!isOpen && results.length === 0) search(); }}
                     className="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors"
                 >
-                    {isOpen ? 'Close' : 'Change'}
+                    {isOpen ? t('close') : t('change')}
                 </button>
             </div>
 
@@ -237,7 +236,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                 </div>
             )}
             {!selectedName && !isOpen && (
-                <p className="text-sm text-zinc-500 italic mt-1">No voice selected</p>
+                <p className="text-sm text-zinc-500 italic mt-1">{t('noVoice')}</p>
             )}
 
             {/* Search panel */}
@@ -250,19 +249,19 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                             onChange={e => setGender(e.target.value)}
                             className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-zinc-500"
                         >
-                            <option value="">Any Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                            <option value="">{t('anyGender')}</option>
+                            <option value="male">{t('male')}</option>
+                            <option value="female">{t('female')}</option>
                         </select>
                         <select
                             value={age}
                             onChange={e => setAge(e.target.value)}
                             className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-zinc-500"
                         >
-                            <option value="">Any Age</option>
-                            <option value="young">Young</option>
-                            <option value="middle_aged">Middle Aged</option>
-                            <option value="old">Senior</option>
+                            <option value="">{t('anyAge')}</option>
+                            <option value="young">{t('young')}</option>
+                            <option value="middle_aged">{t('middleAged')}</option>
+                            <option value="old">{t('senior')}</option>
                         </select>
                         {/* Accent options change based on the active locale/language */}
                         <select
@@ -270,7 +269,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                             onChange={e => setAccent(e.target.value)}
                             className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-zinc-500"
                         >
-                            <option value="">Any Accent</option>
+                            <option value="">{t('anyAccent')}</option>
                             {(ACCENT_OPTIONS[locale] || ACCENT_OPTIONS['en']).map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
@@ -284,7 +283,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && search()}
-                            placeholder="Search voices..."
+                            placeholder={t('searchPlaceholder')}
                             className="flex-1 bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-zinc-500 placeholder:text-zinc-600"
                         />
                         <button
@@ -292,7 +291,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                             disabled={loading}
                             className="bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white text-xs font-bold px-3 py-2 rounded-lg transition-all disabled:opacity-50"
                         >
-                            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Search'}
+                            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t('search')}
                         </button>
                     </div>
 
@@ -339,7 +338,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                                     {isSelected ? (
                                         <div className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-zinc-400">
                                             <Check className="w-3.5 h-3.5" />
-                                            Active
+                                            {t('active')}
                                         </div>
                                     ) : (
                                         <button
@@ -347,14 +346,14 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                                             disabled={!!isSelecting}
                                             className="shrink-0 text-xs font-bold text-zinc-500 hover:text-white px-3 py-1.5 rounded-full border border-zinc-700 hover:border-zinc-500 transition-all disabled:opacity-50"
                                         >
-                                            {isSelecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Select'}
+                                            {isSelecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t('select')}
                                         </button>
                                     )}
                                 </div>
                             );
                         })}
                         {!loading && results.length === 0 && (
-                            <p className="text-xs text-zinc-600 text-center py-4">No voices found. Try different filters.</p>
+                            <p className="text-xs text-zinc-600 text-center py-4">{t('noResults')}</p>
                         )}
                     </div>
                 </div>

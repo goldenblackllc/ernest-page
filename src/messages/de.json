@@ -92,7 +92,6 @@
       "body": "Your conversations are encrypted and private. Your identity is protected by a Contact Firewall and proximity shield. Nothing is sold. Nothing is shared.",
       "subtext": "Built by the maker of enterprise security systems — where privacy is the foundation, not the feature."
     },
-
     "auth": {
       "heading1": "Start right now.",
       "heading2": "No accounts. No emails. Just your phone.",
@@ -115,7 +114,25 @@
       "copyright": "© {year} Earnest Page. All rights reserved.",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
-      "acceptableUse": "Acceptable Use"
+      "acceptableUse": "Acceptable Use",
+      "disclaimer": "This is not a substitute for licensed therapy or psychiatric care. If you are in crisis, please contact the 988 Suicide & Crisis Lifeline."
+    },
+    "signal": {
+      "label": "How It Works",
+      "step1Title": "Something's bothering you.",
+      "step1Body": "A relationship that's off. A decision you can't make. A feeling you can't shake. That tension is valuable.",
+      "step2Title": "You say what's actually going on.",
+      "step2Body": "You talk about what's happening, and the thing underneath starts to surface.",
+      "step3Title": "You see what you actually want.",
+      "step3Body": "The feeling had a message. Once you hear it, you can't unhear it. What you do with it is up to you."
+    },
+    "worldview": {
+      "label": "The Premise",
+      "heading": "Your feelings aren't the problem.",
+      "line1": "They're not something to manage.",
+      "line2": "They're not something to fix.",
+      "line3": "They're a signal — telling you exactly what you want.",
+      "line4": "Most people run from them. The lucky ones listen."
     }
   },
   "dashboard": {
@@ -157,7 +174,16 @@
       "enjoymentsLabel": "What do you Enjoy?",
       "enjoymentsSub": "What do you do for fun? What do you love? Music? Places? Movies? Books? Friends? Food?",
       "enjoymentsPlaceholder": "Cooking for people, 90s hip-hop, horror movies, long drives with no plan, my morning coffee ritual, pickup basketball...",
-      "skip": "Skip for now"
+      "skip": "Skip for now",
+      "setupLabel": "Before You Begin",
+      "ethnicitySub": "Skin tone, tattoos, scars — things that don't change with a haircut."
+    },
+    "preChat": {
+      "heading": "One thing before we begin.",
+      "subtext": "This helps us build someone who matches you.",
+      "genderLabel": "Gender",
+      "genderPlaceholder": "Man, Woman, etc.",
+      "cta": "Continue"
     }
   },
   "vision": {
@@ -211,7 +237,8 @@
     "stop": "Stop",
     "commit": "Commit",
     "regenerate": "Regenerate Response",
-    "mode": "Mode"
+    "mode": "Mode",
+    "promptOnboarding": "Say hello — this is your free first session."
   },
   "tollbooth": {
     "secureEnrollment": "Loslegen",
@@ -268,7 +295,22 @@
     "digestLabel": "Your Daily Standard",
     "checkinContext": "I am here for my 30 day check-in.",
     "checkinTitle": "30 Day Check-in ✓",
-    "checkinSub": "Tap to start →"
+    "checkinSub": "Tap to start →",
+    "bibleStaleTitle": "Build timed out.",
+    "bibleStaleSub": "The build took longer than expected. Tap below to try again.",
+    "bibleFailedTitle": "Build failed.",
+    "bibleFailedSub": "Something went wrong during the build. Tap below to try again.",
+    "bibleRateLimitDailyTitle": "Daily limit reached.",
+    "bibleRateLimitDailySub": "You've used all your character builds for today. Try again tomorrow.",
+    "bibleRateLimitCooldownTitle": "Too soon to rebuild.",
+    "bibleRateLimitCooldownSub": "Please wait a few minutes before rebuilding your character.",
+    "bibleRetry": "Retry Build",
+    "bibleRetrying": "Rebuilding...",
+    "yourFirstSession": "Ready when you are",
+    "sessionsAvailable": "Sessions Available",
+    "sessionAvailable": "Session Available",
+    "firstSessionSub": "Start a conversation with your Ideal Self — speak freely.",
+    "startNow": "Start Now"
   },
   "profile": {
     "unknownCharacter": "Unknown Character",
@@ -588,7 +630,6 @@
       "td3_1": "Google (Imagen)",
       "td3_2": "Image generation for posts",
       "td3_3": "AI-generated text prompts only",
-
       "td5_1": "Twilio",
       "td5_2": "SMS verification codes",
       "td5_3": "Phone number (for OTP delivery only)",
@@ -608,7 +649,9 @@
       "l1": "Active chat sessions are deleted within 15 minutes of closing.",
       "l2": "“Burn on Close” sessions are purged immediately with no data retained.",
       "l3": "Published posts are retained until you delete them or delete your account.",
-      "l4": "Your dossier and character profile are retained for the duration of your account."
+      "l4": "Your dossier and character profile are retained for the duration of your account.",
+      "l5": "Payment records are retained for 7 years as required for tax and accounting compliance.",
+      "l6": "Upon account deletion, all personal data is permanently erased within 30 days, except where retention is required by law."
     },
     "s7": {
       "title": "7. Your Rights",
@@ -623,15 +666,57 @@
       "l4": " of public publishing by setting your default routing to Private",
       "strong5": "Restrict",
       "l5": " location data collection by denying browser geolocation",
-      "p2": "To exercise any of these rights, contact us at "
+      "p2": "To exercise any of these rights, contact us at ",
+      "t1": "Contractual Necessity (Article 6(1)(b))",
+      "b1": "Processing your account data, managing subscriptions, delivering the Mirror Chat service, and generating your Character Bible — these are necessary to provide the service you signed up for.",
+      "t2": "Consent (Article 6(1)(a))",
+      "b2": "Publishing anonymous posts to the public feed (you control this via your routing settings), collecting location data for the Proximity Blind Spot feature (you can deny GPS access), and processing your conversations via third-party AI models.",
+      "t3": "Legitimate Interest (Article 6(1)(f))",
+      "b3": "Maintaining platform security, preventing fraud and abuse, improving the service, and generating aggregate analytics. We balance our interests against your rights and do not use your data for profiling, advertising, or sale to third parties.",
+      "t4": "Legal Obligation (Article 6(1)(c))",
+      "b4": "Retaining financial records as required by tax law, and responding to valid legal process."
     },
     "s8": {
       "title": "8. Children's Privacy",
-      "p1": "The Service is available to users aged 13 and older. We do not knowingly collect personal information from children under 13. If we learn that we have collected data from a child under 13, we will promptly delete that information."
+      "p1": "The Service is available to users aged 13 and older. We do not knowingly collect personal information from children under 13. If we learn that we have collected data from a child under 13, we will promptly delete that information.",
+      "p2": "For users in the EEA, UK, and Switzerland, we rely on the following safeguards for international data transfers:",
+      "l1": "Standard Contractual Clauses (SCCs) approved by the European Commission, incorporated into our agreements with sub-processors where applicable.",
+      "l2": "Our third-party service providers (Firebase/Google, Stripe, Anthropic, Twilio, Vercel) maintain their own data processing agreements and transfer mechanisms compliant with applicable regulations.",
+      "l3": "We implement supplementary technical measures including encryption in transit (TLS 1.2+), encryption at rest, and access controls to protect transferred data.",
+      "p3": "By using the Service, you acknowledge and consent to the transfer and processing of your data in the United States. You may request a copy of the safeguards we use by contacting us."
     },
     "s9": {
       "title": "9. Security",
-      "p1": "We employ industry-standard security measures including encrypted data transmission (TLS), cryptographic hashing (SHA-256) for sensitive identifiers, Firebase security rules, and Stripe's PCI-compliant payment infrastructure. However, no method of electronic storage or transmission is 100% secure."
+      "p1": "We employ industry-standard security measures including encrypted data transmission (TLS), cryptographic hashing (SHA-256) for sensitive identifiers, Firebase security rules, and Stripe's PCI-compliant payment infrastructure. However, no method of electronic storage or transmission is 100% secure.",
+      "t1": "For All Users",
+      "strong1": "Access",
+      "l1": " the personal data we hold about you",
+      "strong2": "Delete",
+      "l2": " your account and all associated data (via Security & Routing in-app or by contacting us)",
+      "strong3": "Export",
+      "l3": " your data in a portable, machine-readable format (via the data export feature in-app)",
+      "strong4": "Opt out",
+      "l4": " of public publishing by setting your default routing to Private",
+      "strong5": "Restrict",
+      "l5": " location data collection by denying browser geolocation",
+      "t2": "Additional Rights for EEA, UK, and Swiss Users (GDPR)",
+      "strong6": "Rectification",
+      "l6": " — request correction of inaccurate or incomplete personal data",
+      "strong7": "Restriction",
+      "l7": " — request that we limit the processing of your data in certain circumstances",
+      "strong8": "Object",
+      "l8": " — object to processing based on legitimate interests",
+      "strong9": "Withdraw consent",
+      "l9": " — where processing is based on consent, withdraw it at any time",
+      "strong10": "Lodge a complaint",
+      "l10": " — with your local Data Protection Authority if you believe your rights have been violated",
+      "t3": "Additional Rights for California Residents (CCPA)",
+      "l11": "Right to know what personal information we collect, use, and disclose",
+      "l12": "Right to delete your personal information",
+      "l13": "Right to opt out of the sale of personal information — we do not sell personal information",
+      "l14": "Right to non-discrimination for exercising your privacy rights",
+      "p2": "To exercise any of these rights, contact us at ",
+      "p3": "We will respond to all rights requests within 30 days (GDPR) or 45 days (CCPA)."
     },
     "s10": {
       "title": "10. Changes to This Policy",
@@ -640,6 +725,21 @@
     "s11": {
       "title": "11. Contact",
       "p1": "For privacy-related questions or requests, contact us at "
+    },
+    "s12": {
+      "title": "12. Changes to This Policy",
+      "p1": "We may update this Privacy Policy from time to time. If we make material changes, we will provide notice through the Service. Continued use of the Service after changes constitutes acceptance of the updated policy."
+    },
+    "s13": {
+      "title": "13. Data Protection Contact",
+      "p1": "For privacy-related questions, data protection inquiries, or to exercise your rights under GDPR, CCPA, or other applicable privacy laws, contact:",
+      "p2": "Golden Black LLC",
+      "p3": "Attn: Data Protection",
+      "p4": "Email: "
+    },
+    "s14": {
+      "title": "14. Contact",
+      "p1": "For general privacy questions, contact us at "
     }
   },
   "acceptableUse": {
@@ -705,5 +805,41 @@
       "release": "Release to refresh",
       "refreshing": "Refreshing…"
     }
+  },
+  "intake": {
+    "header": "Getting to know you",
+    "ofFive": "of 5",
+    "introHeading": "Before we begin...",
+    "introSubtext": "You are unique and we don't give generic feedback. We need to know a little about who you are so everything is tailored to you.",
+    "inputPlaceholder": "Type your answer...",
+    "compiling": "Preparing your session...",
+    "compilingSub": "This takes a few minutes. We're building something specific to you.",
+    "readyHeading": "You're all set.",
+    "readySub": "We've built someone based on the person you described — your ideal self. This is your free first session. Speak openly.",
+    "startSession": "Start Your First Session",
+    "questionTitle1": "Your Vision",
+    "questionTitle2": "People in Your Life",
+    "questionTitle3": "What Lights You Up",
+    "questionTitle4": "When You Were Born",
+    "questionTitle5": "Physical Traits"
+  },
+  "voiceBrowser": {
+    "title": "Meine Stimme",
+    "close": "Schließen",
+    "change": "Ändern",
+    "noVoice": "Keine Stimme ausgewählt",
+    "anyGender": "Jedes Geschlecht",
+    "male": "Männlich",
+    "female": "Weiblich",
+    "anyAge": "Jedes Alter",
+    "young": "Jung",
+    "middleAged": "Mittleres Alter",
+    "senior": "Senior",
+    "anyAccent": "Jeder Akzent",
+    "searchPlaceholder": "Stimmen suchen...",
+    "search": "Suchen",
+    "active": "Aktiv",
+    "select": "Auswählen",
+    "noResults": "Keine Stimmen gefunden. Versuche andere Filter."
   }
 }
