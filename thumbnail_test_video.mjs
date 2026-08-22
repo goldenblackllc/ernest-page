@@ -6,7 +6,7 @@
  *   - "Generate a thumbnail. Match the emotional tone."
  *   - Let the AI figure it out
  * 
- * But video instead of image. 3-5 second loops.
+ * But video instead of image. 5 second clips.
  */
 
 import { GoogleGenAI } from '@google/genai';
@@ -30,8 +30,8 @@ const storage = getStorage();
 const ADMIN_UID = 'nTsKkFFR2rbfqohxYx1zZN6fJTZ2';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 const OUTPUT_DIR = './thumbnail_samples_video';
-const NUM_SAMPLES = 3; // Video gen is slower, start with 3
-const ONE_WEEK_AGO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+const NUM_SAMPLES = 3;
+const TWO_WEEKS_AGO = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -53,19 +53,17 @@ async function loadReferenceImage(uid) {
 }
 
 async function generateVideoThumbnail(transcript, referenceImageBuffer) {
-    // Build the prompt — same v4 energy, just for video
-    const prompt = `Generate a 3-5 second looping video thumbnail for this advice column conversation.
+    const prompt = `Generate a 5-second looping video thumbnail for this advice column conversation.
 
-The video should communicate the subject matter of the conversation so someone can tell what it's about at a glance. It should also match the emotional tone — if the conversation is heavy, the video should feel heavy. If it's light, it should feel light.
+The video should communicate the subject matter so someone can tell what it's about at a glance. It should match the emotional tone — heavy conversations feel heavy, light ones feel light.
 
-Show a scene that reflects a key moment or feeling from the conversation. Include short hook text that matches the mood. The typography, colors, and composition should all reflect the tone.
+Show a scene that reflects the conversation. Include short hook text overlay that matches the mood. The typography, colors, composition, and motion should all reflect the tone.
 
-Keep the motion subtle and cinematic — gentle movement, breathing, ambient shifts. Think living portrait, not action scene.
+Be visually creative and unique. Think elevated YouTube, not cheap clickbait. No emojis or arrows.
 
 CONVERSATION:
 ${transcript}`;
 
-    // Build config
     const generateConfig = {
         aspectRatio: '16:9',
         numberOfVideos: 1,
@@ -85,34 +83,65 @@ ${transcript}`;
     }
 
     console.log(`     🎬 Submitting to Veo 3.1...`);
-    let operation;
-    try {
-        operation = await client.models.generateVideos({
-            model: 'veo-3.1-generate-preview',
-            prompt: prompt,
-            config: generateConfig,
-        });
-    } catch (err) {
-        // Try with veo-3.1-fast-generate-preview as fallback
-        console.log(`     ⚡ Trying fast model...`);
-        operation = await client.models.generateVideos({
-            model: 'veo-3.1-fast-generate-preview',
-            prompt: prompt,
-            config: generateConfig,
-        });
+    const startTime = Date.now();
+
+    // Try models in order of preference
+    const models = [
+        'veo-3.1-generate-preview',
+        'veo-3.1-fast-generate-preview',
+        'veo-3.0-generate-preview',
+    ];
+
+    let operation = null;
+    let usedModel = null;
+
+    for (const model of models) {
+        try {
+            // Use the new source argument syntax
+            operation = await client.models.generateVideos({
+                model,
+                source: { text: prompt },
+                config: generateConfig,
+            });
+            usedModel = model;
+            break;
+        } catch (err) {
+            const msg = err.message || String(err);
+            // If it's a format issue with source, try the legacy prompt syntax
+            if (msg.includes('source') || msg.includes('argument')) {
+                try {
+                    operation = await client.models.generateVideos({
+                        model,
+                        prompt,
+                        config: generateConfig,
+                    });
+                    usedModel = model;
+                    break;
+                } catch (err2) {
+                    console.log(`     ⚠️ ${model}: ${(err2.message || String(err2)).substring(0, 120)}`);
+                }
+            } else {
+                console.log(`     ⚠️ ${model}: ${msg.substring(0, 120)}`);
+            }
+        }
     }
 
-    console.log(`     ⏳ Waiting for video generation...`);
-    const startTime = Date.now();
+    if (!operation) {
+        throw new Error('All models failed');
+    }
+
+    console.log(`     ✅ Submitted via ${usedModel}. Polling...`);
 
     // Poll for completion
     let attempts = 0;
     const maxAttempts = 60; // 10 minutes max
     while (!operation.done && attempts < maxAttempts) {
-        await new Promise(r => setTimeout(r, 10000)); // 10s intervals
+        await new Promise(r => setTimeout(r, 10000));
         attempts++;
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-        console.log(`     ⏳ Still generating... (${elapsed}s)`);
+        if (attempts % 3 === 0) {
+            console.log(`     ⏳ Still generating... (${elapsed}s)`);
+        }
         try {
             operation = await client.operations.get({ name: operation.name });
         } catch (err) {
@@ -121,30 +150,48 @@ ${transcript}`;
     }
 
     if (!operation.done) {
-        throw new Error('Video generation timed out');
+        throw new Error(`Video generation timed out after ${maxAttempts * 10}s`);
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+    // Check for errors in the operation
+    if (operation.error) {
+        throw new Error(`Video generation failed: ${JSON.stringify(operation.error)}`);
+    }
+
     console.log(`     ✅ Video generated in ${elapsed}s`);
 
     // Extract video data
     const videos = operation.response?.generatedVideos;
     if (!videos || videos.length === 0) {
+        // Try to access it differently
+        console.log(`     📦 Response keys: ${JSON.stringify(Object.keys(operation.response || {}))}`);
         throw new Error('No videos in response');
     }
 
     const video = videos[0];
 
-    // Get video bytes
+    // Get video bytes — try multiple access patterns
     if (video.video?.uri) {
-        // Download from URI
+        console.log(`     📥 Downloading from URI...`);
         const res = await fetch(video.video.uri);
+        if (!res.ok) throw new Error(`Download failed: ${res.status}`);
         return Buffer.from(await res.arrayBuffer());
     } else if (video.video?.videoBytes) {
         return Buffer.from(video.video.videoBytes, 'base64');
-    } else {
-        throw new Error('No video data found in response: ' + JSON.stringify(Object.keys(video)));
+    } else if (video.video) {
+        console.log(`     📦 Video object keys: ${JSON.stringify(Object.keys(video.video))}`);
+        // Try any buffer-like property
+        for (const key of Object.keys(video.video)) {
+            const val = video.video[key];
+            if (typeof val === 'string' && val.length > 1000) {
+                return Buffer.from(val, 'base64');
+            }
+        }
     }
+
+    throw new Error('Could not extract video data from response');
 }
 
 async function run() {
@@ -163,7 +210,7 @@ async function run() {
         if (data.uid === ADMIN_UID) continue;
 
         const createdAt = data.created_at?.toDate?.() || (data.created_at?._seconds ? new Date(data.created_at._seconds * 1000) : null);
-        if (!createdAt || createdAt > ONE_WEEK_AGO) continue;
+        if (!createdAt || createdAt > TWO_WEEKS_AGO) continue;
 
         const transcript = data.public_post?.condensed_transcript;
         if (!transcript || transcript.length === 0) continue;
@@ -186,7 +233,7 @@ async function run() {
 
         try {
             const refImage = await loadReferenceImage(post.uid);
-            const truncated = post.conversation.substring(0, 4000); // Shorter for video
+            const truncated = post.conversation.substring(0, 4000);
 
             const videoBuffer = await generateVideoThumbnail(truncated, refImage);
 
@@ -197,7 +244,6 @@ async function run() {
 
         } catch (err) {
             console.error(`     ❌ ${err.message}`);
-            if (err.stack) console.error(`     ${err.stack.split('\n')[1]}`);
         }
 
         if (i < posts.length - 1) await new Promise(r => setTimeout(r, 5000));

@@ -15,10 +15,11 @@ export async function renderFrame(opts: RenderFrameOptions): Promise<Buffer> {
     const WIDTH = 1920;
     const HEIGHT = 1080;
 
-    // Load and resize hero to fill 1920x1080
+    // Load and resize hero to fit within 1920x1080 (letterbox/pillarbox on black)
+    // Matches feed player's object-contain behavior — no cropping
     const hero = sharp(opts.heroPath).resize(WIDTH, HEIGHT, {
-        fit: 'cover',
-        position: 'centre',
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0 },
     });
 
     // Build SVG overlay with gradients only (no text, no avatar)

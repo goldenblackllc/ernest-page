@@ -53,12 +53,23 @@ export async function GET(
         // Must have audio + image
         const unifiedAudioUrl = post.audio_url;
         const letterAudioUrl = post.letter_audio_url;
-        // Collect all image URLs — prefer imagen_urls array, fall back to single url
-        const allImageUrls: string[] = (
-            post.public_post?.imagen_urls?.length ? post.public_post.imagen_urls
-            : post.imagen_urls?.length ? post.imagen_urls
-            : [post.public_post?.imagen_url || post.imagen_url || post.imageUrl]
-        ).filter(Boolean) as string[];
+
+        // Collect image URLs — mirror FeedPostCard logic exactly:
+        //   per-message: use message_images array
+        //   legacy: user_photo first (if exists), then AI images
+        const isPerMessage = post.image_style === 'per-message' && post.message_images?.length;
+        const allImageUrls: string[] = (() => {
+            if (isPerMessage) return post.message_images as string[];
+            const aiImages = post.imagen_urls?.length ? post.imagen_urls
+                : post.public_post?.imagen_urls?.length ? post.public_post.imagen_urls
+                : [post.public_post?.imagen_url || post.imagen_url || post.imageUrl].filter(Boolean);
+            if (post.user_photo_url) return [post.user_photo_url, ...aiImages];
+            return aiImages;
+        })().filter(Boolean) as string[];
+
+        // Per-message boundary timestamps for image switching
+        const messageBoundaries = post.audio_message_boundaries as { role: string; startIndex: number; endIndex: number; startTime: number; endTime: number }[] | undefined;
+
         if ((!unifiedAudioUrl && !letterAudioUrl) || allImageUrls.length === 0) {
             return NextResponse.json({ error: 'Post does not have audio and image for video generation' }, { status: 400 });
         }
@@ -249,25 +260,43 @@ export async function GET(
         }
         console.log(`[Video] Rendered ${framePaths.length} frame(s)`);
 
-        // ── Map images to subtitle chunks ──
-        // Distribute images evenly across subtitle chunks.
-        // IMPORTANT: Use ABSOLUTE end times so the concat timeline matches
-        // the ASS subtitle timestamps exactly. The concat demuxer starts at t=0
-        // and each image's duration determines when the next image starts.
+        // ── Map images to timeline ──
+        // Per-message posts: use audio_message_boundaries for exact image switch points
+        // (matches the feed player, which switches images at each conversation turn).
+        // Legacy posts: distribute images evenly across subtitle chunks.
         const imageTimings: { path: string; duration: number }[] = [];
         if (framePaths.length === 1) {
             // Single image — covers entire video
             imageTimings.push({ path: framePaths[0], duration: totalDuration });
+        } else if (isPerMessage && messageBoundaries && messageBoundaries.length > 0) {
+            // Per-message: each image maps to a conversation turn boundary
+            // Mirror FeedPostCard logic — image[i] shows from boundary[i].startTime
+            // to boundary[i+1].startTime (or end of audio)
+            for (let i = 0; i < framePaths.length; i++) {
+                const boundary = messageBoundaries[i];
+                if (!boundary) {
+                    // More images than boundaries — give remaining images equal share of leftover time
+                    const lastEnd = messageBoundaries[messageBoundaries.length - 1]?.endTime || totalDuration;
+                    const remaining = totalDuration - lastEnd;
+                    const leftoverImages = framePaths.length - i;
+                    imageTimings.push({ path: framePaths[i], duration: Math.max(0.1, remaining / leftoverImages) });
+                    continue;
+                }
+                const start = boundary.startTime;
+                const end = (i < messageBoundaries.length - 1)
+                    ? messageBoundaries[i + 1].startTime
+                    : totalDuration;
+                imageTimings.push({ path: framePaths[i], duration: Math.max(0.1, end - start) });
+            }
         } else {
-            // Multiple images — distribute across subtitle chunks
+            // Legacy: distribute images evenly across subtitle chunks
             const chunksPerImage = Math.max(1, Math.floor(subtitles.length / framePaths.length));
             let chunkIdx = 0;
-            let prevEndTime = 0; // absolute time where the previous image ended
+            let prevEndTime = 0;
             for (let imgIdx = 0; imgIdx < framePaths.length; imgIdx++) {
                 const isLast = imgIdx === framePaths.length - 1;
                 const endChunkIdx = isLast ? subtitles.length : Math.min(chunkIdx + chunksPerImage, subtitles.length);
                 if (chunkIdx >= subtitles.length) break;
-                // Use absolute end time of the last assigned chunk
                 const absEndTime = isLast ? totalDuration : (subtitles[endChunkIdx - 1]?.endTime || totalDuration);
                 const duration = absEndTime - prevEndTime;
                 imageTimings.push({ path: framePaths[imgIdx], duration: Math.max(0.1, duration) });
@@ -275,13 +304,14 @@ export async function GET(
                 chunkIdx = endChunkIdx;
             }
         }
-        console.log(`[Video] Image timings: ${imageTimings.map(t => t.duration.toFixed(1) + 's').join(', ')}`);
+        console.log(`[Video] Image timings (${isPerMessage ? 'per-message' : 'legacy'}): ${imageTimings.map(t => t.duration.toFixed(1) + 's').join(', ')}`);
 
         // ── Generate ASS subtitle file ──
-        const assContent = generateAssSubtitles(subtitles, totalDuration, titleText);
+        // No title overlay — YouTube provides its own title field
+        const assContent = generateAssSubtitles(subtitles, totalDuration, '');
         const assPath = join(workDir, 'subtitles.ass');
         await fs.writeFile(assPath, assContent, 'utf-8');
-        console.log(`[Video] ASS subtitles written: ${subtitles.length} timed entries + static title`);
+        console.log(`[Video] ASS subtitles written: ${subtitles.length} timed entries`);
 
         // ── Create fontconfig config for Lambda (no system fontconfig) ──
         const fontconfigPath = join(workDir, 'fonts.conf');

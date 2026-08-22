@@ -23,8 +23,6 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import sharp from 'sharp';
 import { db } from './lib/firebase/admin.js';
 import { buildMessageImageBatchRequests, uploadImageBuffer } from './lib/ai/generatePostImage.js';
-import { validateGeneratedImage } from './lib/ai/validateImage.js';
-import { generateVerdictImage } from './lib/ai/generatePostImage.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
 import { submitImageBatch, pollBatchJob, type ParsedBatchResult } from './lib/ai/batchImageGeneration.js';
 import {
@@ -45,7 +43,7 @@ export const processPostImages = onSchedule(
     {
         schedule: 'every 10 minutes',
         region: 'us-central1',
-        timeoutSeconds: 540,
+        timeoutSeconds: 1800,
         memory: '1GiB',
         maxInstances: 1,  // Only one instance at a time — no parallel runs
     },
@@ -301,41 +299,37 @@ async function processPostBatchResults(
         const referenceImage = await loadUserReferenceImage(uid);
         const referenceImages = referenceImage ? [referenceImage] : undefined;
 
-        // Process each batch result
-        for (const { index, result } of results) {
-            if (!result.buffer) {
-                console.warn(`[Phase2] No image buffer for ${postId}_msg${index} — safety filter or error`);
-                continue;
-            }
-
-            try {
-                // Resize to standard dimensions
-                const resizedBuffer = await sharp(result.buffer)
-                    .resize(1280, 720, { fit: 'cover', position: 'center' })
-                    .jpeg({ quality: 82 })
-                    .toBuffer();
-
-                // Validate the image
-                const prompt = imagePrompts[index] || '';
-                const validation = await validateGeneratedImage(resizedBuffer, prompt);
-
-                if (validation.pass) {
-                    const url = await uploadImageBuffer(resizedBuffer, `${postId}_msg${index}`);
-                    urls[index] = url;
-                } else {
-                    // Validation failed — retry synchronously with reinforced prompt (standard pricing)
-                    // Only 1-2 retries per batch is not worth another batch job
-                    console.warn(`[Phase2] Validation failed for ${postId}_msg${index}: ${validation.summary}`);
-                    const retryUrl = await generateVerdictImage(
-                        prompt,
-                        `${postId}_msg${index}`,
-                        referenceImages,
-                        index < 2 ? 'face-only' : 'full',
-                    );
-                    if (retryUrl) urls[index] = retryUrl;
+        // Process each batch result in parallel for speed
+        const imageProcessingResults = await Promise.allSettled(
+            results.map(async ({ index, result }) => {
+                if (!result.buffer) {
+                    console.warn(`[Phase2] No image buffer for ${postId}_msg${index} — safety filter or error`);
+                    return { index, url: '' };
                 }
-            } catch (err: any) {
-                console.error(`[Phase2] Error processing image ${postId}_msg${index}:`, err.message);
+
+                try {
+                    // Resize to standard dimensions
+                    const resizedBuffer = await sharp(result.buffer)
+                        .resize(1280, 720, { fit: 'cover', position: 'center' })
+                        .jpeg({ quality: 82 })
+                        .toBuffer();
+
+                    // Upload directly — skip per-image validation to avoid timeout.
+                    // Batch API already applies safety filters; validation was the
+                    // main cause of DEADLINE_EXCEEDED (extra API call per image).
+                    const url = await uploadImageBuffer(resizedBuffer, `${postId}_msg${index}`);
+                    return { index, url };
+                } catch (err: any) {
+                    console.error(`[Phase2] Error processing image ${postId}_msg${index}:`, err.message);
+                    return { index, url: '' };
+                }
+            })
+        );
+
+        // Collect successful uploads
+        for (const res of imageProcessingResults) {
+            if (res.status === 'fulfilled' && res.value.url) {
+                urls[res.value.index] = res.value.url;
             }
         }
 

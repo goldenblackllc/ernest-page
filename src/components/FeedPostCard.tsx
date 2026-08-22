@@ -117,6 +117,8 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
     const [regenToast, setRegenToast] = useState<string | null>(null);
     const [regenStyleOpen, setRegenStyleOpen] = useState(false);
+    const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+    const [videoToast, setVideoToast] = useState<string | null>(null);
 
     // Dev-only features (regenerate button) — hidden on production
     const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -1363,6 +1365,80 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
 
                     {/* Right: download + delete + share */}
                     <div className="flex items-center gap-2">
+
+                        {/* MP4 Video Download — author only */}
+                        {isAuthor && canPlayShort && !digestMode && (
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (isGeneratingVideo || !user) return;
+                                    setIsGeneratingVideo(true);
+                                    setVideoToast(null);
+                                    try {
+                                        const idToken = await user.getIdToken();
+                                        const res = await fetch(`/api/posts/${post.id}/video`, {
+                                            headers: { Authorization: `Bearer ${idToken}` },
+                                        });
+                                        if (!res.ok) throw new Error('Failed to generate video');
+
+                                        const blob = await res.blob();
+                                        const blobUrl = URL.createObjectURL(blob);
+                                        const filename = `earnest-page-${post.id}.mp4`;
+
+                                        const isIOS = /iPhone|iPad/i.test(navigator.userAgent);
+                                        let shared = false;
+
+                                        if (isIOS && navigator.share) {
+                                            try {
+                                                const file = new File([blob], filename, { type: 'video/mp4' });
+                                                if (navigator.canShare?.({ files: [file] })) {
+                                                    await navigator.share({ files: [file] });
+                                                    shared = true;
+                                                }
+                                            } catch (shareErr: any) {
+                                                if (shareErr?.name === 'AbortError') {
+                                                    shared = true;
+                                                } else {
+                                                    console.warn('Native share failed, using fallback:', shareErr);
+                                                }
+                                            }
+                                        }
+
+                                        if (!shared) {
+                                            if (isIOS) {
+                                                window.open(blobUrl, '_blank');
+                                            } else {
+                                                const a = document.createElement('a');
+                                                a.href = blobUrl;
+                                                a.download = filename;
+                                                a.click();
+                                            }
+                                        }
+                                        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+                                        setVideoToast('Video ready!');
+                                        setTimeout(() => setVideoToast(null), 3000);
+                                    } catch (err) {
+                                        console.error('Video download failed:', err);
+                                        setVideoToast('Failed');
+                                        setTimeout(() => setVideoToast(null), 3000);
+                                    } finally {
+                                        setIsGeneratingVideo(false);
+                                    }
+                                }}
+                                className="text-zinc-400 hover:text-white transition-colors relative"
+                                title="Download video for YouTube"
+                                disabled={isGeneratingVideo}
+                            >
+                                {isGeneratingVideo ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Download className="w-4 h-4" />
+                                )}
+                                {videoToast && (
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded whitespace-nowrap z-50">{videoToast}</span>
+                                )}
+                            </button>
+                        )}
 
                         {isDev && user?.uid === post.uid && !digestMode && (
                             <div className="relative">

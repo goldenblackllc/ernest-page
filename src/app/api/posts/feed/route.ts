@@ -72,8 +72,9 @@ export async function GET(req: Request) {
             const snapA = await queryA.limit(fetchLimit).get();
             snapA.docs.forEach(doc => {
                 const data = doc.data();
-                // Hide posts still processing images
+                // Hide posts still processing images or with no images
                 if (data.images_complete === false) return;
+                if (!data.imagen_url && (!data.imagen_urls || data.imagen_urls.length === 0)) return;
                 if (!seenIds.has(doc.id)) {
                     seenIds.add(doc.id);
                     allPosts.push({ id: doc.id, ...data });
@@ -84,8 +85,9 @@ export async function GET(req: Request) {
             const snapA = await postsRef.where("authorId", "==", uid).get();
             snapA.docs.forEach(doc => {
                 const data = doc.data();
-                // Hide posts still processing images
+                // Hide posts still processing images or with no images
                 if (data.images_complete === false) return;
+                if (!data.imagen_url && (!data.imagen_urls || data.imagen_urls.length === 0)) return;
                 const time = data.created_at?.toMillis?.() || 0;
                 if (!newerThanDate || time > newerThanDate.getTime()) {
                     if (!seenIds.has(doc.id)) {

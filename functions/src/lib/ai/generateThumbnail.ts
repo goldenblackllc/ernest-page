@@ -43,9 +43,9 @@ export async function generateThumbnail(
     } = options;
 
     try {
-        // Format the conversation for the prompt
+        // Format the conversation for the prompt, stripping "Dear Earnest" salutations
         const conversation = messages
-            .map(m => `${m.role === 'user' ? 'Person' : 'Advisor'}: ${m.text}`)
+            .map(m => `${m.role === 'user' ? 'Person' : 'Advisor'}: ${m.text.replace(/^Dear\s+Earnest[,:]?\s*/i, '')}`)
             .join('\n\n');
 
         // Load reference image for character consistency
