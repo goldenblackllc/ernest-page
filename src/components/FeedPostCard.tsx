@@ -1415,7 +1415,37 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                             }
                                         }
                                         setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-                                        setVideoToast('Video ready!');
+
+                                        // Also download thumbnail for YouTube custom thumbnail
+                                        const thumbUrl = post.thumbnail_url;
+                                        if (thumbUrl) {
+                                            try {
+                                                const thumbRes = await fetch(thumbUrl);
+                                                if (thumbRes.ok) {
+                                                    const thumbBlob = await thumbRes.blob();
+                                                    const thumbBlobUrl = URL.createObjectURL(thumbBlob);
+                                                    const thumbFilename = `earnest-page-${post.id}-thumbnail.jpg`;
+                                                    if (isIOS && navigator.share) {
+                                                        try {
+                                                            const thumbFile = new File([thumbBlob], thumbFilename, { type: 'image/jpeg' });
+                                                            if (navigator.canShare?.({ files: [thumbFile] })) {
+                                                                await navigator.share({ files: [thumbFile] });
+                                                            }
+                                                        } catch { /* user cancelled or unsupported */ }
+                                                    } else {
+                                                        const ta = document.createElement('a');
+                                                        ta.href = thumbBlobUrl;
+                                                        ta.download = thumbFilename;
+                                                        ta.click();
+                                                    }
+                                                    setTimeout(() => URL.revokeObjectURL(thumbBlobUrl), 5000);
+                                                }
+                                            } catch (thumbErr) {
+                                                console.warn('Thumbnail download failed:', thumbErr);
+                                            }
+                                        }
+
+                                        setVideoToast('Video + thumbnail ready!');
                                         setTimeout(() => setVideoToast(null), 3000);
                                     } catch (err) {
                                         console.error('Video download failed:', err);
