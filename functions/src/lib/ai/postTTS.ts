@@ -164,6 +164,7 @@ async function generateTTSChunkWithTimestamps(
                     similarity_boost: 0.8,
                     style: 0.45,
                     use_speaker_boost: true,
+                    speed: 1.2,
                 },
             }),
         }
