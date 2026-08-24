@@ -118,11 +118,7 @@ export default async function PrivacyPage() {
                                         <td className="px-4 py-2">{t('s4.td3_2')}</td>
                                         <td className="px-4 py-2">{t('s4.td3_3')}</td>
                                     </tr>
-                                    <tr className="border-b border-zinc-800/50">
-                                        <td className="px-4 py-2 text-zinc-300">{t('s4.td4_1')}</td>
-                                        <td className="px-4 py-2">{t('s4.td4_2')}</td>
-                                        <td className="px-4 py-2">{t('s4.td4_3')}</td>
-                                    </tr>
+
                                     <tr className="border-b border-zinc-800/50">
                                         <td className="px-4 py-2 text-zinc-300">{t('s4.td5_1')}</td>
                                         <td className="px-4 py-2">{t('s4.td5_2')}</td>
