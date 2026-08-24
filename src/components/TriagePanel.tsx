@@ -39,7 +39,7 @@ export function TriagePanel() {
     // Data for Mirror Chat
     const [bible, setBible] = useState<CharacterBible | null>(null);
     const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
-    const [defaultPostRouting, setDefaultPostRouting] = useState<'private' | 'public'>('private');
+    const [defaultPostRouting, setDefaultPostRouting] = useState<'private' | 'public' | 'burn'>('private');
 
     // Onboarding state (triggered when FAB tapped without character bible)
     const [showOnboarding, setShowOnboarding] = useState(false);

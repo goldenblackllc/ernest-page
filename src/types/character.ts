@@ -100,7 +100,7 @@ export interface CharacterProfile {
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
     saved_posts?: string[]; // Bookmarked posts
-    default_post_routing?: 'private' | 'public'; // Default visibility for new posts
+    default_post_routing?: 'private' | 'public' | 'burn'; // Default visibility for new posts
     last_thirty_day_checkin?: string; // ISO date of last 28-day check-in session
     session_recaps?: Array<{     // Rolling window of last 3 session recaps
         date: string;            // ISO date string

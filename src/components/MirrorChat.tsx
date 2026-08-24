@@ -28,7 +28,7 @@ interface MirrorChatProps {
     identity?: CharacterIdentity | null;
     uid: string;
     initialContext?: string | null;
-    defaultPostRouting?: 'private' | 'public';
+    defaultPostRouting?: 'private' | 'public' | 'burn';
 }
 
 export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
@@ -75,7 +75,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         return () => ro.disconnect();
     }, [isOpen]);
     const [sessionRouting, setSessionRouting] = useState<SessionRouting>(
-        defaultPostRouting === 'private' ? 'private' : 'public'
+        defaultPostRouting || 'public'
     );
     const hasManuallySetRouting = useRef(false);
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
@@ -107,7 +107,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     // Sync sessionRouting when defaultPostRouting prop changes (unless user manually overrode)
     useEffect(() => {
         if (!hasManuallySetRouting.current && defaultPostRouting) {
-            setSessionRouting(defaultPostRouting === 'private' ? 'private' : 'public');
+            setSessionRouting(defaultPostRouting);
         }
     }, [defaultPostRouting]);
 
@@ -889,7 +889,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         setInput("");
         setIsLoading(false);
         setIsRoutingOpen(false);
-        setSessionRouting(defaultPostRouting === 'private' ? 'private' : 'public');
+        setSessionRouting(defaultPostRouting || 'public');
         hasManuallySetRouting.current = false;
         setPlanConfirmation(null);
         setCreditConsumed(false);
@@ -1182,9 +1182,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                                             setSessionRouting(option); 
                                                             hasManuallySetRouting.current = true; 
                                                             setIsRoutingOpen(false);
-                                                            if (option !== 'burn') {
-                                                                updateCharacterProfile(uid, { default_post_routing: option }).catch(() => {});
-                                                            }
+                                                            updateCharacterProfile(uid, { default_post_routing: option }).catch(() => {});
                                                         }}
                                                         className={cn(
                                                             "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors",

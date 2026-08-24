@@ -1,4 +1,3 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
 import { db } from '@/lib/firebase/admin';
 import { CharacterBible } from '@/types/character';
@@ -165,7 +164,7 @@ export async function POST(req: Request) {
             + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${userLocale === 'es' ? 'Spanish' : userLocale === 'pt' ? 'Portuguese' : userLocale === 'fr' ? 'French' : userLocale === 'de' ? 'German' : 'English'}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
 
         // Generate Ideal Bible
-        const idealResult = await generateObject({
+        const idealResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
             abortSignal: AbortSignal.timeout(150_000), // 2.5 min before falling back
             providerOptions,

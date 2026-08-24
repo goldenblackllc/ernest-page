@@ -44,7 +44,7 @@ export const processPostImages = onSchedule(
         schedule: 'every 10 minutes',
         region: 'us-central1',
         timeoutSeconds: 1800,
-        memory: '1GiB',
+        memory: '2GiB',
         maxInstances: 1,  // Only one instance at a time — no parallel runs
     },
     async () => {
