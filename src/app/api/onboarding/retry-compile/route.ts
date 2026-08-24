@@ -38,24 +38,14 @@ export async function POST(req: Request) {
                     'Content-Type': 'application/json',
                     'x-internal-key': process.env.CRON_SECRET || '',
                 },
-                body: JSON.stringify({ uid, source_code, skipCooldown: true }),
+                body: JSON.stringify({ uid, source_code }),
                 signal: AbortSignal.timeout(240_000), // 4 min — fail fast so status doesn't stay 'compiling'
             });
 
             if (!compileRes.ok) {
                 console.error(`[RetryCompile] Compile failed with status ${compileRes.status}`);
-
-                // Extract failure reason from the compile response
-                let failReason = 'error'; // generic default
-                try {
-                    const body = await compileRes.json();
-                    if (compileRes.status === 429) {
-                        failReason = body.limitType === 'daily' ? 'rate_limit_daily' : 'rate_limit_cooldown';
-                    }
-                } catch { /* body parse failed — keep generic reason */ }
-
                 await db.collection('users').doc(uid).set({
-                    character_bible: { status: 'failed', fail_reason: failReason }
+                    character_bible: { status: 'failed', fail_reason: 'error' }
                 }, { merge: true });
                 return;
             }

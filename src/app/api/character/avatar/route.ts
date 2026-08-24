@@ -1,6 +1,6 @@
 import { db, storage } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
+import { verifyInternalAuth, verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
 import sharp from 'sharp';
 import { validateGeneratedImage } from '@/lib/ai/validateImage';
@@ -12,16 +12,23 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
     let uid: string | undefined;
     try {
-        if (!verifyInternalAuth(req)) return unauthorizedResponse();
+        // Accept either internal auth (server-to-server) or user Bearer token (client consultation)
+        const isInternal = verifyInternalAuth(req);
+        let authedUid: string | null = null;
+        if (!isInternal) {
+            authedUid = await verifyAuth(req);
+            if (!authedUid) return unauthorizedResponse();
+        }
 
-        ({ uid } = await req.json());
+        const body = await req.json();
+        uid = isInternal ? body.uid : authedUid!;
 
         if (!uid) {
             return Response.json({ error: 'Missing uid' }, { status: 400 });
         }
 
-        const rl = checkRateLimit(`avatar:${uid}`, RATE_LIMITS.avatar);
-        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
+        // const rl = checkRateLimit(`avatar:${uid}`, RATE_LIMITS.avatar);
+        // if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
         // Read identity and bible from Firestore
         const userDoc = await db.collection('users').doc(uid).get();
@@ -40,18 +47,47 @@ export async function POST(req: Request) {
         const title = identity.title || 'A person of purpose';
         const gender = identity.gender || 'person';
         const age = identity.age || '';
-        const ethnicity = identity.ethnicity || '';
-        const dreamSelf = identity.dream_self || '';
+        // New structured physical fields with legacy fallback
+        const heritage = identity.heritage || identity.ethnicity || '';
+        const skinTone = identity.skin_tone || '';
+        const hairColors: string[] = identity.hair_colors || (identity.hair_color ? [identity.hair_color] : []);
+        const hairTexture = identity.hair_texture || '';
+        const hairVolume = identity.hair_volume || '';
+        const eyeColor = identity.eye_color || '';
 
-        // Extract visual cues from the dream self (first ~200 chars for prompt)
-        const visualCues = dreamSelf.substring(0, 200);
+        // Compute age from birth date
+        const computedAge = computeAge(age);
+        const ageStr = computedAge ? `${computedAge}-year-old` : '';
 
-        // Extract Style & Presence from compiled bible (if available)
-        // The compile route stores sections in compiled_output.ideal as [{heading, content}]
+        // Build hair description
+        const hairColorStr = hairColors.length > 0
+            ? hairColors.map(c => c.toLowerCase()).join(' and ')
+            : '';
+        const hairParts = [
+            hairVolume ? hairVolume.toLowerCase() : '',
+            hairColorStr,
+            hairTexture ? hairTexture.toLowerCase() : '',
+        ].filter(Boolean).join(' ');
+
+        // Build physical description from structured fields
+        const physicalParts = [
+            ageStr,
+            gender,
+            heritage ? `of ${heritage} heritage` : '',
+            skinTone ? `with ${skinTone.toLowerCase()} skin` : '',
+            eyeColor ? `${eyeColor.toLowerCase()} eyes` : '',
+            hairParts ? `${hairParts} hair` : '',
+        ].filter(Boolean).join(' ');
+
+        // Extract Style & Presence from compiled bible (character decides styling)
         const compiledSections = bible?.compiled_output?.ideal || [];
         const styleEntry = compiledSections.find(
             (s: { heading: string; content: string }) =>
                 s.heading === 'Style & Presence' || s.heading === 'Style and Presence'
+        );
+        const wardrobeEntry = compiledSections.find(
+            (s: { heading: string; content: string }) =>
+                s.heading === 'Wardrobe'
         );
         // Fallback to legacy path for older profiles
         const compiledBible = bible?.compiled_bible || {};
@@ -59,38 +95,33 @@ export async function POST(req: Request) {
             || compiledBible.lifestyle?.['style_and_presence']
             || '';
         const rawStyle = styleEntry?.content || legacyStyle;
-        // Truncate to keep prompt manageable
         const styleCues = typeof rawStyle === 'string'
             ? rawStyle.substring(0, 300)
             : typeof rawStyle === 'object'
                 ? JSON.stringify(rawStyle).substring(0, 300)
                 : '';
+        const wardrobeCues = typeof wardrobeEntry?.content === 'string'
+            ? wardrobeEntry.content.substring(0, 200)
+            : '';
+        const characterStyling = [styleCues, wardrobeCues].filter(Boolean).join(' ').substring(0, 500);
 
-        // Compute age from birth year if possible
-        const computedAge = computeAge(age);
-        const ageStr = computedAge ? `${computedAge}-year-old ` : '';
-        const ethnicityStr = ethnicity ? `${ethnicity} ` : '';
         const prompt = [
-            // Lead with framing — strongest position in the prompt
-            `TIGHT HEADSHOT PORTRAIT framed from the chest up. Square 1:1 aspect ratio.`,
-            `A ${ageStr}${ethnicityStr}${gender} who embodies "${title}".`,
-            // Scope dynamic cues to face/upper-body only so they don't pull the camera out
-            visualCues ? `Facial features and upper-body essence: ${visualCues}` : '',
-            styleCues ? `Hair, grooming, and upper-body style: ${styleCues}` : '',
-            `Cinematic studio lighting, shallow depth of field, warm tones.`,
-            `Instagram-quality sharpness and color saturation.`,
-            `Natural, confident, relaxed expression. Face and upper chest fill the frame.`,
-            `Full-bleed composition. No borders, no frames, no margins, no white space around the subject.`,
-            // Only use the generic fallback when ethnicity is not specified
-            !ethnicity ? `Do not default to any racial or ethnic stereotype.` : '',
-            !ethnicity ? `Use ambiguous, diverse features unless background is specified.` : '',
-            `No text, no watermarks, no logos.`,
-            // Close with explicit negative constraints to prevent full-body framing
-            `Do NOT show the subject's waist, hips, legs, or feet. Do NOT zoom out to show the full body. Keep the camera tight on the face and upper chest only.`,
+            'TIGHT HEADSHOT PORTRAIT framed from the chest up. Square 1:1 aspect ratio.',
+            `A ${physicalParts} who embodies "${title}".`,
+            characterStyling ? `The character's chosen style and presentation: ${characterStyling}` : '',
+            'Cinematic studio lighting, shallow depth of field, warm tones.',
+            'Instagram-quality sharpness and color saturation.',
+            'Natural, confident expression. Face and upper chest fill the frame.',
+            'Full-bleed composition. No borders, no frames, no margins, no white space around the subject.',
+            !heritage ? 'Do not default to any racial or ethnic stereotype. Use ambiguous, diverse features unless background is specified.' : '',
+            'No text, no watermarks, no logos.',
+            "Do NOT show the subject's waist, hips, legs, or feet. Do NOT zoom out to show the full body. Keep the camera tight on the face and upper chest only.",
         ].filter(Boolean).join(' ');
 
+        const finalPrompt = prompt;
+
         console.log(`[Avatar] Generating for ${uid}: "${title}"`);
-        console.log(`[Avatar] Prompt: ${prompt}`);
+        console.log(`[Avatar] Prompt: ${finalPrompt}`);
 
         // Mark avatar as generating
         await db.collection('users').doc(uid).set({
@@ -108,7 +139,7 @@ export async function POST(req: Request) {
 
         for (let attempt = 1; attempt <= MAX_AVATAR_ATTEMPTS; attempt++) {
             const imageResult = await generateImage({
-                prompt,
+                prompt: finalPrompt,
                 aspectRatio: '1:1',
                 logPrefix: 'Avatar',
             });
@@ -139,7 +170,7 @@ export async function POST(req: Request) {
             console.log(`[Avatar] Resized: ${rawBuffer.length} → avatar ${resizedBuffer.length} bytes, reference ${resizedRefBuffer.length} bytes`);
 
             // Validate image quality before uploading
-            const validation = await validateGeneratedImage(resizedBuffer, prompt);
+            const validation = await validateGeneratedImage(resizedBuffer, finalPrompt);
             if (!validation.pass) {
                 console.warn(`[Avatar] Image validation failed for ${uid} (attempt ${attempt}/${MAX_AVATAR_ATTEMPTS}):`, validation.summary, validation.issues);
                 if (attempt < MAX_AVATAR_ATTEMPTS) {

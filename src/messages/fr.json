@@ -159,9 +159,13 @@
       "bornLabel": "Date de naissance",
       "bornPlaceholder": "",
       "bornSub": "Obligatoire — pour un contenu adapté à l'âge.",
-      "ethnicityLabel": "Origine ethnique",
-      "ethnicityOptional": "(facultatif)",
-      "ethnicityPlaceholder": "ex., Noir, Asiatique, Hispanique, Caucasien, Métis...",
+      "heritageLabel": "D'où vient votre famille ?",
+      "heritageOptional": "(optionnel)",
+      "heritageSub": "Soyez précis — \"Dominicain\" fonctionne mieux que \"Hispanique,\" \"Philippin\" mieux qu'\"Asiatique.\"",
+      "heritagePlaceholder": "ex., Dominicain, Philippin, Persan, Nigérian, Irlandais-Italien",
+      "skinToneLabel": "Teint de Peau",
+      "hairColorLabel": "Couleur Naturelle des Cheveux",
+      "hairTextureLabel": "Texture des Cheveux",
       "rantLabel": "Le Défoulement",
       "rantSub": "Décrivez votre vie idéale — la personne, le style de vie, tout. Le brut est mieux que le poli. Nous construirons votre personnage à partir de ça.",
       "rantPlaceholder": "Je veux être le genre d'homme qui se réveille avec un plan. Financièrement libre. Un père que mes enfants admirent vraiment. En meilleure forme que jamais. Diriger quelque chose qui compte...",
@@ -175,8 +179,7 @@
       "enjoymentsSub": "Qu'est-ce qui vous passionne ? Les choses qui vous rendent heureux restent — votre personnage devrait aimer ce que vous aimez.",
       "enjoymentsPlaceholder": "Cuisiner pour les autres, le hip-hop des années 90, les films d'horreur, conduire sans destination, mon rituel café du matin, le basket de rue...",
       "skip": "Passer pour l'instant",
-      "setupLabel": "Before You Begin",
-      "ethnicitySub": "Skin tone, tattoos, scars — things that don't change with a haircut."
+      "setupLabel": "Before You Begin"
     },
     "preChat": {
       "heading": "One thing before we begin.",

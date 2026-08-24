@@ -1,6 +1,5 @@
 import { db } from "@/lib/firebase/admin";
 import { getAuth } from "firebase-admin/auth";
-import { distanceBetween } from "geofire-common";
 
 export const maxDuration = 30;
 
@@ -31,23 +30,15 @@ export async function GET(req: Request) {
         const localeParam = url.searchParams.get("locale"); // e.g. "es"
         const pageParam = parseInt(url.searchParams.get("page") || '0', 10);
         const page = Math.min(Math.max(pageParam, 0), MAX_PAGES - 1);
-        const fetchLimit = PAGE_SIZE * (page + 1) * 4; // overfetch to compensate for post-fetch filtering (proximity, audio, firewall)
+        const fetchLimit = PAGE_SIZE * (page + 1) * 4; // overfetch to compensate for post-fetch filtering
 
         // 3. Fetch user profile
         const userDoc = await db.collection("users").doc(uid).get();
         const userData = userDoc.data() || {};
         const followingMap: Record<string, string> = userData.following || {};
         const followedIds = Object.keys(followingMap);
-        const myRegion = userData.region || "";
-        const myLat: number | undefined = userData.home_lat;
-        const myLng: number | undefined = userData.home_lng;
-        const hasMyCoords = myLat != null && myLng != null;
         const preferredLocale = localeParam || userData.preferred_locale || "en";
         const shouldTranslate = preferredLocale !== "en";
-
-        // 4a. Fetch user's Contact Firewall blocked hashes
-        const blockedSnap = await db.collection("users").doc(uid).collection("blocked_hashes").get();
-        const blockedHashes = new Set(blockedSnap.docs.map(d => d.id));
 
         // 4. Chronological feed: fetch from all buckets, merge, sort newest-first
         const postsRef = db.collection("posts");
@@ -125,7 +116,7 @@ export async function GET(req: Request) {
             }
         }
 
-        // Bucket C: Discovery (not me, not following, proximity filtered)
+        // Bucket C: Discovery (not me, not following)
         let queryC = postsRef.orderBy("created_at", "desc");
         if (newerThanDate) queryC = queryC.where("created_at", ">", newerThanDate);
         const snapC = await queryC.limit(fetchLimit * 5).get();
@@ -136,16 +127,6 @@ export async function GET(req: Request) {
             const isFollowed = followedIds.includes(data.authorId);
             if (isMe || isFollowed) return false;
 
-            // Proximity check: if both reader & post have coords, enforce 200-mile blind spot
-            if (hasMyCoords && data.lat != null && data.lng != null) {
-                const distanceKm = distanceBetween([myLat!, myLng!], [data.lat, data.lng]);
-                if (distanceKm < 321.9) return false; // within 200 miles — block
-            } else {
-                // Fallback to region-based blocking for posts without coordinates
-                const isSameRegion = myRegion && data.region === myRegion;
-                if (isSameRegion) return false;
-            }
-
             return true;
         });
         addPosts(discoveryDocs.slice(0, fetchLimit));
@@ -154,20 +135,8 @@ export async function GET(req: Request) {
         const getPostTime = (p: any) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
         allPosts.sort((a, b) => getPostTime(b) - getPostTime(a));
 
-        // 6. Apply Contact Firewall — remove posts from blocked authors
-        const firewalled = allPosts.filter(p => !p.authorHash || !blockedHashes.has(p.authorHash));
-
-        // 6b. Apply Proximity Blind Spot — remove followed-user posts within 200 miles
-        // (Bucket C already handled discovery posts; this catches followed-user posts from Bucket B)
-        const proximityFiltered = firewalled.filter(p => {
-            const isOwn = (p.authorId === uid || p.uid === uid);
-            if (isOwn) return true; // never filter own posts
-            if (!hasMyCoords || p.lat == null || p.lng == null) return true; // no coords — let through
-            const distanceKm = distanceBetween([myLat!, myLng!], [p.lat, p.lng]);
-            return distanceKm >= 321.9; // keep only posts >= 200 miles away
-        });
         // 6c. Filter incomplete posts — posts without audio are still processing
-        const complete = proximityFiltered.filter(p => {
+        const complete = allPosts.filter(p => {
             return p.audio_url || p.short_audio_url || (p.letter_audio_url && p.response_audio_url);
         });
 
@@ -250,14 +219,6 @@ export async function GET(req: Request) {
 
             // Strip full translations map — only send the user's locale
             delete clean.translations;
-
-            // Strip authorHash — never expose to client
-            delete clean.authorHash;
-
-            // Strip geolocation fields — never expose to client
-            delete clean.lat;
-            delete clean.lng;
-            delete clean.geohash;
 
             // Strip imagen_prompt — implementation detail, sponsor info is in sponsored_by/sponsored_link
             delete clean.imagen_prompt;

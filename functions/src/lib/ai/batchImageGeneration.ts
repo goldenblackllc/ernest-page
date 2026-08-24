@@ -166,6 +166,12 @@ export async function submitImageBatch(requests: Array<{ key: string; request: a
 /**
  * Polls the status of a batch job using raw fetch.
  *
+ * The Gemini Batch API returns:
+ *   - `done: true/false` at the top level (most reliable signal)
+ *   - `metadata.state` with `BATCH_STATE_*` prefix (e.g. BATCH_STATE_SUCCEEDED)
+ *
+ * We normalize these to JOB_STATE_* for our internal tracker.
+ *
  * @param jobName The batch job name
  * @returns Status and parsed results if available
  */
@@ -184,7 +190,10 @@ export async function pollBatchJob(jobName: string): Promise<BatchStatus> {
     }
 
     const data = await res.json();
-    const state: string = data.state || data.metadata?.state || 'JOB_STATE_PENDING';
+
+    // Map the API's BATCH_STATE_* to our internal JOB_STATE_* format
+    const rawState: string = data.metadata?.state || data.state || '';
+    const state = normalizeBatchState(rawState, data.done);
 
     let results: ParsedBatchResult[] | null = null;
 
@@ -196,7 +205,35 @@ export async function pollBatchJob(jobName: string): Promise<BatchStatus> {
 }
 
 /**
+ * Normalize Gemini Batch API state strings to our internal JOB_STATE_* format.
+ * The API uses BATCH_STATE_* prefix (e.g. BATCH_STATE_SUCCEEDED), and also
+ * provides a top-level `done` boolean which is the most reliable signal.
+ */
+function normalizeBatchState(rawState: string, done?: boolean): string {
+    // If the API says done=true, it's succeeded (unless state says failed/cancelled)
+    if (done === true) {
+        if (rawState.includes('FAILED')) return 'JOB_STATE_FAILED';
+        if (rawState.includes('CANCELLED')) return 'JOB_STATE_CANCELLED';
+        return 'JOB_STATE_SUCCEEDED';
+    }
+
+    // Map BATCH_STATE_* → JOB_STATE_*
+    if (rawState.includes('SUCCEEDED')) return 'JOB_STATE_SUCCEEDED';
+    if (rawState.includes('FAILED')) return 'JOB_STATE_FAILED';
+    if (rawState.includes('CANCELLED')) return 'JOB_STATE_CANCELLED';
+    if (rawState.includes('RUNNING')) return 'JOB_STATE_RUNNING';
+
+    return 'JOB_STATE_PENDING';
+}
+
+/**
  * Parses a completed batch job to extract images.
+ *
+ * The Gemini Batch API nests results at:
+ *   data.metadata.output.inlinedResponses.inlinedResponses[]
+ * Each item has:
+ *   - .metadata.key — the request key we submitted
+ *   - .response.candidates[0].content.parts[] — the generated content
  *
  * @param batchJob The completed batch job response
  * @returns Array of parsed image results
@@ -204,20 +241,26 @@ export async function pollBatchJob(jobName: string): Promise<BatchStatus> {
 export function parseBatchResults(batchJob: any): ParsedBatchResult[] {
     const results: ParsedBatchResult[] = [];
 
-    // Results may be in different locations depending on the response format
-    const responses = batchJob.response?.inlineResponse
+    // The actual API nests results at metadata.output.inlinedResponses.inlinedResponses
+    const responses =
+        batchJob.metadata?.output?.inlinedResponses?.inlinedResponses  // actual API path
+        || batchJob.response?.inlinedResponses?.inlinedResponses       // alternative nesting
+        || batchJob.response?.inlineResponse                           // legacy fallback
         || batchJob.inlineResponse
         || batchJob.response?.responses
         || batchJob.responses
         || [];
 
     if (!responses || responses.length === 0) {
-        console.warn('[BatchImageGen] No responses found in batch job:', JSON.stringify(batchJob).slice(0, 500));
+        console.warn('[BatchImageGen] No responses found in batch job. Keys:', Object.keys(batchJob),
+            'metadata keys:', batchJob.metadata ? Object.keys(batchJob.metadata) : 'none');
         return results;
     }
 
+    console.log(`[BatchImageGen] Parsing ${responses.length} batch results`);
+
     for (const item of responses) {
-        const key = item.key || item.metadata?.key || '';
+        const key = item.metadata?.key || item.key || '';
         let buffer: Buffer | null = null;
         let mimeType: string | null = null;
 
@@ -231,6 +274,16 @@ export function parseBatchResults(batchJob: any): ParsedBatchResult[] {
                 if (imagePart) {
                     buffer = Buffer.from(imagePart.inlineData.data, 'base64');
                     mimeType = imagePart.inlineData.mimeType;
+                }
+            }
+
+            if (!buffer) {
+                // Log why this particular result has no image
+                const textPart = (item.response?.candidates?.[0]?.content?.parts || []).find((p: any) => p.text);
+                if (textPart) {
+                    console.warn(`[BatchImageGen] Result for key "${key}" returned text instead of image (safety filter?):`, textPart.text?.slice(0, 200));
+                } else {
+                    console.warn(`[BatchImageGen] Result for key "${key}" has no image data`);
                 }
             }
         } catch (err) {

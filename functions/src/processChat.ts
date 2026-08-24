@@ -65,8 +65,8 @@ export const processChat = onDocumentUpdated(
         console.log(`[ProcessChat] Processing chat with ${messages.length} messages for user ${uid}`);
 
         const visibility = after.sessionRouting != null
-            ? (after.sessionRouting === 'private' ? 'private' : 'community')
-            : (after.autoPublish === false ? 'private' : 'community');
+            ? (after.sessionRouting === 'public' ? 'public' : 'private')
+            : (after.autoPublish === true ? 'public' : 'private');
 
         await event.data?.after.ref.update({ processing: true, processingStartedAt: now });
 

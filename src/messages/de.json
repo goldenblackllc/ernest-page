@@ -159,9 +159,13 @@
       "bornLabel": "Geburtsdatum",
       "bornPlaceholder": "",
       "bornSub": "Erforderlich — für altersgerechte Inhalte.",
-      "ethnicityLabel": "Ethnicity",
-      "ethnicityOptional": "(optional)",
-      "ethnicityPlaceholder": "e.g., Black, East Asian, Hispanic, Caucasian, Mixed...",
+      "heritageLabel": "Woher kommt deine Familie?",
+      "heritageOptional": "(optional)",
+      "heritageSub": "Sei spezifisch — \"Dominikanisch\" funktioniert besser als \"Hispanisch,\" \"Philippinisch\" besser als \"Asiatisch.\"",
+      "heritagePlaceholder": "z.B., Dominikanisch, Philippinisch, Persisch, Nigerianisch, Irisch-Italienisch",
+      "skinToneLabel": "Hautton",
+      "hairColorLabel": "Natürliche Haarfarbe",
+      "hairTextureLabel": "Haarstruktur",
       "rantLabel": "Genie in the Lamp",
       "rantSub": "If you had unlimited wishes, what would your life look like? Marriage? Private plane? Travel the world? Money in the bank? Dream big — we'll build from it.",
       "rantPlaceholder": "A house on the water. Six figures in savings. My kids bragging about me. A body I'm proud of. Traveling whenever I want. Waking up excited...",
@@ -175,8 +179,7 @@
       "enjoymentsSub": "What do you do for fun? What do you love? Music? Places? Movies? Books? Friends? Food?",
       "enjoymentsPlaceholder": "Cooking for people, 90s hip-hop, horror movies, long drives with no plan, my morning coffee ritual, pickup basketball...",
       "skip": "Skip for now",
-      "setupLabel": "Before You Begin",
-      "ethnicitySub": "Skin tone, tattoos, scars — things that don't change with a haircut."
+      "setupLabel": "Before You Begin"
     },
     "preChat": {
       "heading": "One thing before we begin.",

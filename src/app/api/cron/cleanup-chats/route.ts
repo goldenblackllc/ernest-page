@@ -4,9 +4,8 @@ import { z } from 'zod';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import { hashPhoneNumberServer, normalizePhoneNumberServer } from '@/lib/security/serverHash';
-import { geohashForLocation } from 'geofire-common';
-import { buildDossierPrompt } from '@/lib/ai/dossierPrompt';
+import { buildExtractionPrompt } from '@/lib/ai/extractionPrompt';
+import { buildSessionLogPrompt } from '@/lib/ai/sessionLogPrompt';
 import { matchSponsor } from '@/config/ecosystem';
 import { generateCondensedTranscript } from '@/lib/ai/condensedTranscript';
 import { generateMessageImages } from '@/lib/ai/generatePostImage';
@@ -156,10 +155,10 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
 
         const messages = chatData.messages || [];
         // Determine visibility: sessionRouting takes precedence, then autoPublish legacy fallback.
-        // Default to community unless explicitly routed private.
+        // Default to private unless explicitly routed private.
         const visibility = chatData.sessionRouting != null
-            ? (chatData.sessionRouting === 'private' ? 'private' : 'community')
-            : (chatData.autoPublish === false ? 'private' : 'community');
+            ? (chatData.sessionRouting === 'public' ? 'public' : 'private')
+            : (chatData.autoPublish === true ? 'public' : 'private');
 
         if (messages.length > 0) {
             // Claim this chat to prevent duplicate processing by concurrent cron runs
@@ -172,56 +171,57 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
             const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
             console.log(`[Cron] Style — selected: "${randomStyle.id}" (${randomStyle.name})`);
 
-            const currentDossier = identity?.dossier || '';
+            const currentProfile = userData?.unified_profile || {};
             const sessionCount = (identity?.session_count || 0) + 1;
 
-            // ─── PARALLEL AI CALLS: condensed transcript + dossier update + session recap ───
+            // ─── PARALLEL AI CALLS: condensed transcript + profile extraction + session log ───
 
-            const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}
-
-The following chat transcript is the new session data to incorporate.
-
-CHAT TRANSCRIPT:
-${transcript}`;
-
-            const recapPrompt = `Write a 2-3 sentence recap of this session for continuity. What was discussed? What was the emotional tone? What was the outcome or takeaway? Write from the consultant's perspective. Keep it concise — this will be shown to the character at the start of the next session for context.
-
-CHAT TRANSCRIPT:
-${transcript}`;
+            const extractionPrompt = buildExtractionPrompt(currentProfile, identity?.dossier || '', transcript);
+            const sessionLogPrompt = buildSessionLogPrompt(transcript);
 
             try {
                 // ── Check for cached AI results from a previous image-retry run ──
                 const cachedPost = chatData.cachedPost;
 
-                // ── PARALLEL BATCH: Condensed Transcript + Dossier + Recap ──
+                // ── PARALLEL BATCH: Condensed Transcript + Profile Extraction + Log ──
                 // Skip AI generation if we already have cached results from a prior run
                 const [condensedResult, dossierResult, recapResult] = cachedPost
                     ? [null, null, null]
                     : await Promise.all([
                         // Condensed transcript (editorial judgment + ghost-written conversation + language)
                         generateCondensedTranscript(transcript),
-                        // Dossier Rewrite — Opus
+                        // Profile extraction — Opus
                         generateWithFallback({
                             primaryModelId: OPUS_MODEL,
                             fallbackModelId: OPUS_FALLBACK,
                             schema: z.object({
-                                updated_dossier: z.string(),
+                                new_people: z.array(z.object({
+                                    name: z.string(),
+                                    relationship: z.string(),
+                                    dynamic: z.string().optional(),
+                                    birthday: z.string().optional(),
+                                    notes: z.string().optional(),
+                                })).describe('New or updated people/pets mentioned'),
+                                new_interests: z.array(z.string()).describe('New interests/hobbies mentioned'),
+                                new_wardrobe: z.array(z.string()).describe('New clothing items mentioned'),
+                                rewritten_dossier: z.string().optional().describe('Completely rewritten identity.dossier text, incorporating new narrative facts and removing outdated ones, keeping it highly concise (max 1 page). Null if no narrative facts changed.'),
+                                wants_for_bible: z.array(z.string()).describe('Desires/wants expressed — these will be converted to present-tense character realities, NOT stored as wants'),
                             }),
-                            prompt: dossierRewritePrompt,
+                            prompt: extractionPrompt,
                         }),
-                        // Session Recap — Opus
+                        // Session Log Entry — Opus
                         generateWithFallback({
                             primaryModelId: OPUS_MODEL,
                             fallbackModelId: OPUS_FALLBACK,
                             schema: z.object({
-                                session_recap: z.string().describe("2-3 sentence recap of this session for continuity"),
+                                session_recap: z.string().describe("2-3 sentence factual log of this session"),
                             }),
-                            prompt: recapPrompt,
+                            prompt: sessionLogPrompt,
                         }),
                     ]);
 
                 const condensed = cachedPost || condensedResult;
-                const dossier = cachedPost ? null : (dossierResult!.object as any);
+                const extracted = cachedPost ? null : (dossierResult!.object as any);
                 const recap = cachedPost ? null : (recapResult!.object as any);
 
                 // Extract condensed transcript data
@@ -242,30 +242,73 @@ ${transcript}`;
                     visual_style: randomStyle.id,
                 };
 
-                // ─── DOSSIER + RECAPS WRITE (runs in parallel with image gen below) ───
-                // Skip dossier/recap writes on image-retry runs (already written on first pass)
-                const dossierPromise = (identity && dossier && recap)
+                // ─── PROFILE + LOG WRITE (runs in parallel with image gen below) ───
+                // Skip profile/log writes on image-retry runs (already written on first pass)
+                const dossierPromise = (identity && extracted && recap)
                     ? (async () => {
-                        // Build the new session_recaps array (keep last 3)
+                        // Build the new session_recaps array (keep last 5)
                         const existingRecaps = userData?.session_recaps || [];
                         const newRecap = {
                             date: new Date().toISOString().split('T')[0],
                             recap: recap.session_recap,
                         };
-                        const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 3);
+                        const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
+
+                        // Merge extracted data into unified profile
+                        const profile = userData?.unified_profile || {
+                            people: [],
+                            interests: [],
+                            wardrobe: [],
+                            routines: '',
+                            life_facts: '',
+                            milestones: ''
+                        };
+                        
+                        // Merge people (update existing by name, add new)
+                        const mergedPeople = [...(profile.people || [])];
+                        (extracted.new_people || []).forEach((person: any) => {
+                            const idx = mergedPeople.findIndex(p => p.name.toLowerCase() === person.name.toLowerCase());
+                            if (idx >= 0) {
+                                mergedPeople[idx] = { ...mergedPeople[idx], ...person };
+                            } else {
+                                mergedPeople.push(person);
+                            }
+                        });
+                        
+                        const updatedProfile = {
+                            people: mergedPeople,
+                            interests: Array.from(new Set([...(profile.interests || []), ...(extracted.new_interests || [])])),
+                            wardrobe: Array.from(new Set([...(profile.wardrobe || []), ...(extracted.new_wardrobe || [])])),
+                            routines: profile.routines || '', // Legacy fields preserved but no longer appended to
+                            life_facts: profile.life_facts || '',
+                            milestones: profile.milestones || '',
+                        };
 
                         await userDoc.ref.set({
                             identity: {
                                 ...identity,
-                                dossier: dossier.updated_dossier,
+                                ...(extracted.rewritten_dossier ? { dossier: extracted.rewritten_dossier } : {}),
                                 dossier_updated_at: FieldValue.serverTimestamp(),
                                 session_count: sessionCount,
                             },
                             session_recaps: updatedRecaps,
+                            unified_profile: updatedProfile,
+                            // Store wants temporarily for the bible recompile to consume
+                            ...(extracted.wants_for_bible?.length > 0 && { wants_for_bible: FieldValue.arrayUnion(...extracted.wants_for_bible) })
                         }, { merge: true });
-                        console.log(`[Cron] Dossier + recap updated for user ${uid} (session ${sessionCount})`);
+                        console.log(`[Cron] Profile + log updated for user ${uid} (session ${sessionCount})`);
+
+                        // Trigger background bible recompile with updated profile
+                        fetch(`${process.env.NEXT_PUBLIC_URL || 'https://your-app.vercel.app'}/api/character/compile`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+                            },
+                            body: JSON.stringify({ uid, skipCooldown: true }),
+                        }).catch(err => console.error(`[Cron] Bible recompile trigger failed for ${uid}:`, err.message));
                     })().catch((err: any) => {
-                        console.error(`[Cron] Dossier update failed for user ${uid}:`, err.message);
+                        console.error(`[Cron] Profile update failed for user ${uid}:`, err.message);
                     })
                     : Promise.resolve();
 
@@ -315,22 +358,11 @@ ${transcript}`;
                     // Match sponsor from conversation context
                     const sponsor = matchSponsor(conversationContext);
 
-                    // Compute author hash for Contact Firewall filtering
-                    let authorHash: string | null = null;
-                    try {
-                        const userRecord = await getAuth().getUser(uid);
-                        if (userRecord.phoneNumber) {
-                            const normalized = normalizePhoneNumberServer(userRecord.phoneNumber);
-                            authorHash = hashPhoneNumberServer(normalized);
-                        }
-                    } catch { /* silent — hash is best-effort */ }
-
                     // Compute geolocation fields from stored user coords
-                    const geoFields: { lat?: number; lng?: number; geohash?: string } = {};
+                    const geoFields: { lat?: number; lng?: number } = {};
                     if (userData?.home_lat != null && userData?.home_lng != null) {
                         geoFields.lat = userData.home_lat;
                         geoFields.lng = userData.home_lng;
-                        geoFields.geohash = geohashForLocation([userData.home_lat, userData.home_lng]);
                     }
 
                     // Read user photo from chat document (if user attached one)
@@ -344,7 +376,6 @@ ${transcript}`;
                         id: postDocRef.id,
                         uid,
                         authorId: uid,
-                        authorHash: authorHash,
                         region: userData?.region || null,
                         author: userData?.displayName || "Anonymous",
                         title: post.title || null,

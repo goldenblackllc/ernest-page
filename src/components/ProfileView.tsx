@@ -23,6 +23,7 @@ export function ProfileView() {
     const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isAvatarEditOpen, setIsAvatarEditOpen] = useState(false);
     const [isDossierOpen, setIsDossierOpen] = useState(false);
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
@@ -44,7 +45,18 @@ export function ProfileView() {
         return () => unsubscribe();
     }, [user]);
 
-
+    // Open avatar edit modal when dispatched from feed cards or other components
+    useEffect(() => {
+        const handleOpenEditor = () => setIsAvatarEditOpen(true);
+        window.addEventListener('open-identity-editor', handleOpenEditor);
+        // Also check URL param (from feed card navigation to /profile)
+        if (typeof window !== 'undefined' && window.location.search.includes('edit=identity')) {
+            setIsAvatarEditOpen(true);
+            // Clean up URL param
+            window.history.replaceState({}, '', '/profile');
+        }
+        return () => window.removeEventListener('open-identity-editor', handleOpenEditor);
+    }, []);
 
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!bible && !identity) return null;
@@ -58,8 +70,11 @@ export function ProfileView() {
                 {/* ── PROFILE HEADER ── */}
                 <div className="px-4">
                     {/* ── ROW 1: IDENTITY ── */}
-                    <div className="flex flex-row items-center gap-4 pb-4">
-                        <div className="w-14 h-14 rounded-full bg-zinc-800 ring-1 ring-zinc-800 overflow-hidden shrink-0">
+                    <div className="flex flex-row items-center gap-4 pb-4 border-b border-white/5">
+                        <div 
+                            className="w-14 h-14 rounded-full bg-zinc-800 ring-1 ring-zinc-800 overflow-hidden shrink-0 cursor-pointer hover:ring-zinc-700 transition-colors"
+                            onClick={() => setIsAvatarEditOpen(true)}
+                        >
                             {bible?.compiled_output?.avatar_url ? (
                                 <img src={bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -77,19 +92,13 @@ export function ProfileView() {
                             </p>
                         </div>
                     </div>
-
-                    {/* ── ROW 2: ACTIONS ── */}
-                    <div className="flex items-center gap-3 pb-6 border-b border-white/5">
-                        {/* Dossier button hidden — data still maintained server-side */}
-                        <button
-                            onClick={() => setIsEditOpen(true)}
-                            className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold px-4 py-2.5 rounded-full transition-all shadow-sm"
-                        >
-                            <Pencil className="w-3.5 h-3.5" />
-                            {t('edit')}
-                        </button>
-                    </div>
                 </div>
+
+                {/* ── MY VOICE ── */}
+                <VoiceBrowser
+                    currentVoiceId={bible?.voice_id}
+                    currentVoiceName={bible?.voice_name}
+                />
 
                 {/* IDENTITY VISION (shown when no compiled bible yet) */}
                 {identity?.dream_self && (!displaySections || displaySections.length === 0) && (
@@ -147,12 +156,6 @@ export function ProfileView() {
                     </div>
                 )}
 
-                {/* ── MY VOICE ── */}
-                <VoiceBrowser
-                    currentVoiceId={bible?.voice_id}
-                    currentVoiceName={bible?.voice_name}
-                />
-
             </div>
 
             {/* Edit Modal — Form-based editor with pre-populated values */}
@@ -162,10 +165,32 @@ export function ProfileView() {
                 currentRant={identity?.dream_rant || ""}
                 currentGender={identity?.gender || ""}
                 currentAge={identity?.age || ""}
-                currentEthnicity={identity?.ethnicity || ""}
+                currentHeritage={identity?.heritage || identity?.ethnicity || ""}
+                currentSkinTone={identity?.skin_tone || ""}
+                currentHairColors={identity?.hair_colors || (identity?.hair_color ? [identity.hair_color] : [])}
+                currentHairTexture={identity?.hair_texture || ""}
+                currentHairVolume={identity?.hair_volume || ""}
+                currentEyeColor={identity?.eye_color || ""}
+                currentHeight={identity?.height || ""}
                 currentPeople={identity?.important_people || ""}
                 currentEnjoyments={identity?.things_i_enjoy || ""}
                 currentCharacterName={bible?.character_name || identity?.character_name || ""}
+            />
+
+            {/* Avatar Properties Modal — physical traits only */}
+            <EditAvatarModal
+                isOpen={isAvatarEditOpen}
+                onClose={() => setIsAvatarEditOpen(false)}
+                currentGender={identity?.gender || ""}
+                currentAge={identity?.age || ""}
+                currentHeritage={identity?.heritage || identity?.ethnicity || ""}
+                currentSkinTone={identity?.skin_tone || ""}
+                currentHairColors={identity?.hair_colors || (identity?.hair_color ? [identity.hair_color] : [])}
+                currentHairTexture={identity?.hair_texture || ""}
+                currentHairVolume={identity?.hair_volume || ""}
+                currentEyeColor={identity?.eye_color || ""}
+                currentHeight={identity?.height || ""}
+                avatarUrl={bible?.compiled_output?.avatar_url}
             />
 
         </>
@@ -174,7 +199,7 @@ export function ProfileView() {
 
 // ——— Edit Identity Modal (Form-based → Background Character Rebuild) ———
 
-function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentEthnicity, currentPeople, currentEnjoyments, currentCharacterName }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentEthnicity: string; currentPeople: string; currentEnjoyments: string; currentCharacterName: string }) {
+function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentHeritage, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, currentPeople, currentEnjoyments, currentCharacterName }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentHeritage: string; currentSkinTone: string; currentHairColors: string[]; currentHairTexture: string; currentHairVolume: string; currentEyeColor: string; currentHeight: string; currentPeople: string; currentEnjoyments: string; currentCharacterName: string }) {
     const { user } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -205,7 +230,13 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     dream_rant: data.rant.trim(),
                     gender: data.gender.trim(),
                     age: data.age.trim(),
-                    ethnicity: data.ethnicity.trim(),
+                    heritage: data.heritage.trim(),
+                    skin_tone: data.skin_tone.trim(),
+                    hair_colors: data.hair_colors,
+                    hair_texture: data.hair_texture.trim(),
+                    hair_volume: data.hair_volume.trim(),
+                    eye_color: data.eye_color.trim(),
+                    height: data.height.trim(),
                     important_people: data.people.trim(),
                     things_i_enjoy: data.enjoyments.trim(),
                     character_name: data.character_name.trim(),
@@ -235,7 +266,13 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                         rant: data.rant.trim(),
                         gender: data.gender.trim(),
                         age: data.age.trim(),
-                        ethnicity: data.ethnicity.trim(),
+                        heritage: data.heritage.trim(),
+                        skin_tone: data.skin_tone.trim(),
+                        hair_colors: data.hair_colors,
+                        hair_texture: data.hair_texture.trim(),
+                        hair_volume: data.hair_volume.trim(),
+                        eye_color: data.eye_color.trim(),
+                        height: data.height.trim(),
                         important_people: data.people.trim(),
                         things_i_enjoy: data.enjoyments.trim(),
                         character_name: data.character_name.trim(),
@@ -275,7 +312,13 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                                 character_name: currentCharacterName,
                                 gender: currentGender,
                                 age: currentAge,
-                                ethnicity: currentEthnicity,
+                                heritage: currentHeritage,
+                                skin_tone: currentSkinTone,
+                                hair_colors: currentHairColors,
+                                hair_texture: currentHairTexture,
+                                hair_volume: currentHairVolume,
+                                eye_color: currentEyeColor,
+                                height: currentHeight,
                                 rant: currentRant,
                                 people: currentPeople,
                                 enjoyments: currentEnjoyments,
@@ -292,6 +335,313 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
     );
 }
 
+// ——— Edit Avatar Modal (Physical traits only → Avatar Regeneration) ———
+
+const SKIN_TONES = ['Fair', 'Light', 'Medium', 'Olive', 'Tan', 'Brown', 'Dark Brown', 'Deep'];
+const HAIR_COLORS = ['Black', 'Dark Brown', 'Brown', 'Light Brown', 'Auburn', 'Red', 'Blonde', 'Gray', 'White'];
+const HAIR_TEXTURES = ['Straight', 'Wavy', 'Curly', 'Coily'];
+const HAIR_VOLUMES = ['Thick', 'Full', 'Thinning', 'Receding', 'Bald/Shaved'];
+const EYE_COLORS = ['Brown', 'Hazel', 'Green', 'Blue', 'Gray', 'Amber'];
+
+function AvatarPillSelect({ label, options, value, onChange }: {
+    label: string; options: string[]; value: string; onChange: (v: string) => void;
+}) {
+    return (
+        <div>
+            <label className="text-sm text-zinc-400 font-semibold mb-2 block">{label}</label>
+            <div className="flex flex-wrap gap-2">
+                {options.map(opt => (
+                    <button key={opt} type="button"
+                        onClick={() => onChange(value === opt ? '' : opt)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                            ${value === opt ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
+                        {opt}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function AvatarPillMultiSelect({ label, options, values, onChange }: {
+    label: string; options: string[]; values: string[]; onChange: (v: string[]) => void;
+}) {
+    const toggle = (opt: string) => {
+        if (values.includes(opt)) {
+            onChange(values.filter(v => v !== opt));
+        } else {
+            onChange([...values, opt]);
+        }
+    };
+    return (
+        <div>
+            <label className="text-sm text-zinc-400 font-semibold mb-2 block">{label}</label>
+            <div className="flex flex-wrap gap-2">
+                {options.map(opt => (
+                    <button key={opt} type="button"
+                        onClick={() => toggle(opt)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                            ${values.includes(opt) ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
+                        {opt}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHeritage, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, avatarUrl }: {
+    isOpen: boolean;
+    onClose: () => void;
+    currentGender: string;
+    currentAge: string;
+    currentHeritage: string;
+    currentSkinTone: string;
+    currentHairColors: string[];
+    currentHairTexture: string;
+    currentHairVolume: string;
+    currentEyeColor: string;
+    currentHeight: string;
+    avatarUrl?: string;
+}) {
+    const { user } = useAuth();
+    const t = useTranslations();
+    const [gender, setGender] = useState(currentGender);
+    const [age, setAge] = useState(currentAge);
+    const [heritage, setHeritage] = useState(currentHeritage);
+    const [skinTone, setSkinTone] = useState(currentSkinTone);
+    const [hairColors, setHairColors] = useState<string[]>(currentHairColors);
+    const [hairTexture, setHairTexture] = useState(currentHairTexture);
+    const [hairVolume, setHairVolume] = useState(currentHairVolume);
+    const [eyeColor, setEyeColor] = useState(currentEyeColor);
+    const [height, setHeight] = useState(currentHeight);
+    const [isSaving, setIsSaving] = useState(false);
+    const [waitingForAvatar, setWaitingForAvatar] = useState(false);
+    const [avatarReady, setAvatarReady] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const savedAvatarUrl = React.useRef<string | undefined>(undefined);
+
+    // Sync state when modal opens with fresh props
+    const wasOpen = React.useRef(false);
+    React.useEffect(() => {
+        if (isOpen && !wasOpen.current) {
+            setGender(currentGender);
+            setAge(currentAge);
+            setHeritage(currentHeritage);
+            setSkinTone(currentSkinTone);
+            setHairColors(currentHairColors);
+            setHairTexture(currentHairTexture);
+            setHairVolume(currentHairVolume);
+            setEyeColor(currentEyeColor);
+            setHeight(currentHeight);
+            setIsSaving(false);
+            setWaitingForAvatar(false);
+            setAvatarReady(false);
+            setError(null);
+            savedAvatarUrl.current = undefined;
+        }
+        wasOpen.current = isOpen;
+    }, [isOpen, currentGender, currentAge, currentHeritage, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight]);
+
+    // Detect when new avatar arrives from Firestore subscription
+    React.useEffect(() => {
+        if (waitingForAvatar && savedAvatarUrl.current !== undefined && avatarUrl && avatarUrl !== savedAvatarUrl.current) {
+            setWaitingForAvatar(false);
+            setAvatarReady(true);
+        }
+    }, [avatarUrl, waitingForAvatar]);
+
+    if (!isOpen) return null;
+
+    const handleSave = async () => {
+        if (!user || isSaving) return;
+        setIsSaving(true);
+        setError(null);
+
+        try {
+            const { doc, setDoc } = await import('firebase/firestore');
+            await setDoc(doc(db, 'users', user.uid), {
+                identity: {
+                    gender: gender.trim(),
+                    age: age.trim(),
+                    heritage: heritage.trim(),
+                    skin_tone: skinTone,
+                    hair_colors: hairColors,
+                    hair_texture: hairTexture,
+                    hair_volume: hairVolume,
+                    eye_color: eyeColor,
+                    height: height.trim(),
+                },
+                character_bible: {
+                    avatar_status: 'pending',
+                },
+            }, { merge: true });
+
+            // Fire avatar regeneration in the background (no bible recompile needed)
+            const idToken = await user.getIdToken();
+            fetch('/api/character/avatar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ uid: user.uid }),
+            }).catch(err => console.error('[Avatar] Regeneration error:', err));
+
+            // Transition to waiting state
+            savedAvatarUrl.current = avatarUrl;
+            setIsSaving(false);
+            setWaitingForAvatar(true);
+        } catch (err: any) {
+            setError(err.message || 'Something went wrong.');
+            setIsSaving(false);
+        }
+    };
+
+    const isEditing = !waitingForAvatar && !avatarReady;
+    const displayUrl = avatarReady ? avatarUrl : (savedAvatarUrl.current || avatarUrl);
+
+    return (
+        <div className="fixed inset-0 z-[60] bg-zinc-950 flex flex-col">
+            <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between pt-[calc(16px+env(safe-area-inset-top))]">
+                <h2 className="text-sm font-bold text-white">Edit Appearance</h2>
+                {isEditing && (
+                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3">
+                        {t('profile.close')}
+                    </button>
+                )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 pt-6 pb-[calc(24px+env(safe-area-inset-bottom))]">
+                {/* Avatar preview — always visible */}
+                <div className="flex justify-center mb-6">
+                    <div className="relative w-24 h-24">
+                        <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-zinc-700">
+                            {displayUrl ? (
+                                <img src={displayUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-500">
+                                    <User className="w-8 h-8" />
+                                </div>
+                            )}
+                        </div>
+                        {waitingForAvatar && (
+                            <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                                <span className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            </div>
+                        )}
+                        {avatarReady && (
+                            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-green-500 flex items-center justify-center ring-2 ring-zinc-950">
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Waiting state */}
+                {waitingForAvatar && (
+                    <p className="text-center text-sm text-zinc-500 mb-4">Regenerating your avatar...</p>
+                )}
+
+                {/* Done state */}
+                {avatarReady && (
+                    <div className="flex flex-col items-center gap-4 mb-4">
+                        <p className="text-sm text-zinc-300">Avatar updated</p>
+                        <button
+                            onClick={onClose}
+                            className="w-full bg-white text-black py-3.5 text-base font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
+                        >
+                            Done
+                        </button>
+                    </div>
+                )}
+
+                {/* Edit form — only visible when editing */}
+                {isEditing && (
+                    <>
+                        <div className="space-y-5">
+                            <div>
+                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">Gender</label>
+                                <input
+                                    type="text"
+                                    value={gender}
+                                    onChange={(e) => setGender(e.target.value)}
+                                    placeholder="Man, Woman, etc."
+                                    maxLength={50}
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">Date of Birth</label>
+                                <input
+                                    type="date"
+                                    value={age}
+                                    onChange={(e) => setAge(e.target.value)}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    min="1920-01-01"
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 [color-scheme:dark]"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm text-zinc-400 font-semibold mb-1 block">
+                                    {t('onboarding.identityForm.heritageLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.heritageOptional')}</span>
+                                </label>
+                                <p className="text-sm text-zinc-500 mb-2">{t('onboarding.identityForm.heritageSub')}</p>
+                                <input
+                                    type="text"
+                                    value={heritage}
+                                    onChange={(e) => setHeritage(e.target.value)}
+                                    placeholder={t('onboarding.identityForm.heritagePlaceholder')}
+                                    maxLength={100}
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
+                                />
+                            </div>
+
+                            <AvatarPillSelect label={t('onboarding.identityForm.skinToneLabel')} options={SKIN_TONES} value={skinTone} onChange={setSkinTone} />
+                            <AvatarPillSelect label="Eye Color" options={EYE_COLORS} value={eyeColor} onChange={setEyeColor} />
+                            <AvatarPillMultiSelect label={t('onboarding.identityForm.hairColorLabel')} options={HAIR_COLORS} values={hairColors} onChange={setHairColors} />
+                            <AvatarPillSelect label={t('onboarding.identityForm.hairTextureLabel')} options={HAIR_TEXTURES} value={hairTexture} onChange={setHairTexture} />
+                            <AvatarPillSelect label="Hair Volume" options={HAIR_VOLUMES} value={hairVolume} onChange={setHairVolume} />
+
+                            <div>
+                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">Height</label>
+                                <input
+                                    type="text"
+                                    value={height}
+                                    onChange={(e) => setHeight(e.target.value)}
+                                    placeholder="e.g., 5'10&quot; or 178cm"
+                                    maxLength={20}
+                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
+                                />
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl mt-4">{error}</div>
+                        )}
+
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="w-full bg-white text-black py-3.5 text-base font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed mt-6"
+                        >
+                            {isSaving ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                    Saving...
+                                </span>
+                            ) : 'Update Avatar'}
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // ——— Voice Browser Component ———
 // Imported from shared component: @/components/VoiceBrowser
-

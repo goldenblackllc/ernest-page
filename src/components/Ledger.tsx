@@ -15,7 +15,6 @@ import { useTranslations, useLocale } from "next-intl";
 
 import { Timestamp } from "firebase/firestore";
 import { getFeedCache, setFeedCache } from "@/lib/feedCache";
-import { getUserLocation, storeUserLocation } from "@/lib/geolocation";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const CHECKIN_INTERVAL_MS = 28 * 24 * 60 * 60 * 1000; // 28 days
@@ -34,7 +33,7 @@ export function Ledger() {
     const [loading, setLoading] = useState(cache.entries === null); // skip skeleton if cached
 
     const [pendingPostId, setPendingPostId] = useState<string | null>(null);
-    const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<string | null>(null);
+    const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<{ id: string, title: string } | null>(null);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -64,17 +63,6 @@ export function Ledger() {
             setProfileLoaded(true);
         });
         return () => unsub();
-    }, [user]);
-
-    // Silently capture & store user location for proximity filtering
-    useEffect(() => {
-        if (!user) return;
-        (async () => {
-            const coords = await getUserLocation();
-            if (coords) {
-                await storeUserLocation(user.uid, coords);
-            }
-        })();
     }, [user]);
 
     // Fetch feed (supports pagination via page param)
@@ -260,15 +248,17 @@ export function Ledger() {
         return () => window.removeEventListener('checkin-publishing-start', handleStart);
     }, []);
 
-    // Listen for pull-to-refresh trigger
+    // Listen for pull-to-refresh / post-close refresh trigger
     useEffect(() => {
         const handleRefresh = () => {
+            currentPageRef.current = 0;
             setLoading(true);
+            fetchFeed(0);
         };
 
         window.addEventListener('ledger-refresh', handleRefresh);
         return () => window.removeEventListener('ledger-refresh', handleRefresh);
-    }, []);
+    }, [fetchFeed]);
 
     // Monitor background check-in post
     useEffect(() => {
@@ -576,49 +566,30 @@ export function Ledger() {
             )}
 
             {/* Bible Failed Card — shown when compile errored out */}
-            {showBibleFailed && (() => {
-                const isDaily = bibleFailReason === 'rate_limit_daily';
-                const isCooldown = bibleFailReason === 'rate_limit_cooldown';
-                const isRateLimit = isDaily || isCooldown;
-
-                const title = isDaily ? t('bibleRateLimitDailyTitle')
-                    : isCooldown ? t('bibleRateLimitCooldownTitle')
-                    : t('bibleFailedTitle');
-                const sub = isDaily ? t('bibleRateLimitDailySub')
-                    : isCooldown ? t('bibleRateLimitCooldownSub')
-                    : t('bibleFailedSub');
-
-                const borderColor = isRateLimit ? 'border-amber-500/30' : 'border-red-500/30';
-                const iconBorder = isRateLimit ? 'border-amber-500/40' : 'border-red-500/40';
-                const iconColor = isRateLimit ? 'text-amber-400' : 'text-red-400';
-
-                return (
-                    <div className={`bg-zinc-900/50 border ${borderColor} rounded-xl overflow-hidden shadow-sm relative`}>
-                        <div className="flex items-center gap-4 p-5 relative">
-                            <div className={`w-12 h-12 rounded-full border-2 ${iconBorder} flex items-center justify-center shrink-0`}>
-                                <span className={`${iconColor} text-lg`}>{isRateLimit ? '⏳' : '!'}</span>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-white mb-0.5">
-                                    {title}
-                                </p>
-                                <p className="text-xs text-zinc-500">
-                                    {sub}
-                                </p>
-                                {!isDaily && (
-                                    <button
-                                        onClick={retryCompile}
-                                        disabled={retrying}
-                                        className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                                    >
-                                        {retrying ? t('bibleRetrying') : t('bibleRetry')}
-                                    </button>
-                                )}
-                            </div>
+            {showBibleFailed && bibleFailReason !== 'rate_limit_daily' && bibleFailReason !== 'rate_limit_cooldown' && (
+                <div className="bg-zinc-900/50 border border-red-500/30 rounded-xl overflow-hidden shadow-sm relative">
+                    <div className="flex items-center gap-4 p-5 relative">
+                        <div className="w-12 h-12 rounded-full border-2 border-red-500/40 flex items-center justify-center shrink-0">
+                            <span className="text-red-400 text-lg">!</span>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-white mb-0.5">
+                                {t('bibleFailedTitle')}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                                {t('bibleFailedSub')}
+                            </p>
+                            <button
+                                onClick={retryCompile}
+                                disabled={retrying}
+                                className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                            >
+                                {retrying ? t('bibleRetrying') : t('bibleRetry')}
+                            </button>
                         </div>
                     </div>
-                );
-            })()}
+                </div>
+            )}
 
             {/* 28-Day Check-in Card */}
             {(() => {
@@ -669,8 +640,7 @@ export function Ledger() {
 
             {/* Daily Digest Card — renders as a FeedPostCard in digestMode */}
             {profile?.daily_digest?.title
-             && profile?.daily_digest?.image_url
-             && profile?.daily_digest?.audio_url && (
+             && profile?.daily_digest?.image_url && (
                 <FeedPostCard
                     digestMode
                     post={{
@@ -705,7 +675,7 @@ export function Ledger() {
                     <FeedPostCard
                         post={entry as any}
                         followingMap={followingMap}
-                        onFollowClick={(id) => setSelectedAuthorToFollow(id)}
+                        onFollowClick={(id) => setSelectedAuthorToFollow({ id, title: entry.author_title || t('idealSelfDefault') })}
                         onRequestDelete={setPostToDelete}
                     />
                 </React.Fragment>
@@ -730,7 +700,8 @@ export function Ledger() {
             <FollowAuthorModal
                 isOpen={!!selectedAuthorToFollow}
                 onClose={() => setSelectedAuthorToFollow(null)}
-                postAuthorId={selectedAuthorToFollow || ''}
+                postAuthorId={selectedAuthorToFollow?.id || ''}
+                authorTitle={selectedAuthorToFollow?.title || ''}
                 profile={profile}
             />
 

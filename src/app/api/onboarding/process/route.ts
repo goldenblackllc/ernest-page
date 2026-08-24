@@ -34,9 +34,6 @@ Updated: {DATE} | Sessions: 0
 ═══ PROFILE ═══
 {PROFILE_FACTS}
 
-═══ KEY PEOPLE ═══
-{PEOPLE}
-
 ═══ BACKSTORY ═══
 {BACKSTORY}
 
@@ -44,10 +41,7 @@ Updated: {DATE} | Sessions: 0
 {WANTS}
 
 ═══ ROUTINES & HABITS ═══
-{ROUTINES}
-
-═══ PREFERENCES & TASTES ═══
-{PREFERENCES}`;
+{ROUTINES}`;
 
 export async function POST(req: Request) {
     try {
@@ -62,6 +56,15 @@ export async function POST(req: Request) {
         const gender = (rawBody.gender || '').substring(0, 50);
         const age = (rawBody.age || '').substring(0, 30);
         const ethnicity = (rawBody.ethnicity || '').substring(0, 300);
+        const heritage = (rawBody.heritage || rawBody.ethnicity || '').substring(0, 100);
+        const skinTone = (rawBody.skin_tone || '').substring(0, 30);
+        const hairColors: string[] = Array.isArray(rawBody.hair_colors)
+            ? rawBody.hair_colors.map((c: string) => String(c).substring(0, 30)).slice(0, 5)
+            : rawBody.hair_color ? [String(rawBody.hair_color).substring(0, 30)] : [];
+        const hairTexture = (rawBody.hair_texture || '').substring(0, 30);
+        const hairVolume = (rawBody.hair_volume || '').substring(0, 30);
+        const eyeColor = (rawBody.eye_color || '').substring(0, 30);
+        const height = (rawBody.height || '').substring(0, 20);
         const important_people = (rawBody.important_people || '').substring(0, 3000);
         const things_i_enjoy = (rawBody.things_i_enjoy || '').substring(0, 3000);
         const character_name = (rawBody.character_name || '').substring(0, 100);
@@ -80,7 +83,13 @@ export async function POST(req: Request) {
         const contextPrefix = [
             gender ? `The user identifies as: ${gender}.` : null,
             age ? `Birth year: ${age}.` : null,
-            ethnicity ? `Ethnicity: ${ethnicity}.` : null,
+            heritage ? `Heritage/origin: ${heritage}.` : null,
+            skinTone ? `Skin tone: ${skinTone}.` : null,
+            eyeColor ? `Eye color: ${eyeColor}.` : null,
+            hairColors.length > 0 ? `Natural hair color: ${hairColors.join(' and ')}.` : null,
+            hairTexture ? `Natural hair texture: ${hairTexture}.` : null,
+            hairVolume ? `Hair volume: ${hairVolume}.` : null,
+            height ? `Height: ${height}.` : null,
             important_people ? `People in their life: ${important_people}` : null,
             things_i_enjoy ? `Things they enjoy: ${things_i_enjoy}` : null,
         ].filter(Boolean).join('\n');
@@ -143,11 +152,9 @@ export async function POST(req: Request) {
             .replace("{TITLE}", data.title)
             .replace("{DATE}", today)
             .replace("{PROFILE_FACTS}", data.dossier.profile_facts)
-            .replace("{PEOPLE}", data.dossier.people)
             .replace("{BACKSTORY}", data.dossier.backstory)
             .replace("{WANTS}", data.dossier.wants)
-            .replace("{ROUTINES}", data.dossier.routines)
-            .replace("{PREFERENCES}", data.dossier.preferences);
+            .replace("{ROUTINES}", data.dossier.routines);
 
         // Check if user already has an existing dossier (re-edit vs first onboarding)
         const existingUserDoc = await db.collection("users").doc(uid).get();
@@ -163,8 +170,15 @@ export async function POST(req: Request) {
             things_i_enjoy: things_i_enjoy || '',
             gender: gender || '',
             age: age || '',
-            ethnicity: ethnicity || '',
             character_name: character_name || '',
+            heritage,
+            skin_tone: skinTone,
+            hair_colors: hairColors,
+            hair_texture: hairTexture,
+            hair_volume: hairVolume,
+            eye_color: eyeColor,
+            height,
+            ethnicity: heritage || ethnicity,
         };
 
         if (!hasExistingDossier) {
@@ -219,7 +233,6 @@ export async function POST(req: Request) {
                     },
                     body: JSON.stringify({
                         uid,
-                        skipCooldown: true, // System-initiated — bypass cooldown
                         source_code: {
                             archetype: data.title,
                             manifesto: data.dream_self,
@@ -232,16 +245,8 @@ export async function POST(req: Request) {
 
                 if (!compileRes.ok) {
                     console.error(`[Onboarding] Background: Bible compile failed with status ${compileRes.status}`);
-                    // Extract failure reason so the UI can show a specific message
-                    let failReason = 'error';
-                    try {
-                        const body = await compileRes.json();
-                        if (compileRes.status === 429) {
-                            failReason = body.limitType === 'daily' ? 'rate_limit_daily' : 'rate_limit_cooldown';
-                        }
-                    } catch { /* body parse failed — keep generic reason */ }
                     await db.collection("users").doc(uid).set({
-                        character_bible: { status: 'failed', fail_reason: failReason }
+                        character_bible: { status: 'failed', fail_reason: 'error' }
                     }, { merge: true });
                     return;
                 }

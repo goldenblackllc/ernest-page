@@ -9,12 +9,12 @@ interface FollowAuthorModalProps {
     isOpen: boolean;
     onClose: () => void;
     postAuthorId: string;
+    authorTitle: string;
     profile: CharacterProfile | null;
 }
 
-export function FollowAuthorModal({ isOpen, onClose, postAuthorId, profile }: FollowAuthorModalProps) {
+export function FollowAuthorModal({ isOpen, onClose, postAuthorId, authorTitle, profile }: FollowAuthorModalProps) {
     const { user } = useAuth();
-    const [alias, setAlias] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
     const t = useTranslations('followAuthorModal');
@@ -22,11 +22,6 @@ export function FollowAuthorModal({ isOpen, onClose, postAuthorId, profile }: Fo
     if (!isOpen) return null;
 
     const handleSave = async () => {
-        if (!alias.trim()) {
-            setError(t('errorEmpty'));
-            return;
-        }
-
         if (!user || !profile) return;
 
         setIsSaving(true);
@@ -35,14 +30,13 @@ export function FollowAuthorModal({ isOpen, onClose, postAuthorId, profile }: Fo
         try {
             const updatedFollowing = {
                 ...(profile.following || {}),
-                [postAuthorId]: alias.trim()
+                [postAuthorId]: authorTitle || 'Unknown'
             };
 
             await updateCharacterProfile(user.uid, {
                 following: updatedFollowing
             });
 
-            setAlias('');
             onClose();
         } catch (err: any) {
             console.error("Failed to follow author:", err);
@@ -63,7 +57,7 @@ export function FollowAuthorModal({ isOpen, onClose, postAuthorId, profile }: Fo
                 <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-black/20">
                     <div className="flex items-center gap-2 text-zinc-300">
                         <Link className="w-4 h-4 text-emerald-500" />
-                        <h2 className="text-sm font-bold tracking-tight">{t('title')}</h2>
+                        <h2 className="text-sm font-bold tracking-tight">Follow Author</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -74,41 +68,28 @@ export function FollowAuthorModal({ isOpen, onClose, postAuthorId, profile }: Fo
                 </div>
 
                 <div className="p-6">
-                    <p className="text-sm text-zinc-400 mb-4 leading-relaxed">
-                        {t('description')}
+                    <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+                        Follow <strong className="text-white">{authorTitle}</strong>?
                     </p>
 
                     <div className="space-y-4">
-                        <div>
-                            <input
-                                type="text"
-                                autoFocus
-                                value={alias}
-                                onChange={(e) => {
-                                    setAlias(e.target.value);
-                                    if (error) setError('');
-                                }}
-                                placeholder={t('placeholder')}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-sans"
-                            />
-                            {error && (
-                                <p className="text-xs text-red-400 mt-2 ml-1">{error}</p>
-                            )}
-                        </div>
+                        {error && (
+                            <p className="text-xs text-red-400 mt-2 ml-1">{error}</p>
+                        )}
 
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={onClose}
                                 className="flex-1 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl text-sm font-bold transition-all border border-zinc-800"
                             >
-                                {t('cancel')}
+                                Cancel
                             </button>
                             <button
                                 onClick={handleSave}
-                                disabled={isSaving || !alias.trim()}
+                                disabled={isSaving}
                                 className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 disabled:text-emerald-200/50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center shadow-lg shadow-emerald-900/20"
                             >
-                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('saveAlias')}
+                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Follow"}
                             </button>
                         </div>
                     </div>

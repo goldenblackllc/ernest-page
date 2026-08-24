@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         const userDoc = await db.collection("users").doc(uid).get();
         const userData = userDoc.data() || {};
         const pseudonym = userData?.identity?.title || "Anonymous";
-        const defaultRouting = userData?.default_post_routing || "community";
+        const defaultRouting = userData?.default_post_routing || "private";
         const visibility = defaultRouting;
 
         // 3. AI-rewrite to scrub PII and frame as a "dispatch"

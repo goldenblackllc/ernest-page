@@ -73,7 +73,7 @@ export function RolodexModal({ isOpen, onClose, profile }: RolodexModalProps) {
                         </div>
                     ) : (
                         <div className="space-y-1">
-                            {entries.map(([authorId, alias]) => (
+                            {entries.map(([authorId, title]) => (
                                 <div
                                     key={authorId}
                                     className="flex items-center justify-between px-3 py-3 rounded-xl hover:bg-zinc-900/50 transition-colors group"
@@ -81,11 +81,11 @@ export function RolodexModal({ isOpen, onClose, profile }: RolodexModalProps) {
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
                                             <span className="text-xs font-bold text-zinc-400">
-                                                {(alias as string).charAt(0).toUpperCase()}
+                                                {(title as string).charAt(0).toUpperCase()}
                                             </span>
                                         </div>
                                         <span className="text-sm font-medium text-zinc-200 truncate">
-                                            {alias as string}
+                                            {title as string}
                                         </span>
                                     </div>
                                     <button

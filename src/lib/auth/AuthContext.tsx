@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
+import { clearFeedCache } from '@/lib/feedCache';
 
 const AUTH_HINT_KEY = 'ep-auth-hint';
 
@@ -42,7 +43,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(user);
             setLoading(false);
 
-            // Persist auth hint for instant skeleton on next cold-open
             try {
                 if (user) {
                     localStorage.setItem(AUTH_HINT_KEY, '1');
@@ -50,26 +50,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     localStorage.removeItem(AUTH_HINT_KEY);
                 }
             } catch { /* localStorage unavailable — non-critical */ }
-
-            // Sync region on every login — fire-and-forget
-            if (user) {
-                user.getIdToken().then(token => {
-                    fetch('/api/user/region', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({}),
-                    }).catch(() => { }); // Silent fail — non-critical
-                }).catch(() => { });
-            }
         });
 
         return () => unsubscribe();
     }, []);
 
     const signOut = async () => {
+        clearFeedCache();
         try {
             localStorage.removeItem(AUTH_HINT_KEY);
         } catch { /* non-critical */ }

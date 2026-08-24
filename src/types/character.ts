@@ -7,12 +7,47 @@ export interface CharacterIdentity {
     gender: string;             // User-provided gender identity
     age: string;                // User-provided age
     ethnicity?: string;         // Optional — unchangeable physical traits for avatar accuracy
+    /** National/cultural origin (e.g., 'Dominican', 'Korean', 'Irish-Italian') */
+    heritage?: string;
+    /** Skin tone from fixed scale */
+    skin_tone?: string;
+    /** Natural hair color(s) — array for multi-select (e.g., ['Dark Brown', 'Gray']) */
+    hair_colors?: string[];
+    /** Natural hair color — legacy single value */
+    hair_color?: string;
+    /** Natural hair texture */
+    hair_texture?: string;
+    /** Hair volume/coverage */
+    hair_volume?: string;
+    /** Eye color */
+    eye_color?: string;
+    /** Height (e.g., "5'10" or "178cm") — used in video image generation */
+    height?: string;
     character_name?: string;    // Optional — user's chosen name for their Ideal Self
     dossier: string;            // AI-maintained structured case notes
     dossier_updated_at?: any;   // Firestore Timestamp
     session_count: number;      // Number of check-in/mirror sessions
     onboarding_started?: boolean;  // Gender submitted, user can access dashboard
     onboarding_complete?: boolean; // First session processed, character bible built
+}
+
+/** A person in the user's life — extracted from sessions or manually added */
+export interface ProfilePerson {
+    name: string;
+    relationship: string;          // e.g., 'daughter', 'boss', 'best friend'
+    dynamic?: string;              // emotional truth — e.g., 'we don't speak', 'very close'
+    birthday?: string;             // ISO date or partial (MM-DD)
+    notes?: string;                // additional context
+}
+
+/** The unified user profile — single source of truth for factual information */
+export interface UnifiedProfile {
+    people: ProfilePerson[];              // People & relationships (incl. pets)
+    interests: string[];                  // Things they enjoy — simple tag list
+    wardrobe: string[];                   // Clothes the user actually owns
+    routines: string;                     // Daily patterns, schedules, rituals (free text)
+    life_facts: string;                   // Location, occupation, employer, living situation (free text)
+    milestones: string;                   // Sobriety dates, career events, moves (free text)
 }
 
 export interface CharacterBible {
@@ -60,16 +95,12 @@ export interface CharacterProfile {
     character_bible: CharacterBible; // Now mandatory structure
     my_story?: string;
     active_todos?: Array<{ id: string, task: string, completed: boolean, priority?: 'immediate' | 'next', unexpected_yield?: string, created_at: any }>;
-    following?: Record<string, string>; // authorId -> custom Alias
-    region?: string; // e.g., 'US-MA'
-    home_lat?: number; // Latitude for proximity filtering (200-mile blind spot)
-    home_lng?: number; // Longitude for proximity filtering
+    following?: Record<string, string>; // authorId -> archetype title
+    unified_profile?: UnifiedProfile;
     last_check_in?: any;
     updatedAt?: any; // Firestore Timestamp
     saved_posts?: string[]; // Bookmarked posts
-    default_post_routing?: 'private' | 'community' | 'public'; // Default visibility for new posts
-    firewall_synced?: boolean; // Whether user has completed the Contact Firewall step
-    proximity_anchor?: string; // Zip code or city for Proximity Blind Spot radius
+    default_post_routing?: 'private' | 'public'; // Default visibility for new posts
     last_thirty_day_checkin?: string; // ISO date of last 28-day check-in session
     session_recaps?: Array<{     // Rolling window of last 3 session recaps
         date: string;            // ISO date string

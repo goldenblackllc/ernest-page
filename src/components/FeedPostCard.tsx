@@ -732,7 +732,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 {/* ═══ Header — matching regular feed cards ═══ */}
                 <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 w-full">
                     <div className="shrink-0">
-                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
+                        <div 
+                            className={`w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden ${isAuthor ? 'cursor-pointer' : ''}`}
+                            onClick={isAuthor ? () => window.dispatchEvent(new CustomEvent('open-identity-editor')) : undefined}
+                        >
                             {post.author_avatar_url ? (
                                 <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                             ) : null}
@@ -1825,7 +1828,10 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             {/* Header */}
             <div className="flex flex-row items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-white/5 bg-black/20 mb-2 w-full">
                 <div className="shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden relative">
+                    <div 
+                        className={`w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden relative ${isAuthor ? 'cursor-pointer' : ''}`}
+                        onClick={isAuthor ? () => window.dispatchEvent(new CustomEvent('open-identity-editor')) : undefined}
+                    >
                         {post.author_avatar_url ? (
                             <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         ) : null}

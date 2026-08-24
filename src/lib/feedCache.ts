@@ -28,3 +28,10 @@ export function setFeedCache(
     cachedFollowingMap = followingMap;
     cachedNewestPostTime = newestPostTime;
 }
+
+/** Purge the entire feed cache — call on sign-out to prevent user-data leakage. */
+export function clearFeedCache() {
+    cachedEntries = null;
+    cachedFollowingMap = null;
+    cachedNewestPostTime = null;
+}

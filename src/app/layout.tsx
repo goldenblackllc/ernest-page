@@ -25,7 +25,7 @@ const hkGrotesk = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Earnest Page",
+  title: "Earnest Page Beta",
   description: "Stop reacting. Start commanding. Build your real-life character bible.",
   manifest: "/site.webmanifest",
   icons: {

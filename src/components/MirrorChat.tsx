@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { subscribeToActiveChat, getMostRecentActiveChat, saveActiveChat, deleteActiveChat } from "@/lib/firebase/chat";
+import { updateCharacterProfile } from "@/lib/firebase/character";
 import { Message } from "@ai-sdk/react";
 import { DEFAULT_TONE } from "@/lib/ai/engagementTones";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -27,8 +28,7 @@ interface MirrorChatProps {
     identity?: CharacterIdentity | null;
     uid: string;
     initialContext?: string | null;
-    defaultPostRouting?: 'private' | 'community' | 'public';
-
+    defaultPostRouting?: 'private' | 'public';
 }
 
 export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
@@ -883,6 +883,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         }
 
         // Wipe local state
+        const finalMessages = [...messages];
         setSessionId(null);
         setMessages([]);
         setInput("");
@@ -897,6 +898,15 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         setIsSessionExpired(false);
 
         unsuppressAutoPlay();
+
+        // Trigger a delayed feed refresh so the new post appears without waiting for 15-min poll.
+        // processChat Cloud Function needs a few seconds to create the post.
+        if (sessionRouting !== 'burn' && finalMessages.filter(m => m.role === 'user').length > 0) {
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('ledger-refresh'));
+            }, 8000);
+        }
+
         onClose();
     };
 
@@ -1168,8 +1178,14 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                                                 </div>
                                                 {(['public', 'private', 'burn'] as SessionRouting[]).map(option => (
                                                     <button
-                                                        key={option}
-                                                        onClick={() => { setSessionRouting(option); hasManuallySetRouting.current = true; setIsRoutingOpen(false); }}
+                                                        onClick={() => { 
+                                                            setSessionRouting(option); 
+                                                            hasManuallySetRouting.current = true; 
+                                                            setIsRoutingOpen(false);
+                                                            if (option !== 'burn') {
+                                                                updateCharacterProfile(uid, { default_post_routing: option }).catch(() => {});
+                                                            }
+                                                        }}
                                                         className={cn(
                                                             "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors",
                                                             sessionRouting === option

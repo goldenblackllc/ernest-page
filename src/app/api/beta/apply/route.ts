@@ -68,8 +68,8 @@ export async function POST(req: Request) {
                     invite_code: code,
                     source,
                 },
-                // Beta testers default to community so their posts fill the feed
-                default_post_routing: 'community',
+                // Beta testers default to private so their posts fill the feed
+                default_post_routing: 'private',
             },
             { merge: true }
         );

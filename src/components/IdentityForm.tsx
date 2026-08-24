@@ -8,7 +8,13 @@ export interface IdentityFormData {
     character_name: string;
     gender: string;
     age: string;
-    ethnicity: string;
+    heritage: string;
+    skin_tone: string;
+    hair_colors: string[];
+    hair_texture: string;
+    hair_volume: string;
+    eye_color: string;
+    height: string;
     rant: string;
     people: string;
     enjoyments: string;
@@ -26,6 +32,75 @@ type FormStep = 1 | 2 | 3 | 4 | 5;
 
 const TOTAL_STEPS = 5;
 
+const SKIN_TONE_OPTIONS = ['Fair', 'Light', 'Medium', 'Olive', 'Tan', 'Brown', 'Dark Brown', 'Deep'];
+const HAIR_COLOR_OPTIONS = ['Black', 'Dark Brown', 'Brown', 'Light Brown', 'Auburn', 'Red', 'Blonde', 'Gray', 'White'];
+const HAIR_TEXTURE_OPTIONS = ['Straight', 'Wavy', 'Curly', 'Coily'];
+const HAIR_VOLUME_OPTIONS = ['Thick', 'Full', 'Thinning', 'Receding', 'Bald/Shaved'];
+const EYE_COLOR_OPTIONS = ['Brown', 'Hazel', 'Green', 'Blue', 'Gray', 'Amber'];
+
+function PillSelect({ label, options, value, onChange }: {
+    label: string;
+    options: string[];
+    value: string;
+    onChange: (v: string) => void;
+}) {
+    return (
+        <div>
+            <label className="text-sm text-zinc-400 font-semibold mb-2 block">{label}</label>
+            <div className="flex flex-wrap gap-2">
+                {options.map(opt => (
+                    <button
+                        key={opt}
+                        type="button"
+                        onClick={() => onChange(value === opt ? '' : opt)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                            ${value === opt
+                                ? 'bg-white text-black'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+                    >
+                        {opt}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function PillMultiSelect({ label, options, values, onChange }: {
+    label: string;
+    options: string[];
+    values: string[];
+    onChange: (v: string[]) => void;
+}) {
+    const toggle = (opt: string) => {
+        if (values.includes(opt)) {
+            onChange(values.filter(v => v !== opt));
+        } else {
+            onChange([...values, opt]);
+        }
+    };
+    return (
+        <div>
+            <label className="text-sm text-zinc-400 font-semibold mb-2 block">{label}</label>
+            <div className="flex flex-wrap gap-2">
+                {options.map(opt => (
+                    <button
+                        key={opt}
+                        type="button"
+                        onClick={() => toggle(opt)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                            ${values.includes(opt)
+                                ? 'bg-white text-black'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+                    >
+                        {opt}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function IdentityForm({
     initialValues = {},
     onSubmit,
@@ -38,14 +113,20 @@ export function IdentityForm({
     const [characterName, setCharacterName] = useState(initialValues.character_name || '');
     const [gender, setGender] = useState(initialValues.gender || '');
     const [age, setAge] = useState(initialValues.age || '');
-    const [ethnicity, setEthnicity] = useState(initialValues.ethnicity || '');
+    const [heritage, setHeritage] = useState(initialValues.heritage || '');
+    const [skinTone, setSkinTone] = useState(initialValues.skin_tone || '');
+    const [hairColors, setHairColors] = useState<string[]>(initialValues.hair_colors || []);
+    const [hairTexture, setHairTexture] = useState(initialValues.hair_texture || '');
+    const [hairVolume, setHairVolume] = useState(initialValues.hair_volume || '');
+    const [eyeColor, setEyeColor] = useState(initialValues.eye_color || '');
+    const [height, setHeight] = useState(initialValues.height || '');
     const [rant, setRant] = useState(initialValues.rant || '');
     const [people, setPeople] = useState(initialValues.people || '');
     const [enjoyments, setEnjoyments] = useState(initialValues.enjoyments || '');
 
     const handleSubmit = () => {
         if (!rant.trim() || !gender.trim() || isSubmitting) return;
-        onSubmit({ character_name: characterName, gender, age, ethnicity, rant, people, enjoyments });
+        onSubmit({ character_name: characterName, gender, age, heritage, skin_tone: skinTone, hair_colors: hairColors, hair_texture: hairTexture, hair_volume: hairVolume, eye_color: eyeColor, height, rant, people, enjoyments });
     };
 
     const progressPct = ((step - 1) / TOTAL_STEPS) * 100;
@@ -165,15 +246,34 @@ export function IdentityForm({
 
                         <div>
                             <label className="text-sm text-zinc-400 font-semibold mb-1 block">
-                                {t('onboarding.identityForm.ethnicityLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.ethnicityOptional')}</span>
+                                {t('onboarding.identityForm.heritageLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.heritageOptional')}</span>
                             </label>
-                            <p className="text-sm text-zinc-400 mb-2">{t('onboarding.identityForm.ethnicitySub')}</p>
-                            <textarea
-                                value={ethnicity}
-                                onChange={(e) => setEthnicity(e.target.value)}
-                                placeholder={t('onboarding.identityForm.ethnicityPlaceholder')}
-                                maxLength={300}
-                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl p-4 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 min-h-[100px] resize-none leading-relaxed"
+                            <p className="text-sm text-zinc-400 mb-2">{t('onboarding.identityForm.heritageSub')}</p>
+                            <input
+                                type="text"
+                                value={heritage}
+                                onChange={(e) => setHeritage(e.target.value)}
+                                placeholder={t('onboarding.identityForm.heritagePlaceholder')}
+                                maxLength={100}
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
+                            />
+                        </div>
+
+                        <PillSelect label={t('onboarding.identityForm.skinToneLabel')} options={SKIN_TONE_OPTIONS} value={skinTone} onChange={setSkinTone} />
+                        <PillSelect label="Eye Color" options={EYE_COLOR_OPTIONS} value={eyeColor} onChange={setEyeColor} />
+                        <PillMultiSelect label={t('onboarding.identityForm.hairColorLabel')} options={HAIR_COLOR_OPTIONS} values={hairColors} onChange={setHairColors} />
+                        <PillSelect label={t('onboarding.identityForm.hairTextureLabel')} options={HAIR_TEXTURE_OPTIONS} value={hairTexture} onChange={setHairTexture} />
+                        <PillSelect label="Hair Volume" options={HAIR_VOLUME_OPTIONS} value={hairVolume} onChange={setHairVolume} />
+
+                        <div>
+                            <label className="text-sm text-zinc-400 font-semibold mb-2 block">Height</label>
+                            <input
+                                type="text"
+                                value={height}
+                                onChange={(e) => setHeight(e.target.value)}
+                                placeholder="e.g., 5'10&quot; or 178cm"
+                                maxLength={20}
+                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                             />
                         </div>
 

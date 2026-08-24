@@ -39,7 +39,7 @@ export function TriagePanel() {
     // Data for Mirror Chat
     const [bible, setBible] = useState<CharacterBible | null>(null);
     const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
-    const [defaultPostRouting, setDefaultPostRouting] = useState<'private' | 'community' | 'public'>('community');
+    const [defaultPostRouting, setDefaultPostRouting] = useState<'private' | 'public'>('private');
 
     // Onboarding state (triggered when FAB tapped without character bible)
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -53,7 +53,7 @@ export function TriagePanel() {
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
             setBible(data.character_bible);
             setIdentity(data.identity || null);
-            setDefaultPostRouting(data.default_post_routing || 'community');
+            setDefaultPostRouting(data.default_post_routing || 'private');
 
             // Check if user needs onboarding (no completed onboarding)
             const isLegacyComplete = !!data.identity?.title;
@@ -90,6 +90,13 @@ export function TriagePanel() {
         const handleOpen = () => openMirror();
         window.addEventListener('open-mirror-chat', handleOpen);
         return () => window.removeEventListener('open-mirror-chat', handleOpen);
+    }, [openMirror]);
+
+    // Listen for identity editor
+    useEffect(() => {
+        const handleIdentityEditor = () => { window.location.href = '/profile?edit=identity'; };
+        window.addEventListener('open-identity-editor', handleIdentityEditor);
+        return () => window.removeEventListener('open-identity-editor', handleIdentityEditor);
     }, []);
 
     // Listen for 30-day check-in card tap
@@ -119,7 +126,13 @@ export function TriagePanel() {
                 dream_rant: data.rant.trim(),
                 gender: data.gender.trim(),
                 age: data.age.trim(),
-                ethnicity: data.ethnicity.trim(),
+                heritage: data.heritage.trim(),
+                skin_tone: data.skin_tone.trim(),
+                hair_colors: data.hair_colors,
+                hair_texture: data.hair_texture.trim(),
+                hair_volume: data.hair_volume.trim(),
+                eye_color: data.eye_color.trim(),
+                height: data.height.trim(),
                 important_people: data.people.trim(),
                 things_i_enjoy: data.enjoyments.trim(),
                 character_name: data.character_name.trim(),
@@ -143,7 +156,13 @@ export function TriagePanel() {
                     important_people: data.people.trim(),
                     things_i_enjoy: data.enjoyments.trim(),
                     age: data.age.trim(),
-                    ethnicity: data.ethnicity.trim(),
+                    heritage: data.heritage.trim(),
+                    skin_tone: data.skin_tone.trim(),
+                    hair_colors: data.hair_colors,
+                    hair_texture: data.hair_texture.trim(),
+                    hair_volume: data.hair_volume.trim(),
+                    eye_color: data.eye_color.trim(),
+                    height: data.height.trim(),
                     character_name: data.character_name.trim(),
                 }),
             }).catch(err => console.error('[Onboarding] Process error:', err));
@@ -262,10 +281,14 @@ export function TriagePanel() {
                 )}
             </div>
 
+
             {/* Mirror Chat Modal */}
             <MirrorChat
                 isOpen={isMirrorOpen}
-                onClose={() => { setIsMirrorOpen(false); setInitialContext(null); }}
+                onClose={() => {
+                    setIsMirrorOpen(false);
+                    setInitialContext(null);
+                }}
                 bible={bible}
                 identity={identity}
                 uid={user?.uid || ""}
