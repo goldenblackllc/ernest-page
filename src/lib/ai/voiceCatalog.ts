@@ -19,7 +19,7 @@ interface VoicePromptInput {
     archetype: string;
     characterName: string;
     gender: string;
-    age: string;          // Birthday string, age number, or descriptive
+    birthdate: string;    // ISO date string (e.g. '1992-04-15')
     ethnicity: string;    // From identity — used for timbre only
     appLanguage: string;  // Current locale (e.g. 'en', 'es', 'fr')
 }
@@ -54,7 +54,7 @@ export async function generateVoiceDesignPrompt(input: VoicePromptInput): Promis
 The character is someone's Ideal Self. Here is their information:
 
 Gender: "${input.gender}"
-Age/Birthday: "${input.age}"
+Age/Birthday: "${input.birthdate}"
 Ethnicity: "${input.ethnicity}"
 Archetype: "${input.archetype}"
 Character Name: "${input.characterName}"

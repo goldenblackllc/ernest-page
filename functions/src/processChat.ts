@@ -83,7 +83,7 @@ export const processChat = onDocumentUpdated(
         const identity = userData?.identity;
         const gender = identity?.gender || '';
         const ethnicity = identity?.ethnicity || '';
-        const computedAge = computeAge(identity?.age);
+        const computedAge = computeAge(identity?.birthdate);
         const demographicParts = [
             computedAge ? `approximately ${computedAge} years old` : '',
             ethnicity,

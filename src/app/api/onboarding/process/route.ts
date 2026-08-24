@@ -54,13 +54,12 @@ export async function POST(req: Request) {
         // Server-side length limits (defense-in-depth, mirrors client maxLength)
         const rant = (rawBody.rant || '').substring(0, 5000);
         const gender = (rawBody.gender || '').substring(0, 50);
-        const age = (rawBody.age || '').substring(0, 30);
+        const birthdate = (rawBody.birthdate || '').substring(0, 30);
         const ethnicity = (rawBody.ethnicity || '').substring(0, 300);
-        const heritage = (rawBody.heritage || rawBody.ethnicity || '').substring(0, 100);
         const skinTone = (rawBody.skin_tone || '').substring(0, 30);
         const hairColors: string[] = Array.isArray(rawBody.hair_colors)
             ? rawBody.hair_colors.map((c: string) => String(c).substring(0, 30)).slice(0, 5)
-            : rawBody.hair_color ? [String(rawBody.hair_color).substring(0, 30)] : [];
+            : [];
         const hairTexture = (rawBody.hair_texture || '').substring(0, 30);
         const hairVolume = (rawBody.hair_volume || '').substring(0, 30);
         const eyeColor = (rawBody.eye_color || '').substring(0, 30);
@@ -82,8 +81,8 @@ export async function POST(req: Request) {
         // Prepend gender/age/ethnicity context to the rant so the AI has it
         const contextPrefix = [
             gender ? `The user identifies as: ${gender}.` : null,
-            age ? `Birth year: ${age}.` : null,
-            heritage ? `Heritage/origin: ${heritage}.` : null,
+            birthdate ? `Date of birth: ${birthdate}.` : null,
+            ethnicity ? `Ethnicity/origin: ${ethnicity}.` : null,
             skinTone ? `Skin tone: ${skinTone}.` : null,
             eyeColor ? `Eye color: ${eyeColor}.` : null,
             hairColors.length > 0 ? `Natural hair color: ${hairColors.join(' and ')}.` : null,
@@ -169,16 +168,15 @@ export async function POST(req: Request) {
             important_people: important_people || '',
             things_i_enjoy: things_i_enjoy || '',
             gender: gender || '',
-            age: age || '',
+            birthdate: birthdate || '',
             character_name: character_name || '',
-            heritage,
             skin_tone: skinTone,
             hair_colors: hairColors,
             hair_texture: hairTexture,
             hair_volume: hairVolume,
             eye_color: eyeColor,
             height,
-            ethnicity: heritage || ethnicity,
+            ethnicity: ethnicity || '',
         };
 
         if (!hasExistingDossier) {

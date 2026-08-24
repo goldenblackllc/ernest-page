@@ -7,8 +7,8 @@ import { useTranslations } from 'next-intl';
 export interface IdentityFormData {
     character_name: string;
     gender: string;
-    age: string;
-    heritage: string;
+    birthdate: string;
+    ethnicity: string;
     skin_tone: string;
     hair_colors: string[];
     hair_texture: string;
@@ -112,8 +112,8 @@ export function IdentityForm({
     const [step, setStep] = useState<FormStep>(1);
     const [characterName, setCharacterName] = useState(initialValues.character_name || '');
     const [gender, setGender] = useState(initialValues.gender || '');
-    const [age, setAge] = useState(initialValues.age || '');
-    const [heritage, setHeritage] = useState(initialValues.heritage || '');
+    const [birthdate, setBirthdate] = useState(initialValues.birthdate || '');
+    const [ethnicity, setEthnicity] = useState(initialValues.ethnicity || '');
     const [skinTone, setSkinTone] = useState(initialValues.skin_tone || '');
     const [hairColors, setHairColors] = useState<string[]>(initialValues.hair_colors || []);
     const [hairTexture, setHairTexture] = useState(initialValues.hair_texture || '');
@@ -126,7 +126,7 @@ export function IdentityForm({
 
     const handleSubmit = () => {
         if (!rant.trim() || !gender.trim() || isSubmitting) return;
-        onSubmit({ character_name: characterName, gender, age, heritage, skin_tone: skinTone, hair_colors: hairColors, hair_texture: hairTexture, hair_volume: hairVolume, eye_color: eyeColor, height, rant, people, enjoyments });
+        onSubmit({ character_name: characterName, gender, birthdate, ethnicity, skin_tone: skinTone, hair_colors: hairColors, hair_texture: hairTexture, hair_volume: hairVolume, eye_color: eyeColor, height, rant, people, enjoyments });
     };
 
     const progressPct = ((step - 1) / TOTAL_STEPS) * 100;
@@ -134,7 +134,7 @@ export function IdentityForm({
     const canAdvance = () => {
         switch (step) {
             case 1: return gender.trim().length > 0;
-            case 2: return age.trim().length > 0; // birthday is required
+            case 2: return birthdate.trim().length > 0; // birthday is required
             case 3: return rant.trim().length > 0;
             case 4: return true; // people is optional
             case 5: return true; // enjoyments is optional
@@ -235,8 +235,8 @@ export function IdentityForm({
                             <p className="text-sm text-zinc-400 mb-2">{t('onboarding.identityForm.bornSub')}</p>
                             <input
                                 type="date"
-                                value={age}
-                                onChange={(e) => setAge(e.target.value)}
+                                value={birthdate}
+                                onChange={(e) => setBirthdate(e.target.value)}
                                 max={new Date().toISOString().split('T')[0]}
                                 min="1920-01-01"
                                 autoFocus
@@ -246,32 +246,32 @@ export function IdentityForm({
 
                         <div>
                             <label className="text-sm text-zinc-400 font-semibold mb-1 block">
-                                {t('onboarding.identityForm.heritageLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.heritageOptional')}</span>
+                                {t('onboarding.identityForm.ethnicityLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.ethnicityOptional')}</span>
                             </label>
-                            <p className="text-sm text-zinc-400 mb-2">{t('onboarding.identityForm.heritageSub')}</p>
+                            <p className="text-sm text-zinc-400 mb-2">{t('onboarding.identityForm.ethnicitySub')}</p>
                             <input
                                 type="text"
-                                value={heritage}
-                                onChange={(e) => setHeritage(e.target.value)}
-                                placeholder={t('onboarding.identityForm.heritagePlaceholder')}
+                                value={ethnicity}
+                                onChange={(e) => setEthnicity(e.target.value)}
+                                placeholder={t('onboarding.identityForm.ethnicityPlaceholder')}
                                 maxLength={100}
                                 className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                             />
                         </div>
 
                         <PillSelect label={t('onboarding.identityForm.skinToneLabel')} options={SKIN_TONE_OPTIONS} value={skinTone} onChange={setSkinTone} />
-                        <PillSelect label="Eye Color" options={EYE_COLOR_OPTIONS} value={eyeColor} onChange={setEyeColor} />
+                        <PillSelect label={t('onboarding.identityForm.eyeColorLabel')} options={EYE_COLOR_OPTIONS} value={eyeColor} onChange={setEyeColor} />
                         <PillMultiSelect label={t('onboarding.identityForm.hairColorLabel')} options={HAIR_COLOR_OPTIONS} values={hairColors} onChange={setHairColors} />
                         <PillSelect label={t('onboarding.identityForm.hairTextureLabel')} options={HAIR_TEXTURE_OPTIONS} value={hairTexture} onChange={setHairTexture} />
-                        <PillSelect label="Hair Volume" options={HAIR_VOLUME_OPTIONS} value={hairVolume} onChange={setHairVolume} />
+                        <PillSelect label={t('onboarding.identityForm.hairVolumeLabel')} options={HAIR_VOLUME_OPTIONS} value={hairVolume} onChange={setHairVolume} />
 
                         <div>
-                            <label className="text-sm text-zinc-400 font-semibold mb-2 block">Height</label>
+                            <label className="text-sm text-zinc-400 font-semibold mb-2 block">{t('onboarding.identityForm.heightLabel')}</label>
                             <input
                                 type="text"
                                 value={height}
                                 onChange={(e) => setHeight(e.target.value)}
-                                placeholder="e.g., 5'10&quot; or 178cm"
+                                placeholder={t('onboarding.identityForm.heightPlaceholder')}
                                 maxLength={20}
                                 className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                             />

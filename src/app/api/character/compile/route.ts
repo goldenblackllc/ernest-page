@@ -5,6 +5,7 @@ import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { REALITY_RULES } from '@/lib/constants/realityRules';
 import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const maxDuration = 300;
 
@@ -249,21 +250,17 @@ export async function POST(req: Request) {
             if (!voiceId) {
                 try {
                     const userGender = (data?.identity?.gender || '').toLowerCase();
-                    const userAge = data?.identity?.age || '';
+                    const userBirthdate = data?.identity?.birthdate || '';
 
                     // Map gender
                     const gender = userGender.includes('female') || userGender.includes('woman') ? 'female' : 'male';
 
                     // Map age to ElevenLabs categories
                     let ageCategory = 'middle_aged';
-                    const ageNum = parseInt(userAge);
-                    if (!isNaN(ageNum)) {
+                    const ageNum = computeAge(userBirthdate);
+                    if (ageNum !== null) {
                         if (ageNum < 30) ageCategory = 'young';
                         else if (ageNum >= 60) ageCategory = 'old';
-                    } else if (userAge.toLowerCase().includes('young') || userAge.includes('20')) {
-                        ageCategory = 'young';
-                    } else if (userAge.toLowerCase().includes('senior') || userAge.toLowerCase().includes('elder')) {
-                        ageCategory = 'old';
                     }
 
                     const apiKey = process.env.ELEVENLABS_API_KEY;

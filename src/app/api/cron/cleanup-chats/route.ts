@@ -130,7 +130,7 @@ async function processUserChats(
     // The character appears IN the images as the subject of the story.
     const gender = identity?.gender || '';
     const ethnicity = identity?.ethnicity || '';
-    const computedAge = computeAge(identity?.age);
+    const computedAge = computeAge(identity?.birthdate);
     const demographicParts = [
         computedAge ? `approximately ${computedAge} years old` : '',
         ethnicity,

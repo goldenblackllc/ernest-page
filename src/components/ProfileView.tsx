@@ -164,10 +164,10 @@ export function ProfileView() {
                 onClose={() => setIsEditOpen(false)}
                 currentRant={identity?.dream_rant || ""}
                 currentGender={identity?.gender || ""}
-                currentAge={identity?.age || ""}
-                currentHeritage={identity?.heritage || identity?.ethnicity || ""}
+                currentBirthdate={identity?.birthdate || ""}
+                currentEthnicity={identity?.ethnicity || ""}
                 currentSkinTone={identity?.skin_tone || ""}
-                currentHairColors={identity?.hair_colors || (identity?.hair_color ? [identity.hair_color] : [])}
+                currentHairColors={identity?.hair_colors || []}
                 currentHairTexture={identity?.hair_texture || ""}
                 currentHairVolume={identity?.hair_volume || ""}
                 currentEyeColor={identity?.eye_color || ""}
@@ -182,10 +182,10 @@ export function ProfileView() {
                 isOpen={isAvatarEditOpen}
                 onClose={() => setIsAvatarEditOpen(false)}
                 currentGender={identity?.gender || ""}
-                currentAge={identity?.age || ""}
-                currentHeritage={identity?.heritage || identity?.ethnicity || ""}
+                currentBirthdate={identity?.birthdate || ""}
+                currentEthnicity={identity?.ethnicity || ""}
                 currentSkinTone={identity?.skin_tone || ""}
-                currentHairColors={identity?.hair_colors || (identity?.hair_color ? [identity.hair_color] : [])}
+                currentHairColors={identity?.hair_colors || []}
                 currentHairTexture={identity?.hair_texture || ""}
                 currentHairVolume={identity?.hair_volume || ""}
                 currentEyeColor={identity?.eye_color || ""}
@@ -199,7 +199,7 @@ export function ProfileView() {
 
 // ——— Edit Identity Modal (Form-based → Background Character Rebuild) ———
 
-function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentAge, currentHeritage, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, currentPeople, currentEnjoyments, currentCharacterName }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentAge: string; currentHeritage: string; currentSkinTone: string; currentHairColors: string[]; currentHairTexture: string; currentHairVolume: string; currentEyeColor: string; currentHeight: string; currentPeople: string; currentEnjoyments: string; currentCharacterName: string }) {
+function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentBirthdate, currentEthnicity, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, currentPeople, currentEnjoyments, currentCharacterName }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentBirthdate: string; currentEthnicity: string; currentSkinTone: string; currentHairColors: string[]; currentHairTexture: string; currentHairVolume: string; currentEyeColor: string; currentHeight: string; currentPeople: string; currentEnjoyments: string; currentCharacterName: string }) {
     const { user } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -229,8 +229,8 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                 identity: {
                     dream_rant: data.rant.trim(),
                     gender: data.gender.trim(),
-                    age: data.age.trim(),
-                    heritage: data.heritage.trim(),
+                    birthdate: data.birthdate.trim(),
+                    ethnicity: data.ethnicity.trim(),
                     skin_tone: data.skin_tone.trim(),
                     hair_colors: data.hair_colors,
                     hair_texture: data.hair_texture.trim(),
@@ -265,8 +265,8 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                     body: JSON.stringify({
                         rant: data.rant.trim(),
                         gender: data.gender.trim(),
-                        age: data.age.trim(),
-                        heritage: data.heritage.trim(),
+                        birthdate: data.birthdate.trim(),
+                        ethnicity: data.ethnicity.trim(),
                         skin_tone: data.skin_tone.trim(),
                         hair_colors: data.hair_colors,
                         hair_texture: data.hair_texture.trim(),
@@ -311,8 +311,8 @@ function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, curren
                             initialValues={{
                                 character_name: currentCharacterName,
                                 gender: currentGender,
-                                age: currentAge,
-                                heritage: currentHeritage,
+                                birthdate: currentBirthdate,
+                                ethnicity: currentEthnicity,
                                 skin_tone: currentSkinTone,
                                 hair_colors: currentHairColors,
                                 hair_texture: currentHairTexture,
@@ -390,12 +390,12 @@ function AvatarPillMultiSelect({ label, options, values, onChange }: {
     );
 }
 
-function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHeritage, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, avatarUrl }: {
+function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, currentEthnicity, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, avatarUrl }: {
     isOpen: boolean;
     onClose: () => void;
     currentGender: string;
-    currentAge: string;
-    currentHeritage: string;
+    currentBirthdate: string;
+    currentEthnicity: string;
     currentSkinTone: string;
     currentHairColors: string[];
     currentHairTexture: string;
@@ -407,8 +407,8 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
     const { user } = useAuth();
     const t = useTranslations();
     const [gender, setGender] = useState(currentGender);
-    const [age, setAge] = useState(currentAge);
-    const [heritage, setHeritage] = useState(currentHeritage);
+    const [birthdate, setBirthdate] = useState(currentBirthdate);
+    const [ethnicity, setEthnicity] = useState(currentEthnicity);
     const [skinTone, setSkinTone] = useState(currentSkinTone);
     const [hairColors, setHairColors] = useState<string[]>(currentHairColors);
     const [hairTexture, setHairTexture] = useState(currentHairTexture);
@@ -426,8 +426,8 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
     React.useEffect(() => {
         if (isOpen && !wasOpen.current) {
             setGender(currentGender);
-            setAge(currentAge);
-            setHeritage(currentHeritage);
+            setBirthdate(currentBirthdate);
+            setEthnicity(currentEthnicity);
             setSkinTone(currentSkinTone);
             setHairColors(currentHairColors);
             setHairTexture(currentHairTexture);
@@ -441,7 +441,7 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
             savedAvatarUrl.current = undefined;
         }
         wasOpen.current = isOpen;
-    }, [isOpen, currentGender, currentAge, currentHeritage, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight]);
+    }, [isOpen, currentGender, currentBirthdate, currentEthnicity, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight]);
 
     // Detect when new avatar arrives from Firestore subscription
     React.useEffect(() => {
@@ -463,8 +463,8 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
             await setDoc(doc(db, 'users', user.uid), {
                 identity: {
                     gender: gender.trim(),
-                    age: age.trim(),
-                    heritage: heritage.trim(),
+                    birthdate: birthdate.trim(),
+                    ethnicity: ethnicity.trim(),
                     skin_tone: skinTone,
                     hair_colors: hairColors,
                     hair_texture: hairTexture,
@@ -504,7 +504,7 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
     return (
         <div className="fixed inset-0 z-[60] bg-zinc-950 flex flex-col">
             <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between pt-[calc(16px+env(safe-area-inset-top))]">
-                <h2 className="text-sm font-bold text-white">Edit Appearance</h2>
+                <h2 className="text-sm font-bold text-white">{t('profile.editAppearance')}</h2>
                 {isEditing && (
                     <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3">
                         {t('profile.close')}
@@ -542,18 +542,18 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
 
                 {/* Waiting state */}
                 {waitingForAvatar && (
-                    <p className="text-center text-sm text-zinc-500 mb-4">Regenerating your avatar...</p>
+                    <p className="text-center text-sm text-zinc-500 mb-4">{t('profile.regeneratingAvatar')}</p>
                 )}
 
                 {/* Done state */}
                 {avatarReady && (
                     <div className="flex flex-col items-center gap-4 mb-4">
-                        <p className="text-sm text-zinc-300">Avatar updated</p>
+                        <p className="text-sm text-zinc-300">{t('profile.avatarUpdated')}</p>
                         <button
                             onClick={onClose}
                             className="w-full bg-white text-black py-3.5 text-base font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150"
                         >
-                            Done
+                            {t('profile.done')}
                         </button>
                     </div>
                 )}
@@ -563,7 +563,7 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
                     <>
                         <div className="space-y-5">
                             <div>
-                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">Gender</label>
+                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">{t('profile.genderLabel')}</label>
                                 <input
                                     type="text"
                                     value={gender}
@@ -575,11 +575,11 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
                             </div>
 
                             <div>
-                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">Date of Birth</label>
+                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">{t('profile.dobLabel')}</label>
                                 <input
                                     type="date"
-                                    value={age}
-                                    onChange={(e) => setAge(e.target.value)}
+                                    value={birthdate}
+                                    onChange={(e) => setBirthdate(e.target.value)}
                                     max={new Date().toISOString().split('T')[0]}
                                     min="1920-01-01"
                                     className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 [color-scheme:dark]"
@@ -588,32 +588,32 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
 
                             <div>
                                 <label className="text-sm text-zinc-400 font-semibold mb-1 block">
-                                    {t('onboarding.identityForm.heritageLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.heritageOptional')}</span>
+                                    {t('onboarding.identityForm.ethnicityLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.ethnicityOptional')}</span>
                                 </label>
-                                <p className="text-sm text-zinc-500 mb-2">{t('onboarding.identityForm.heritageSub')}</p>
+                                <p className="text-sm text-zinc-500 mb-2">{t('onboarding.identityForm.ethnicitySub')}</p>
                                 <input
                                     type="text"
-                                    value={heritage}
-                                    onChange={(e) => setHeritage(e.target.value)}
-                                    placeholder={t('onboarding.identityForm.heritagePlaceholder')}
+                                    value={ethnicity}
+                                    onChange={(e) => setEthnicity(e.target.value)}
+                                    placeholder={t('onboarding.identityForm.ethnicityPlaceholder')}
                                     maxLength={100}
                                     className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                                 />
                             </div>
 
                             <AvatarPillSelect label={t('onboarding.identityForm.skinToneLabel')} options={SKIN_TONES} value={skinTone} onChange={setSkinTone} />
-                            <AvatarPillSelect label="Eye Color" options={EYE_COLORS} value={eyeColor} onChange={setEyeColor} />
+                            <AvatarPillSelect label={t('onboarding.identityForm.eyeColorLabel')} options={EYE_COLORS} value={eyeColor} onChange={setEyeColor} />
                             <AvatarPillMultiSelect label={t('onboarding.identityForm.hairColorLabel')} options={HAIR_COLORS} values={hairColors} onChange={setHairColors} />
                             <AvatarPillSelect label={t('onboarding.identityForm.hairTextureLabel')} options={HAIR_TEXTURES} value={hairTexture} onChange={setHairTexture} />
-                            <AvatarPillSelect label="Hair Volume" options={HAIR_VOLUMES} value={hairVolume} onChange={setHairVolume} />
+                            <AvatarPillSelect label={t('onboarding.identityForm.hairVolumeLabel')} options={HAIR_VOLUMES} value={hairVolume} onChange={setHairVolume} />
 
                             <div>
-                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">Height</label>
+                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">{t('onboarding.identityForm.heightLabel')}</label>
                                 <input
                                     type="text"
                                     value={height}
                                     onChange={(e) => setHeight(e.target.value)}
-                                    placeholder="e.g., 5'10&quot; or 178cm"
+                                    placeholder={t('onboarding.identityForm.heightPlaceholder')}
                                     maxLength={20}
                                     className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
                                 />
@@ -632,9 +632,9 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentAge, currentHe
                             {isSaving ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                    Saving...
+                                    {t('profile.saving')}
                                 </span>
-                            ) : 'Update Avatar'}
+                            ) : t('profile.updateAvatar')}
                         </button>
                     </>
                 )}

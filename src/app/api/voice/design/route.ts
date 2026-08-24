@@ -42,7 +42,7 @@ export async function POST(req: Request) {
             archetype: bible.source_code.archetype || '',
             characterName: bible.character_name || 'Character',
             gender: identity.gender || '',
-            age: identity.age || '',
+            birthdate: identity.birthdate || '',
             ethnicity: identity.ethnicity || '',
             appLanguage: data?.preferred_locale || 'en',
         });

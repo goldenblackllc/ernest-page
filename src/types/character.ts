@@ -5,16 +5,12 @@ export interface CharacterIdentity {
     important_people: string;   // Foundation: Tell me about the people in your life
     things_i_enjoy: string;     // Foundation: What does the dream you enjoy?
     gender: string;             // User-provided gender identity
-    age: string;                // User-provided age
+    birthdate: string;          // User-provided date of birth (ISO date string)
     ethnicity?: string;         // Optional — unchangeable physical traits for avatar accuracy
-    /** National/cultural origin (e.g., 'Dominican', 'Korean', 'Irish-Italian') */
-    heritage?: string;
     /** Skin tone from fixed scale */
     skin_tone?: string;
     /** Natural hair color(s) — array for multi-select (e.g., ['Dark Brown', 'Gray']) */
     hair_colors?: string[];
-    /** Natural hair color — legacy single value */
-    hair_color?: string;
     /** Natural hair texture */
     hair_texture?: string;
     /** Hair volume/coverage */
@@ -81,6 +77,10 @@ export interface CharacterBible {
         duration_secs: number;
         is_selected: boolean;
     }>;
+    avatar_status?: 'ready' | 'generating' | 'pending' | 'failed';
+    avatar_last_attempt?: number;
+    avatar_attempt_count?: number;
+    avatar_error?: string | null;
     last_updated: number;   // Timestamp for the "Batch Post" logic.
     version?: number;       // e.g. 1.0, 1.1
     last_commit?: any;      // Firestore Timestamp of last "Finish & Commit"

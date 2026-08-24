@@ -104,7 +104,7 @@ export async function GET(req: Request) {
             const identity = userData?.identity;
             const uGender = identity?.gender || '';
             const uEthnicity = identity?.ethnicity || '';
-            const uAge = computeAge(identity?.age);
+            const uAge = computeAge(identity?.birthdate);
             const demoParts = [
                 uAge ? `approximately ${uAge} years old` : '',
                 uEthnicity,

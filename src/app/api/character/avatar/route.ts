@@ -46,17 +46,17 @@ export async function POST(req: Request) {
 
         const title = identity.title || 'A person of purpose';
         const gender = identity.gender || 'person';
-        const age = identity.age || '';
+        const birthdate = identity.birthdate || '';
         // New structured physical fields with legacy fallback
-        const heritage = identity.heritage || identity.ethnicity || '';
+        const ethnicity = identity.ethnicity || '';
         const skinTone = identity.skin_tone || '';
-        const hairColors: string[] = identity.hair_colors || (identity.hair_color ? [identity.hair_color] : []);
+        const hairColors: string[] = identity.hair_colors || [];
         const hairTexture = identity.hair_texture || '';
         const hairVolume = identity.hair_volume || '';
         const eyeColor = identity.eye_color || '';
 
         // Compute age from birth date
-        const computedAge = computeAge(age);
+        const computedAge = computeAge(birthdate);
         const ageStr = computedAge ? `${computedAge}-year-old` : '';
 
         // Build hair description
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         const physicalParts = [
             ageStr,
             gender,
-            heritage ? `of ${heritage} heritage` : '',
+            ethnicity ? `of ${ethnicity} heritage` : '',
             skinTone ? `with ${skinTone.toLowerCase()} skin` : '',
             eyeColor ? `${eyeColor.toLowerCase()} eyes` : '',
             hairParts ? `${hairParts} hair` : '',
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
             'Instagram-quality sharpness and color saturation.',
             'Natural, confident expression. Face and upper chest fill the frame.',
             'Full-bleed composition. No borders, no frames, no margins, no white space around the subject.',
-            !heritage ? 'Do not default to any racial or ethnic stereotype. Use ambiguous, diverse features unless background is specified.' : '',
+            !ethnicity ? 'Do not default to any racial or ethnic stereotype. Use ambiguous, diverse features unless background is specified.' : '',
             'No text, no watermarks, no logos.',
             "Do NOT show the subject's waist, hips, legs, or feet. Do NOT zoom out to show the full body. Keep the camera tight on the face and upper chest only.",
         ].filter(Boolean).join(' ');

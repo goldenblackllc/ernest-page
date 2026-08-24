@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { processPostContent } from '@/lib/ai/processPostContent';
+import { computeAge } from '@/lib/utils/parseBirthDate';
 
 export const runtime = 'nodejs';
 export const maxDuration = 240;
@@ -61,10 +62,7 @@ export async function POST(req: Request) {
         const gender = identity?.gender || '';
 
         // Build demographic hint for image prompts
-        const age = identity?.birthdate ? (() => {
-            const bd = new Date(identity.birthdate);
-            return Math.floor((Date.now() - bd.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-        })() : null;
+        const age = computeAge(identity?.birthdate);
         const demographicHint = [
             identity?.gender,
             age ? `approximately ${age} years old` : null,

@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         const dossier = userData?.identity?.dossier || '';
         const sessionRecaps = userData?.session_recaps || [];
         const preferredLocale = userData?.preferred_locale || locale || 'en';
-        const characterAge = userData?.identity?.age || '';
+        const characterAge = userData?.identity?.birthdate || '';
         const characterGender = userData?.identity?.gender || '';
 
         // Tone directive removed — the Conversation Spine provides structural flow,
