@@ -377,7 +377,7 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                         uid,
                         authorId: uid,
                         region: userData?.region || null,
-                        author: userData?.displayName || "Anonymous",
+                        author: userData?.identity?.title || userData?.character_bible?.source_code?.archetype || "Anonymous",
                         title: post.title || null,
                         type: 'checkin',
                         public_post: {
@@ -445,9 +445,10 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                                 service: 'gmail',
                                 auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
                             });
-                            const postAuthor = userData?.displayName || 'Anonymous';
+                            const postAuthor = userData?.identity?.title || userData?.character_bible?.source_code?.archetype || 'Anonymous';
                             const postVisibility = visibility || 'private';
-                            const emailPreview = '';
+                            const postTitle = post.title || null;
+                            const postThumbnail = thumbnailUrl || null;
                             await transporter.sendMail({
                                 from: `Earnest Page <${ADMIN_EMAIL}>`,
                                 to: ADMIN_EMAIL,
@@ -456,9 +457,11 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
 <div style="font-family: -apple-system, sans-serif; background: #09090b; color: #d4d4d8; padding: 32px; border-radius: 12px; max-width: 480px;">
     <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 16px 0;">New Post Published</p>
     <h2 style="font-size: 20px; color: #ffffff; margin: 0 0 4px 0; font-weight: 700;">${postAuthor}</h2>
+    ${postTitle ? `<p style="font-size: 14px; color: #a1a1aa; margin: 4px 0 12px 0; font-style: italic;">"${postTitle}"</p>` : ''}
     <div style="margin: 8px 0 12px 0; padding: 8px 12px; background: ${engagementVerified ? '#052e16' : '#422006'}; border: 1px solid ${engagementColor}; border-radius: 8px; font-size: 13px; color: ${engagementColor}; font-weight: 600;">
         ${engagementLabel}
     </div>
+    ${postThumbnail ? `<div style="margin: 0 0 16px 0;"><img src="${postThumbnail}" alt="Post thumbnail" style="width: 100%; border-radius: 8px; display: block;" /></div>` : ''}
     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
         <tr><td style="padding: 6px 0; color: #71717a;">Visibility</td><td style="padding: 6px 0; text-align: right; color: ${postVisibility === 'private' ? '#f87171' : '#34d399'}; font-weight: 600;">${postVisibility}</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Exchanges</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${engagementUserTurns} user messages</td></tr>
@@ -467,7 +470,6 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
         <tr><td style="padding: 6px 0; color: #71717a;">Session End</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7;">${closeReasonLabel}</td></tr>
         <tr><td style="padding: 6px 0; color: #71717a;">Post ID</td><td style="padding: 6px 0; text-align: right; color: #e4e4e7; font-family: monospace; font-size: 11px;">${postDocRef.id}</td></tr>
     </table>
-    ${emailPreview ? `<div style="margin: 16px 0 0 0; padding: 12px; background: #18181b; border-radius: 8px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">${emailPreview}</div>` : ''}
 </div>`,
                             });
                         }
