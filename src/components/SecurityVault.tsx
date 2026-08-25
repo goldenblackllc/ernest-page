@@ -126,6 +126,8 @@ export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) 
                                                 });
                                                 if (res.ok) {
                                                     // Account is gone — sign out client
+                                                    const { clearFeedCache } = await import('@/lib/feedCache');
+                                                    clearFeedCache();
                                                     const { signOut: fbSignOut } = await import('firebase/auth');
                                                     const { auth } = await import('@/lib/firebase/config');
                                                     await fbSignOut(auth);

@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
+import { auth, db } from '@/lib/firebase/config';
+import { doc, updateDoc } from 'firebase/firestore';
 import { clearFeedCache } from '@/lib/feedCache';
 
 const AUTH_HINT_KEY = 'ep-auth-hint';
@@ -46,6 +47,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             try {
                 if (user) {
                     localStorage.setItem(AUTH_HINT_KEY, '1');
+
+                    // Track last_active_date once per day (fire-and-forget)
+                    const today = new Date().toISOString().split('T')[0];
+                    const activeKey = `ep-active-${user.uid}`;
+                    if (localStorage.getItem(activeKey) !== today) {
+                        localStorage.setItem(activeKey, today);
+                        updateDoc(doc(db, 'users', user.uid), { last_active_date: today }).catch(() => {});
+                    }
                 } else {
                     localStorage.removeItem(AUTH_HINT_KEY);
                 }

@@ -4,8 +4,6 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
@@ -25,7 +23,7 @@ export function DashboardHeader() {
     const [isSupportOpen, setIsSupportOpen] = useState(false);
     const [isVaultOpen, setIsVaultOpen] = useState(false);
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
     const router = useRouter();
     const t = useTranslations();
 
@@ -43,7 +41,7 @@ export function DashboardHeader() {
 
     const handleLogout = async () => {
         try {
-            await signOut(auth);
+            await signOut();
             router.push('/');
         } catch (error) {
             console.error("Error signing out: ", error);

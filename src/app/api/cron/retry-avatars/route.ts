@@ -1,10 +1,14 @@
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
-import { verifyInternalAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-    if (!verifyInternalAuth(req)) return unauthorizedResponse();
+    // Verify cron secret (Vercel sends Authorization: Bearer <CRON_SECRET>)
+    const authHeader = req.headers.get('authorization');
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const summary = { processed: 0, succeeded: 0, failed: 0, skipped: 0 };
 

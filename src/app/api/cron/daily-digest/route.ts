@@ -38,24 +38,16 @@ export async function GET(req: Request) {
             const uid = userDoc.id;
             const userData = userDoc.data();
 
-            // Eligible: active subscribers OR users who had a session in the last 30 days
-            const sub = userData?.subscription;
-            const isSubscriber = sub?.status === 'active' && sub?.subscribedUntil && new Date(sub.subscribedUntil) > new Date();
-
-            let hadRecentSession = false;
-            if (!isSubscriber) {
-                const purchases = userData?.session_purchases || [];
-                const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-                hadRecentSession = purchases.some((p: any) =>
-                    p.purchasedAt && new Date(p.purchasedAt).getTime() > thirtyDaysAgo
-                );
-            }
-
-            if (!isSubscriber && !hadRecentSession) continue;
-
             // Need a compiled bible
             const compiledBible = userData?.character_bible?.compiled_output?.ideal;
             if (!compiledBible || !Array.isArray(compiledBible) || compiledBible.length === 0) continue;
+
+            // Skip users who haven't opened the app in 7+ days
+            const lastActive = userData?.last_active_date;
+            if (lastActive) {
+                const daysSinceActive = Math.floor((Date.now() - new Date(lastActive).getTime()) / (24 * 60 * 60 * 1000));
+                if (daysSinceActive > 7) continue;
+            }
 
             // Split each category into subcategories
             const allSubsections: { title: string; content: string }[] = [];

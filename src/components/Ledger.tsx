@@ -14,7 +14,7 @@ import { FollowAuthorModal } from "@/components/FollowAuthorModal";
 import { useTranslations, useLocale } from "next-intl";
 
 import { Timestamp } from "firebase/firestore";
-import { getFeedCache, setFeedCache } from "@/lib/feedCache";
+import { getFeedCache, setFeedCache, clearFeedCache } from "@/lib/feedCache";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const CHECKIN_INTERVAL_MS = 28 * 24 * 60 * 60 * 1000; // 28 days
@@ -40,6 +40,21 @@ export function Ledger() {
     const currentPageRef = useRef(0);
     const sentinelRef = useRef<HTMLDivElement>(null);
     const fetchingRef = useRef(false);
+
+    // Track previous user to detect account switches and clear stale data
+    const prevUserUidRef = useRef<string | null>(user?.uid ?? null);
+    useEffect(() => {
+        const currentUid = user?.uid ?? null;
+        if (prevUserUidRef.current !== null && currentUid !== prevUserUidRef.current) {
+            // User changed — purge stale entries immediately so old posts never flash
+            clearFeedCache();
+            setEntries([]);
+            setFollowingMap({});
+            setLoading(true);
+            newestPostTimeRef.current = null;
+        }
+        prevUserUidRef.current = currentUid;
+    }, [user?.uid]);
 
     const handleConfirmDelete = async () => {
         if (!postToDelete) return;
@@ -491,6 +506,36 @@ export function Ledger() {
                             } catch (err) {
                                 console.error('Failed to confirm voice:', err);
                             }
+                        }}
+                    />
+                )}
+
+                {/* Daily Digest Card — also show in empty feed state */}
+                {profile?.daily_digest?.title
+                 && profile?.daily_digest?.image_url && (
+                    <FeedPostCard
+                        digestMode
+                        post={{
+                            id: `digest-${profile.daily_digest.date}`,
+                            type: 'checkin',
+                            uid: user?.uid,
+                            author_avatar_url: profile.character_bible?.compiled_output?.avatar_url,
+                            title: profile.daily_digest.title,
+                            short_question: profile.daily_digest.title,
+                            short_answer: profile.daily_digest.full_content || profile.daily_digest.content,
+                            short_audio_url: profile.daily_digest.audio_url ?? undefined,
+                            imagen_url: profile.daily_digest.image_url ?? undefined,
+                            imagen_urls: profile.daily_digest.imagen_urls ?? undefined,
+                            thumbnail_url: profile.daily_digest.thumbnail_url ?? undefined,
+                            image_style: profile.daily_digest.image_style ?? undefined,
+                            message_images: profile.daily_digest.message_images ?? undefined,
+                            public_post: {
+                                condensed_transcript: profile.daily_digest.condensed_transcript ?? undefined,
+                            },
+                            audio_url: profile.daily_digest.audio_url ?? undefined,
+                            audio_word_timestamps: profile.daily_digest.audio_word_timestamps ?? undefined,
+                            audio_message_boundaries: profile.daily_digest.audio_message_boundaries ?? undefined,
+                            created_at: null,
                         }}
                     />
                 )}
