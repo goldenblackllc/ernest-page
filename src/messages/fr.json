@@ -322,6 +322,7 @@
   "profile": {
     "unknownCharacter": "Personnage Inconnu",
     "profileTab": "Profil",
+    "lastUpdated": "Dernière mise à jour {date}",
     "edit": "Modifier",
     "identityTitle": "Identité",
     "editIdentityModalTitle": "Modifier l'Identité",
@@ -549,7 +550,13 @@
     },
     "s7": {
       "title": "7. Accès et Utilisation",
-      "p1": "Earnest Page est fourni gratuitement. L'accès aux sessions du Chat du Miroir est soumis à une limite d'utilisation quotidienne afin de garantir la qualité du service pour tous les utilisateurs."
+      "p1": "Earnest Page est fourni gratuitement. L'accès aux sessions du Chat du Miroir est soumis à une limite d'utilisation quotidienne afin de garantir la qualité du service pour tous les utilisateurs.",
+      "strong1": "Offre Gratuite.",
+      "p1b": " Le Service est actuellement offert sans frais pendant sa période bêta. Nous nous réservons le droit d'introduire des fonctionnalités payantes ou des niveaux d'abonnement à l'avenir, avec un préavis aux utilisateurs.",
+      "strong1b": "Limites d'Utilisation.",
+      "p2": " Pour maintenir les performances et la disponibilité, nous pouvons imposer des limites raisonnables à la fréquence et au volume de vos interactions avec le Service, y compris des plafonds de sessions quotidiennes et des limites de débit de messages.",
+      "strong2": "Disponibilité du Service.",
+      "p3": " Nous nous efforçons de maintenir le Service disponible en permanence, mais ne garantissons pas un accès ininterrompu. Le Service peut être temporairement indisponible en raison de la maintenance, des mises à jour ou de circonstances indépendantes de notre volonté."
     },
     "s8": {
       "title": "8. Confidentialité",

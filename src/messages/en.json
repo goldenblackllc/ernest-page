@@ -272,6 +272,7 @@
   "profile": {
     "unknownCharacter": "Unknown Character",
     "profileTab": "Profile",
+    "lastUpdated": "Last updated {date}",
     "edit": "Edit",
     "identityTitle": "Identity",
     "editIdentityModalTitle": "Edit Identity",
@@ -499,7 +500,13 @@
     },
     "s7": {
       "title": "7. Access & Usage",
-      "p1": "Earnest Page is provided free of charge. Access to Mirror Chat sessions is subject to a daily usage limit to ensure quality of service for all users."
+      "p1": "Earnest Page is provided free of charge. Access to Mirror Chat sessions is subject to a daily usage limit to ensure quality of service for all users.",
+      "strong1": "Free Tier.",
+      "p1b": " The Service is currently offered at no cost during its beta period. We reserve the right to introduce paid features or subscription tiers in the future, with advance notice to users.",
+      "strong1b": "Usage Limits.",
+      "p2": " To maintain performance and availability, we may impose reasonable limits on the frequency and volume of your interactions with the Service, including daily session caps and message rate limits.",
+      "strong2": "Service Availability.",
+      "p3": " We strive to keep the Service available at all times but do not guarantee uninterrupted access. The Service may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control."
     },
     "s8": {
       "title": "8. Privacy",

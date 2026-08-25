@@ -322,6 +322,7 @@
   "profile": {
     "unknownCharacter": "Personagem Desconhecido",
     "profileTab": "Perfil",
+    "lastUpdated": "Última atualização {date}",
     "edit": "Editar",
     "identityTitle": "Identidade",
     "editIdentityModalTitle": "Editar Identidade",
@@ -549,7 +550,13 @@
     },
     "s7": {
       "title": "7. Acesso e Uso",
-      "p1": "Earnest Page é fornecido gratuitamente. O acesso às sessões do Chat do Espelho está sujeito a um limite de uso diário para garantir a qualidade do serviço para todos os usuários."
+      "p1": "Earnest Page é fornecido gratuitamente. O acesso às sessões do Chat do Espelho está sujeito a um limite de uso diário para garantir a qualidade do serviço para todos os usuários.",
+      "strong1": "Nível Gratuito.",
+      "p1b": " O Serviço é atualmente oferecido sem custo durante seu período beta. Reservamo-nos o direito de introduzir recursos pagos ou níveis de assinatura no futuro, com aviso prévio aos usuários.",
+      "strong1b": "Limites de Uso.",
+      "p2": " Para manter o desempenho e a disponibilidade, podemos impor limites razoáveis à frequência e ao volume de suas interações com o Serviço, incluindo limites diários de sessão e limites de taxa de mensagens.",
+      "strong2": "Disponibilidade do Serviço.",
+      "p3": " Nos esforçamos para manter o Serviço disponível o tempo todo, mas não garantimos acesso ininterrupto. O Serviço pode estar temporariamente indisponível devido a manutenção, atualizações ou circunstâncias fora do nosso controle."
     },
     "s8": {
       "title": "8. Privacidade",

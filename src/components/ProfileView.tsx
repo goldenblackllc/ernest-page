@@ -90,6 +90,11 @@ export function ProfileView() {
                             <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-bold mt-1">
                                 {t('profileTab')}
                             </p>
+                            {bible?.last_updated && (
+                                <p className="text-[10px] text-zinc-400 mt-0.5">
+                                    {t('lastUpdated', { date: new Date(bible.last_updated).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) })}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

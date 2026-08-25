@@ -37,7 +37,7 @@ const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the foll
 CRITICAL FORMATTING RULE — SUBSECTIONS:
 Each of the 7 sections above MUST be broken into multiple subsections using bold markdown subheadings. Use the format: **Subheading:** followed by the prose for that subsection.
 The subsection names should be organic and character-specific — not generic labels. Here are examples of the kind of subsections expected for each section:
-- "Style & Presence" → **Wardrobe:** ... **Grooming:** ... **Physicality:** ... **Travel Style:** ...
+- "Style & Presence" → **The Closet:** A complete, specific, itemized wardrobe this character owns. List actual pieces across categories: suits, blazers, shirts, trousers, denim, outerwear/coats, shoes, underwear/basics, accessories (watches, belts, bags), and seasonal/travel pieces. Use specific brands and descriptions — this is the user's aspirational shopping list, not a mood board. **Grooming:** ... **Physicality:** ... **Travel Style:** ...
 - "Daily Life & Habits" → **Morning Ritual:** ... **The Work:** ... **Weekend Mode:** ... **Passions:** ...
 - "People & Connections" → One subsection per major person, e.g. **Iris:** ... **Sage:** ... **Brian:** ... plus **Communication Style:** ... **Social Energy:** ...
   CRITICAL — FACTS NOT JUDGMENTS: For this section, extract factual relationship details (names, roles, ages, relationship dynamics like jealousy, estrangement, or distance) but do NOT incorporate the user's personal emotional judgments, complaints, or negative opinions about people. Example: "His sister-in-law harbors jealousy toward his family" is a fact to include. "I hate my sister" is a personal judgment to exclude. The character sees relationships through the lens of the Reality Rules — they understand the beliefs behind friction but do not adopt the user's raw grievances.
@@ -64,7 +64,6 @@ Archetype: {ARCHETYPE}
 Manifesto: {MANIFESTO}
 Important People: {IMPORTANT_PEOPLE}
 Things they enjoy: {THINGS_I_ENJOY}
-User's wardrobe items: {WARDROBE}
 Recently expressed desires: {WANTS}
 
 CRITICAL RULE FOR DESIRES:
@@ -77,8 +76,8 @@ export async function POST(req: Request) {
         const payload = await req.json();
         const { uid, source_code, skipCooldown } = payload;
 
-        if (!uid || !source_code) {
-            return Response.json({ error: "Missing uid or source_code" }, { status: 400 });
+        if (!uid) {
+            return Response.json({ error: "Missing uid" }, { status: 400 });
         }
 
         // In-memory burst guard (kept as first line of defense)
@@ -89,6 +88,13 @@ export async function POST(req: Request) {
         const userDocRef = db.collection('users').doc(uid);
         const userDoc = await userDocRef.get();
         const data = userDoc.data();
+
+        // Fall back to existing source_code from Firestore when not provided
+        // (e.g. post-session recompile triggered by cleanup-chats cron)
+        const resolvedSourceCode = source_code || data?.character_bible?.source_code;
+        if (!resolvedSourceCode) {
+            return Response.json({ error: "Missing source_code and no existing bible found" }, { status: 400 });
+        }
 
         // Determine tier: paid users get higher limits
         const sub = data?.subscription;
@@ -130,13 +136,11 @@ export async function POST(req: Request) {
             google: { safetySettings: SAFETY_SETTINGS },
         };
 
-        // Read wardrobe items from unified profile for the Wardrobe section
-        const userWardrobe = data?.unified_profile?.wardrobe || [];
         const userLocale = data?.preferred_locale || 'en';
 
         // Read people from unified profile
         const unifiedPeople = data?.unified_profile?.people || [];
-        let peopleString = source_code.important_people || 'None';
+        let peopleString = resolvedSourceCode.important_people || 'None';
         if (unifiedPeople.length > 0) {
             const formattedPeople = unifiedPeople.map((p: any) => 
                 `Name: ${p.name}\nRelationship: ${p.relationship}\nDynamic: ${p.dynamic || 'N/A'}\nNotes: ${p.notes || 'N/A'}`
@@ -150,17 +154,16 @@ export async function POST(req: Request) {
 
         // Read interests from unified profile
         const unifiedInterests = data?.unified_profile?.interests || [];
-        let interestsString = source_code.things_i_enjoy || 'Not specified.';
+        let interestsString = resolvedSourceCode.things_i_enjoy || 'Not specified.';
         if (unifiedInterests.length > 0) {
             interestsString = `User Summary:\n${interestsString}\n\nSpecific Interests:\n${unifiedInterests.join(', ')}`;
         }
 
         const idealPrompt = PROMPT_IDEAL_BIBLE
-            .replace('{ARCHETYPE}', source_code.archetype || 'None')
-            .replace('{MANIFESTO}', source_code.manifesto || 'None')
+            .replace('{ARCHETYPE}', resolvedSourceCode.archetype || 'None')
+            .replace('{MANIFESTO}', resolvedSourceCode.manifesto || 'None')
             .replace('{IMPORTANT_PEOPLE}', peopleString)
             .replace('{THINGS_I_ENJOY}', interestsString)
-            .replace('{WARDROBE}', userWardrobe.length > 0 ? userWardrobe.join(', ') : 'Not specified — invent a wardrobe that fits the archetype.')
             .replace('{WANTS}', wantsString)
             + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${userLocale === 'es' ? 'Spanish' : userLocale === 'pt' ? 'Portuguese' : userLocale === 'fr' ? 'French' : userLocale === 'de' ? 'German' : 'English'}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
 
@@ -220,7 +223,7 @@ export async function POST(req: Request) {
 
         // Save back to Firestore
         if (userDoc.exists) {
-            const currentBible: CharacterBible = data?.character_bible || { source_code, compiled_bible: {}, compiled_output: { ideal: [] }, last_updated: Date.now() };
+            const currentBible: CharacterBible = data?.character_bible || { source_code: resolvedSourceCode, compiled_bible: {}, compiled_output: { ideal: [] }, last_updated: Date.now() };
 
             // Resolve character name: use user-provided name, or generate one
             const userProvidedName = data?.identity?.character_name || '';
@@ -231,7 +234,7 @@ export async function POST(req: Request) {
                     const nameResult = await generateWithFallback({
                         primaryModelId: OPUS_MODEL,
                         abortSignal: AbortSignal.timeout(15_000),
-                        prompt: `Based on this character archetype "${source_code.archetype || 'Unknown'}" and manifesto "${(source_code.manifesto || '').slice(0, 200)}", generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
+                        prompt: `Based on this character archetype "${resolvedSourceCode.archetype || 'Unknown'}" and manifesto "${(resolvedSourceCode.manifesto || '').slice(0, 200)}", generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
                         schema: z.object({ name: z.string().describe("A single first name") }),
                     });
                     characterName = (nameResult.object as any).name || 'The Architect';
@@ -299,7 +302,7 @@ export async function POST(req: Request) {
                 ...currentBible,
                 source_code: {
                     ...currentBible.source_code,
-                    ...source_code
+                    ...resolvedSourceCode
                 },
                 compiled_output: {
                     ...currentBible.compiled_output,

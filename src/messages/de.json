@@ -322,6 +322,7 @@
   "profile": {
     "unknownCharacter": "Unknown Character",
     "profileTab": "Profile",
+    "lastUpdated": "Zuletzt aktualisiert {date}",
     "edit": "Edit",
     "identityTitle": "Identity",
     "editIdentityModalTitle": "Edit Identity",
@@ -549,7 +550,13 @@
     },
     "s7": {
       "title": "7. Zugang und Nutzung",
-      "p1": "Earnest Page wird kostenlos bereitgestellt. Der Zugang zu Mirror Chat-Sitzungen unterliegt einem täglichen Nutzungslimit, um die Servicequalität für alle Nutzer zu gewährleisten."
+      "p1": "Earnest Page wird kostenlos bereitgestellt. Der Zugang zu Mirror Chat-Sitzungen unterliegt einem täglichen Nutzungslimit, um die Servicequalität für alle Nutzer zu gewährleisten.",
+      "strong1": "Kostenloses Angebot.",
+      "p1b": " Der Dienst wird derzeit während der Beta-Phase kostenlos angeboten. Wir behalten uns das Recht vor, in Zukunft kostenpflichtige Funktionen oder Abonnementstufen einzuführen, wobei die Nutzer im Voraus benachrichtigt werden.",
+      "strong1b": "Nutzungslimits.",
+      "p2": " Um Leistung und Verfügbarkeit aufrechtzuerhalten, können wir angemessene Grenzen für die Häufigkeit und das Volumen Ihrer Interaktionen mit dem Dienst festlegen, einschließlich täglicher Sitzungslimits und Nachrichtenratenlimits.",
+      "strong2": "Dienstverfügbarkeit.",
+      "p3": " Wir bemühen uns, den Dienst jederzeit verfügbar zu halten, garantieren jedoch keinen ununterbrochenen Zugang. Der Dienst kann aufgrund von Wartung, Updates oder Umständen außerhalb unserer Kontrolle vorübergehend nicht verfügbar sein."
     },
     "s8": {
       "title": "8. Privacy",

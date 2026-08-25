@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         );
         const wardrobeEntry = compiledSections.find(
             (s: { heading: string; content: string }) =>
-                s.heading === 'Wardrobe'
+                s.heading === 'Wardrobe' || s.heading === 'The Closet'
         );
         // Fallback to legacy path for older profiles
         const compiledBible = bible?.compiled_bible || {};
