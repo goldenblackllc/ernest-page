@@ -299,11 +299,12 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                         console.log(`[Cron] Profile + log updated for user ${uid} (session ${sessionCount})`);
 
                         // Trigger background bible recompile with updated profile
-                        fetch(`${process.env.NEXT_PUBLIC_URL || 'https://your-app.vercel.app'}/api/character/compile`, {
+                        const baseUrl = process.env.NEXT_PUBLIC_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+                        fetch(`${baseUrl}/api/character/compile`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+                                'x-internal-key': process.env.CRON_SECRET || '',
                             },
                             body: JSON.stringify({ uid, skipCooldown: true }),
                         }).catch(err => console.error(`[Cron] Bible recompile trigger failed for ${uid}:`, err.message));
