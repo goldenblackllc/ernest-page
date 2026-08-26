@@ -6,7 +6,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/security/serverHash.js';
 import { geohashForLocation } from 'geofire-common';
-import { buildDossierPrompt } from './lib/ai/dossierPrompt.js';
+import { buildExtractionPrompt } from './lib/ai/extractionPrompt.js';
+import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
 import { matchSponsor } from './lib/config/ecosystem.js';
 import { generateCondensedTranscript } from './lib/ai/condensedTranscript.js';
 
@@ -98,32 +99,48 @@ export const processChat = onDocumentUpdated(
         const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
         const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
         
-        const currentDossier = identity?.dossier || '';
+        const currentProfile = userData?.unified_profile || {};
         const sessionCount = (identity?.session_count || 0) + 1;
 
-        const dossierRewritePrompt = `${buildDossierPrompt(currentDossier, sessionCount)}\n\nThe following chat transcript is the new session data to incorporate.\n\nCHAT TRANSCRIPT:\n${transcript}`;
-        const recapPrompt = `Write a 2-3 sentence recap of this session for continuity. What was discussed? What was the emotional tone? What was the outcome or takeaway? Write from the consultant's perspective. Keep it concise — this will be shown to the character at the start of the next session for context.\n\nCHAT TRANSCRIPT:\n${transcript}`;
+        const extractionPrompt = buildExtractionPrompt(currentProfile, identity?.dossier || '', transcript);
+        const sessionLogPrompt = buildSessionLogPrompt(transcript);
 
         try {
-            console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + recap)...`);
-            const [condensedResult, dossierResult, recapResult] = await Promise.all([
+            console.log(`[ProcessChat] Starting parallel AI calls (condensed + extraction + log)...`);
+            const [condensedResult, extractionResult, recapResult] = await Promise.all([
                 generateCondensedTranscript(transcript),
+                // Profile extraction — Opus
                 generateWithFallback({
                     primaryModelId: OPUS_MODEL,
                     fallbackModelId: OPUS_FALLBACK,
-                    schema: z.object({ updated_dossier: z.string() }),
-                    prompt: dossierRewritePrompt,
+                    schema: z.object({
+                        new_people: z.array(z.object({
+                            name: z.string(),
+                            relationship: z.string(),
+                            dynamic: z.string().optional(),
+                            birthday: z.string().optional(),
+                            notes: z.string().optional(),
+                        })).describe('New or updated people/pets mentioned'),
+                        new_interests: z.array(z.string()).describe('New interests/hobbies mentioned'),
+                        new_wardrobe: z.array(z.string()).describe('New clothing items mentioned'),
+                        rewritten_dossier: z.string().optional().describe('Completely rewritten identity.dossier text, incorporating new narrative facts and removing outdated ones, keeping it highly concise (max 1 page). Null if no narrative facts changed.'),
+                        wants_for_bible: z.array(z.string()).describe('Desires/wants expressed — these will be converted to present-tense character realities, NOT stored as wants'),
+                    }),
+                    prompt: extractionPrompt,
                 }),
+                // Session Log Entry — Opus
                 generateWithFallback({
                     primaryModelId: OPUS_MODEL,
                     fallbackModelId: OPUS_FALLBACK,
-                    schema: z.object({ session_recap: z.string() }),
-                    prompt: recapPrompt,
+                    schema: z.object({
+                        session_recap: z.string().describe("2-3 sentence factual log of this session"),
+                    }),
+                    prompt: sessionLogPrompt,
                 }),
             ]);
 
             const condensed = condensedResult;
-            const dossier = (dossierResult.object as any);
+            const extracted = (extractionResult.object as any);
             const recap = (recapResult.object as any);
 
             let condensedMessages: Array<{ role: 'user' | 'ideal_self'; text: string }> | null = null;
@@ -136,20 +153,55 @@ export const processChat = onDocumentUpdated(
                 condensedEditorialNote = condensed.editorial_note || null;
             }
 
-            const dossierPromise = (identity && dossier && recap) ? (async () => {
+            const dossierPromise = (identity && extracted && recap) ? (async () => {
+                // Build the new session_recaps array (keep last 5)
                 const existingRecaps = userData?.session_recaps || [];
                 const newRecap = { date: new Date().toISOString().split('T')[0], recap: recap.session_recap };
-                const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 3);
+                const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
+
+                // Merge extracted data into unified profile
+                const profile = userData?.unified_profile || {
+                    people: [],
+                    interests: [],
+                    wardrobe: [],
+                    routines: '',
+                    life_facts: '',
+                    milestones: ''
+                };
+                
+                // Merge people (update existing by name, add new)
+                const mergedPeople = [...(profile.people || [])];
+                (extracted.new_people || []).forEach((person: any) => {
+                    const idx = mergedPeople.findIndex((p: any) => p.name.toLowerCase() === person.name.toLowerCase());
+                    if (idx >= 0) {
+                        mergedPeople[idx] = { ...mergedPeople[idx], ...person };
+                    } else {
+                        mergedPeople.push(person);
+                    }
+                });
+                
+                const updatedProfile = {
+                    people: mergedPeople,
+                    interests: Array.from(new Set([...(profile.interests || []), ...(extracted.new_interests || [])])),
+                    wardrobe: Array.from(new Set([...(profile.wardrobe || []), ...(extracted.new_wardrobe || [])])),
+                    routines: profile.routines || '', // Legacy fields preserved but no longer appended to
+                    life_facts: profile.life_facts || '',
+                    milestones: profile.milestones || '',
+                };
 
                 await userDoc.ref.set({
                     identity: {
                         ...identity,
-                        dossier: dossier.updated_dossier,
+                        ...(extracted.rewritten_dossier ? { dossier: extracted.rewritten_dossier } : {}),
                         dossier_updated_at: FieldValue.serverTimestamp(),
                         session_count: sessionCount,
                     },
                     session_recaps: updatedRecaps,
+                    unified_profile: updatedProfile,
+                    // Store wants temporarily for the bible recompile to consume
+                    ...(extracted.wants_for_bible?.length > 0 && { wants_for_bible: FieldValue.arrayUnion(...extracted.wants_for_bible) })
                 }, { merge: true });
+                console.log(`[ProcessChat] Profile + log updated for ${uid} (session ${sessionCount})`);
 
                 // Trigger bible recompile with updated profile
                 const appUrl = process.env.APP_URL;
