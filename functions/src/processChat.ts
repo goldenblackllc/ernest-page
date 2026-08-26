@@ -150,6 +150,32 @@ export const processChat = onDocumentUpdated(
                     },
                     session_recaps: updatedRecaps,
                 }, { merge: true });
+
+                // Trigger bible recompile with updated profile
+                const appUrl = process.env.APP_URL;
+                const cronSecret = process.env.CRON_SECRET;
+                if (appUrl && cronSecret) {
+                    try {
+                        const compileRes = await fetch(`${appUrl}/api/character/compile`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-internal-key': cronSecret,
+                            },
+                            body: JSON.stringify({ uid, skipCooldown: true }),
+                        });
+                        if (!compileRes.ok) {
+                            const errBody = await compileRes.text().catch(() => '');
+                            console.error(`[ProcessChat] Bible recompile failed for ${uid}: ${compileRes.status} ${errBody}`);
+                        } else {
+                            console.log(`[ProcessChat] Bible recompile succeeded for ${uid}`);
+                        }
+                    } catch (err: any) {
+                        console.error(`[ProcessChat] Bible recompile network error for ${uid}:`, err.message);
+                    }
+                } else {
+                    console.warn(`[ProcessChat] Skipping bible recompile — APP_URL or CRON_SECRET not set`);
+                }
             })() : Promise.resolve();
 
             if (condensed.is_publishable && condensedMessages && condensedMessages.length > 0) {
