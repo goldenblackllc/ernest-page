@@ -1,7 +1,7 @@
 /**
  * processPostContent.ts
  *
- * Shared post-processing pipeline used by both the cleanup-chats cron
+ * Shared post-processing pipeline used by both the processChat cloud function
  * and the regenerate-post endpoint.
  *
  * Takes a raw transcript and produces:

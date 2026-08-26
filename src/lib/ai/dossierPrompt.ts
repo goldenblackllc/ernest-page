@@ -1,6 +1,6 @@
 /**
  * Shared dossier rewrite prompt — single source of truth.
- * Used by cleanup-chats cron and the standalone dossier/update endpoint.
+ * Used by processChat cloud function and the standalone dossier/update endpoint.
  */
 export function buildDossierPrompt(currentDossier: string, sessionCount: number): string {
     return `You are maintaining an intelligence briefing on a person. Your mission: someone who has never met this person should be able to read this dossier and immediately understand who they are, what they do, who matters to them, and where they are in life.

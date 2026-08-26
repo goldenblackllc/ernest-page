@@ -511,24 +511,33 @@ export async function generateConversationAudio(
         const messageBoundaries: MessageBoundary[] = [];
         let cumulativeOffset = 0;
 
-        // Generate a real silent MP3 using ffmpeg (1.2 seconds target)
-        const SILENCE_DURATION_TARGET = 1.2;
-        let silenceBuffer: Buffer | null = null;
-        let actualSilenceDuration = SILENCE_DURATION_TARGET;
+        // ─── Resolve ffmpeg path (shared by silence generation + final re-encode) ───
+        const pathMod = await import('path');
+        const { spawnSync } = await import('child_process');
+        let ffmpegPath: string | null = null;
         try {
-            const pathMod = await import('path');
-            const { spawnSync } = await import('child_process');
-            let ffmpegPath = pathMod.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+            const candidate = pathMod.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
             const { existsSync } = await import('fs');
-            if (!existsSync(ffmpegPath)) {
+            if (existsSync(candidate)) {
+                ffmpegPath = candidate;
+            } else {
                 try {
                     const { execSync } = await import('child_process');
                     ffmpegPath = execSync('which ffmpeg', { encoding: 'utf8' }).trim();
                 } catch {
-                    console.warn('[PostTTS] ffmpeg not found — no silence gaps between messages');
+                    console.warn('[PostTTS] ffmpeg not found — silence gaps and re-encode unavailable');
                 }
             }
-            if (ffmpegPath) {
+        } catch (err: any) {
+            console.warn('[PostTTS] Failed to resolve ffmpeg path:', err.message);
+        }
+
+        // Generate a real silent MP3 using ffmpeg (1.2 seconds target)
+        const SILENCE_DURATION_TARGET = 1.2;
+        let silenceBuffer: Buffer | null = null;
+        let actualSilenceDuration = SILENCE_DURATION_TARGET;
+        if (ffmpegPath) {
+            try {
                 const result = spawnSync(ffmpegPath, [
                     '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono`,
                     '-t', String(SILENCE_DURATION_TARGET),
@@ -541,9 +550,9 @@ export async function generateConversationAudio(
                     actualSilenceDuration = (silenceBuffer.length * 8) / 192000;
                     console.log(`[PostTTS] Silence buffer: ${silenceBuffer.length} bytes, actual duration: ${actualSilenceDuration.toFixed(3)}s`);
                 }
+            } catch (err: any) {
+                console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
             }
-        } catch (err: any) {
-            console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
         }
 
         // ─── PARALLEL-BY-VOICE TTS ───
@@ -649,7 +658,35 @@ export async function generateConversationAudio(
 
         // Concatenate all audio buffers (including silence gaps)
         const combinedBuffer = Buffer.concat(audioBuffers);
-        const audioUrl = await uploadAudio(combinedBuffer, `post-audio/${postId}_conv_${Date.now()}.mp3`);
+
+        // Re-encode through ffmpeg to produce a single valid MP3 stream.
+        // Raw Buffer.concat of multiple MP3 clips creates a multi-stream file
+        // that mobile Safari/WebKit's decodeAudioData truncates to only the
+        // first stream (~first message clip). Re-muxing fixes this.
+        let finalBuffer = combinedBuffer;
+        if (ffmpegPath) {
+            try {
+                const remuxResult = spawnSync(ffmpegPath, [
+                    '-i', 'pipe:0',
+                    '-c:a', 'libmp3lame', '-b:a', '192k',
+                    '-f', 'mp3', 'pipe:1',
+                ], {
+                    input: combinedBuffer,
+                    maxBuffer: 50 * 1024 * 1024, // 50MB — enough for long conversations
+                });
+                if (remuxResult.status === 0 && remuxResult.stdout.length > 0) {
+                    finalBuffer = Buffer.from(remuxResult.stdout);
+                    console.log(`[PostTTS] Re-encoded MP3: ${combinedBuffer.length} → ${finalBuffer.length} bytes`);
+                } else {
+                    const stderr = remuxResult.stderr?.toString().slice(0, 200) || '';
+                    console.warn(`[PostTTS] ffmpeg re-encode failed (status=${remuxResult.status}), using raw concat fallback. stderr: ${stderr}`);
+                }
+            } catch (err: any) {
+                console.warn('[PostTTS] ffmpeg re-encode error:', err.message);
+            }
+        }
+
+        const audioUrl = await uploadAudio(finalBuffer, `post-audio/${postId}_conv_${Date.now()}.mp3`);
 
         console.log(`[PostTTS] Conversation audio generated for post ${postId}: ${messages.length} messages, ${allTimestamps.length} words`);
 

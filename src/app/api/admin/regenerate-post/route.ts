@@ -11,7 +11,7 @@ export const maxDuration = 240;
  * POST /api/admin/regenerate-post
  *
  * Regenerates EVERYTHING for an existing post using the same shared
- * pipeline as the cleanup-chats cron:
+ * pipeline as the processChat cloud function:
  *   1. Condensed transcript (from stored raw transcript)
  *   2. Per-message image prompts (AI visual director)
  *   3. Dual-voice TTS audio

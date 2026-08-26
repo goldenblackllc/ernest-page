@@ -9,7 +9,7 @@ import { z } from 'zod';
  * 
  * Also performs editorial judgment (is_publishable) and language detection.
  * 
- * Used by both cleanup-chats (cron) and regenerate-post (admin).
+ * Used by both processChat (cloud function) and regenerate-post (admin).
  */
 
 // ─── Zod Schema ──────────────────────────────────────────────────────────────

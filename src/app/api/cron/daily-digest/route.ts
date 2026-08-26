@@ -240,7 +240,7 @@ async function generateDigestCard(user: {
         };
     }
 
-    // ─── IMAGE GENERATION (caller responsibility — same pattern as cleanup-chats) ───
+    // ─── IMAGE GENERATION (caller responsibility — same pattern as processChat) ───
     if (image_prompts.length > 0 && (!message_images.length || message_images.some(u => !u))) {
         const referenceImage = await loadUserReferenceImage(user.uid);
         const referenceImages = referenceImage ? [referenceImage] : undefined;

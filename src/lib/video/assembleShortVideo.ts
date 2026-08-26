@@ -1,7 +1,7 @@
 /**
  * Shared short-form video assembly module.
  * Extracted from the video route so it can be called from regeneration,
- * cleanup-chats, and the video download endpoint.
+ * processChat, and the video download endpoint.
  */
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';

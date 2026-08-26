@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         const data = userDoc.data();
 
         // Fall back to existing source_code from Firestore when not provided
-        // (e.g. post-session recompile triggered by cleanup-chats cron)
+        // (e.g. post-session recompile triggered by processChat cloud function)
         const resolvedSourceCode = source_code || data?.character_bible?.source_code;
         if (!resolvedSourceCode) {
             return Response.json({ error: "Missing source_code and no existing bible found" }, { status: 400 });

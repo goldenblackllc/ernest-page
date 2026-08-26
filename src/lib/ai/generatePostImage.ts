@@ -1,7 +1,7 @@
 /**
  * Shared Image Generation Pipeline
  *
- * Extracted from cleanup-chats to be reused by any pipeline that needs
+ * Extracted from processChat to be reused by any pipeline that needs
  * storyboard-style image generation (posts, daily digest, etc.).
  *
  * Single source of truth for: style selection, prompt construction,
@@ -132,7 +132,7 @@ export interface StoryboardOptions {
 /**
  * Generate a set of storyboard images for a post or digest card.
  *
- * This is the SINGLE function both cleanup-chats (posts) and daily-digest call.
+ * This is the SINGLE function both processChat (posts) and daily-digest call.
  * It handles: style selection → prompt construction → sequential generation →
  * validation + retry → upload. Returns an array of public image URLs.
  *
