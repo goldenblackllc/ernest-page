@@ -38,14 +38,17 @@ export const processChat = onDocumentUpdated(
             console.log(`[ProcessChat] Skipping — isClosed is not true`);
             return;
         }
-        if (before?.isClosed === true) {
-            console.log(`[ProcessChat] Skipping — already closed (duplicate trigger)`);
+        
+        const now = Date.now();
+        // Skip if already being processed (unless the claim is stale > 10 min)
+        if (after.processing === true && (now - (after.processingStartedAt || 0)) < 10 * 60 * 1000) {
+            console.log(`[ProcessChat] Skipping — already processing (started ${Math.round((now - (after.processingStartedAt || 0)) / 1000)}s ago)`);
             return;
         }
         
-        const now = Date.now();
-        if (after.processing === true && (now - (after.processingStartedAt || 0)) < 10 * 60 * 1000) {
-            console.log(`[ProcessChat] Skipping — already processing (started ${Math.round((now - (after.processingStartedAt || 0)) / 1000)}s ago)`);
+        // Skip if this trigger was caused by our own processing update (we just set processing: true)
+        if (!before?.processing && after.processing === true) {
+            console.log(`[ProcessChat] Skipping — this is our own processing claim update`);
             return;
         }
         
