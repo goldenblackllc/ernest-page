@@ -298,16 +298,26 @@ TRANSFORMATION ARC: If the letter describes a physical state that differs from t
                         }, { merge: true });
                         console.log(`[Cron] Profile + log updated for user ${uid} (session ${sessionCount})`);
 
-                        // Trigger background bible recompile with updated profile
+                        // Trigger bible recompile with updated profile (must be awaited — Vercel kills unawaited fetches on function exit)
                         const baseUrl = process.env.NEXT_PUBLIC_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-                        fetch(`${baseUrl}/api/character/compile`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-internal-key': process.env.CRON_SECRET || '',
-                            },
-                            body: JSON.stringify({ uid, skipCooldown: true }),
-                        }).catch(err => console.error(`[Cron] Bible recompile trigger failed for ${uid}:`, err.message));
+                        try {
+                            const compileRes = await fetch(`${baseUrl}/api/character/compile`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'x-internal-key': process.env.CRON_SECRET || '',
+                                },
+                                body: JSON.stringify({ uid, skipCooldown: true }),
+                            });
+                            if (!compileRes.ok) {
+                                const errBody = await compileRes.text().catch(() => '');
+                                console.error(`[Cron] Bible recompile failed for ${uid}: ${compileRes.status} ${errBody}`);
+                            } else {
+                                console.log(`[Cron] Bible recompile succeeded for ${uid}`);
+                            }
+                        } catch (err: any) {
+                            console.error(`[Cron] Bible recompile network error for ${uid}:`, err.message);
+                        }
                     })().catch((err: any) => {
                         console.error(`[Cron] Profile update failed for user ${uid}:`, err.message);
                     })
