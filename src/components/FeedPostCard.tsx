@@ -260,119 +260,186 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             // Pause any other playing cards first
             pauseAll();
             if (unifiedAudioUrl) {
-                // ── UNIFIED FORMAT: Web Audio API for reliable seeking ──
-                // Concatenated MP3s from TTS lack seek headers, so HTMLAudioElement can't seek.
-                // Web Audio API decodes to PCM AudioBuffer which supports perfect random access.
+                // Detect Safari/WebKit — its decodeAudioData truncates concatenated MP3s
+                // to only the first stream. Use HTMLAudioElement on Safari instead.
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
+                    (typeof window !== 'undefined' && 'webkitAudioContext' in window && !('chrome' in window));
+
                 setIsAudioLoading(true);
                 try {
-                    // Reuse cached decoded buffer if available
-                    let audioBuffer = decodedBufferRef.current;
-                    if (!audioBuffer) {
-                        const response = await fetch(unifiedAudioUrl);
-                        const arrayBuffer = await response.arrayBuffer();
-                        const ctx = new AudioContext();
-                        audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-                        decodedBufferRef.current = audioBuffer;
-                        await ctx.close(); // close temporary decode context
-                    }
+                    if (isSafari) {
+                        // ── SAFARI PATH: HTMLAudioElement streams concatenated MP3s correctly ──
+                        const audio = new Audio(unifiedAudioUrl);
+                        audio.muted = isMuted;
+                        audio.preload = 'auto';
 
-                    // Create playback context
-                    const playCtx = new AudioContext();
-                    webAudioCtxRef.current = playCtx;
-                    const gainNode = playCtx.createGain();
-                    gainNode.connect(playCtx.destination);
-                    gainNode.gain.value = isMuted ? 0 : 1;
+                        await new Promise<void>((resolve, reject) => {
+                            audio.oncanplaythrough = () => resolve();
+                            audio.onerror = () => reject(new Error('Audio load failed'));
+                            audio.load();
+                            // Timeout fallback — don't wait forever for canplaythrough
+                            setTimeout(resolve, 3000);
+                        });
 
-                    // WebAudioPlayer state
-                    let wapSource: AudioBufferSourceNode | null = null;
-                    let wapStartTime = 0;
-                    let wapOffset = 0;
-                    let wapPlaying = false;
-                    let wapRafId = 0;
+                        const safariPlayer = {
+                            get currentTime() { return audio.currentTime; },
+                            set currentTime(t: number) { audio.currentTime = t; },
+                            get duration() { return audio.duration || 0; },
+                            get muted() { return audio.muted; },
+                            set muted(v: boolean) { audio.muted = v; },
+                            play() { return audio.play(); },
+                            pause() { audio.pause(); },
+                            addEventListener() {},
+                            removeEventListener() {},
+                        };
 
-                    const wapTick = () => {
-                        if (!wapPlaying) return;
-                        const ct = wapOffset + (playCtx.currentTime - wapStartTime);
-                        if (!seekingRef.current) {
-                            const progress = ct / audioBuffer!.duration;
-                            setAudioProgress(progress);
-                            setAudioCurrentTime(ct);
-                            const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
-                            setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
-                        }
-                        wapRafId = requestAnimationFrame(wapTick);
-                    };
-
-                    const wapStop = () => {
-                        wapPlaying = false;
-                        cancelAnimationFrame(wapRafId);
-                        if (wapSource) {
-                            wapSource.onended = null; // Prevent stale onended from firing after seek
-                            try { wapSource.stop(); } catch { /* already stopped */ }
-                            wapSource = null;
-                        }
-                    };
-
-                    const wapPlay = (fromOffset: number) => {
-                        wapSource = playCtx.createBufferSource();
-                        wapSource.buffer = audioBuffer!;
-                        wapSource.connect(gainNode);
-                        wapSource.onended = () => {
-                            if (wapPlaying) {
-                                wapPlaying = false;
-                                cancelAnimationFrame(wapRafId);
-                                setIsPlaying(false);
-                                setAudioPhase('idle');
-                                setAudioProgress(0);
-                                setAudioCurrentTime(0);
-                                audioRef.current = null;
-                                hasCompletedRef.current = true;
+                        // Progress tracking via timeupdate
+                        audio.ontimeupdate = () => {
+                            if (!seekingRef.current && audio.duration) {
+                                const progress = audio.currentTime / audio.duration;
+                                setAudioProgress(progress);
+                                setAudioCurrentTime(audio.currentTime);
+                                const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
+                                setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
                             }
                         };
-                        wapOffset = Math.max(0, Math.min(fromOffset, audioBuffer!.duration));
-                        wapStartTime = playCtx.currentTime;
-                        wapSource.start(0, wapOffset);
-                        wapPlaying = true;
-                        wapTick();
-                    };
 
-                    // Expose player interface on audioRef so handleSeek/handleSkip/pause-all work
-                    const player = {
-                        get currentTime() {
-                            if (wapPlaying) return wapOffset + (playCtx.currentTime - wapStartTime);
-                            return wapOffset;
-                        },
-                        set currentTime(t: number) {
-                            const wasPlaying = wapPlaying;
-                            if (wasPlaying) wapStop();
-                            wapOffset = Math.max(0, Math.min(t, audioBuffer!.duration));
-                            if (wasPlaying) wapPlay(wapOffset);
-                        },
-                        get duration() { return audioBuffer!.duration; },
-                        get muted() { return gainNode.gain.value === 0; },
-                        set muted(v: boolean) { gainNode.gain.value = v ? 0 : 1; },
-                        play() {
-                            if (wapPlaying) return Promise.resolve();
-                            if (playCtx.state === 'suspended') playCtx.resume();
-                            wapPlay(wapOffset);
-                            return Promise.resolve();
-                        },
-                        pause() {
+                        audio.onended = () => {
+                            setIsPlaying(false);
+                            setAudioPhase('idle');
+                            setAudioProgress(0);
+                            setAudioCurrentTime(0);
+                            audioRef.current = null;
+                            hasCompletedRef.current = true;
+                        };
+
+                        audioRef.current = safariPlayer;
+                        setAudioPhase('letter');
+                        setAudioDuration(audio.duration || 0);
+
+                        // Update duration once metadata loads (may not be available immediately)
+                        audio.onloadedmetadata = () => {
+                            if (audio.duration && isFinite(audio.duration)) {
+                                setAudioDuration(audio.duration);
+                            }
+                        };
+
+                        await safariPlayer.play();
+                        setIsPlaying(true);
+                    } else {
+                        // ── CHROME/FIREFOX PATH: Web Audio API for reliable seeking ──
+                        // Concatenated MP3s from TTS lack seek headers, so HTMLAudioElement can't seek.
+                        // Web Audio API decodes to PCM AudioBuffer which supports perfect random access.
+
+                        // Reuse cached decoded buffer if available
+                        let audioBuffer = decodedBufferRef.current;
+                        if (!audioBuffer) {
+                            const response = await fetch(unifiedAudioUrl);
+                            const arrayBuffer = await response.arrayBuffer();
+                            const ctx = new AudioContext();
+                            audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+                            decodedBufferRef.current = audioBuffer;
+                            await ctx.close(); // close temporary decode context
+                        }
+
+                        // Create playback context
+                        const playCtx = new AudioContext();
+                        webAudioCtxRef.current = playCtx;
+                        const gainNode = playCtx.createGain();
+                        gainNode.connect(playCtx.destination);
+                        gainNode.gain.value = isMuted ? 0 : 1;
+
+                        // WebAudioPlayer state
+                        let wapSource: AudioBufferSourceNode | null = null;
+                        let wapStartTime = 0;
+                        let wapOffset = 0;
+                        let wapPlaying = false;
+                        let wapRafId = 0;
+
+                        const wapTick = () => {
                             if (!wapPlaying) return;
-                            wapOffset += playCtx.currentTime - wapStartTime;
-                            wapStop();
-                        },
-                        // No-op stubs for compatibility
-                        addEventListener() {},
-                        removeEventListener() {},
-                    };
+                            const ct = wapOffset + (playCtx.currentTime - wapStartTime);
+                            if (!seekingRef.current) {
+                                const progress = ct / audioBuffer!.duration;
+                                setAudioProgress(progress);
+                                setAudioCurrentTime(ct);
+                                const newPhase = progress < computedLetterRatio ? 'letter' : 'response';
+                                setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
+                            }
+                            wapRafId = requestAnimationFrame(wapTick);
+                        };
 
-                    audioRef.current = player;
-                    setAudioPhase('letter');
-                    setAudioDuration(audioBuffer.duration);
+                        const wapStop = () => {
+                            wapPlaying = false;
+                            cancelAnimationFrame(wapRafId);
+                            if (wapSource) {
+                                wapSource.onended = null; // Prevent stale onended from firing after seek
+                                try { wapSource.stop(); } catch { /* already stopped */ }
+                                wapSource = null;
+                            }
+                        };
 
-                    await player.play();
-                    setIsPlaying(true);
+                        const wapPlay = (fromOffset: number) => {
+                            wapSource = playCtx.createBufferSource();
+                            wapSource.buffer = audioBuffer!;
+                            wapSource.connect(gainNode);
+                            wapSource.onended = () => {
+                                if (wapPlaying) {
+                                    wapPlaying = false;
+                                    cancelAnimationFrame(wapRafId);
+                                    setIsPlaying(false);
+                                    setAudioPhase('idle');
+                                    setAudioProgress(0);
+                                    setAudioCurrentTime(0);
+                                    audioRef.current = null;
+                                    hasCompletedRef.current = true;
+                                }
+                            };
+                            wapOffset = Math.max(0, Math.min(fromOffset, audioBuffer!.duration));
+                            wapStartTime = playCtx.currentTime;
+                            wapSource.start(0, wapOffset);
+                            wapPlaying = true;
+                            wapTick();
+                        };
+
+                        // Expose player interface on audioRef so handleSeek/handleSkip/pause-all work
+                        const player = {
+                            get currentTime() {
+                                if (wapPlaying) return wapOffset + (playCtx.currentTime - wapStartTime);
+                                return wapOffset;
+                            },
+                            set currentTime(t: number) {
+                                const wasPlaying = wapPlaying;
+                                if (wasPlaying) wapStop();
+                                wapOffset = Math.max(0, Math.min(t, audioBuffer!.duration));
+                                if (wasPlaying) wapPlay(wapOffset);
+                            },
+                            get duration() { return audioBuffer!.duration; },
+                            get muted() { return gainNode.gain.value === 0; },
+                            set muted(v: boolean) { gainNode.gain.value = v ? 0 : 1; },
+                            play() {
+                                if (wapPlaying) return Promise.resolve();
+                                if (playCtx.state === 'suspended') playCtx.resume();
+                                wapPlay(wapOffset);
+                                return Promise.resolve();
+                            },
+                            pause() {
+                                if (!wapPlaying) return;
+                                wapOffset += playCtx.currentTime - wapStartTime;
+                                wapStop();
+                            },
+                            // No-op stubs for compatibility
+                            addEventListener() {},
+                            removeEventListener() {},
+                        };
+
+                        audioRef.current = player;
+                        setAudioPhase('letter');
+                        setAudioDuration(audioBuffer.duration);
+
+                        await player.play();
+                        setIsPlaying(true);
+                    }
                 } catch (err) {
                     console.error('Failed to load audio:', err);
                     setIsPlaying(false);
