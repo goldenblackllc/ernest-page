@@ -68,6 +68,72 @@ export const processPostImages = onSchedule(
         }
 
         // ═════════════════════════════════════════════════════════════════════
+        // Phase A.5: Retry failed thumbnails
+        // ═════════════════════════════════════════════════════════════════════
+
+        const MAX_THUMBNAIL_RETRIES = 3;
+
+        try {
+            // Find recent posts missing thumbnails (created in last 48h, not exceeding retry cap)
+            const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+            const thumbSnap = await db.collection('posts')
+                .where('created_at', '>', cutoff)
+                .orderBy('created_at', 'desc')
+                .limit(50)
+                .get();
+
+            const needsThumbnail = thumbSnap.docs.filter(doc => {
+                const data = doc.data();
+                return !data.thumbnail_url && (data.thumbnail_retries || 0) < MAX_THUMBNAIL_RETRIES;
+            });
+
+            if (needsThumbnail.length > 0) {
+                console.log(`[Phase2] Found ${needsThumbnail.length} post(s) needing thumbnail retry`);
+
+                for (const postDoc of needsThumbnail) {
+                    const postData = postDoc.data();
+                    const retries = postData.thumbnail_retries || 0;
+                    const uid = postData.uid || postData.authorId;
+                    const messages = postData.public_post?.condensed_transcript;
+                    const title = postData.title;
+
+                    if (!messages || messages.length === 0) {
+                        console.warn(`[Phase2] Post ${postDoc.id} has no condensed transcript for thumbnail — skipping`);
+                        await postDoc.ref.update({ thumbnail_retries: retries + 1 });
+                        continue;
+                    }
+
+                    try {
+                        const { generateThumbnail } = await import('./lib/ai/generateThumbnail.js');
+                        const thumbnailUrl = await generateThumbnail({
+                            messages,
+                            title,
+                            uid,
+                            postId: postDoc.id,
+                            logPrefix: 'Phase2-Thumb',
+                        });
+
+                        if (thumbnailUrl) {
+                            await postDoc.ref.update({
+                                thumbnail_url: thumbnailUrl,
+                                thumbnail_retries: retries + 1,
+                            });
+                            console.log(`[Phase2] ✅ Thumbnail retry succeeded for ${postDoc.id}`);
+                        } else {
+                            await postDoc.ref.update({ thumbnail_retries: retries + 1 });
+                            console.warn(`[Phase2] Thumbnail retry ${retries + 1}/${MAX_THUMBNAIL_RETRIES} failed for ${postDoc.id}`);
+                        }
+                    } catch (thumbErr: any) {
+                        await postDoc.ref.update({ thumbnail_retries: retries + 1 });
+                        console.error(`[Phase2] Thumbnail retry error for ${postDoc.id}:`, thumbErr.message);
+                    }
+                }
+            }
+        } catch (err: any) {
+            console.error('[Phase2] Error in thumbnail retry phase:', err.message);
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
         // Phase B: Submit new batch jobs for posts needing images
         // ═════════════════════════════════════════════════════════════════════
 
