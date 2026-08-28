@@ -260,14 +260,15 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             // Pause any other playing cards first
             pauseAll();
             if (unifiedAudioUrl) {
-                // Detect Safari/WebKit — its decodeAudioData truncates concatenated MP3s
-                // to only the first stream. Use HTMLAudioElement on Safari instead.
-                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
-                    (typeof window !== 'undefined' && 'webkitAudioContext' in window && !('chrome' in window));
+                // Detect iOS/iPadOS — ALL browsers on iOS use WebKit under the hood
+                // (Apple requires it), and WebKit's decodeAudioData truncates concatenated
+                // MP3s to only the first stream. Use HTMLAudioElement on iOS instead.
+                const isWebKitMobile = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
                 setIsAudioLoading(true);
                 try {
-                    if (isSafari) {
+                    if (isWebKitMobile) {
                         // ── SAFARI PATH: HTMLAudioElement streams concatenated MP3s correctly ──
                         const audio = new Audio(unifiedAudioUrl);
                         audio.muted = isMuted;
