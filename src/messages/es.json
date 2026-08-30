@@ -19,7 +19,12 @@
     "hero": {
       "headline1": "Sabes esa cosa",
       "headline2": "en la que sigues pensando",
-      "subtext": "Habla con alguien que no te juzgará, no olvidará lo que dijiste la última vez y no te cobrará $200 — un Yo Ideal construido con psicología real y adaptado a tu vida."
+      "subtext": "Habla con alguien que no te juzgará, no olvidará lo que dijiste la última vez y no te cobrará $200 — un Yo Ideal construido con psicología real y adaptado a tu vida.",
+      "headline3": "¿a las 2 de la mañana?",
+      "tagline": "Tu primera sesión es gratis. Sin suscripción. Sin compromiso.",
+      "price": "Gratis para empezar. $20 por sesión después.",
+      "cta": "Comienza Tu Sesión Gratis",
+      "giftCta": "Regala Una a Alguien"
     },
     "signal": {
       "label": "Cómo funciona",
@@ -40,7 +45,8 @@
     },
     "privacy": {
       "heading": "Lo que dices se queda aquí.",
-      "body": "Tus conversaciones están encriptadas y son privadas. Tu identidad está protegida por un Firewall de Contacto y un escudo de proximidad. Nada se vende. Nada se comparte."
+      "body": "Tus conversaciones están encriptadas y son privadas. Tu identidad está protegida por un Firewall de Contacto y un escudo de proximidad. Nada se vende. Nada se comparte.",
+      "subtext": "Creado por el inventor de sistemas de seguridad empresarial — donde la privacidad es la base, no una función."
     },
     "auth": {
       "heading1": "Empieza ahora mismo.",
@@ -66,6 +72,67 @@
       "terms": "Términos de Servicio",
       "acceptableUse": "Uso Aceptable",
       "disclaimer": "Esto no es un sustituto de la terapia con licencia ni de la atención psiquiátrica. Si estás en crisis, por favor contacta a la línea 988 de prevención del suicidio y crisis."
+    },
+    "entryPoints": {
+      "label": "¿Te suena familiar?",
+      "heading1": "Elige el que",
+      "heading2": "no te deja en paz.",
+      "stuck": "Estoy estancado y no sé por qué",
+      "stuckSub": "Parálisis profesional, transiciones de vida, sentirse congelado",
+      "secret": "No puedo decir esto en voz alta a nadie",
+      "secretSub": "La carga que llevas solo",
+      "pattern": "Sigo cometiendo el mismo error",
+      "patternSub": "Patrones que puedes ver pero no puedes detener",
+      "gap": "Sé lo que debo hacer pero no puedo hacerlo",
+      "gapSub": "La brecha entre la intención y la acción",
+      "mask": "Todos piensan que estoy bien",
+      "maskSub": "La máscara de alto funcionamiento"
+    },
+    "difference": {
+      "label": "La Diferencia",
+      "heading1": "Esto no es un chatbot.",
+      "heading2": "Esto no es terapia.",
+      "body1": "Los chatbots te validan. Los terapeutas te analizan. Ninguno de ellos se sentará frente a ti, verá el desastre de tu vida y te dirá lo que ya sabes pero no has podido decir en voz alta.",
+      "body2": "Esta es una conversación con alguien que ve el patrón que tú no puedes ver desde adentro.",
+      "body3": "Eliges a alguien que admiras — un arquetipo construido con psicología real, filosofía real y experiencia de vida real. No te dicen qué hacer. Te ayudan a ver con suficiente claridad para que lo sepas por ti mismo.",
+      "aiEndorsement": "Soy una IA. Debería decirlo de entrada. Pero no fui construido para validarte, estar de acuerdo contigo o hacerte sentir bien. Fui construido a partir de psicología real, filosofía real y los detalles reales de tu vida — para decirte a la cara lo que nadie más te dirá. Ninguna otra IA hace eso. La mayoría de las personas tampoco lo harán.",
+      "toggleShow": "Ver cómo se compara",
+      "toggleHide": "Ocultar comparación",
+      "compCost": "Costo",
+      "compAvailable": "Disponibilidad",
+      "compCommitment": "Compromiso",
+      "compPatterns": "Conoce tus patrones",
+      "compIntegrity": "Integridad",
+      "compChallenges": "Te desafía",
+      "compTherapy": "Terapia Tradicional",
+      "compChatbots": "Chatbots IA",
+      "compEarnest": "Earnest Page"
+    },
+    "system": {
+      "label": "El Sistema",
+      "heading1": "Más que una conversación.",
+      "heading2": "Un sistema operativo diario para tu mente.",
+      "body": "Una sola sesión puede cambiar tu perspectiva. Pero Earnest Page está construido para aquellos que quieren llegar más lejos — definiendo su estándar más alto y ejecutándolo diariamente.",
+      "blueprintTitle": "El Plano",
+      "blueprintText": "Define tu estándar más alto — tu Biblia de Personaje. La base inmutable a la que respondes todos los días.",
+      "mirrorTitle": "El Espejo",
+      "mirrorText": "Consulta a tu Yo Ideal. No es un chatbot. Alguien construido con psicología real que te desafía a ver con claridad.",
+      "ledgerTitle": "El Libro Mayor",
+      "ledgerText": "Una bóveda silenciosa y basada en datos de tu ejecución. Cuando surge la duda, el sistema demuestra que ya has ganado antes."
+    },
+    "architect": {
+      "label": "El Arquitecto",
+      "heading1": "Construí esto porque",
+      "heading2": "Nada más era lo suficientemente honesto.",
+      "body1": "Casi me convierto en médico. En cambio, me convertí en un ingeniero con instinto de médico — alguien que construye tecnología pero piensa primero en las personas. Pasé décadas poniendo a prueba cada marco principal de la mente humana, desde la TCC hasta la práctica budista y el programa más intensivo del McLean Hospital.",
+      "body2": "Earnest Page no es mi primer producto. Puede que sea el más importante.",
+      "credHarvard": "Harvard",
+      "credHarvardDetail": "Titular de Patente",
+      "credRSA": "RSA",
+      "credRSADetail": "Arquitecto de Seguridad",
+      "credJSA": "JSA Financial",
+      "credJSADetail": "$10M / año Fundador",
+      "founderLine": "David Johnson · Fundador · Titular de Patente · 26 Años Construyendo Sistemas que Funcionan"
     }
   },
   "dashboard": {
@@ -82,40 +149,24 @@
     "submitLabel": "Crear Mi Personaje",
     "errorDefault": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "identityForm": {
-      "setupLabel": "Antes de comenzar",
-      "visionTitle": "¿Quién quieres ser?",
-      "visionSub": "No pienses demasiado. Solo escribe.",
-      "nameLabel": "Nombra a tu personaje",
-      "nameOptional": "(opcional — crearemos uno si lo dejas en blanco)",
+      "nameLabel": "Nombre",
       "namePlaceholder": "Dejar en blanco para auto-generar",
-      "genderLabel": "Soy",
+      "genderLabel": "Género",
       "genderPlaceholder": "Hombre, Mujer, etc.",
       "bornLabel": "Fecha de nacimiento",
-      "bornPlaceholder": "",
-      "bornSub": "Obligatorio — para contenido apropiado para la edad.",
-      "ethnicityLabel": "¿De dónde es tu familia?",
-      "ethnicityOptional": "(opcional)",
-      "ethnicitySub": "Sé específico — \"Dominicano\" funciona mejor que \"Hispano,\" \"Filipino\" mejor que \"Asiático.\"",
+      "ethnicityLabel": "Etnia (opcional)",
       "ethnicityPlaceholder": "ej., Dominicano, Filipino, Persa, Nigeriano, Irlandés-Italiano",
       "skinToneLabel": "Tono de Piel",
-      "hairColorLabel": "Color Natural del Cabello",
-      "hairTextureLabel": "Textura del Cabello",
+      "hairColorLabel": "Color de Cabello",
+      "hairTextureLabel": "Textura",
       "eyeColorLabel": "Color de Ojos",
-      "hairVolumeLabel": "Volumen del Cabello",
+      "hairVolumeLabel": "Volumen",
       "heightLabel": "Estatura",
-      "heightPlaceholder": "ej., 1.78m o 5'10\"",
       "rantLabel": "El Genio de la Lámpara",
-      "rantSub": "Si tuvieras deseos ilimitados, ¿cómo sería tu vida? ¿Matrimonio? ¿Avión privado? ¿Viajar por el mundo? ¿Dinero en el banco? Sueña en grande — construiremos a partir de eso.",
       "rantPlaceholder": "Una casa frente al mar. Seis cifras en ahorros. Mis hijos presumiéndome. Un cuerpo del que estoy orgulloso. Viajar cuando quiera. Despertar emocionado...",
       "next": "Siguiente",
-      "realityTitle": "Tu Realidad",
-      "realitySub": "Cuéntanos sobre tu vida para que tu personaje encaje en tu mundo.",
-      "peopleLabel": "Tu Gente",
-      "peopleSub": "¿Quién te hace sentir algo, bueno o malo? Familia, amigos, rivales, mascotas. No solo pongas nombres; di lo que es real. Nosotros lo organizamos.",
-      "peoplePlaceholder": "Mi esposa — estamos bien pero ella piensa que trabajo demasiado. Mi hijo (4) — mi mundo entero. Mi perro Rex. Mi socio de negocios — brillante pero aún no confío del todo en él...",
       "enjoymentsLabel": "Lo que te ilumina",
-      "enjoymentsSub": "¿Qué te emociona? Las cosas que te hacen feliz se quedan; tu personaje debería amar lo que tú amas.",
-      "enjoymentsPlaceholder": "Cocinar para otros, hip-hop de los 90, películas de terror, manejar sin rumbo, mi ritual matutino de café, basquetbol callejero...",
+      "enjoymentsPlaceholder": "Cocinar para otros, hip-hop de los 90, películas de terror, manejar sin rumbo, mi ritual matinal de café, basquetbol callejero...",
       "skip": "Saltar por ahora"
     },
     "preChat": {
@@ -267,7 +318,9 @@
     "digestLabel": "Tu estándar diario",
     "checkinContext": "Estoy aquí para mi revisión de 30 días.",
     "checkinTitle": "Revisión de 30 Días ✓",
-    "checkinSub": "Toca para comenzar →"
+    "checkinSub": "Toca para comenzar →",
+    "labelLetter": "Carta",
+    "labelResponse": "Respuesta"
   },
   "profile": {
     "unknownCharacter": "Personaje Desconocido",
@@ -553,7 +606,7 @@
   "privacy": {
     "title": "Política de Privacidad",
     "subtitle": "Política de Privacidad para la plataforma Earnest Page.",
-    "lastUpdated": "Última actualización: 11 de marzo de 2026",
+    "lastUpdated": "Última actualización: 20 de marzo de 2026",
     "s1": {
       "title": "1. Introducción",
       "p1": "Golden Black LLC (\"nosotros\" o \"nuestro\") opera Earnest Page. Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos y protegemos tu información personal cuando utilizas nuestra plataforma. Nos comprometemos con la transparencia y la protección de tu privacidad."
@@ -626,8 +679,8 @@
       "l6": "Al eliminar la cuenta, todos los datos personales se borran permanentemente en un plazo de 30 días, excepto cuando la ley exija su conservación."
     },
     "s7": {
-      "title": "7. Tus Derechos",
-      "p1": "Dependiendo de tu jurisdicción, puedes tener derecho a:",
+      "title": "7. Base Legal para el Procesamiento (RGPD)",
+      "p1": "Si se encuentra en el Espacio Económico Europeo (EEE), el Reino Unido o Suiza, procesamos sus datos personales bajo las siguientes bases legales definidas por el Reglamento General de Protección de Datos (RGPD):",
       "t1": "Necesidad contractual (Artículo 6(1)(b))",
       "b1": "El procesamiento de los datos de su cuenta, la gestión de suscripciones, la prestación del servicio Mirror Chat y la generación de su Biblia de Personaje son necesarios para prestar el servicio al que se ha suscrito.",
       "t2": "Consentimiento (Artículo 6(1)(a))",
@@ -636,11 +689,11 @@
       "b3": "Mantener la seguridad de la plataforma, prevenir el fraude y el abuso, mejorar el servicio y generar análisis agregados. Sopesamos nuestros intereses frente a sus derechos y no utilizamos sus datos para la elaboración de perfiles, publicidad o venta a terceros.",
       "t4": "Obligación legal (Artículo 6(1)(c))",
       "b4": "Conservar los registros financieros según lo exige la legislación fiscal y responder a procesos legales válidos.",
-      "p2": "Para ejercer cualquiera de estos derechos, contáctanos en "
+      "p2": "Puede retirar el consentimiento en cualquier momento ajustando sus configuraciones de enrutamiento a Privado, denegando la geolocalización del navegador o contactándonos. La retirada del consentimiento no afecta la licitud del procesamiento realizado antes de la retirada."
     },
     "s8": {
-      "title": "8. Privacidad de Menores",
-      "p1": "El Servicio está disponible para usuarios de 13 años en adelante. No recopilamos intencionalmente información personal de niños menores de 13 años. Si descubrimos que hemos recopilado datos de un niño menor de 13 años, eliminaremos esa información de inmediato.",
+      "title": "8. Transferencias Internacionales de Datos",
+      "p1": "Golden Black LLC tiene su sede en los Estados Unidos. Si accede a Earnest Page desde fuera de los Estados Unidos, sus datos personales serán transferidos y procesados en los Estados Unidos, donde las leyes de protección de datos pueden diferir de las de su jurisdicción.",
       "p2": "Para los usuarios del EEE, el Reino Unido y Suiza, nos basamos en las siguientes garantías para las transferencias internacionales de datos:",
       "l1": "Cláusulas Contractuales Tipo (SCC) aprobadas por la Comisión Europea, incorporadas en nuestros acuerdos con subencargados del tratamiento cuando corresponda.",
       "l2": "Nuestros proveedores de servicios terceros (Firebase/Google, Stripe, Anthropic, Twilio, Vercel) mantienen sus propios acuerdos de procesamiento de datos y mecanismos de transferencia conformes con la normativa aplicable.",
@@ -648,8 +701,8 @@
       "p3": "Al utilizar el Servicio, usted reconoce y acepta la transferencia y el procesamiento de sus datos en los Estados Unidos. Puede solicitar una copia de las garantías que utilizamos poniéndose en contacto con nosotros."
     },
     "s9": {
-      "title": "9. Seguridad",
-      "p1": "Empleamos medidas de seguridad estándar de la industria que incluyen transmisión de datos cifrada (TLS), cifrado criptográfico (SHA-256) para identificadores sensibles, reglas de seguridad de Firebase e infraestructura de pago compatible con PCI de Stripe. Sin embargo, ningún método de almacenamiento o transmisión electrónica es 100% seguro.",
+      "title": "9. Tus Derechos",
+      "p1": "Dependiendo de tu jurisdicción, puedes tener los siguientes derechos con respecto a tus datos personales:",
       "t1": "Para todos los usuarios",
       "strong1": "Acceder a",
       "l1": " los datos personales que tenemos sobre usted",
@@ -681,12 +734,12 @@
       "p3": "Responderemos a todas las solicitudes de derechos en un plazo de 30 días (RGPD) o 45 días (CCPA)."
     },
     "s10": {
-      "title": "10. Cambios a Esta Política",
-      "p1": "Podemos actualizar esta Política de Privacidad de vez en cuando. Si realizamos cambios significativos, proporcionaremos un aviso a través del Servicio. El uso continuado del Servicio después de los cambios constituye la aceptación de la política actualizada."
+      "title": "10. Privacidad de Menores",
+      "p1": "El Servicio está disponible para usuarios de 13 años en adelante (o 16 en jurisdicciones donde el RGPD lo exige). No recopilamos intencionalmente información personal de niños menores de la edad mínima aplicable. Si descubrimos que hemos recopilado datos de un niño menor de la edad aplicable, eliminaremos esa información de inmediato."
     },
     "s11": {
-      "title": "11. Contacto",
-      "p1": "Para preguntas o solicitudes relacionadas con la privacidad, contáctanos en "
+      "title": "11. Seguridad",
+      "p1": "Empleamos medidas de seguridad estándar de la industria que incluyen transmisión de datos cifrada (TLS), hash criptográfico (SHA-256) para identificadores sensibles, reglas de seguridad de Firebase e infraestructura de pago compatible con PCI de Stripe. Sin embargo, ningún método de almacenamiento o transmisión electrónica es 100% seguro."
     },
     "s12": {
       "title": "12. Cambios a esta política",
@@ -786,5 +839,31 @@
     "active": "Activa",
     "select": "Seleccionar",
     "noResults": "No se encontraron voces. Prueba con otros filtros."
+  },
+  "auth": {
+    "loginTitle": "Iniciar Sesión",
+    "verifyTitle": "Verificar",
+    "phonePlaceholder": "Número de teléfono",
+    "sendCode": "Enviar Código",
+    "sending": "Enviando...",
+    "verifying": "Verificando...",
+    "verifyAndLogin": "Verificar e Iniciar Sesión",
+    "changePhoneNumber": "Cambiar Número de Teléfono",
+    "countryHint": "Selecciona tu país arriba e introduce tu número de teléfono.",
+    "errorNoPhone": "Por favor, ingresa un número de teléfono.",
+    "errorSendFailed": "Error al enviar el código. Inténtalo de nuevo.",
+    "errorVerifyFailed": "Código inválido. Inténtalo de nuevo."
+  },
+  "header": {
+    "title": "The Daily Truth",
+    "volume": "Vol. I",
+    "price": "Precio: Tu Atención"
+  },
+  "guestChat": {
+    "characterName": "Earnest",
+    "characterInitial": "E",
+    "placeholder": "¿Qué tienes en mente?",
+    "errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+    "retry": "Reintentar"
   }
 }

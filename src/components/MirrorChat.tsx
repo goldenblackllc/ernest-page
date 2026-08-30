@@ -839,8 +839,6 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
         // Stop TTS audio IMMEDIATELY — before any async work
         cleanupAudio();
 
-        const userMessageCount = messages.filter(m => m.role === 'user').length;
-
         if (sessionId) {
             if (sessionRouting === 'burn') {
                 // BURN PROTOCOL: Purge immediately — zero retention
@@ -862,23 +860,6 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
                     closeReason,
                     autoPublish: sessionRouting === 'public', // Legacy compat
                 }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
-            }
-
-            // Layer 3: Grace period auto-refund if 0 user messages and credit was consumed
-            if (userMessageCount === 0 && creditConsumed) {
-                try {
-                    const idToken = await authUser?.getIdToken();
-                    await fetch('/api/refund-credit', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                        },
-                        body: JSON.stringify({ sessionId }),
-                    });
-                } catch (err) {
-                    console.error('Failed to refund credit:', err);
-                }
             }
         }
 

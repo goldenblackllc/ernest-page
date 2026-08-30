@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
 import { MessageCircle, Home, User as UserIcon, BookOpen, Heart } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
@@ -23,6 +23,7 @@ const MAX_SESSIONS_PER_DAY = 5;
 export function TriagePanel() {
     const { user } = useAuth();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const t = useTranslations();
     const { pauseAll, suppressAutoPlay, unsuppressAutoPlay } = useAudioMute();
 
@@ -73,6 +74,13 @@ export function TriagePanel() {
             setShowOnboarding(true);
         }
     }, [needsOnboarding]);
+
+    // Dev preview: ?onboarding=preview opens the overlay with existing data (no reset needed)
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development' && searchParams.get('onboarding') === 'preview') {
+            setShowOnboarding(true);
+        }
+    }, [searchParams]);
 
     // Suppress feed auto-play while the onboarding overlay is visible
     useEffect(() => {
@@ -301,7 +309,7 @@ export function TriagePanel() {
                 <div className="fixed inset-0 z-[60] bg-zinc-950 flex flex-col">
                     {/* Header */}
                     <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between pt-[calc(16px+env(safe-area-inset-top))]">
-                        <h2 className="text-sm font-bold text-white">{t('onboarding.preChat.heading')}</h2>
+                        <h2 className="text-sm font-bold text-white">{t('onboarding.headerTitle')}</h2>
                         <button
                             onClick={() => setShowOnboarding(false)}
                             className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3"
@@ -313,9 +321,23 @@ export function TriagePanel() {
                     {/* Form — fills remaining screen height */}
                     <div className="flex-1 flex flex-col min-h-0 px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
                         <IdentityForm
+                            key={identity ? 'loaded' : 'empty'}
+                            initialValues={identity ? {
+                                character_name: identity.character_name || '',
+                                gender: identity.gender || '',
+                                birthdate: identity.birthdate || '',
+                                ethnicity: identity.ethnicity || '',
+                                skin_tone: identity.skin_tone || '',
+                                hair_colors: identity.hair_colors || [],
+                                hair_texture: identity.hair_texture || '',
+                                hair_volume: identity.hair_volume || '',
+                                eye_color: identity.eye_color || '',
+                                height: identity.height || '',
+                                rant: identity.dream_rant || '',
+                                enjoyments: identity.things_i_enjoy || '',
+                            } : undefined}
                             onSubmit={handleOnboardingSubmit}
                             submitLabel={t('onboarding.submitLabel')}
-                            showHeadings={true}
                         />
                     </div>
                 </div>

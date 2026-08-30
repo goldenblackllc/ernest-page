@@ -223,11 +223,3 @@ export function detectCountryFromTimezone(): string {
         return 'US';
     }
 }
-
-/**
- * Get the dial code for a given ISO country code.
- */
-export function getDialCodeForCountry(countryCode: string): string {
-    const country = COUNTRY_CODES.find(c => c.code === countryCode);
-    return country?.dial || '+1';
-}

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from '@/i18n/navigation';
 import { collection, addDoc, serverTimestamp, writeBatch, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase/config";

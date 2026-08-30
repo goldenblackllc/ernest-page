@@ -1684,7 +1684,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         {/* Letter */}
                                         <div className="space-y-1.5">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Letter</span>
+                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t('labelLetter')}</span>
                                                 <button
                                                     onClick={async () => {
                                                         await navigator.clipboard.writeText(publicLetter || '');
@@ -1706,7 +1706,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         {/* Response */}
                                         <div className="space-y-1.5">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Response</span>
+                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t('labelResponse')}</span>
                                                 <button
                                                     onClick={async () => {
                                                         await navigator.clipboard.writeText(publicResponse || '');
@@ -2021,7 +2021,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                                         <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10">
                                                             <Volume2 className="w-3 h-3 text-white animate-pulse" />
                                                             <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                                                                {audioPhase === 'letter' ? 'Letter' : 'Response'}
+                                                                {audioPhase === 'letter' ? t('labelLetter') : t('labelResponse')}
                                                             </span>
                                                         </div>
                                                     )}

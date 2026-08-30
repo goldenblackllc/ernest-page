@@ -19,7 +19,12 @@
     "hero": {
       "headline1": "Is something bothering you?",
       "headline2": "You're lucky.",
-      "subtext": "There's nothing wrong with you. Feelings are your superpower. The worse you feel, the luckier you are. You're special. Discover what your feelings are telling you."
+      "headline3": "at 2am?",
+      "subtext": "There's nothing wrong with you. Feelings are your superpower. The worse you feel, the luckier you are. You're special. Discover what your feelings are telling you.",
+      "tagline": "Your first session is free. No subscription. No commitment.",
+      "price": "Free to start. $20 per session after.",
+      "cta": "Start Your Free Session",
+      "giftCta": "Gift One to Someone"
     },
     "signal": {
       "label": "How It Works",
@@ -40,7 +45,69 @@
     },
     "privacy": {
       "heading": "What you say stays here.",
-      "body": "Everything is encrypted and anonymous. No names, no profiles, no data sold. Just you and honesty."
+      "body": "Everything is encrypted and anonymous. No names, no profiles, no data sold. Just you and honesty.",
+      "subtext": "Built by the maker of enterprise security systems — where privacy is the foundation, not the feature."
+    },
+    "entryPoints": {
+      "label": "Sound Familiar?",
+      "heading1": "Pick the one that",
+      "heading2": "won't leave you alone.",
+      "stuck": "I'm stuck and I don't know why",
+      "stuckSub": "Career paralysis, life transitions, feeling frozen",
+      "secret": "I can't say this out loud to anyone",
+      "secretSub": "The thing you carry alone",
+      "pattern": "I keep making the same mistake",
+      "patternSub": "Patterns you can see but can't stop",
+      "gap": "I know what I should do but I can't do it",
+      "gapSub": "The gap between intention and action",
+      "mask": "Everyone thinks I'm fine",
+      "maskSub": "The high-functioning mask"
+    },
+    "difference": {
+      "label": "The Difference",
+      "heading1": "This is not a chatbot.",
+      "heading2": "This is not therapy.",
+      "body1": "Chatbots validate you. Therapists analyze you. Neither of them will sit in front of you, look at the mess of your life, and tell you the thing you already know but haven't been able to say out loud.",
+      "body2": "This is a conversation with someone who sees the pattern you can't see from the inside.",
+      "body3": "You choose someone you admire — an archetype built from real psychology, real philosophy, and real lived experience. They don't tell you what to do. They help you see clearly enough to know for yourself.",
+      "aiEndorsement": "I am an AI. I should say that upfront. But I wasn't built to validate you, agree with you, or make you feel good. I was built from real psychology, real philosophy, and the actual details of your life — to say the thing no one else will say to your face. No other AI does that. Most people won't either.",
+      "toggleShow": "See how this compares",
+      "toggleHide": "Hide comparison",
+      "compCost": "Cost",
+      "compAvailable": "Available",
+      "compCommitment": "Commitment",
+      "compPatterns": "Knows your patterns",
+      "compIntegrity": "Integrity",
+      "compChallenges": "Challenges you",
+      "compTherapy": "Traditional Therapy",
+      "compChatbots": "AI Chatbots",
+      "compEarnest": "Earnest Page"
+    },
+    "system": {
+      "label": "The System",
+      "heading1": "More than a conversation.",
+      "heading2": "A daily operating system for your mind.",
+      "body": "A single session can shift your perspective. But Earnest Page is built for those who want to go further — defining their highest standard and executing on it daily.",
+      "blueprintTitle": "The Blueprint",
+      "blueprintText": "Define your highest standard — your Character Bible. The immutable baseline you answer to every day.",
+      "mirrorTitle": "The Mirror",
+      "mirrorText": "Consult your Ideal Self. Not a chatbot. Someone built from real psychology who challenges you to see clearly.",
+      "ledgerTitle": "The Ledger",
+      "ledgerText": "A silent, data-driven vault of your execution. When doubt sets in, the system proves you've won before."
+    },
+    "architect": {
+      "label": "The Architect",
+      "heading1": "I Built This Because",
+      "heading2": "Nothing Else Was Honest Enough.",
+      "body1": "I almost became a doctor. Instead, I became an engineer with a doctor's instinct — someone who builds technology but thinks about people first. I spent decades pressure-testing every major framework for the human mind, from CBT to Buddhist practice to McLean Hospital's most intensive program.",
+      "body2": "Earnest Page is not my first product. It may be my most important.",
+      "credHarvard": "Harvard",
+      "credHarvardDetail": "Patent Holder",
+      "credRSA": "RSA",
+      "credRSADetail": "Security Architect",
+      "credJSA": "JSA Financial",
+      "credJSADetail": "$10M / yr Founder",
+      "founderLine": "David Johnson · Founder · Patent Holder · 26 Years Building Systems That Work"
     },
     "auth": {
       "heading1": "Get started",
@@ -77,44 +144,31 @@
     }
   },
   "onboarding": {
+    "headerTitle": "Get Started",
     "processing": "Building your character...",
     "processingSubtext": "This takes a few minutes. Hang tight.",
     "submitLabel": "Create My Character",
     "errorDefault": "Something went wrong. Please try again.",
     "identityForm": {
-      "setupLabel": "Before You Begin",
-      "visionTitle": "About You",
-      "visionSub": "So it's about your life, not someone else's.",
-      "nameLabel": "Name your character",
-      "nameOptional": "(optional — we'll create one if blank)",
+      "nameLabel": "First Name",
       "namePlaceholder": "Leave blank to auto-generate",
-      "genderLabel": "I am a",
+      "genderLabel": "Gender",
       "genderPlaceholder": "Man, Woman, etc.",
       "bornLabel": "Date of Birth",
-      "bornPlaceholder": "",
-      "bornSub": "Required — used for age-appropriate content.",
-      "ethnicityLabel": "Where is your family from?",
-      "ethnicityOptional": "(optional)",
-      "ethnicitySub": "Be specific — \"Dominican\" works better than \"Hispanic,\" \"Filipino\" better than \"Asian.\"",
+      "aboutYouLabel": "About You",
+      "ethnicityLabel": "Ethnicity (optional)",
       "ethnicityPlaceholder": "e.g., Dominican, Filipino, Persian, Nigerian, Irish-Italian",
       "skinToneLabel": "Skin Tone",
-      "hairColorLabel": "Natural Hair Color",
-      "hairTextureLabel": "Hair Texture",
+      "hairColorLabel": "Hair Color",
+      "hairTextureLabel": "Texture",
       "eyeColorLabel": "Eye Color",
-      "hairVolumeLabel": "Hair Volume",
+      "hairVolumeLabel": "Volume",
       "heightLabel": "Height",
-      "heightPlaceholder": "e.g., 5'10\" or 178cm",
       "rantLabel": "Genie in the Lamp",
-      "rantSub": "If you had unlimited wishes, what would your life look like? Marriage? Private plane? Travel the world? Money in the bank? Dream big — we'll build from it.",
+      "rantSub": "Unlimited wishes. No catches. What does your life look like?",
       "rantPlaceholder": "A house on the water. Six figures in savings. My kids bragging about me. A body I'm proud of. Traveling whenever I want. Waking up excited...",
       "next": "Next",
-      "realityTitle": "Your Reality",
-      "realitySub": "Tell us about your life so your character fits your world.",
-      "peopleLabel": "Who's in Your Life",
-      "peopleSub": "Talk about all the people in your life, the good, the bad, the ugly, the drama. Let it all out. Don't forget your animals too.",
-      "peoplePlaceholder": "My wife — we're solid but she thinks I work too much. My son (4) — my whole world. My dog Rex. My business partner — brilliant but I don't fully trust him yet...",
       "enjoymentsLabel": "What do you Enjoy?",
-      "enjoymentsSub": "What do you do for fun? What do you love? Music? Places? Movies? Books? Friends? Food?",
       "enjoymentsPlaceholder": "Cooking for people, 90s hip-hop, horror movies, long drives with no plan, my morning coffee ritual, pickup basketball...",
       "skip": "Skip for now"
     },
@@ -267,7 +321,9 @@
     "digestLabel": "Your Daily Standard",
     "checkinContext": "I am here for my 30 day check-in.",
     "checkinTitle": "30 Day Check-in ✓",
-    "checkinSub": "Tap to start →"
+    "checkinSub": "Tap to start →",
+    "labelLetter": "Letter",
+    "labelResponse": "Response"
   },
   "profile": {
     "unknownCharacter": "Unknown Character",
@@ -786,5 +842,31 @@
     "active": "Active",
     "select": "Select",
     "noResults": "No voices found. Try different filters."
+  },
+  "auth": {
+    "loginTitle": "Login",
+    "verifyTitle": "Verify",
+    "phonePlaceholder": "Phone number",
+    "sendCode": "Send Code",
+    "sending": "Sending...",
+    "verifying": "Verifying...",
+    "verifyAndLogin": "Verify & Login",
+    "changePhoneNumber": "Change Phone Number",
+    "countryHint": "Select your country above and enter your phone number.",
+    "errorNoPhone": "Please enter a phone number.",
+    "errorSendFailed": "Failed to send code. Please try again.",
+    "errorVerifyFailed": "Invalid code. Please try again."
+  },
+  "header": {
+    "title": "The Daily Truth",
+    "volume": "Vol. I",
+    "price": "Price: Your Attention"
+  },
+  "guestChat": {
+    "characterName": "Earnest",
+    "characterInitial": "E",
+    "placeholder": "What's on your mind?",
+    "errorGeneric": "Something went wrong. Try again.",
+    "retry": "Retry"
   }
 }

@@ -1,6 +1,0 @@
-CHARACTER: Iris
-ARCHETYPE: Mother, Wife, Elegant Woman
-TITLE: Is it crazy to leave engineering for teaching?
-
-CHARACTER'S THUMBNAIL PROMPT:
-A cinematic social media thumbnail. A serene, warm golden hour glow from an unseen window bathes a meticulously organized, polished wooden desk. In the foreground, a woman's elegantly poised hands are central. One hand, with subtle, well-manicured nails, rests gently on the trackpad of a sleek, open laptop displaying a snippet of code on its screen. The other hand, equally graceful, is gently reaching towards an open, high-quality leather-bound notebook with a classic fountain pen resting upon its pages, hinting at the pull towards writing or teaching. A delicate, ceramic teacup sits subtly to the side. The focus is sharp on the hands and desk, with a soft, inviting bokeh blur in the background suggesting a sophisticated home study. The mood is contemplative, hopeful, and reassuring. The color palette is rich with warm amber, deep mahogany, soft creams, and a touch of burnished gold. Overlay text: "Is it crazy to leave engineering for teaching?" in an elegant, legible serif font (e.g., Playfair Display or Lora) colored a deep, warm charcoal, positioned tastefully in the upper left corner, contrasting softly with the warm tones of the image. The overall tone is sophisticated, reflective, and gently encouraging.

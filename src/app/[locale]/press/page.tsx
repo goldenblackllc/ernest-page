@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/Button";
 import { MasterAction } from "@/lib/firebase/schema";
 import { useLocked } from "@/context/LockedContext";
-import { useRouter } from "next/navigation";
+import { useRouter } from '@/i18n/navigation';
 import { Timestamp } from "firebase/firestore";
 import { useTranslations } from "next-intl";
 

@@ -46,6 +46,7 @@ export function LocaleSwitcher({ className }: { className?: string }) {
                 <option value="es" className="bg-zinc-900 text-white">ES</option>
                 <option value="fr" className="bg-zinc-900 text-white">FR</option>
                 <option value="pt" className="bg-zinc-900 text-white">PT</option>
+                <option value="de" className="bg-zinc-900 text-white">DE</option>
             </select>
             <div className="absolute right-2 pointer-events-none">
                 <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">

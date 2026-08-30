@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { ArrowUp, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 
@@ -47,6 +48,7 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [sessionId] = useState(() => crypto.randomUUID());
+    const t = useTranslations('guestChat');
 
     // ── Character info (from props or first API response) ──
     const [avatarUrl, setAvatarUrl] = useState<string | undefined>(propAvatarUrl);
@@ -245,7 +247,7 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                 setIsLoading(false);
             }
         } catch {
-            setError('Something went wrong. Try again.');
+            setError(t('errorGeneric'));
             setIsLoading(false);
             heldMsgIdRef.current = null;
         }
@@ -288,21 +290,21 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                 {avatarUrl ? (
                     <Image
                         src={avatarUrl}
-                        alt="Earnest"
+                        alt={t('characterName')}
                         width={40}
                         height={40}
                         className="w-10 h-10 rounded-full object-cover border-2 border-zinc-700"
                     />
                 ) : (
                     <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center">
-                        <span className="text-base font-semibold text-zinc-400">E</span>
+                        <span className="text-base font-semibold text-zinc-400">{t('characterInitial')}</span>
                     </div>
                 )}
 
                 {/* Name + online dot */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-white">Earnest</span>
+                        <span className="text-sm font-semibold text-white">{t('characterName')}</span>
                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     </div>
                 </div>
@@ -376,7 +378,7 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                 {/* Error toast */}
                 {error && (
                     <div className="flex items-center gap-2 text-xs text-red-400 px-4 py-2">
-                        <span>Something went wrong. Try again.</span>
+                        <span>{t('errorGeneric')}</span>
                         <button
                             onClick={handleRetry}
                             className="underline hover:text-red-300 transition-colors"
@@ -400,7 +402,7 @@ export function GuestMirrorChat({ avatarUrl: propAvatarUrl, characterName: propC
                             }
                         }}
                         onKeyDown={handleKeyDown}
-                        placeholder="What's on your mind?"
+                        placeholder={t('placeholder')}
                         disabled={isLoading}
                         rows={1}
                         className="w-full bg-transparent text-white px-1 pr-12 min-h-[44px] max-h-[120px] resize-none focus:outline-none placeholder:text-zinc-400 text-base leading-relaxed"

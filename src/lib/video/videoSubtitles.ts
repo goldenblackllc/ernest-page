@@ -52,37 +52,9 @@ function chunkText(text: string, targetWords = 7): string[] {
             wordCount += sentenceWordCount;
         }
     }
-
     if (current.trim()) chunks.push(current.trim());
     return chunks;
 }
-
-/**
- * Escape text for ffmpeg drawtext filter.
- * Inside single-quoted values in ffmpeg filter graphs:
- *   \\ → literal \
- *   '' → literal ' (two consecutive quotes = literal quote)
- * Everything else is literal (colons, semicolons, brackets don't need escaping inside quotes).
- * Additionally, drawtext interprets %{...} as dynamic text, so % must become %%.
- */
-export function escapeDrawText(text: string): string {
-    return text
-        .replace(/[\x00-\x1f\x7f]/g, ' ') // strip control chars
-        .replace(/[\u2018\u2019\u201a\u201b\u2032\u2035]/g, '') // delete curly/straight single quotes
-        .replace(/'/g, '')                  // delete ASCII apostrophes
-        .replace(/[\u201c\u201d\u201e\u201f]/g, '"')             // curly double → "
-        .replace(/[\u2013\u2014\u2015]/g, '-')                   // em/en dash → -
-        .replace(/\u2026/g, '...')                                // ellipsis → ...
-        .replace(/[^\x00-\x7f]/g, '')                            // strip remaining non-ASCII
-        .replace(/\\/g, '\\\\')             // backslash → \\
-        .replace(/:/g, '\\:')               // colon → \: (ffmpeg option separator)
-        .replace(/;/g, '\\;')               // semicolon → \; (ffmpeg chain separator)
-        .replace(/,/g, '\\,')               // comma → \, (ffmpeg filter separator)
-        .replace(/\[/g, '\\[')              // [ → \[ (ffmpeg stream label)
-        .replace(/]/g, '\\]')               // ] → \] (ffmpeg stream label)
-        .replace(/%/g, '%%');               // % → %%
-}
-
 /**
  * Generate timed subtitle entries for the video.
  *

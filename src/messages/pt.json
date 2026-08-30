@@ -108,31 +108,31 @@
       "errorVerifyFailed": "Código inválido. Por favor, tente novamente.",
       "byContinuing": "Ao continuar, você concorda com nossos",
       "and": "e",
-      "tryWhatsApp": "Didn't receive it? Try WhatsApp instead"
+      "tryWhatsApp": "Não recebeu? Tente pelo WhatsApp"
     },
     "footer": {
       "copyright": "© {year} Earnest Page. Todos os direitos reservados.",
       "privacy": "Política de Privacidade",
       "terms": "Termos de Serviço",
       "acceptableUse": "Uso Aceitável",
-      "disclaimer": "This is not a substitute for licensed therapy or psychiatric care. If you are in crisis, please contact the 988 Suicide & Crisis Lifeline."
+      "disclaimer": "Isso não substitui terapia licenciada ou cuidados psiquiátricos. Se você estiver em crise, por favor entre em contato com o CVV — Centro de Valorização da Vida (ligue 188)."
     },
     "signal": {
-      "label": "How It Works",
-      "step1Title": "Something's bothering you.",
-      "step1Body": "A relationship that's off. A decision you can't make. A feeling you can't shake. That tension is valuable.",
-      "step2Title": "You say what's actually going on.",
-      "step2Body": "You talk about what's happening, and the thing underneath starts to surface.",
-      "step3Title": "You see what you actually want.",
-      "step3Body": "The feeling had a message. Once you hear it, you can't unhear it. What you do with it is up to you."
+      "label": "Como Funciona",
+      "step1Title": "Algo está incomodando você.",
+      "step1Body": "Um relacionamento que não está bem. Uma decisão que você não consegue tomar. Um sentimento do qual não consegue se livrar. Essa tensão é valiosa.",
+      "step2Title": "Você diz o que realmente está acontecendo.",
+      "step2Body": "Você fala sobre o que está acontecendo, e o que está por baixo começa a surgir.",
+      "step3Title": "Você vê o que realmente quer.",
+      "step3Body": "O sentimento tinha uma mensagem. Uma vez que você a ouve, não pode deixar de ouvir. O que você faz com isso depende de você."
     },
     "worldview": {
-      "label": "The Premise",
-      "heading": "Your feelings aren't the problem.",
-      "line1": "They're not something to manage.",
-      "line2": "They're not something to fix.",
-      "line3": "They're a signal — telling you exactly what you want.",
-      "line4": "Most people run from them. The lucky ones listen."
+      "label": "A Premissa",
+      "heading": "Seus sentimentos não são o problema.",
+      "line1": "Eles não são algo para gerenciar.",
+      "line2": "Eles não são algo para consertar.",
+      "line3": "Eles são um sinal — dizendo exatamente o que você quer.",
+      "line4": "A maioria das pessoas foge deles. Os sortudos os ouvem."
     }
   },
   "dashboard": {
@@ -149,48 +149,32 @@
     "submitLabel": "Criar Meu Personagem",
     "errorDefault": "Algo deu errado. Por favor, tente novamente.",
     "identityForm": {
-      "visionTitle": "Quem Você Quer Ser?",
-      "visionSub": "Não pense muito nisso. Apenas escreva.",
-      "nameLabel": "Nomeie seu personagem",
-      "nameOptional": "(opcional — criaremos um se ficar em branco)",
+      "nameLabel": "Primeiro Nome",
       "namePlaceholder": "Deixe em branco para gerar automaticamente",
-      "genderLabel": "Eu sou",
+      "genderLabel": "Gênero",
       "genderPlaceholder": "Homem, Mulher, etc.",
       "bornLabel": "Data de nascimento",
-      "bornPlaceholder": "",
-      "bornSub": "Obrigatório — para conteúdo adequado à idade.",
-      "ethnicityLabel": "De onde é a sua família?",
-      "ethnicityOptional": "(opcional)",
-      "ethnicitySub": "Seja específico — \"Dominicano\" funciona melhor que \"Hispânico,\" \"Filipino\" melhor que \"Asiático.\"",
+      "ethnicityLabel": "Etnia (opcional)",
       "ethnicityPlaceholder": "ex., Dominicano, Filipino, Persa, Nigeriano, Irlandês-Italiano",
       "skinToneLabel": "Tom de Pele",
-      "hairColorLabel": "Cor Natural do Cabelo",
-      "hairTextureLabel": "Textura do Cabelo",
+      "hairColorLabel": "Cor do Cabelo",
+      "hairTextureLabel": "Textura",
       "eyeColorLabel": "Cor dos Olhos",
-      "hairVolumeLabel": "Volume do Cabelo",
+      "hairVolumeLabel": "Volume",
       "heightLabel": "Altura",
-      "heightPlaceholder": "ex., 1,78m ou 5'10\"",
       "rantLabel": "O Desabafo",
-      "rantSub": "Descreva sua vida ideal — a pessoa, o estilo de vida, tudo. O cru é melhor que o polido. Construiremos seu personagem a partir disso.",
       "rantPlaceholder": "Quero ser o tipo de homem que acorda com um plano. Financeiramente livre. Um pai que meus filhos realmente admiram. Na melhor forma da minha vida. Comandando algo que importa...",
       "next": "Próximo",
-      "realityTitle": "Sua Realidade",
-      "realitySub": "Conte-nos sobre sua vida para que seu personagem se encaixe no seu mundo.",
-      "peopleLabel": "Suas Pessoas",
-      "peopleSub": "Quem te faz sentir algo — bom ou ruim? Família, amigos, rivais, animais de estimação. Não apenas liste nomes — diga o que é real. Nós organizamos.",
-      "peoplePlaceholder": "Minha esposa — estamos bem, mas ela acha que eu trabalho demais. Meu filho (4) — meu mundo inteiro. Meu cão Rex. Meu sócio de negócios — brilhante, mas ainda não confio totalmente nele...",
       "enjoymentsLabel": "O Que Te Ilumina",
-      "enjoymentsSub": "O que te empolga? As coisas que te fazem feliz ficam — seu personagem deve amar o que você ama.",
       "enjoymentsPlaceholder": "Cozinhar para outros, hip-hop dos anos 90, filmes de terror, dirigir sem rumo, meu ritual matinal de café, basquete de rua...",
-      "skip": "Pular por agora",
-      "setupLabel": "Before You Begin"
+      "skip": "Pular por agora"
     },
     "preChat": {
-      "heading": "One thing before we begin.",
-      "subtext": "This helps us build someone who matches you.",
-      "genderLabel": "Gender",
-      "genderPlaceholder": "Man, Woman, etc.",
-      "cta": "Continue"
+      "heading": "Uma coisa antes de começarmos.",
+      "subtext": "Isso nos ajuda a construir alguém que combine com você.",
+      "genderLabel": "Gênero",
+      "genderPlaceholder": "Homem, Mulher, etc.",
+      "cta": "Continuar"
     }
   },
   "vision": {
@@ -245,7 +229,7 @@
     "commit": "Comprometer",
     "regenerate": "Regenerar Resposta",
     "mode": "Modo",
-    "promptOnboarding": "Say hello — this is your free first session."
+    "promptOnboarding": "Diga olá — esta é sua primeira sessão gratuita."
   },
   "tollbooth": {
     "secureEnrollment": "Começar",
@@ -302,22 +286,24 @@
     "checkinContext": "Estou aqui para meu check-in de 30 dias.",
     "checkinTitle": "Check-in de 30 Dias ✓",
     "checkinSub": "Toque para começar →",
-    "bibleStaleTitle": "Build timed out.",
-    "bibleStaleSub": "The build took longer than expected. Tap below to try again.",
-    "bibleFailedTitle": "Build failed.",
-    "bibleFailedSub": "Something went wrong during the build. Tap below to try again.",
-    "bibleRateLimitDailyTitle": "Daily limit reached.",
-    "bibleRateLimitDailySub": "You've used all your character builds for today. Try again tomorrow.",
-    "bibleRateLimitCooldownTitle": "Too soon to rebuild.",
-    "bibleRateLimitCooldownSub": "Please wait a few minutes before rebuilding your character.",
-    "bibleRetry": "Retry Build",
-    "bibleRetrying": "Rebuilding...",
-    "yourFirstSession": "Ready when you are",
-    "sessionsAvailable": "Sessions Available",
-    "sessionAvailable": "Session Available",
-    "firstSessionSub": "Start a conversation with your Ideal Self — speak freely.",
-    "startNow": "Start Now",
-    "digestLabel": "Your Daily Standard"
+    "bibleStaleTitle": "A construção expirou.",
+    "bibleStaleSub": "A construção demorou mais do que o esperado. Toque abaixo para tentar novamente.",
+    "bibleFailedTitle": "Falha na construção.",
+    "bibleFailedSub": "Algo deu errado durante a construção. Toque abaixo para tentar novamente.",
+    "bibleRateLimitDailyTitle": "Limite diário alcançado.",
+    "bibleRateLimitDailySub": "Você usou todas as suas construções de personagem por hoje. Tente novamente amanhã.",
+    "bibleRateLimitCooldownTitle": "Muito cedo para reconstruir.",
+    "bibleRateLimitCooldownSub": "Por favor, aguarde alguns minutos antes de reconstruir seu personagem.",
+    "bibleRetry": "Tentar Construção Novamente",
+    "bibleRetrying": "Reconstruindo...",
+    "yourFirstSession": "Pronto quando você estiver",
+    "sessionsAvailable": "Sessões Disponíveis",
+    "sessionAvailable": "Sessão Disponível",
+    "firstSessionSub": "Inicie uma conversa com seu Eu Ideal — fale abertamente.",
+    "startNow": "Começar Agora",
+    "digestLabel": "Seu Padrão Diário",
+    "labelLetter": "Carta",
+    "labelResponse": "Resposta"
   },
   "profile": {
     "unknownCharacter": "Personagem Desconhecido",
@@ -672,96 +658,86 @@
       "l2": "Sessões \"Queimar ao Fechar\" são purgadas imediatamente sem retenção de dados.",
       "l3": "Publicações são mantidas até que você as exclua ou exclua sua conta.",
       "l4": "Seu dossiê e perfil de personagem são mantidos durante a vigência da sua conta.",
-      "l5": "Payment records are retained for 7 years as required for tax and accounting compliance.",
-      "l6": "Upon account deletion, all personal data is permanently erased within 30 days, except where retention is required by law."
+      "l5": "Registros de pagamento são retidos por 7 anos, conforme exigido para conformidade fiscal e contábil.",
+      "l6": "Após a exclusão da conta, todos os dados pessoais são apagados permanentemente dentro de 30 dias, exceto onde a retenção for exigida por lei."
     },
     "s7": {
-      "title": "7. Seus Direitos",
-      "p1": "Dependendo da sua jurisdição, você pode ter o direito de:",
+      "title": "7. Base Legal para Processamento (GDPR)",
+      "p1": "Se você estiver localizado no Espaço Econômico Europeu (EEE), no Reino Unido ou na Suíça, processamos seus dados pessoais de acordo com as seguintes bases legais definidas pelo Regulamento Geral de Proteção de Dados (GDPR):",
+      "t1": "Necessidade Contratual (Artigo 6(1)(b))",
+      "b1": "Processamento dos dados da sua conta, gerenciamento de assinaturas, entrega do serviço Mirror Chat e geração da sua Bíblia de Personagem — eles são necessários para fornecer o serviço no qual você se inscreveu.",
+      "t2": "Consentimento (Artigo 6(1)(a))",
+      "b2": "Publicação de posts anônimos no feed público (você controla isso pelas configurações de roteamento), coleta de dados de localização para o recurso de Ponto Cego de Proximidade (você pode negar acesso ao GPS) e processamento de suas conversas por meio de modelos de IA de terceiros.",
+      "t3": "Interesse Legítimo (Artigo 6(1)(f))",
+      "b3": "Manutenção da segurança da plataforma, prevenção de fraudes e abusos, melhoria do serviço e geração de análises agregadas. Equilibramos nossos interesses com seus direitos e não usamos seus dados para criação de perfis, publicidade ou venda a terceiros.",
+      "t4": "Obrigação Legal (Artigo 6(1)(c))",
+      "b4": "Retenção de registros financeiros conforme exigido pelas leis fiscais e resposta a processos legais válidos.",
+      "p2": "Você pode retirar seu consentimento a qualquer momento alterando suas configurações de roteamento para Privado, negando a geolocalização do navegador ou entrando em contato conosco. A retirada do consentimento não afeta a legalidade do processamento realizado antes da retirada."
+    },
+    "s8": {
+      "title": "8. Transferências Internacionais de Dados",
+      "p1": "A Golden Black LLC está sediada nos Estados Unidos. Se você acessar o Earnest Page de fora dos Estados Unidos, seus dados pessoais serão transferidos para e processados nos Estados Unidos, onde as leis de proteção de dados podem ser diferentes daquelas da sua jurisdição.",
+      "p2": "Para usuários no EEE, Reino Unido e Suíça, baseamo-nos nas seguintes salvaguardas para transferências internacionais de dados:",
+      "l1": "Cláusulas Contratuais Padrão (SCCs) aprovadas pela Comissão Europeia, incorporadas aos nossos contratos com subprocessadores quando aplicável.",
+      "l2": "Nossos provedores de serviços terceirizados (Firebase/Google, Stripe, Anthropic, Twilio, Vercel) mantêm seus próprios contratos de processamento de dados e mecanismos de transferência compatíveis com as regulamentações aplicáveis.",
+      "l3": "Implementamos medidas técnicas suplementares, incluindo criptografia em trânsito (TLS 1.2+), criptografia em repouso e controles de acesso para proteger os dados transferidos.",
+      "p3": "Ao usar o Serviço, você reconhece e consente com a transferência e processamento de seus dados nos Estados Unidos. Você pode solicitar uma cópia das salvaguardas que usamos entrando em contato conosco."
+    },
+    "s9": {
+      "title": "9. Seus Direitos",
+      "p1": "Dependendo da sua jurisdição, você pode ter os seguintes direitos em relação aos seus dados pessoais:",
+      "t1": "Para Todos os Usuários",
       "strong1": "Acessar",
       "l1": " os dados pessoais que mantemos sobre você",
       "strong2": "Excluir",
-      "l2": " sua conta e todos os dados associados",
+      "l2": " sua conta e todos os dados associados (via Segurança e Roteamento no aplicativo ou entrando em contato conosco)",
       "strong3": "Exportar",
-      "l3": " seus dados em formato portátil",
+      "l3": " seus dados em um formato portátil e legível por máquina (via o recurso de exportação de dados no aplicativo)",
       "strong4": "Optar por não participar",
       "l4": " da publicação pública configurando seu roteamento padrão como Privado",
       "strong5": "Restringir",
       "l5": " a coleta de dados de localização negando a geolocalização do navegador",
+      "t2": "Direitos Adicionais para Usuários do EEE, Reino Unido e Suíça (GDPR)",
+      "strong6": "Retificação",
+      "l6": " — solicitar a correção de dados pessoais imprecisos ou incompletos",
+      "strong7": "Restrição",
+      "l7": " — solicitar que limitemos o processamento de seus dados em determinadas circunstâncias",
+      "strong8": "Opor-se",
+      "l8": " — opor-se ao processamento baseado em interesses legítimos",
+      "strong9": "Retirar o consentimento",
+      "l9": " — onde o processamento é baseado no consentimento, retirá-lo a qualquer momento",
+      "strong10": "Apresentar uma reclamação",
+      "l10": " — junto à sua Autoridade de Proteção de Dados local se você acredita que seus direitos foram violados",
+      "t3": "Direitos Adicionais para Residentes da Califórnia (CCPA)",
+      "l11": "Direito de saber quais informações pessoais coletamos, usamos e divulgamos",
+      "l12": "Direito de excluir suas informações pessoais",
+      "l13": "Direito de optar por não participar da venda de informações pessoais — não vendemos informações pessoais",
+      "l14": "Direito de não discriminação por exercer seus direitos de privacidade",
       "p2": "Para exercer qualquer um desses direitos, entre em contato conosco em ",
-      "t1": "Contractual Necessity (Article 6(1)(b))",
-      "b1": "Processing your account data, managing subscriptions, delivering the Mirror Chat service, and generating your Character Bible — these are necessary to provide the service you signed up for.",
-      "t2": "Consent (Article 6(1)(a))",
-      "b2": "Publishing anonymous posts to the public feed (you control this via your routing settings), collecting location data for the Proximity Blind Spot feature (you can deny GPS access), and processing your conversations via third-party AI models.",
-      "t3": "Legitimate Interest (Article 6(1)(f))",
-      "b3": "Maintaining platform security, preventing fraud and abuse, improving the service, and generating aggregate analytics. We balance our interests against your rights and do not use your data for profiling, advertising, or sale to third parties.",
-      "t4": "Legal Obligation (Article 6(1)(c))",
-      "b4": "Retaining financial records as required by tax law, and responding to valid legal process."
-    },
-    "s8": {
-      "title": "8. Privacidade Infantil",
-      "p1": "O Serviço está disponível para usuários com 13 anos ou mais. Não coletamos intencionalmente informações pessoais de crianças menores de 13 anos. Se descobrirmos que coletamos dados de uma criança menor de 13 anos, excluiremos essas informações prontamente.",
-      "p2": "For users in the EEA, UK, and Switzerland, we rely on the following safeguards for international data transfers:",
-      "l1": "Standard Contractual Clauses (SCCs) approved by the European Commission, incorporated into our agreements with sub-processors where applicable.",
-      "l2": "Our third-party service providers (Firebase/Google, Stripe, Anthropic, Twilio, Vercel) maintain their own data processing agreements and transfer mechanisms compliant with applicable regulations.",
-      "l3": "We implement supplementary technical measures including encryption in transit (TLS 1.2+), encryption at rest, and access controls to protect transferred data.",
-      "p3": "By using the Service, you acknowledge and consent to the transfer and processing of your data in the United States. You may request a copy of the safeguards we use by contacting us."
-    },
-    "s9": {
-      "title": "9. Segurança",
-      "p1": "Empregamos medidas de segurança padrão da indústria, incluindo transmissão de dados criptografada (TLS), hash criptográfico (SHA-256) para identificadores sensíveis, regras de segurança do Firebase e infraestrutura de pagamento compatível com PCI do Stripe. No entanto, nenhum método de armazenamento ou transmissão eletrônica é 100% seguro.",
-      "t1": "For All Users",
-      "strong1": "Access",
-      "l1": " the personal data we hold about you",
-      "strong2": "Delete",
-      "l2": " your account and all associated data (via Security & Routing in-app or by contacting us)",
-      "strong3": "Export",
-      "l3": " your data in a portable, machine-readable format (via the data export feature in-app)",
-      "strong4": "Opt out",
-      "l4": " of public publishing by setting your default routing to Private",
-      "strong5": "Restrict",
-      "l5": " location data collection by denying browser geolocation",
-      "t2": "Additional Rights for EEA, UK, and Swiss Users (GDPR)",
-      "strong6": "Rectification",
-      "l6": " — request correction of inaccurate or incomplete personal data",
-      "strong7": "Restriction",
-      "l7": " — request that we limit the processing of your data in certain circumstances",
-      "strong8": "Object",
-      "l8": " — object to processing based on legitimate interests",
-      "strong9": "Withdraw consent",
-      "l9": " — where processing is based on consent, withdraw it at any time",
-      "strong10": "Lodge a complaint",
-      "l10": " — with your local Data Protection Authority if you believe your rights have been violated",
-      "t3": "Additional Rights for California Residents (CCPA)",
-      "l11": "Right to know what personal information we collect, use, and disclose",
-      "l12": "Right to delete your personal information",
-      "l13": "Right to opt out of the sale of personal information — we do not sell personal information",
-      "l14": "Right to non-discrimination for exercising your privacy rights",
-      "p2": "To exercise any of these rights, contact us at ",
-      "p3": "We will respond to all rights requests within 30 days (GDPR) or 45 days (CCPA)."
+      "p3": "Responderemos a todas as solicitações de direitos dentro de 30 dias (GDPR) ou 45 dias (CCPA)."
     },
     "s10": {
-      "title": "10. Alterações nesta Política",
-      "p1": "Podemos atualizar esta Política de Privacidade de tempos em tempos. Se fizermos alterações materiais, forneceremos aviso através do Serviço. O uso continuado do Serviço após as alterações constitui aceitação da política atualizada."
+      "title": "10. Privacidade Infantil",
+      "p1": "O Serviço está disponível para usuários com 13 anos ou mais (ou 16 em jurisdições onde o GDPR exige). Não coletamos intencionalmente informações pessoais de crianças menores da idade mínima aplicável. Se descobrirmos que coletamos dados de uma criança abaixo da idade aplicável, excluiremos prontamente essas informações."
     },
     "s11": {
-      "title": "11. Contato",
-      "p1": "Para perguntas ou solicitações relacionadas à privacidade, entre em contato conosco em "
+      "title": "11. Segurança",
+      "p1": "Empregamos medidas de segurança padrão do setor, incluindo transmissão de dados criptografada (TLS), hash criptográfico (SHA-256) para identificadores confidenciais, regras de segurança do Firebase e infraestrutura de pagamentos em conformidade com o PCI da Stripe. No entanto, nenhum método de armazenamento ou transmissão eletrônica é 100% seguro."
     },
     "s12": {
-      "title": "12. Changes to This Policy",
-      "p1": "We may update this Privacy Policy from time to time. If we make material changes, we will provide notice through the Service. Continued use of the Service after changes constitutes acceptance of the updated policy."
+      "title": "12. Alterações nesta Política",
+      "p1": "Podemos atualizar esta Política de Privacidade de tempos em tempos. Se fizermos alterações materiais, forneceremos um aviso através do Serviço. O uso continuado do Serviço após as alterações constitui aceitação da política atualizada."
     },
     "s13": {
-      "title": "13. Data Protection Contact",
-      "p1": "For privacy-related questions, data protection inquiries, or to exercise your rights under GDPR, CCPA, or other applicable privacy laws, contact:",
+      "title": "13. Contato sobre Proteção de Dados",
+      "p1": "Para questões relacionadas à privacidade, consultas sobre proteção de dados ou para exercer seus direitos sob o GDPR, CCPA ou outras leis de privacidade aplicáveis, entre em contato com:",
       "p2": "Golden Black LLC",
-      "p3": "Attn: Data Protection",
-      "p4": "Email: "
+      "p3": "A/C: Proteção de Dados",
+      "p4": "E-mail: "
     },
     "s14": {
-      "title": "14. Contact",
-      "p1": "For general privacy questions, contact us at "
+      "title": "14. Contato",
+      "p1": "Para questões gerais de privacidade, entre em contato conosco em "
     }
   },
   "acceptableUse": {
@@ -829,21 +805,21 @@
     }
   },
   "intake": {
-    "header": "Getting to know you",
-    "ofFive": "of 5",
-    "introHeading": "Before we begin...",
-    "introSubtext": "You are unique and we don't give generic feedback. We need to know a little about who you are so everything is tailored to you.",
-    "inputPlaceholder": "Type your answer...",
-    "compiling": "Preparing your session...",
-    "compilingSub": "This takes a few minutes. We're building something specific to you.",
-    "readyHeading": "You're all set.",
-    "readySub": "We've built someone based on the person you described — your ideal self. This is your free first session. Speak openly.",
-    "startSession": "Start Your First Session",
-    "questionTitle1": "Your Vision",
-    "questionTitle2": "People in Your Life",
-    "questionTitle3": "What Lights You Up",
-    "questionTitle4": "When You Were Born",
-    "questionTitle5": "Physical Traits"
+    "header": "Conhecendo você",
+    "ofFive": "de 5",
+    "introHeading": "Antes de começarmos...",
+    "introSubtext": "Você é único e nós não damos feedback genérico. Precisamos saber um pouco sobre quem você é para que tudo seja adaptado a você.",
+    "inputPlaceholder": "Digite sua resposta...",
+    "compiling": "Preparando sua sessão...",
+    "compilingSub": "Isso leva alguns minutos. Estamos construindo algo específico para você.",
+    "readyHeading": "Tudo pronto.",
+    "readySub": "Construímos alguém com base na pessoa que você descreveu — seu eu ideal. Esta é sua primeira sessão gratuita. Fale abertamente.",
+    "startSession": "Começar Sua Primeira Sessão",
+    "questionTitle1": "Sua Visão",
+    "questionTitle2": "Pessoas na Sua Vida",
+    "questionTitle3": "O Que Te Ilumina",
+    "questionTitle4": "Quando Você Nasceu",
+    "questionTitle5": "Traços Físicos"
   },
   "voiceBrowser": {
     "title": "Minha Voz",
@@ -863,5 +839,31 @@
     "active": "Ativa",
     "select": "Selecionar",
     "noResults": "Nenhuma voz encontrada. Tente outros filtros."
+  },
+  "auth": {
+    "loginTitle": "Entrar",
+    "verifyTitle": "Verificar",
+    "phonePlaceholder": "Número de telefone",
+    "sendCode": "Enviar Código",
+    "sending": "Enviando...",
+    "verifying": "Verificando...",
+    "verifyAndLogin": "Verificar e Entrar",
+    "changePhoneNumber": "Alterar Número de Telefone",
+    "countryHint": "Selecione seu país acima e insira seu número de telefone.",
+    "errorNoPhone": "Por favor, insira um número de telefone.",
+    "errorSendFailed": "Falha ao enviar o código. Tente novamente.",
+    "errorVerifyFailed": "Código inválido. Tente novamente."
+  },
+  "header": {
+    "title": "The Daily Truth",
+    "volume": "Vol. I",
+    "price": "Preço: Sua Atenção"
+  },
+  "guestChat": {
+    "characterName": "Earnest",
+    "characterInitial": "E",
+    "placeholder": "O que está na sua mente?",
+    "errorGeneric": "Algo deu errado. Tente novamente.",
+    "retry": "Tentar novamente"
   }
 }

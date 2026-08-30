@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from 'next/font/local';
 import "./globals.css";
+import { getLocale } from 'next-intl/server';
 
 
 const hkGrotesk = localFont({
@@ -50,13 +51,14 @@ export const viewport: Viewport = {
 
 // Root layout — provides <html> and <body> tags required by Next.js 16+.
 // All i18n providers remain in [locale]/layout.tsx.
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         {/* TikTok Pixel */}
         <script

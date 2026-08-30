@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Check, ArrowRight, Loader2 } from 'lucide-react';
 import OTPLogin from '@/components/auth/OTPLogin';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 
 type PaymentMethod = 'venmo' | 'cashapp';
 type PageStep = 'form' | 'login' | 'activating' | 'done';

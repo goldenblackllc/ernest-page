@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter } from '@/i18n/navigation';
 import { Heart } from "lucide-react";
 import { Timestamp, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";

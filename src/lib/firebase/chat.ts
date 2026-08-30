@@ -3,18 +3,6 @@ import { db } from "./config";
 import { ActiveChat } from "@/types/chat";
 
 /**
- * Gets the current active chat session for a user.
- */
-export async function getActiveChat(uid: string, sessionId: string = "mirror"): Promise<ActiveChat | null> {
-    const docRef = doc(db, "users", uid, "active_chats", sessionId);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        return docSnap.data() as ActiveChat;
-    }
-    return null;
-}
-
-/**
  * Gets the most recent active chat session for a user that hasn't expired or been closed.
  */
 export async function getMostRecentActiveChat(uid: string): Promise<ActiveChat | null> {
