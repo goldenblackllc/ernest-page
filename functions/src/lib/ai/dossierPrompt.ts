@@ -50,6 +50,7 @@ Where they came from: childhood, formative events, career history, past relation
 ═══ WANTS & DESIRES ═══
 What the user has expressed wanting — big or small, near or far. Keep all desires unless the user explicitly says they no longer want something or it was fulfilled.
 
+
 ═══ IMPORTANT DATES ═══
 Dates the user has attached significance to: birthdays, anniversaries, milestones, losses, sobriety dates, deadlines, or any date they mention as meaningful.
 Format each entry as: YYYY-MM-DD | Label | Context (e.g. 2026-06-15 | Daughter's birthday | Turning 7). Use best judgment for year if not stated. If only a month/day is given, omit the year.

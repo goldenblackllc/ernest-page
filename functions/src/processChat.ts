@@ -105,7 +105,7 @@ export const processChat = onDocumentUpdated(
         const currentProfile = userData?.unified_profile || {};
         const sessionCount = (identity?.session_count || 0) + 1;
 
-        const extractionPrompt = buildExtractionPrompt(currentProfile, identity?.dossier || '', transcript);
+        const extractionPrompt = buildExtractionPrompt(currentProfile, identity?.dossier || '', transcript, userData?.wants_for_bible || []);
         const sessionLogPrompt = buildSessionLogPrompt(transcript);
 
         try {
@@ -117,17 +117,20 @@ export const processChat = onDocumentUpdated(
                     primaryModelId: OPUS_MODEL,
                     fallbackModelId: OPUS_FALLBACK,
                     schema: z.object({
-                        new_people: z.array(z.object({
+                        all_people: z.array(z.object({
                             name: z.string(),
                             relationship: z.string(),
                             dynamic: z.string().optional(),
                             birthday: z.string().optional(),
                             notes: z.string().optional(),
-                        })).describe('New or updated people/pets mentioned'),
-                        new_interests: z.array(z.string()).describe('New interests/hobbies mentioned'),
-                        new_wardrobe: z.array(z.string()).describe('New clothing items mentioned'),
-                        rewritten_dossier: z.string().optional().describe('Completely rewritten identity.dossier text, incorporating new narrative facts and removing outdated ones, keeping it highly concise (max 1 page). Null if no narrative facts changed.'),
-                        wants_for_bible: z.array(z.string()).describe('Desires/wants expressed — these will be converted to present-tense character realities, NOT stored as wants'),
+                        })).describe('Complete reconciled list of ALL people/pets in the user\'s life — not just new ones'),
+                        all_interests: z.array(z.string()).describe('Complete reconciled interests list — everything the user enjoys, deduplicated and consolidated'),
+                        all_wardrobe: z.array(z.string()).describe('Complete reconciled wardrobe — items the USER owns/wears, not gifts for others'),
+                        rewritten_life_facts: z.string().optional().describe('Complete rewritten life_facts — location, occupation, employer, living situation, relationship status'),
+                        rewritten_routines: z.string().optional().describe('Complete rewritten routines — daily patterns, schedules, exercise habits, work schedule, rituals'),
+                        rewritten_milestones: z.string().optional().describe('Complete rewritten milestones — sobriety dates, career events, moves, life transitions'),
+                        rewritten_dossier: z.string().optional().describe('Rewritten dossier with only IMPORTANT DATES and ROUTINES & HABITS sections (under 500 words). Null if no changes.'),
+                        all_wants: z.array(z.string()).describe('Complete consolidated list of ALL desires/wants — merged from existing wants + new session desires, deduplicated and pruned'),
                     }),
                     prompt: extractionPrompt,
                 }),
@@ -162,7 +165,7 @@ export const processChat = onDocumentUpdated(
                 const newRecap = { date: new Date().toISOString().split('T')[0], recap: recap.session_recap };
                 const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
 
-                // Merge extracted data into unified profile
+                // Build updated unified profile from LLM-reconciled extraction
                 const profile = userData?.unified_profile || {
                     people: [],
                     interests: [],
@@ -172,25 +175,16 @@ export const processChat = onDocumentUpdated(
                     milestones: ''
                 };
                 
-                // Merge people (update existing by name, add new)
-                const mergedPeople = [...(profile.people || [])];
-                (extracted.new_people || []).forEach((person: any) => {
-                    const idx = mergedPeople.findIndex((p: any) => p.name.toLowerCase() === person.name.toLowerCase());
-                    if (idx >= 0) {
-                        mergedPeople[idx] = { ...mergedPeople[idx], ...person };
-                    } else {
-                        mergedPeople.push(person);
-                    }
-                });
-                
                 const updatedProfile = {
-                    people: mergedPeople,
-                    interests: Array.from(new Set([...(profile.interests || []), ...(extracted.new_interests || [])])),
-                    wardrobe: Array.from(new Set([...(profile.wardrobe || []), ...(extracted.new_wardrobe || [])])),
-                    routines: profile.routines || '', // Legacy fields preserved but no longer appended to
-                    life_facts: profile.life_facts || '',
-                    milestones: profile.milestones || '',
+                    people: extracted.all_people || profile.people || [],
+                    interests: extracted.all_interests || profile.interests || [],
+                    wardrobe: extracted.all_wardrobe || profile.wardrobe || [],
+                    routines: extracted.rewritten_routines || profile.routines || '',
+                    life_facts: extracted.rewritten_life_facts || profile.life_facts || '',
+                    milestones: extracted.rewritten_milestones || profile.milestones || '',
                 };
+
+                const consolidatedWants = extracted.all_wants || [];
 
                 await userDoc.ref.set({
                     identity: {
@@ -201,10 +195,57 @@ export const processChat = onDocumentUpdated(
                     },
                     session_recaps: updatedRecaps,
                     unified_profile: updatedProfile,
-                    // Store wants temporarily for the bible recompile to consume
-                    ...(extracted.wants_for_bible?.length > 0 && { wants_for_bible: FieldValue.arrayUnion(...extracted.wants_for_bible) })
+                    // Overwrite wants with consolidated list (not arrayUnion)
+                    wants_for_bible: consolidatedWants,
                 }, { merge: true });
                 console.log(`[ProcessChat] Profile + log updated for ${uid} (session ${sessionCount})`);
+
+                // Re-derive manifesto and archetype from dream_rant + consolidated wants
+                const dreamRant = identity?.dream_rant || '';
+                if (dreamRant && consolidatedWants.length > 0) {
+                    try {
+                        console.log(`[ProcessChat] Re-deriving manifesto from rant + ${consolidatedWants.length} wants...`);
+                        const wantsText = consolidatedWants.map((w: string) => `I want: ${w}`).join('\n');
+                        const manifestoResult = await generateWithFallback({
+                            primaryModelId: OPUS_MODEL,
+                            fallbackModelId: OPUS_FALLBACK,
+                            schema: z.object({
+                                title: z.string().describe('3 concrete visual roles, comma-separated (e.g. "Father, Husband, Gentleman")'),
+                                dream_self: z.string().describe('Present-tense identity paragraph, 3-5 sentences, AS IF they already are this person'),
+                            }),
+                            prompt: `A user has written a "dream rant" describing who they wish they were. They have also expressed additional desires over time. Combine both into a single identity.
+
+DREAM RANT:
+"${dreamRant}"
+
+ADDITIONAL DESIRES (treat these as part of the rant — they are things the user wants that should be incorporated as present-tense realities):
+${wantsText}
+
+Your job:
+1. TITLE: Extract 3 concrete, VISUAL roles. These should be nouns/roles that instantly paint a picture of who this person is — not abstract traits. Gendered when appropriate (e.g., "Father" not "Parent"). Format: "Role, Role, Role"
+2. DREAM SELF: Write a present-tense identity paragraph (3-5 sentences) describing this person AS IF THEY ALREADY ARE who they described AND already have everything they desire. Transform ALL wish-language into present-tense identity. The output must read as a confident, realized identity — never aspirational.`,
+                        });
+
+                        const manifesto = (manifestoResult.object as any);
+                        if (manifesto?.title && manifesto?.dream_self) {
+                            await userDoc.ref.set({
+                                identity: {
+                                    title: manifesto.title,
+                                    dream_self: manifesto.dream_self,
+                                },
+                                character_bible: {
+                                    source_code: {
+                                        archetype: manifesto.title,
+                                        manifesto: manifesto.dream_self,
+                                    },
+                                },
+                            }, { merge: true });
+                            console.log(`[ProcessChat] Manifesto re-derived: "${manifesto.title}"`);
+                        }
+                    } catch (err: any) {
+                        console.error(`[ProcessChat] Manifesto re-derivation failed (non-fatal):`, err.message);
+                    }
+                }
 
                 // Trigger bible recompile with updated profile
                 const appUrl = process.env.APP_URL;

@@ -305,52 +305,6 @@ export function Ledger() {
     const showBibleCompiling = bibleStatus === 'compiling' || isAwaitingBuild;
     const showBibleReady = bibleStatus === 'ready';
 
-    // Detect failed compilations
-    const showBibleFailed = bibleStatus === 'failed';
-    const bibleFailReason = profile?.character_bible?.fail_reason as string | undefined;
-
-    // Detect stale compilations (stuck > 4 minutes)
-    const STALE_THRESHOLD_MS = 4 * 60 * 1000; // 4 minutes
-    const bibleLastUpdated = profile?.character_bible?.last_updated;
-    const isStaleCompilation = showBibleCompiling && bibleLastUpdated
-        && (Date.now() - bibleLastUpdated) > STALE_THRESHOLD_MS;
-
-    const [retrying, setRetrying] = useState(false);
-    const retryCompile = useCallback(async () => {
-        if (!user || !profile?.character_bible?.source_code || retrying) return;
-        setRetrying(true);
-        try {
-            const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
-            // Reset status to compiling + fresh timestamp
-            await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
-                'character_bible.status': 'compiling',
-                'character_bible.last_updated': Date.now(),
-            });
-            // Trigger the compile
-            const idToken = await user.getIdToken();
-            const res = await fetch('/api/onboarding/retry-compile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`,
-                },
-            });
-            if (!res.ok) {
-                console.error('[Ledger] Retry compile failed:', res.status);
-                // Reset status so the user can retry instead of seeing an infinite spinner
-                const { doc: d, updateDoc: u } = await import('firebase/firestore');
-                await u(d(db, 'users', user.uid), { 'character_bible.status': 'failed' });
-            }
-        } catch (err) {
-            console.error('[Ledger] Retry compile error:', err);
-            try {
-                const { doc: d, updateDoc: u } = await import('firebase/firestore');
-                await u(d(db, 'users', user.uid), { 'character_bible.status': 'failed' });
-            } catch { /* best-effort */ }
-        } finally {
-            setRetrying(false);
-        }
-    }, [user, profile?.character_bible?.source_code, retrying]);
 
     const dismissBibleReady = async () => {
         if (!user) return;
@@ -421,7 +375,7 @@ export function Ledger() {
     }
 
     // Render feed or empty states
-    const isFeedEmpty = entries.length === 0 && !pendingPostId && !showBibleCompiling && !showBibleFailed && profileLoaded;
+    const isFeedEmpty = entries.length === 0 && !pendingPostId && !showBibleCompiling && profileLoaded;
 
     if (isFeedEmpty) {
         const sessionCredits = profile?.session_credits || 0;
@@ -550,87 +504,40 @@ export function Ledger() {
 
             {/* Bible Generation Status Card */}
             {showBibleCompiling && (
-                <div className={`bg-zinc-900/50 border ${isStaleCompilation ? 'border-red-500/30' : 'border-white/10'} rounded-xl overflow-hidden shadow-sm relative`}>
-                    {!isStaleCompilation && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
-                    )}
+                <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
                     <div className="p-5 relative">
                         <div className="flex items-center gap-4 mb-4">
-                            {isStaleCompilation ? (
-                                <div className="w-12 h-12 rounded-full border-2 border-red-500/40 flex items-center justify-center shrink-0">
-                                    <span className="text-red-400 text-lg">!</span>
-                                </div>
-                            ) : (
-                                <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
-                            )}
+                            <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin shrink-0" />
                             <div className="flex-1">
                                 <p className="text-sm font-bold text-white mb-0.5">
-                                    {isStaleCompilation ? t('bibleStaleTitle') : t('bibleCompilingTitle')}
+                                    {t('bibleCompilingTitle')}
                                 </p>
                                 <p className="text-xs text-zinc-500">
-                                    {isStaleCompilation ? t('bibleStaleSub') : t('bibleCompilingSub')}
+                                    {t('bibleCompilingSub')}
                                 </p>
                             </div>
                         </div>
 
                         {/* Onboarding Ground Rules */}
-                        {!isStaleCompilation && (
-                            <div className="border-t border-white/5 pt-4 mt-2">
-                                <p className="text-[11px] uppercase tracking-widest text-zinc-500 font-bold mb-3">Before your first session</p>
-                                <div className="space-y-2.5">
-                                    {[
-                                        { label: 'Argue', text: "If you don\u2019t like what you\u2019re hearing, say so." },
-                                        { label: 'Dump Everything', text: "Don\u2019t hold anything back. This is private, and the more you say, the better you can understand yourself." },
-                                        { label: 'Answer Every Question', text: 'Some questions might seem off-topic or hard. Answer them anyway.' },
-                                    ].map((rule, i) => (
-                                        <div
-                                            key={i}
-                                            className="flex items-start gap-2.5 opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
-                                            style={{ animationDelay: `${i * 0.6}s` }}
-                                        >
-                                            <span className="text-white/40 text-xs mt-0.5 shrink-0">✦</span>
-                                            <p className="text-sm text-zinc-300 leading-snug"><span className="font-bold text-white">{rule.label}</span> — {rule.text}</p>
-                                        </div>
-                                    ))}
-                                </div>
+                        <div className="border-t border-white/5 pt-4 mt-2">
+                            <p className="text-[11px] uppercase tracking-widest text-zinc-500 font-bold mb-3">Before your first session</p>
+                            <div className="space-y-2.5">
+                                {[
+                                    { label: 'Argue', text: "If you don\u2019t like what you\u2019re hearing, say so." },
+                                    { label: 'Dump Everything', text: "Don\u2019t hold anything back. This is private, and the more you say, the better you can understand yourself." },
+                                    { label: 'Answer Every Question', text: 'Some questions might seem off-topic or hard. Answer them anyway.' },
+                                ].map((rule, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-start gap-2.5 opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
+                                        style={{ animationDelay: `${i * 0.6}s` }}
+                                    >
+                                        <span className="text-white/40 text-xs mt-0.5 shrink-0">✦</span>
+                                        <p className="text-sm text-zinc-300 leading-snug"><span className="font-bold text-white">{rule.label}</span> — {rule.text}</p>
+                                    </div>
+                                ))}
                             </div>
-                        )}
-
-
-                        {isStaleCompilation && (
-                            <button
-                                onClick={retryCompile}
-                                disabled={retrying}
-                                className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                            >
-                                {retrying ? t('bibleRetrying') : t('bibleRetry')}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Bible Failed Card — shown when compile errored out */}
-            {showBibleFailed && bibleFailReason !== 'rate_limit_daily' && bibleFailReason !== 'rate_limit_cooldown' && (
-                <div className="bg-zinc-900/50 border border-red-500/30 rounded-xl overflow-hidden shadow-sm relative">
-                    <div className="flex items-center gap-4 p-5 relative">
-                        <div className="w-12 h-12 rounded-full border-2 border-red-500/40 flex items-center justify-center shrink-0">
-                            <span className="text-red-400 text-lg">!</span>
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-sm font-bold text-white mb-0.5">
-                                {t('bibleFailedTitle')}
-                            </p>
-                            <p className="text-xs text-zinc-500">
-                                {t('bibleFailedSub')}
-                            </p>
-                            <button
-                                onClick={retryCompile}
-                                disabled={retrying}
-                                className="mt-3 px-4 py-2 text-xs font-semibold bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                            >
-                                {retrying ? t('bibleRetrying') : t('bibleRetry')}
-                            </button>
                         </div>
                     </div>
                 </div>

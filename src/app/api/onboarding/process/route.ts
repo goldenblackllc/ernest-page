@@ -21,7 +21,7 @@ A user has written a "dream rant" — a raw, unstructured description of who the
 
 2. DREAM SELF: Write a present-tense identity paragraph (3-5 sentences) describing this person AS IF THEY ALREADY ARE who they described. CRITICAL: The user may express desires as wishes ("I want to be rich", "I wish I was fit"). You MUST transform ALL wish-language into present-tense identity. "I wish I was rich" → "I am financially abundant." "I want to be a better father" → "I am a present, engaged father." The output must read as a confident, realized identity — never aspirational. Use pronouns/gendered language consistent with the rant.
 
-3. INITIAL DOSSIER: Extract any concrete facts mentioned (location, family, occupation, preferences, gender). Format as a structured document. If facts are sparse, that's fine — the dossier will grow over time through conversations.
+3. INITIAL DOSSIER: Extract any routines, habits, or meaningful dates mentioned. If facts are sparse, that's fine — the dossier will grow over time through conversations. Do NOT extract backstory, childhood history, or past events — this system is forward-looking.
 
 ALL output sections must be strictly written in the target language requested at the bottom of these instructions.
 
@@ -31,14 +31,8 @@ The dream rant:
 const DOSSIER_TEMPLATE = `DOSSIER — {TITLE}
 Updated: {DATE} | Sessions: 0
 
-═══ PROFILE ═══
-{PROFILE_FACTS}
-
-═══ BACKSTORY ═══
-{BACKSTORY}
-
-═══ WANTS & DESIRES ═══
-{WANTS}
+═══ IMPORTANT DATES ═══
+{DATES}
 
 ═══ ROUTINES & HABITS ═══
 {ROUTINES}`;
@@ -118,12 +112,11 @@ export async function POST(req: Request) {
                 title: z.string().describe("3 visual roles, comma-separated"),
                 dream_self: z.string().describe("Present-tense identity paragraph, 3-5 sentences"),
                 dossier: z.object({
-                    profile_facts: z.string().describe("Location, occupation, family — or 'Not yet known' if sparse"),
                     people: z.string().describe("Key people mentioned with relationships — or 'Not yet known'"),
-                    backstory: z.string().describe("Life history, formative events, career path, education — or 'Not yet known'"),
-                    wants: z.string().describe("Desires and aspirations expressed in the rant — or 'Not yet known'"),
+                    dates: z.string().describe("Meaningful dates mentioned (birthdays, anniversaries, milestones) — or 'Not yet known'"),
                     routines: z.string().describe("Daily habits, rituals, routines mentioned — or 'Not yet known'"),
                     preferences: z.string().describe("Personal tastes: music, movies, books, food, drinks, brands, hobbies — or 'Not yet known'"),
+                    life_facts: z.string().describe("Location, occupation, family, living situation — or 'Not yet known'"),
                 }),
             }),
         });
@@ -132,12 +125,11 @@ export async function POST(req: Request) {
             title: string;
             dream_self: string;
             dossier: {
-                profile_facts: string;
                 people: string;
-                backstory: string;
-                wants: string;
+                dates: string;
                 routines: string;
                 preferences: string;
+                life_facts: string;
             };
         };
 
@@ -150,9 +142,7 @@ export async function POST(req: Request) {
         const dossierText = DOSSIER_TEMPLATE
             .replace("{TITLE}", data.title)
             .replace("{DATE}", today)
-            .replace("{PROFILE_FACTS}", data.dossier.profile_facts)
-            .replace("{BACKSTORY}", data.dossier.backstory)
-            .replace("{WANTS}", data.dossier.wants)
+            .replace("{DATES}", data.dossier.dates)
             .replace("{ROUTINES}", data.dossier.routines);
 
         // Check if user already has an existing dossier (re-edit vs first onboarding)
@@ -211,6 +201,17 @@ export async function POST(req: Request) {
                 ...(existingBible?.character_name ? { character_name: existingBible.character_name } : {}),
             },
         };
+
+        // Seed unified_profile.interests from raw "things I enjoy" text
+        const seedInterests = things_i_enjoy
+            ? things_i_enjoy.split(/[,\n]+/).map((s: string) => s.trim()).filter((s: string) => s.length > 0)
+            : [];
+        if (seedInterests.length > 0) {
+            topLevelUpdate.unified_profile = {
+                ...(topLevelUpdate.unified_profile || {}),
+                interests: seedInterests,
+            };
+        }
 
         if (!hasExistingDossier) {
             topLevelUpdate.session_credits = 1;

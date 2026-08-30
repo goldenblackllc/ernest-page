@@ -8,7 +8,7 @@ import { db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
 import { User, ChevronDown, Pencil, FileText, Loader2, Shield, Volume2, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { DossierView } from "./DossierView";
+
 import { VoiceBrowser } from "./VoiceBrowser";
 
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
@@ -22,11 +22,14 @@ export function ProfileView() {
     const [bible, setBible] = useState<CharacterBible | null>(null);
     const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isEditOpen, setIsEditOpen] = useState(false);
     const [isAvatarEditOpen, setIsAvatarEditOpen] = useState(false);
-    const [isDossierOpen, setIsDossierOpen] = useState(false);
+
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
+    const [isDevPanelOpen, setIsDevPanelOpen] = useState(false);
+
+    // Dev-only: show bible inputs panel on localhost
+    const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 
     const t = useTranslations('profile');
@@ -161,31 +164,64 @@ export function ProfileView() {
                     </div>
                 )}
 
-            </div>
+                {/* ── DEV-ONLY: BIBLE COMPILE INPUTS ── */}
+                {isDev && profile && (
+                    <div className="mt-6">
+                        <button
+                            onClick={() => setIsDevPanelOpen(!isDevPanelOpen)}
+                            className="w-full flex items-center justify-between p-4 bg-amber-900/20 border border-amber-700/30 rounded-xl text-left hover:bg-amber-900/30 transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] bg-amber-600/30 text-amber-400 px-2 py-0.5 rounded font-mono">DEV</span>
+                                <h3 className="text-sm font-bold text-amber-300 uppercase tracking-widest">Bible Compile Inputs</h3>
+                            </div>
+                            <ChevronDown className={cn("w-5 h-5 text-amber-500 transition-transform duration-200", isDevPanelOpen && "rotate-180")} />
+                        </button>
+                        {isDevPanelOpen && (
+                            <div className="mt-3 space-y-3">
+                                <DevInputSection title="1. Archetype (source_code.archetype)" content={bible?.source_code?.archetype || 'Not set'} />
+                                <DevInputSection title="2. Manifesto (source_code.manifesto)" content={bible?.source_code?.manifesto || 'Not set'} />
+                                <DevInputSection title="3. Important People (source_code + unified_profile.people)" multiline>
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Source Code (User Input)</p>
+                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{bible?.source_code?.important_people || 'Not set'}</pre>
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold mt-3">Unified Profile People Array</p>
+                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{JSON.stringify(profile.unified_profile?.people || [], null, 2)}</pre>
+                                    </div>
+                                </DevInputSection>
+                                <DevInputSection title="4. Things I Enjoy (source_code + unified_profile.interests)" multiline>
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Source Code (User Input)</p>
+                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{bible?.source_code?.things_i_enjoy || 'Not set'}</pre>
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold mt-3">Unified Profile Interests</p>
+                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{JSON.stringify(profile.unified_profile?.interests || [], null, 2)}</pre>
+                                    </div>
+                                </DevInputSection>
+                                <DevInputSection title="5. Wants (consolidated → feeds into manifesto)" content={JSON.stringify((profile as any)?.wants_for_bible || [], null, 2)} />
 
-            {/* Edit Modal — Form-based editor with pre-populated values */}
-            <EditIdentityModal
-                isOpen={isEditOpen}
-                onClose={() => setIsEditOpen(false)}
-                currentRant={identity?.dream_rant || ""}
-                currentGender={identity?.gender || ""}
-                currentBirthdate={identity?.birthdate || ""}
-                currentEthnicity={identity?.ethnicity || ""}
-                currentSkinTone={identity?.skin_tone || ""}
-                currentHairColors={identity?.hair_colors || []}
-                currentHairTexture={identity?.hair_texture || ""}
-                currentHairVolume={identity?.hair_volume || ""}
-                currentEyeColor={identity?.eye_color || ""}
-                currentHeight={identity?.height || ""}
-                currentPeople={identity?.important_people || ""}
-                currentEnjoyments={identity?.things_i_enjoy || ""}
-                currentCharacterName={bible?.character_name || identity?.character_name || ""}
-            />
+                                <div className="border-t border-amber-700/20 pt-3 mt-3">
+                                    <p className="text-[10px] text-amber-400/60 uppercase tracking-wider font-bold mb-3">Additional Context</p>
+                                </div>
+
+                                <DevInputSection title="Unified Profile — Life Facts" content={profile.unified_profile?.life_facts || 'Empty'} />
+                                <DevInputSection title="Unified Profile — Routines" content={profile.unified_profile?.routines || 'Empty'} />
+                                <DevInputSection title="Unified Profile — Milestones" content={profile.unified_profile?.milestones || 'Empty'} />
+                                <DevInputSection title="Unified Profile — Wardrobe" content={JSON.stringify(profile.unified_profile?.wardrobe || [], null, 2)} />
+                                <DevInputSection title="Dossier" content={identity?.dossier || 'No dossier'} />
+                                <DevInputSection title="Session Recaps" content={JSON.stringify(profile.session_recaps || [], null, 2)} />
+                                <DevInputSection title="Genie in the Lamp (dream_rant)" content={identity?.dream_rant || 'No rant'} />
+                            </div>
+                        )}
+                    </div>
+                )}
+
+            </div>
 
             {/* Avatar Properties Modal — physical traits only */}
             <EditAvatarModal
                 isOpen={isAvatarEditOpen}
                 onClose={() => setIsAvatarEditOpen(false)}
+                currentCharacterName={bible?.character_name || identity?.character_name || ""}
                 currentGender={identity?.gender || ""}
                 currentBirthdate={identity?.birthdate || ""}
                 currentEthnicity={identity?.ethnicity || ""}
@@ -202,202 +238,12 @@ export function ProfileView() {
     );
 }
 
-// ——— Edit Identity Modal (Form-based → Background Character Rebuild) ———
-
-function EditIdentityModal({ isOpen, onClose, currentRant, currentGender, currentBirthdate, currentEthnicity, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, currentPeople, currentEnjoyments, currentCharacterName }: { isOpen: boolean; onClose: () => void; currentRant: string; currentGender: string; currentBirthdate: string; currentEthnicity: string; currentSkinTone: string; currentHairColors: string[]; currentHairTexture: string; currentHairVolume: string; currentEyeColor: string; currentHeight: string; currentPeople: string; currentEnjoyments: string; currentCharacterName: string }) {
-    const { user } = useAuth();
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const t = useTranslations('profile');
-
-    // Reset when modal opens
-    const wasOpen = React.useRef(false);
-    React.useEffect(() => {
-        if (isOpen && !wasOpen.current) {
-            setIsProcessing(false);
-            setError(null);
-        }
-        wasOpen.current = isOpen;
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
-    const handleSubmit = async (data: IdentityFormData) => {
-        if (!user) return;
-        setIsProcessing(true);
-        setError(null);
-
-        try {
-            // Save identity fields directly to Firestore (fast, <1s)
-            const { doc, setDoc } = await import('firebase/firestore');
-            await setDoc(doc(db, 'users', user.uid), {
-                identity: {
-                    dream_rant: data.rant.trim(),
-                    gender: data.gender.trim(),
-                    birthdate: data.birthdate.trim(),
-                    ethnicity: data.ethnicity.trim(),
-                    skin_tone: data.skin_tone.trim(),
-                    hair_colors: data.hair_colors,
-                    hair_texture: data.hair_texture.trim(),
-                    hair_volume: data.hair_volume.trim(),
-                    eye_color: data.eye_color.trim(),
-                    height: data.height.trim(),
-                    important_people: data.people.trim(),
-                    things_i_enjoy: data.enjoyments.trim(),
-                    character_name: data.character_name.trim(),
-                },
-                character_bible: {
-                    status: 'compiling',
-                    last_updated: Date.now(),
-                    // Preserve character_name in bible too
-                    ...(data.character_name.trim() ? { character_name: data.character_name.trim() } : {}),
-                },
-            }, { merge: true });
-
-            // Navigate to feed immediately — user sees the "compiling" status card
-            onClose();
-            window.location.href = '/';
-
-            // Fire the full process API in the background (fire-and-forget)
-            // This handles AI enrichment (title, dream_self) + bible compilation + avatar
-            user.getIdToken().then(idToken => {
-                fetch('/api/onboarding/process', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${idToken}`,
-                    },
-                    body: JSON.stringify({
-                        rant: data.rant.trim(),
-                        gender: data.gender.trim(),
-                        birthdate: data.birthdate.trim(),
-                        ethnicity: data.ethnicity.trim(),
-                        skin_tone: data.skin_tone.trim(),
-                        hair_colors: data.hair_colors,
-                        hair_texture: data.hair_texture.trim(),
-                        hair_volume: data.hair_volume.trim(),
-                        eye_color: data.eye_color.trim(),
-                        height: data.height.trim(),
-                        important_people: data.people.trim(),
-                        things_i_enjoy: data.enjoyments.trim(),
-                        character_name: data.character_name.trim(),
-                    }),
-                }).catch(err => console.error('[Edit] Background process error:', err));
-            }).catch(err => console.error('[Edit] Token error:', err));
-        } catch (err: any) {
-            setError(err.message || 'Something went wrong.');
-            setIsProcessing(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-[60] bg-zinc-950 flex flex-col">
-            {/* Header */}
-            <div className="shrink-0 border-b border-white/5 px-6 py-4 bg-zinc-900/50 flex items-center justify-between pt-[calc(16px+env(safe-area-inset-top))]">
-                <h2 className="text-sm font-bold text-white">{t('editIdentityModalTitle')}</h2>
-                <button onClick={isProcessing ? undefined : onClose} className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold py-2 px-3">
-                    {t('close')}
-                </button>
-            </div>
-
-            {/* Content — fills remaining screen height */}
-            <div className="flex-1 flex flex-col min-h-0 px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
-                {isProcessing ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-6">
-                        <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-white animate-spin" />
-                        <p className="text-base text-zinc-400">{t('rebuildingCharacter')}</p>
-                    </div>
-                ) : (
-                    <>
-                        {error && (
-                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4 shrink-0">{error}</div>
-                        )}
-                        <IdentityForm
-                            initialValues={{
-                                character_name: currentCharacterName,
-                                gender: currentGender,
-                                birthdate: currentBirthdate,
-                                ethnicity: currentEthnicity,
-                                skin_tone: currentSkinTone,
-                                hair_colors: currentHairColors,
-                                hair_texture: currentHairTexture,
-                                hair_volume: currentHairVolume,
-                                eye_color: currentEyeColor,
-                                height: currentHeight,
-                                rant: currentRant,
-                                people: currentPeople,
-                                enjoyments: currentEnjoyments,
-                            }}
-                            onSubmit={handleSubmit}
-                            isSubmitting={isProcessing}
-                            submitLabel={t('rebuildCharacterBtn')}
-                            showHeadings={false}
-                        />
-                    </>
-                )}
-            </div>
-        </div>
-    );
-}
-
 // ——— Edit Avatar Modal (Physical traits only → Avatar Regeneration) ———
 
-const SKIN_TONES = ['Fair', 'Light', 'Medium', 'Olive', 'Tan', 'Brown', 'Dark Brown', 'Deep'];
-const HAIR_COLORS = ['Black', 'Dark Brown', 'Brown', 'Light Brown', 'Auburn', 'Red', 'Blonde', 'Gray', 'White'];
-const HAIR_TEXTURES = ['Straight', 'Wavy', 'Curly', 'Coily'];
-const HAIR_VOLUMES = ['Thick', 'Full', 'Thinning', 'Receding', 'Bald/Shaved'];
-const EYE_COLORS = ['Brown', 'Hazel', 'Green', 'Blue', 'Gray', 'Amber'];
-
-function AvatarPillSelect({ label, options, value, onChange }: {
-    label: string; options: string[]; value: string; onChange: (v: string) => void;
-}) {
-    return (
-        <div>
-            <label className="text-sm text-zinc-400 font-semibold mb-2 block">{label}</label>
-            <div className="flex flex-wrap gap-2">
-                {options.map(opt => (
-                    <button key={opt} type="button"
-                        onClick={() => onChange(value === opt ? '' : opt)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
-                            ${value === opt ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
-                        {opt}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function AvatarPillMultiSelect({ label, options, values, onChange }: {
-    label: string; options: string[]; values: string[]; onChange: (v: string[]) => void;
-}) {
-    const toggle = (opt: string) => {
-        if (values.includes(opt)) {
-            onChange(values.filter(v => v !== opt));
-        } else {
-            onChange([...values, opt]);
-        }
-    };
-    return (
-        <div>
-            <label className="text-sm text-zinc-400 font-semibold mb-2 block">{label}</label>
-            <div className="flex flex-wrap gap-2">
-                {options.map(opt => (
-                    <button key={opt} type="button"
-                        onClick={() => toggle(opt)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
-                            ${values.includes(opt) ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
-                        {opt}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, currentEthnicity, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, avatarUrl }: {
+function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender, currentBirthdate, currentEthnicity, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight, avatarUrl }: {
     isOpen: boolean;
     onClose: () => void;
+    currentCharacterName: string;
     currentGender: string;
     currentBirthdate: string;
     currentEthnicity: string;
@@ -411,42 +257,27 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, cur
 }) {
     const { user } = useAuth();
     const t = useTranslations();
-    const [gender, setGender] = useState(currentGender);
-    const [birthdate, setBirthdate] = useState(currentBirthdate);
-    const [ethnicity, setEthnicity] = useState(currentEthnicity);
-    const [skinTone, setSkinTone] = useState(currentSkinTone);
-    const [hairColors, setHairColors] = useState<string[]>(currentHairColors);
-    const [hairTexture, setHairTexture] = useState(currentHairTexture);
-    const [hairVolume, setHairVolume] = useState(currentHairVolume);
-    const [eyeColor, setEyeColor] = useState(currentEyeColor);
-    const [height, setHeight] = useState(currentHeight);
     const [isSaving, setIsSaving] = useState(false);
     const [waitingForAvatar, setWaitingForAvatar] = useState(false);
     const [avatarReady, setAvatarReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const savedAvatarUrl = React.useRef<string | undefined>(undefined);
 
-    // Sync state when modal opens with fresh props
+    // Track open state for resets
     const wasOpen = React.useRef(false);
+    // Increment key to force IdentityForm remount when modal reopens
+    const [formKey, setFormKey] = useState(0);
     React.useEffect(() => {
         if (isOpen && !wasOpen.current) {
-            setGender(currentGender);
-            setBirthdate(currentBirthdate);
-            setEthnicity(currentEthnicity);
-            setSkinTone(currentSkinTone);
-            setHairColors(currentHairColors);
-            setHairTexture(currentHairTexture);
-            setHairVolume(currentHairVolume);
-            setEyeColor(currentEyeColor);
-            setHeight(currentHeight);
             setIsSaving(false);
             setWaitingForAvatar(false);
             setAvatarReady(false);
             setError(null);
             savedAvatarUrl.current = undefined;
+            setFormKey(k => k + 1);
         }
         wasOpen.current = isOpen;
-    }, [isOpen, currentGender, currentBirthdate, currentEthnicity, currentSkinTone, currentHairColors, currentHairTexture, currentHairVolume, currentEyeColor, currentHeight]);
+    }, [isOpen]);
 
     // Detect when new avatar arrives from Firestore subscription
     React.useEffect(() => {
@@ -458,7 +289,7 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, cur
 
     if (!isOpen) return null;
 
-    const handleSave = async () => {
+    const handleSave = async (data: IdentityFormData) => {
         if (!user || isSaving) return;
         setIsSaving(true);
         setError(null);
@@ -467,15 +298,15 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, cur
             const { doc, setDoc } = await import('firebase/firestore');
             await setDoc(doc(db, 'users', user.uid), {
                 identity: {
-                    gender: gender.trim(),
-                    birthdate: birthdate.trim(),
-                    ethnicity: ethnicity.trim(),
-                    skin_tone: skinTone,
-                    hair_colors: hairColors,
-                    hair_texture: hairTexture,
-                    hair_volume: hairVolume,
-                    eye_color: eyeColor,
-                    height: height.trim(),
+                    gender: data.gender.trim(),
+                    birthdate: data.birthdate.trim(),
+                    ethnicity: data.ethnicity.trim(),
+                    skin_tone: data.skin_tone.trim(),
+                    hair_colors: data.hair_colors,
+                    hair_texture: data.hair_texture.trim(),
+                    hair_volume: data.hair_volume.trim(),
+                    eye_color: data.eye_color.trim(),
+                    height: data.height.trim(),
                 },
                 character_bible: {
                     avatar_status: 'pending',
@@ -517,9 +348,9 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, cur
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pt-6 pb-[calc(24px+env(safe-area-inset-bottom))]">
+            <div className="flex-1 flex flex-col min-h-0 px-6 pt-6 pb-[calc(24px+env(safe-area-inset-bottom))]">
                 {/* Avatar preview — always visible */}
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center mb-6 shrink-0">
                     <div className="relative w-24 h-24">
                         <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-zinc-700">
                             {displayUrl ? (
@@ -563,84 +394,31 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, cur
                     </div>
                 )}
 
-                {/* Edit form — only visible when editing */}
+                {/* Edit form — reuses IdentityForm with only steps 1 (gender) + 2 (physical traits) */}
                 {isEditing && (
                     <>
-                        <div className="space-y-5">
-                            <div>
-                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">{t('profile.genderLabel')}</label>
-                                <input
-                                    type="text"
-                                    value={gender}
-                                    onChange={(e) => setGender(e.target.value)}
-                                    placeholder="Man, Woman, etc."
-                                    maxLength={50}
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">{t('profile.dobLabel')}</label>
-                                <input
-                                    type="date"
-                                    value={birthdate}
-                                    onChange={(e) => setBirthdate(e.target.value)}
-                                    max={new Date().toISOString().split('T')[0]}
-                                    min="1920-01-01"
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30 [color-scheme:dark]"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-sm text-zinc-400 font-semibold mb-1 block">
-                                    {t('onboarding.identityForm.ethnicityLabel')} <span className="text-zinc-400">{t('onboarding.identityForm.ethnicityOptional')}</span>
-                                </label>
-                                <p className="text-sm text-zinc-500 mb-2">{t('onboarding.identityForm.ethnicitySub')}</p>
-                                <input
-                                    type="text"
-                                    value={ethnicity}
-                                    onChange={(e) => setEthnicity(e.target.value)}
-                                    placeholder={t('onboarding.identityForm.ethnicityPlaceholder')}
-                                    maxLength={100}
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
-                                />
-                            </div>
-
-                            <AvatarPillSelect label={t('onboarding.identityForm.skinToneLabel')} options={SKIN_TONES} value={skinTone} onChange={setSkinTone} />
-                            <AvatarPillSelect label={t('onboarding.identityForm.eyeColorLabel')} options={EYE_COLORS} value={eyeColor} onChange={setEyeColor} />
-                            <AvatarPillMultiSelect label={t('onboarding.identityForm.hairColorLabel')} options={HAIR_COLORS} values={hairColors} onChange={setHairColors} />
-                            <AvatarPillSelect label={t('onboarding.identityForm.hairTextureLabel')} options={HAIR_TEXTURES} value={hairTexture} onChange={setHairTexture} />
-                            <AvatarPillSelect label={t('onboarding.identityForm.hairVolumeLabel')} options={HAIR_VOLUMES} value={hairVolume} onChange={setHairVolume} />
-
-                            <div>
-                                <label className="text-sm text-zinc-400 font-semibold mb-2 block">{t('onboarding.identityForm.heightLabel')}</label>
-                                <input
-                                    type="text"
-                                    value={height}
-                                    onChange={(e) => setHeight(e.target.value)}
-                                    placeholder={t('onboarding.identityForm.heightPlaceholder')}
-                                    maxLength={20}
-                                    className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-base text-white placeholder-zinc-600 focus:border-white/40 focus:ring-1 focus:ring-white/30"
-                                />
-                            </div>
-                        </div>
-
                         {error && (
-                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl mt-4">{error}</div>
+                            <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4 shrink-0">{error}</div>
                         )}
-
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="w-full bg-white text-black py-3.5 text-base font-bold rounded-xl hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed mt-6"
-                        >
-                            {isSaving ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                    {t('profile.saving')}
-                                </span>
-                            ) : t('profile.updateAvatar')}
-                        </button>
+                        <IdentityForm
+                            key={formKey}
+                            visibleSteps={[2]}
+                            initialValues={{
+                                character_name: currentCharacterName,
+                                gender: currentGender,
+                                birthdate: currentBirthdate,
+                                ethnicity: currentEthnicity,
+                                skin_tone: currentSkinTone,
+                                hair_colors: currentHairColors,
+                                hair_texture: currentHairTexture,
+                                hair_volume: currentHairVolume,
+                                eye_color: currentEyeColor,
+                                height: currentHeight,
+                            }}
+                            onSubmit={handleSave}
+                            isSubmitting={isSaving}
+                            submitLabel={t('profile.updateAvatar')}
+                        />
                     </>
                 )}
             </div>
@@ -650,3 +428,26 @@ function EditAvatarModal({ isOpen, onClose, currentGender, currentBirthdate, cur
 
 // ——— Voice Browser Component ———
 // Imported from shared component: @/components/VoiceBrowser
+
+// ——— Dev-only: Bible Input Section ———
+function DevInputSection({ title, content, multiline, children }: { title: string; content?: string; multiline?: boolean; children?: React.ReactNode }) {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-lg overflow-hidden">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between p-3 text-left hover:bg-zinc-900 transition-colors"
+            >
+                <h4 className="text-xs font-bold text-zinc-400">{title}</h4>
+                <ChevronDown className={cn("w-4 h-4 text-zinc-600 transition-transform duration-200", isOpen && "rotate-180 text-amber-500")} />
+            </button>
+            {isOpen && (
+                <div className="p-3 border-t border-zinc-800/50 bg-black/20">
+                    {children || (
+                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">{content}</pre>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}

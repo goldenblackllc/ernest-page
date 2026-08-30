@@ -63,11 +63,7 @@ User Inputs:
 Archetype: {ARCHETYPE}
 Manifesto: {MANIFESTO}
 Important People: {IMPORTANT_PEOPLE}
-Things they enjoy: {THINGS_I_ENJOY}
-Recently expressed desires: {WANTS}
-
-CRITICAL RULE FOR DESIRES:
-The 'Recently expressed desires' are things the user wishes for. You MUST translate these into present-tense realities for the character. If the user wants a Porsche, the character drives one. If the user wants to travel to the Dominican Republic, the character does so regularly. Remove any financial or logistical constraints the user mentioned.`;
+Things they enjoy: {THINGS_I_ENJOY}`;
 
 export async function POST(req: Request) {
     try {
@@ -138,33 +134,25 @@ export async function POST(req: Request) {
 
         const userLocale = data?.preferred_locale || 'en';
 
-        // Read people from unified profile
+        // Read people from unified profile (master list)
         const unifiedPeople = data?.unified_profile?.people || [];
-        let peopleString = resolvedSourceCode.important_people || 'None';
-        if (unifiedPeople.length > 0) {
-            const formattedPeople = unifiedPeople.map((p: any) => 
+        const peopleString = unifiedPeople.length > 0
+            ? unifiedPeople.map((p: any) => 
                 `Name: ${p.name}\nRelationship: ${p.relationship}\nDynamic: ${p.dynamic || 'N/A'}\nNotes: ${p.notes || 'N/A'}`
-            ).join('\n\n');
-            peopleString = `User Summary:\n${peopleString}\n\nDetailed Profiles:\n${formattedPeople}`;
-        }
+            ).join('\n\n')
+            : resolvedSourceCode.important_people || 'None';
 
-        const wantsString = data?.wants_for_bible && data.wants_for_bible.length > 0 
-            ? data.wants_for_bible.join('\n') 
-            : 'None currently.';
-
-        // Read interests from unified profile
+        // Read interests from unified profile (master list — seeded from source_code.things_i_enjoy at onboarding)
         const unifiedInterests = data?.unified_profile?.interests || [];
-        let interestsString = resolvedSourceCode.things_i_enjoy || 'Not specified.';
-        if (unifiedInterests.length > 0) {
-            interestsString = `User Summary:\n${interestsString}\n\nSpecific Interests:\n${unifiedInterests.join(', ')}`;
-        }
+        const interestsString = unifiedInterests.length > 0
+            ? unifiedInterests.join(', ')
+            : resolvedSourceCode.things_i_enjoy || 'Not specified.';
 
         const idealPrompt = PROMPT_IDEAL_BIBLE
             .replace('{ARCHETYPE}', resolvedSourceCode.archetype || 'None')
             .replace('{MANIFESTO}', resolvedSourceCode.manifesto || 'None')
             .replace('{IMPORTANT_PEOPLE}', peopleString)
             .replace('{THINGS_I_ENJOY}', interestsString)
-            .replace('{WANTS}', wantsString)
             + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${userLocale === 'es' ? 'Spanish' : userLocale === 'pt' ? 'Portuguese' : userLocale === 'fr' ? 'French' : userLocale === 'de' ? 'German' : 'English'}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
 
         // Generate Ideal Bible

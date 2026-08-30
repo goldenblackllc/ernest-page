@@ -1,6 +1,6 @@
 /**
  * Shared dossier rewrite prompt — single source of truth.
- * Used by processChat cloud function and the standalone dossier/update endpoint.
+ * Used by cleanup-chats cron and the standalone dossier/update endpoint.
  */
 export function buildDossierPrompt(currentDossier: string, sessionCount: number): string {
     return `You are maintaining an intelligence briefing on a person. Your mission: someone who has never met this person should be able to read this dossier and immediately understand who they are, what they do, who matters to them, and where they are in life.
@@ -49,6 +49,7 @@ Where they came from: childhood, formative events, career history, past relation
 
 ═══ WANTS & DESIRES ═══
 What the user has expressed wanting — big or small, near or far. Keep all desires unless the user explicitly says they no longer want something or it was fulfilled.
+
 
 ═══ IMPORTANT DATES ═══
 Dates the user has attached significance to: birthdays, anniversaries, milestones, losses, sobriety dates, deadlines, or any date they mention as meaningful.
