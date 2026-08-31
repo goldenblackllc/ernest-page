@@ -57,6 +57,14 @@ MILESTONES REWRITE: Produce the complete rewritten "milestones" field — sobrie
 - You are producing the ENTIRE wants list, not just new additions. Merge the existing wants with any new desires expressed in this session.
 - CONSOLIDATE: Remove duplicates, merge similar desires into single clear statements, and remove wants the user explicitly said they no longer care about or that have been fulfilled.
 - Keep the list tight and meaningful — no redundancy. Each entry should be a distinct, concrete desire.
+- WHAT COUNTS AS A WANT: Only material things and concrete lifestyle changes — things the character could already HAVE or BE in present tense. Examples: a car, money, a trip, a house, a career change, a fitness goal, a relocation, starting a business, retiring early.
+- WHAT DOES NOT COUNT: Sentiments, emotional wishes, actions toward others, one-time events, relationship hopes, or feelings. Test: if you cannot rewrite it as "The character HAS/IS/LIVES ___", it is NOT a want.
+  - BAD: "Sends warm wishes to Brian" (action, not something you have)
+  - BAD: "Wants a better relationship with his sister" (emotional, not tangible)
+  - BAD: "Hopes his son does well in school" (wish for someone else)
+  - GOOD: "A Porsche 911" → character drives one
+  - GOOD: "Move to Austin" → character lives in Austin
+  - GOOD: "Trip to Switzerland" → character travels there regularly
 - Do NOT store wants in the structured profile arrays — they go into a separate "all_wants" field.
 
 CHAT TRANSCRIPT:
