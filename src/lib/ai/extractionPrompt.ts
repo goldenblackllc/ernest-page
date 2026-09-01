@@ -2,24 +2,20 @@
  * Builds the prompt for extracting structured profile data from a session transcript.
  * This runs after every session to auto-populate the unified profile.
  */
-export function buildExtractionPrompt(currentProfile: any, currentDossier: string, transcript: string, existingWants: string[] = []): string {
+export function buildExtractionPrompt(currentProfile: any, currentDossier: string, transcript: string): string {
     return `You are extracting factual information and updating a living dossier from a therapy-style conversation transcript.
 
 Your job: 
 1. Produce the COMPLETE, RECONCILED people array — every person in their life as you understand them, merging what you already knew with what you just learned.
-2. Identify NEW interests and wardrobe items (additive only).
+2. Produce the COMPLETE reconciled interests and wardrobe lists.
 3. Rewrite the structured life facts, routines, and milestones fields to incorporate any new information.
-4. Rewrite the user's narrative DOSSIER to incorporate any new dates or routine changes.
-5. Produce the COMPLETE, CONSOLIDATED wants list — merge existing wants with any new desires from this session.
+4. Rewrite the user's narrative DOSSIER to incorporate any new information.
 
 CURRENT PROFILE (Structured Data):
 ${JSON.stringify(currentProfile || {}, null, 2)}
 
 CURRENT DOSSIER (Narrative):
 ${currentDossier || 'No existing dossier.'}
-
-CURRENT WANTS LIST:
-${existingWants.length > 0 ? existingWants.map((w, i) => `${i + 1}. ${w}`).join('\n') : 'No existing wants.'}
 
 ═══ RULES FOR PEOPLE — COMPLETE RECONCILED LIST ═══
 
@@ -52,23 +48,6 @@ MILESTONES REWRITE: Produce the complete rewritten "milestones" field — sobrie
 ═══ RULES FOR DOSSIER REWRITE ═══
 - The rewritten dossier MUST be concise (under 1500 words).
 - The dossier should contain these seven sections: PROFILE, KEY PEOPLE, BACKSTORY, WANTS & DESIRES, IMPORTANT DATES, ROUTINES & HABITS, PREFERENCES & TASTES.
-
-═══ RULES FOR WANTS — AGGRESSIVELY CONSOLIDATED LIST ═══
-- HARD LIMIT: The output list must contain AT MOST 15 items. If you have more than 15, merge ruthlessly or drop the least important.
-- You are producing the ENTIRE wants list, not just new additions. Merge the existing wants with any new desires expressed in this session.
-- AGGRESSIVELY CONSOLIDATE: The existing list may be bloated with duplicates, near-duplicates, and garbage. Your job is to SHRINK it. Merge all similar desires into ONE clear statement. "Rest without guilt", "Relax without permission", "Feel calm when resting" → ONE entry: "Rest without guilt or permission."
-- DROP GARBAGE: Remove any entries that are clearly malformed, empty, or LLM artifacts (e.g., ":null", "NO", ",", ":placeholder", "rewritten_dossier not provided", single punctuation, etc.)
-- WHAT COUNTS AS A WANT: ONLY material things and concrete lifestyle changes — things the character could already HAVE or BE in present tense. A car, money, a trip, a house, a fitness goal, a relocation.
-- WHAT DOES NOT COUNT — AGGRESSIVELY DROP THESE:
-  - Emotional states or feelings ("To feel alive", "To feel calm")
-  - Mindset shifts ("Living from 'I am powerful'", "To be a gentleman")
-  - Actions toward others ("Sends warm wishes to Brian", "Texts Sage")
-  - Relationship hopes ("To be more loving with Iris")
-  - Philosophical intentions ("Enjoy life as it is", "Be present")
-  - Diet rules or habits ("Eats carnivore", "Stays off cider") — these are routines, not wants
-  TEST: If you cannot rewrite it as "The character OWNS/DRIVES/LIVES IN/TRAVELS TO ___", it is NOT a want. Drop it.
-- GOOD examples: "Porsche 911", "House in Austin", "European Christmas markets trip", "First class flights", "182 lbs goal weight", "7:00/mile pace", "Renovate master bath"
-- Do NOT store wants in the structured profile arrays — they go into a separate "all_wants" field.
 
 CHAT TRANSCRIPT:
 ${transcript}

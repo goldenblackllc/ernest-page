@@ -1,7 +1,7 @@
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { db } from './lib/firebase/admin.js';
 import { z } from 'zod';
-import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from './lib/ai/models.js';
+import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK, SONNET_MODEL } from './lib/ai/models.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/security/serverHash.js';
@@ -105,7 +105,7 @@ export const processChat = onDocumentUpdated(
         const currentProfile = userData?.unified_profile || {};
         const sessionCount = (identity?.session_count || 0) + 1;
 
-        const extractionPrompt = buildExtractionPrompt(currentProfile, identity?.dossier || '', transcript, userData?.wants_for_bible || []);
+        const extractionPrompt = buildExtractionPrompt(currentProfile, identity?.dossier || '', transcript);
         const sessionLogPrompt = buildSessionLogPrompt(transcript);
 
         try {
@@ -129,8 +129,7 @@ export const processChat = onDocumentUpdated(
                         rewritten_life_facts: z.string().optional().describe('Complete rewritten life_facts — location, occupation, employer, living situation, relationship status'),
                         rewritten_routines: z.string().optional().describe('Complete rewritten routines — daily patterns, schedules, exercise habits, work schedule, rituals'),
                         rewritten_milestones: z.string().optional().describe('Complete rewritten milestones — sobriety dates, career events, moves, life transitions'),
-                        rewritten_dossier: z.string().optional().describe('Rewritten dossier with only IMPORTANT DATES and ROUTINES & HABITS sections (under 500 words). Null if no changes.'),
-                        all_wants: z.array(z.string()).describe('Complete consolidated list of ALL desires/wants — merged from existing wants + new session desires, deduplicated and pruned'),
+                        rewritten_dossier: z.string().optional().describe('Complete rewritten dossier with all seven sections (under 1500 words). Null if no changes.'),
                     }),
                     prompt: extractionPrompt,
                 }),
@@ -184,17 +183,52 @@ export const processChat = onDocumentUpdated(
                     milestones: extracted.rewritten_milestones || profile.milestones || '',
                 };
 
-                const rawWants = extracted.all_wants || [];
-                // Programmatic garbage filter — strip LLM artifacts and malformed entries
-                const consolidatedWants = rawWants.filter((w: string) => {
-                    if (!w || typeof w !== 'string') return false;
-                    const trimmed = w.trim();
-                    if (trimmed.length < 3) return false; // single chars, punctuation
-                    if (/^[:;,.\-!?]+$/.test(trimmed)) return false; // only punctuation
-                    if (/^(null|no|yes|none|n\/a|placeholder|undefined)$/i.test(trimmed)) return false;
-                    if (/rewritten_dossier|not provided/i.test(trimmed)) return false;
-                    return true;
-                });
+                // ─── WANTS CONSOLIDATION (Separate Sonnet call) ───
+                const existingWants = userData?.wants_for_bible || [];
+                let consolidatedWants = existingWants;
+                try {
+                    console.log(`[ProcessChat] Consolidating wants with Sonnet (${existingWants.length} existing)...`);
+                    const wantsResult = await generateWithFallback({
+                        primaryModelId: SONNET_MODEL,
+                        fallbackModelId: OPUS_FALLBACK,
+                        schema: z.object({
+                            all_wants: z.array(z.string()).describe('Clean consolidated wants list'),
+                        }),
+                        prompt: `You are a list manager. Your ONLY job is to produce a clean, consolidated wants list.
+
+EXISTING WANTS LIST:
+${existingWants.length > 0 ? existingWants.map((w: string, i: number) => `${i + 1}. ${w}`).join('\n') : 'Empty.'}
+
+SESSION TRANSCRIPT (extract any NEW material wants expressed):
+${transcript}
+
+RULES:
+1. MERGE existing wants with any NEW concrete wants from the session transcript.
+2. AGGRESSIVELY DEDUPLICATE — if multiple entries say similar things, keep ONE clear version.
+3. DROP GARBAGE — remove malformed entries, LLM artifacts, empty strings, single punctuation.
+4. ONLY KEEP MATERIAL/TANGIBLE WANTS — things the character could HAVE or BE:
+   ✅ KEEP: Cars, houses, trips, fitness goals, renovations, relocations, purchases, career changes
+   ❌ DROP: Emotional states ("feel calm"), mindset shifts ("live from power"), actions toward others ("text Sage"), philosophical intentions ("enjoy life"), diet rules ("eat carnivore"), relationship hopes
+   TEST: "The character OWNS / DRIVES / LIVES IN / TRAVELS TO / WEIGHS ___" — if it doesn't fit, drop it.
+5. The final list should be CONCISE — quality over quantity.
+
+Output the clean consolidated list.`,
+                    });
+                    const wantsOutput = (wantsResult.object as any)?.all_wants || [];
+                    // Programmatic garbage filter as safety net
+                    consolidatedWants = wantsOutput.filter((w: string) => {
+                        if (!w || typeof w !== 'string') return false;
+                        const trimmed = w.trim();
+                        if (trimmed.length < 3) return false;
+                        if (/^[:;,.\-!?]+$/.test(trimmed)) return false;
+                        if (/^(null|no|yes|none|n\/a|placeholder|undefined)$/i.test(trimmed)) return false;
+                        if (/rewritten_dossier|not provided/i.test(trimmed)) return false;
+                        return true;
+                    });
+                    console.log(`[ProcessChat] Wants consolidated: ${existingWants.length} → ${consolidatedWants.length}`);
+                } catch (err: any) {
+                    console.error(`[ProcessChat] Wants consolidation failed (keeping existing):`, err.message);
+                }
 
                 await userDoc.ref.set({
                     identity: {
@@ -205,7 +239,6 @@ export const processChat = onDocumentUpdated(
                     },
                     session_recaps: updatedRecaps,
                     unified_profile: updatedProfile,
-                    // Overwrite wants with consolidated list (not arrayUnion)
                     wants_for_bible: consolidatedWants,
                 }, { merge: true });
                 console.log(`[ProcessChat] Profile + log updated for ${uid} (session ${sessionCount})`);
