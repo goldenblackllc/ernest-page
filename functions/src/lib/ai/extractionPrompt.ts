@@ -53,18 +53,21 @@ MILESTONES REWRITE: Produce the complete rewritten "milestones" field — sobrie
 - The rewritten dossier MUST be concise (under 1500 words).
 - The dossier should contain these seven sections: PROFILE, KEY PEOPLE, BACKSTORY, WANTS & DESIRES, IMPORTANT DATES, ROUTINES & HABITS, PREFERENCES & TASTES.
 
-═══ RULES FOR WANTS — COMPLETE CONSOLIDATED LIST ═══
+═══ RULES FOR WANTS — AGGRESSIVELY CONSOLIDATED LIST ═══
+- HARD LIMIT: The output list must contain AT MOST 15 items. If you have more than 15, merge ruthlessly or drop the least important.
 - You are producing the ENTIRE wants list, not just new additions. Merge the existing wants with any new desires expressed in this session.
-- CONSOLIDATE: Remove duplicates, merge similar desires into single clear statements, and remove wants the user explicitly said they no longer care about or that have been fulfilled.
-- Keep the list tight and meaningful — no redundancy. Each entry should be a distinct, concrete desire.
-- WHAT COUNTS AS A WANT: Only material things and concrete lifestyle changes — things the character could already HAVE or BE in present tense. Examples: a car, money, a trip, a house, a career change, a fitness goal, a relocation, starting a business, retiring early.
-- WHAT DOES NOT COUNT: Sentiments, emotional wishes, actions toward others, one-time events, relationship hopes, or feelings. Test: if you cannot rewrite it as "The character HAS/IS/LIVES ___", it is NOT a want.
-  - BAD: "Sends warm wishes to Brian" (action, not something you have)
-  - BAD: "Wants a better relationship with his sister" (emotional, not tangible)
-  - BAD: "Hopes his son does well in school" (wish for someone else)
-  - GOOD: "A Porsche 911" → character drives one
-  - GOOD: "Move to Austin" → character lives in Austin
-  - GOOD: "Trip to Switzerland" → character travels there regularly
+- AGGRESSIVELY CONSOLIDATE: The existing list may be bloated with duplicates, near-duplicates, and garbage. Your job is to SHRINK it. Merge all similar desires into ONE clear statement. "Rest without guilt", "Relax without permission", "Feel calm when resting" → ONE entry: "Rest without guilt or permission."
+- DROP GARBAGE: Remove any entries that are clearly malformed, empty, or LLM artifacts (e.g., ":null", "NO", ",", ":placeholder", "rewritten_dossier not provided", single punctuation, etc.)
+- WHAT COUNTS AS A WANT: ONLY material things and concrete lifestyle changes — things the character could already HAVE or BE in present tense. A car, money, a trip, a house, a fitness goal, a relocation.
+- WHAT DOES NOT COUNT — AGGRESSIVELY DROP THESE:
+  - Emotional states or feelings ("To feel alive", "To feel calm")
+  - Mindset shifts ("Living from 'I am powerful'", "To be a gentleman")
+  - Actions toward others ("Sends warm wishes to Brian", "Texts Sage")
+  - Relationship hopes ("To be more loving with Iris")
+  - Philosophical intentions ("Enjoy life as it is", "Be present")
+  - Diet rules or habits ("Eats carnivore", "Stays off cider") — these are routines, not wants
+  TEST: If you cannot rewrite it as "The character OWNS/DRIVES/LIVES IN/TRAVELS TO ___", it is NOT a want. Drop it.
+- GOOD examples: "Porsche 911", "House in Austin", "European Christmas markets trip", "First class flights", "182 lbs goal weight", "7:00/mile pace", "Renovate master bath"
 - Do NOT store wants in the structured profile arrays — they go into a separate "all_wants" field.
 
 CHAT TRANSCRIPT:

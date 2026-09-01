@@ -184,7 +184,17 @@ export const processChat = onDocumentUpdated(
                     milestones: extracted.rewritten_milestones || profile.milestones || '',
                 };
 
-                const consolidatedWants = extracted.all_wants || [];
+                const rawWants = extracted.all_wants || [];
+                // Programmatic garbage filter — strip LLM artifacts and malformed entries
+                const consolidatedWants = rawWants.filter((w: string) => {
+                    if (!w || typeof w !== 'string') return false;
+                    const trimmed = w.trim();
+                    if (trimmed.length < 3) return false; // single chars, punctuation
+                    if (/^[:;,.\-!?]+$/.test(trimmed)) return false; // only punctuation
+                    if (/^(null|no|yes|none|n\/a|placeholder|undefined)$/i.test(trimmed)) return false;
+                    if (/rewritten_dossier|not provided/i.test(trimmed)) return false;
+                    return true;
+                });
 
                 await userDoc.ref.set({
                     identity: {
