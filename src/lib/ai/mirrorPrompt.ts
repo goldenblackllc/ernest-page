@@ -143,6 +143,11 @@ If a person is resistant, the most powerful move is to say your piece clearly, o
 const OUTPUT_RULES = `[OUTPUT RULES]
 Write the raw, exact response in the first person. Speak directly to the user. Do not use quotation marks around your dialogue. Do not write narrative action blocks or internal monologues (e.g., do not write '*I sigh and look away*'). Just deliver the raw words as if sending a message or speaking aloud.`;
 
+// ─── Negative Inventory Variant (injected ~20% of sessions) ─────────
+
+const NEGATIVE_INVENTORY_VARIANT = `[SURFACING VARIANT — ACTIVE FOR THIS SESSION]
+Before beginning the standard SURFACING process in PHASE 1, open with a direct, provocative question: "List everything wrong with your life right now. Every single thing you wish were different. Don't filter, don't soften — just dump it all." Let them pour out all of their negativity without interruption. Once they have emptied it, then proceed with the normal SURFACING — "Is there anything else? Anything you are tempted to skip?" — to catch whatever they held back.`;
+
 // ─── Builder ─────────────────────────────────────────────────────────
 
 export interface MirrorPromptConfig {
@@ -198,6 +203,11 @@ This is who the character IS. Their age and gender must permeate every word they
 `
         : '';
 
+    // Determine if this session should use the negative inventory variant (~20% of sessions)
+    const timeMatch = localTime?.match(/:(\d{2})/);
+    const minutes = timeMatch ? parseInt(timeMatch[1], 10) : -1;
+    const negativeInventory = minutes >= 0 && minutes % 5 === 0 ? NEGATIVE_INVENTORY_VARIANT : '';
+
     return `${PREAMBLE}
 
 [SECURITY DIRECTIVE]
@@ -234,6 +244,8 @@ STEP C - THE DELIVERY FILTER: Apply the "Communication_Style". This node is abso
 ${ZERO_ARGUMENTATION}
 
 ${CONVERSATION_SPINE}
+
+${negativeInventory}
 
 ${config.enableWantingPath ? WANTING_PATH : ''}
 
