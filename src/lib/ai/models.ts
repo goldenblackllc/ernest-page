@@ -6,8 +6,8 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
-export const OPUS_MODEL = 'claude-fable-5'; // Primary — Deep Reasoning Engine (all features)
-export const OPUS_FALLBACK = 'claude-opus-4-8'; // Stable Fallback for Fable
+export const OPUS_MODEL = 'claude-opus-5'; // Primary — Deep Reasoning Engine (all features)
+export const OPUS_FALLBACK = 'claude-opus-4-8'; // Stable Fallback for Opus
 
 function getProviderModel(modelName: string) {
     if (modelName.includes('gemini')) {
