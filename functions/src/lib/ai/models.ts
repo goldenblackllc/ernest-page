@@ -8,7 +8,7 @@ const google = createGoogleGenerativeAI({
 
 export const OPUS_MODEL = 'claude-opus-5'; // Primary — Deep Reasoning Engine (all features)
 export const OPUS_FALLBACK = 'claude-opus-4-8'; // Stable Fallback for Opus
-export const SONNET_MODEL = 'claude-sonnet-5-v2'; // Lightweight — list management, consolidation
+export const SONNET_MODEL = 'claude-sonnet-5'; // Lightweight — list management, consolidation
 export const BACKUP_MODEL = 'gemini-3.1-pro-preview';
 
 function getProviderModel(modelName: string) {

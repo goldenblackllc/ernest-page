@@ -107,6 +107,8 @@ export async function POST(req: Request) {
             ? unifiedInterests.join(', ')
             : resolvedSourceCode.things_i_enjoy || 'Not specified.';
 
+        console.log(`[BibleCompile] Inputs for ${uid}: archetype=${(resolvedSourceCode.archetype || 'EMPTY').substring(0, 50)}, manifesto=${(resolvedSourceCode.manifesto || 'EMPTY').substring(0, 50)}, people=${unifiedPeople.length} entries, interests=${unifiedInterests.length} entries`);
+
         const idealPrompt = PROMPT_IDEAL_BIBLE
             .replace('{ARCHETYPE}', resolvedSourceCode.archetype || 'None')
             .replace('{MANIFESTO}', resolvedSourceCode.manifesto || 'None')
