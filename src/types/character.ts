@@ -31,9 +31,10 @@ export interface CharacterIdentity {
 export interface ProfilePerson {
     name: string;
     relationship: string;          // e.g., 'daughter', 'boss', 'best friend'
-    dynamic?: string;              // emotional truth — e.g., 'we don't speak', 'very close'
+    who?: string;                  // factual profile — age, school/job, personality traits, interests
+    dynamic?: string;              // the nature of the USER's relationship with them
     birthday?: string;             // ISO date or partial (MM-DD)
-    notes?: string;                // additional context
+    notes?: string;                // transient — recent events, session-specific details (NOT used in bible)
 }
 
 /** The unified user profile — single source of truth for factual information */

@@ -94,10 +94,11 @@ export async function POST(req: Request) {
         const userLocale = data?.preferred_locale || 'en';
 
         // Read people from unified profile (master list)
+        // Bible uses who + dynamic only — notes are transient session events
         const unifiedPeople = data?.unified_profile?.people || [];
         const peopleString = unifiedPeople.length > 0
             ? unifiedPeople.map((p: any) => 
-                `Name: ${p.name}\nRelationship: ${p.relationship}\nDynamic: ${p.dynamic || 'N/A'}\nNotes: ${p.notes || 'N/A'}`
+                `Name: ${p.name}\nRelationship: ${p.relationship}\nWho: ${p.who || 'N/A'}\nDynamic: ${p.dynamic || 'N/A'}`
             ).join('\n\n')
             : resolvedSourceCode.important_people || 'None';
 
