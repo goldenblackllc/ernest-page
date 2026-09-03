@@ -188,7 +188,7 @@ export const processChat = onDocumentUpdated(
                 const existingWants = userData?.wants_for_bible || [];
                 let consolidatedWants = existingWants;
                 try {
-                    console.log(`[ProcessChat] Consolidating wants with Sonnet (${existingWants.length} existing)...`);
+                    console.warn(`[ProcessChat] WANTS_CONSOLIDATION_START: ${existingWants.length} existing wants`);
                     const wantsResult = await generateWithFallback({
                         primaryModelId: SONNET_MODEL,
                         fallbackModelId: OPUS_FALLBACK,
@@ -226,7 +226,7 @@ Output the clean consolidated list.`,
                         if (/rewritten_dossier|not provided/i.test(trimmed)) return false;
                         return true;
                     });
-                    console.log(`[ProcessChat] Wants consolidated: ${existingWants.length} → ${consolidatedWants.length}`);
+                    console.warn(`[ProcessChat] WANTS_CONSOLIDATION_DONE: ${existingWants.length} → ${consolidatedWants.length}`);
                 } catch (err: any) {
                     console.error(`[ProcessChat] Wants consolidation failed (keeping existing):`, err.message);
                 }
