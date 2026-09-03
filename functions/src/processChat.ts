@@ -1,7 +1,7 @@
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { db } from './lib/firebase/admin.js';
 import { z } from 'zod';
-import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK, SONNET_MODEL } from './lib/ai/models.js';
+import { generateWithFallback, generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK, SONNET_MODEL } from './lib/ai/models.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/security/serverHash.js';
@@ -184,17 +184,16 @@ export const processChat = onDocumentUpdated(
                     milestones: extracted.rewritten_milestones || profile.milestones || '',
                 };
 
-                // ─── WANTS CONSOLIDATION (Separate Sonnet call) ───
+                // ─── WANTS CONSOLIDATION (Separate Sonnet call via generateText) ───
+                // Uses generateText instead of generateObject because Sonnet 5's
+                // extended thinking breaks the AI SDK's structured output parsing.
                 const existingWants = userData?.wants_for_bible || [];
                 let consolidatedWants = existingWants;
                 try {
                     console.warn(`[ProcessChat] WANTS_CONSOLIDATION_START: ${existingWants.length} existing wants`);
-                    const wantsResult = await generateWithFallback({
+                    const wantsResult = await generateTextWithFallback({
                         primaryModelId: SONNET_MODEL,
                         fallbackModelId: OPUS_FALLBACK,
-                        schema: z.object({
-                            all_wants: z.array(z.string()).describe('Clean consolidated wants list'),
-                        }),
                         prompt: `You are a list manager. Your ONLY job is to produce a clean, consolidated wants list.
 
 EXISTING WANTS LIST:
@@ -207,25 +206,32 @@ RULES:
 1. MERGE existing wants with any NEW concrete wants from the session transcript.
 2. AGGRESSIVELY DEDUPLICATE — if multiple entries say similar things, keep ONE clear version.
 3. DROP GARBAGE — remove malformed entries, LLM artifacts, empty strings, single punctuation.
-4. ONLY KEEP MATERIAL/TANGIBLE WANTS — things the character could HAVE or BE:
-   ✅ KEEP: Cars, houses, trips, fitness goals, renovations, relocations, purchases, career changes
-   ❌ DROP: Emotional states ("feel calm"), mindset shifts ("live from power"), actions toward others ("text Sage"), philosophical intentions ("enjoy life"), diet rules ("eat carnivore"), relationship hopes
-   TEST: "The character OWNS / DRIVES / LIVES IN / TRAVELS TO / WEIGHS ___" — if it doesn't fit, drop it.
+4. ONLY KEEP MATERIAL/TANGIBLE WANTS — things the character could HAVE, OWN, or MEASURABLY ACHIEVE:
+   ✅ KEEP: Cars, houses, trips, fitness goals (specific weight/pace), renovations, relocations, purchases, financial structures, career changes, lease deals
+   ❌ DROP: Emotional states ("feel calm"), mindset shifts ("live from power"), actions toward others ("text Sage"), philosophical intentions ("enjoy life"), diet rules ("eat carnivore"), relationship hopes, self-talk practices
+   TEST: "The character OWNS / DRIVES / LIVES IN / TRAVELS TO / WEIGHS / HAS BUILT / HAS ACHIEVED ___" — if it doesn't fit, drop it.
 5. The final list should be CONCISE — quality over quantity.
 
-Output the clean consolidated list.`,
+IMPORTANT: Output ONLY a raw JSON array of strings. No markdown fences, no explanation, no wrapping. Just the array starting with [ and ending with ].`,
                     });
-                    const wantsOutput = (wantsResult.object as any)?.all_wants || [];
-                    // Programmatic garbage filter as safety net
-                    consolidatedWants = wantsOutput.filter((w: string) => {
-                        if (!w || typeof w !== 'string') return false;
-                        const trimmed = w.trim();
-                        if (trimmed.length < 3) return false;
-                        if (/^[:;,.\-!?]+$/.test(trimmed)) return false;
-                        if (/^(null|no|yes|none|n\/a|placeholder|undefined)$/i.test(trimmed)) return false;
-                        if (/rewritten_dossier|not provided/i.test(trimmed)) return false;
-                        return true;
-                    });
+                    // Parse JSON from text response (handle markdown fences and thinking blocks)
+                    let text = (wantsResult.text || '').trim();
+                    if (text.startsWith('```')) {
+                        text = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+                    }
+                    const parsed = JSON.parse(text);
+                    if (Array.isArray(parsed)) {
+                        // Programmatic garbage filter as safety net
+                        consolidatedWants = parsed.filter((w: string) => {
+                            if (!w || typeof w !== 'string') return false;
+                            const trimmed = w.trim();
+                            if (trimmed.length < 3) return false;
+                            if (/^[:;,.\-!?]+$/.test(trimmed)) return false;
+                            if (/^(null|no|yes|none|n\/a|placeholder|undefined)$/i.test(trimmed)) return false;
+                            if (/rewritten_dossier|not provided/i.test(trimmed)) return false;
+                            return true;
+                        });
+                    }
                     console.warn(`[ProcessChat] WANTS_CONSOLIDATION_DONE: ${existingWants.length} → ${consolidatedWants.length}`);
                 } catch (err: any) {
                     console.error(`[ProcessChat] Wants consolidation failed (keeping existing):`, err.message);
