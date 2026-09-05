@@ -269,6 +269,7 @@ export async function POST(req: Request) {
                 character_bible: {
                     ...updatedBible,
                     avatar_status: 'pending',
+                    avatar_attempt_count: 0,  // Reset so cron retries with fresh bible
                 },
                 last_compile_at: Date.now(),
             }, { merge: true });
