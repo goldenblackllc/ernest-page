@@ -21,10 +21,21 @@ export async function generateWithFallback(options: any) {
     const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, ...aiOptions } = options;
 
+    // Disable extended thinking for structured output — thinking conflicts
+    // with forced tool calls that generateObject uses for schema compliance.
+    const providerOptions = {
+        ...aiOptions.providerOptions,
+        anthropic: {
+            ...aiOptions.providerOptions?.anthropic,
+            thinking: { type: 'disabled' },
+        },
+    };
+
     try {
         console.log(`Attempting generation with primary model (${primary})...`);
         return await generateObject({
             ...aiOptions,
+            providerOptions,
             ...(abortSignal && { abortSignal }),
             model: getProviderModel(primary),
             allowSystemInMessages: true,
@@ -33,6 +44,7 @@ export async function generateWithFallback(options: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await generateObject({
             ...aiOptions,
+            providerOptions,
             abortSignal: AbortSignal.timeout(150_000),
             model: getProviderModel(fallback),
             allowSystemInMessages: true,
