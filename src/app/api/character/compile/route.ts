@@ -118,8 +118,9 @@ export async function POST(req: Request) {
             + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${userLocale === 'es' ? 'Spanish' : userLocale === 'pt' ? 'Portuguese' : userLocale === 'fr' ? 'French' : userLocale === 'de' ? 'German' : 'English'}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
 
         // Generate Ideal Bible
+        // Use opus-4-8 directly — opus-5's extended thinking breaks generateObject
         const idealResult = await generateWithFallback({
-            primaryModelId: OPUS_MODEL,
+            primaryModelId: OPUS_FALLBACK,
             abortSignal: AbortSignal.timeout(150_000), // 2.5 min before falling back
             providerOptions,
             system: SYSTEM_PROMPT,
