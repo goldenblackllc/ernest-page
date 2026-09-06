@@ -120,10 +120,9 @@ export const processChat = onDocumentUpdated(
                         all_people: z.array(z.object({
                             name: z.string(),
                             relationship: z.string(),
-                            who: z.string().optional().describe('Factual profile — age, school/job, personality traits, interests, hobbies'),
-                            dynamic: z.string().optional().describe('The nature of the USER\'s relationship with this person — how they relate, emotional quality'),
+                            who: z.string().optional().describe('Everything about the person: age, school/job, personality, interests, hobbies, financial details, health, stable facts'),
+                            dynamic: z.string().optional().describe('The USER\'s relationship with this person: how they relate, emotional quality, shared history, financial ties, agreements'),
                             birthday: z.string().optional(),
-                            notes: z.string().optional().describe('Transient — recent events, session anecdotes, situational details'),
                         })).describe('Complete reconciled list of ALL people/pets in the user\'s life — not just new ones'),
                         all_interests: z.array(z.string()).describe('Complete reconciled interests list — everything the user enjoys, deduplicated and consolidated'),
                         all_wardrobe: z.array(z.string()).describe('Complete reconciled wardrobe — items the USER owns/wears, not gifts for others'),
