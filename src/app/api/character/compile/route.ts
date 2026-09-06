@@ -121,6 +121,7 @@ export async function POST(req: Request) {
         const idealResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
             abortSignal: AbortSignal.timeout(150_000), // 2.5 min before falling back
+            maxTokens: 16000, // 7 rich prose sections need room — default 4096 truncates
             providerOptions,
             system: SYSTEM_PROMPT,
             prompt: idealPrompt,
