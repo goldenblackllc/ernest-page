@@ -136,6 +136,11 @@ export async function POST(req: Request) {
         });
 
         const rawObj = idealResult.object as any;
+        
+        // Debug: log each section's content length to diagnose placeholder/empty issues
+        const sectionKeys = ['Style_and_Presence', 'Daily_Life_and_Habits', 'People_and_Connections', 'The_Inner_Mind', 'Quirks_and_Details', 'Order_and_Sanctuary', 'The_World_I_Love'];
+        const sectionLengths = sectionKeys.map(k => `${k}=${(rawObj[k] || '').length}`).join(', ');
+        console.log(`[BibleCompile] Model output lengths: ${sectionLengths}`);
 
         const idealSections = [
             {
