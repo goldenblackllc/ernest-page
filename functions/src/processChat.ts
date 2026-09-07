@@ -206,11 +206,11 @@ RULES:
 1. MERGE existing wants with any NEW concrete wants from the session transcript.
 2. AGGRESSIVELY DEDUPLICATE — if multiple entries say similar things, keep ONE clear version.
 3. DROP GARBAGE — remove malformed entries, LLM artifacts, empty strings, single punctuation.
-4. ONLY KEEP MATERIAL/TANGIBLE WANTS — things the character could HAVE, OWN, or MEASURABLY ACHIEVE:
-   ✅ KEEP: Cars, houses, trips, fitness goals (specific weight/pace), renovations, relocations, purchases, financial structures, career changes, lease deals
-   ❌ DROP: Emotional states ("feel calm"), mindset shifts ("live from power"), actions toward others ("text Sage"), philosophical intentions ("enjoy life"), diet rules ("eat carnivore"), relationship hopes, self-talk practices
-   TEST: "The character OWNS / DRIVES / LIVES IN / TRAVELS TO / WEIGHS / HAS BUILT / HAS ACHIEVED ___" — if it doesn't fit, drop it.
-5. The final list should be CONCISE — quality over quantity.
+4. ONLY KEEP MATERIAL/TANGIBLE WANTS — things the character wants to HAVE, OWN, or MEASURABLY ACHIEVE:
+   ✅ KEEP: Cars, houses, trips, fitness goals (specific weight/pace), renovations, relocations, purchases, financial structures, career milestones
+   ❌ DROP: Things ALREADY DONE ("bought X", "completed Y"), systems/habits that describe HOW they work (file organization, document naming), emotional states, mindset shifts, philosophical intentions, diet rules, relationship hopes, self-talk practices
+   TEST: "The character WANTS TO ___" — if it doesn't fit as a future desire, drop it.
+5. The final list should be CONCISE — quality over quantity. Cap at 30.
 
 IMPORTANT: Output ONLY a raw JSON array of strings. No markdown fences, no explanation, no wrapping. Just the array starting with [ and ending with ].`,
                     });
