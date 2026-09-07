@@ -110,7 +110,7 @@ export async function compileCharacterBibleForUser(uid: string, sourceCodeOverri
     const idealResult = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
         abortSignal: AbortSignal.timeout(480_000), // 8 min — Cloud Functions have room
-        maxTokens: 16000,
+        maxTokens: 32000, // 27 people subsections in ideal-self voice + 6 other rich sections
         providerOptions,
         system: SYSTEM_PROMPT,
         prompt: idealPrompt,
