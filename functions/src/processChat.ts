@@ -14,6 +14,7 @@ import { generateCondensedTranscript } from './lib/ai/condensedTranscript.js';
 import { processPostContent } from './lib/ai/processPostContent.js';
 import { VISUAL_STYLES } from './lib/ai/visualStyles.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
+import { compileCharacterBibleForUser } from './compileCharacterBible.js';
 import nodemailer from 'nodemailer';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
@@ -296,30 +297,16 @@ Your job:
                     }
                 }
 
-                // Trigger bible recompile with updated profile
-                const appUrl = process.env.APP_URL;
-                const cronSecret = process.env.CRON_SECRET;
-                if (appUrl && cronSecret) {
-                    try {
-                        const compileRes = await fetch(`${appUrl}/api/character/compile`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-internal-key': cronSecret,
-                            },
-                            body: JSON.stringify({ uid, skipCooldown: true }),
-                        });
-                        if (!compileRes.ok) {
-                            const errBody = await compileRes.text().catch(() => '');
-                            console.error(`[ProcessChat] Bible recompile failed for ${uid}: ${compileRes.status} ${errBody}`);
-                        } else {
-                            console.log(`[ProcessChat] Bible recompile succeeded for ${uid}`);
-                        }
-                    } catch (err: any) {
-                        console.error(`[ProcessChat] Bible recompile network error for ${uid}:`, err.message);
+                // Trigger bible recompile with updated profile — direct call, no HTTP
+                try {
+                    const compileResult = await compileCharacterBibleForUser(uid);
+                    if (compileResult.success) {
+                        console.log(`[ProcessChat] Bible recompile succeeded for ${uid}`);
+                    } else {
+                        console.error(`[ProcessChat] Bible recompile failed for ${uid}: ${compileResult.error}`);
                     }
-                } else {
-                    console.warn(`[ProcessChat] Skipping bible recompile — APP_URL or CRON_SECRET not set`);
+                } catch (err: any) {
+                    console.error(`[ProcessChat] Bible recompile error for ${uid}:`, err.message);
                 }
             })() : Promise.resolve();
 

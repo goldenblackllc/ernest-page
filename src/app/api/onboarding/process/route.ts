@@ -224,7 +224,8 @@ export async function POST(req: Request) {
         waitUntil((async () => {
             try {
                 console.log(`[Onboarding] Background: Starting bible compilation for ${uid}`);
-                const compileRes = await fetch(`${origin}/api/character/compile`, {
+                const compileUrl = process.env.COMPILE_FUNCTION_URL || `https://us-central1-earnest-page.cloudfunctions.net/compileCharacterBible`;
+                const compileRes = await fetch(compileUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -239,7 +240,7 @@ export async function POST(req: Request) {
                             things_i_enjoy: things_i_enjoy || '',
                         },
                     }),
-                    signal: AbortSignal.timeout(240_000), // 4 min — fail fast so status doesn't stay 'compiling'
+                    signal: AbortSignal.timeout(540_000), // 9 min — Cloud Function has room
                 });
 
                 if (!compileRes.ok) {
