@@ -1,11 +1,9 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { z } from 'zod';
-import * as admin from 'firebase-admin';
+import { db } from './lib/firebase/admin.js';
 import { generateWithFallback, OPUS_MODEL } from './lib/ai/models.js';
 import { REALITY_RULES } from './lib/constants/realityRules.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
-
-const db = admin.firestore();
 
 // --- SAFETY SETTINGS ---
 const SAFETY_SETTINGS = [
