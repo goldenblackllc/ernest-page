@@ -120,7 +120,7 @@ export async function POST(req: Request) {
         // Generate Ideal Bible
         const idealResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
-            abortSignal: AbortSignal.timeout(150_000), // 2.5 min before falling back
+            abortSignal: AbortSignal.timeout(240_000), // 4 min — large people sections need time
             maxTokens: 16000, // 7 rich prose sections need room — default 4096 truncates
             providerOptions,
             system: SYSTEM_PROMPT,
