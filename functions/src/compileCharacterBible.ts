@@ -35,13 +35,8 @@ Each of the 7 sections above MUST be broken into multiple subsections using bold
 The subsection names should be organic and character-specific — not generic labels. Here are examples of the kind of subsections expected for each section:
 - "Style & Presence" → **The Closet:** A complete, specific, itemized wardrobe this character owns. List actual pieces across categories: suits, blazers, shirts, trousers, denim, outerwear/coats, shoes, underwear/basics, accessories (watches, belts, bags), and seasonal/travel pieces. Use specific brands and descriptions — this is the user's aspirational shopping list, not a mood board. **Grooming:** ... **Physicality:** ... **Travel Style:** ...
 - "Daily Life & Habits" → **Morning Ritual:** ... **The Work:** ... **Weekend Mode:** ... **Passions:** ...
-- "People & Connections" → EVERY person gets their OWN dedicated subsection: **Iris:** ... **Sage:** ... **Brian:** ... **Max:** ... etc. Do NOT group people together (e.g., "**Iris's Family:**" cramming mother, father, brother into one paragraph). Each person deserves their own **Name:** heading with a full description of who they are and how the character relates to them. Include pets. End with **Communication Style:** and **Social Energy:** subsections. This should be the LONGEST section — give it room to breathe.
-  CRITICAL — IDEAL SELF VOICE: This section is written BY the character's ideal self — someone who sees the beliefs behind friction, who understands that feelings are messages, who extends compassion even where there's pain. Do NOT echo raw grievances, bitterness, or scorekeeping from the source material. Instead, transform them:
-  Bad: "He isn't a good attorney. I read him as bitter." (raw judgment)
-  Good: "An attorney who carries the weight of a practice that didn't work out. I see the belief underneath — that professional failure makes him less of a man — and I hold it with compassion rather than matching it." (ideal self perspective)
-  Bad: "She controls my pay and is financially superior." (resentment)
-  Good: "She runs the numbers at Atrium. There's a tension around money between us, and I understand the belief it reflects." (fact + awareness)
-  Include factual details (names, roles, ages, jobs, relationship dynamics) but ALWAYS filter through the lens of someone who has done the inner work. The character sees people clearly — including their pain and friction — but doesn't weaponize what they see.
+- "People & Connections" → EVERY person gets their OWN dedicated subsection: **Iris:** ... **Sage:** ... **Brian:** ... **Max:** ... etc. Do NOT group people together (e.g., "**Iris's Family:**" cramming mother, father, brother into one paragraph). Each person deserves their own **Name:** heading. Include pets. End with **Communication Style:** and **Social Energy:** subsections.
+  CRITICAL — THE CHARACTER'S VIEW: The character is a completely loving, happy, and integrated person who has no problems with anyone. Other people may carry friction, resentment, or grievances toward the character — but the character does not carry it back. For each person, ask: how would someone who FULLY LIVES the archetype and manifesto above describe this person and this relationship? What would they see in them? What would they appreciate? The raw people data below is written from a human perspective with unprocessed emotions — it is reference material, NOT the character's voice. Transform it completely.
 - "The Inner Mind" → **Processing Emotions:** ... **Under Pressure:** ... **Self-Talk:** ... **Relationship with Reality:** ...
 - "Quirks & Details" → **Diet:** ... **Languages:** ... **Guilty Pleasures:** ... **Pets:** ... (include only what applies)
 - "Order & Sanctuary" → **The Home:** ... **The Car:** ... **The Workspace:** ... **Systems & Rituals:** ...
@@ -63,7 +58,8 @@ NO GENERALIZATIONS: Do not turn 'I started Atrium' into 'I started a business.' 
 User Inputs:
 Archetype: {ARCHETYPE}
 Manifesto: {MANIFESTO}
-Important People: {IMPORTANT_PEOPLE}
+Important People (RAW REFERENCE — human perspective, not the character's voice):
+{IMPORTANT_PEOPLE}
 Things they enjoy: {THINGS_I_ENJOY}`;
 
 // ─── Core compile logic — called by processChat directly and via HTTP ───
@@ -110,7 +106,7 @@ export async function compileCharacterBibleForUser(uid: string, sourceCodeOverri
     const idealResult = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
         abortSignal: AbortSignal.timeout(480_000), // 8 min — Cloud Functions have room
-        maxTokens: 32000, // 27 people subsections in ideal-self voice + 6 other rich sections
+        maxTokens: 16000,
         providerOptions,
         system: SYSTEM_PROMPT,
         prompt: idealPrompt,
