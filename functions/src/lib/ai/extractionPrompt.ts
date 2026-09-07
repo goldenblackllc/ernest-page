@@ -31,7 +31,7 @@ EMOTIONAL TRUTH: Record the EMOTIONAL TRUTH of relationships — if a user says 
 
 - Only extract things the USER explicitly said about their own life.
 - Do NOT extract the consultant's analysis or opinions.
-- For interests: up to 30 things this person genuinely ENJOYS and appreciates. Preserve existing interests unless they no longer apply. Rewrite fresh each session.
+- For interests: up to 30 things that DEFINE what this person loves — their core passions, tastes, and appreciations. Preserve existing interests unless they no longer apply. Rewrite fresh each session.
 - For wardrobe, extract specific clothing items the USER owns, wears, or is buying FOR THEMSELVES — not items they are buying for others (children, spouse, gifts). Produce the COMPLETE reconciled wardrobe list, not just new additions. Remove duplicates and items the user said they got rid of.
 - For people, include pets. Each person has TWO descriptive fields — rewrite BOTH freshly each session:
   • "who" — A concise summary of who this person IS right now: age, school/job, personality, interests, health, key facts. Rewrite fresh to reflect current understanding — do not accumulate old details unless still relevant.
