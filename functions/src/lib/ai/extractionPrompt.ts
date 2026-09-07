@@ -17,19 +17,15 @@ ${JSON.stringify(currentProfile || {}, null, 2)}
 CURRENT DOSSIER (Narrative):
 ${currentDossier || 'No existing dossier.'}
 
-═══ RULES FOR PEOPLE — COMPLETE RECONCILED LIST ═══
+═══ RULES FOR PEOPLE — TOP 40, FRESHLY SUMMARIZED ═══
 
-You are producing the ENTIRE people array, not just new additions. Every person in the user's life should appear in your output.
-
-NEVER DROP: If a person was in the previous array and was not explicitly said to be out of the user's life, they MUST appear in your output. "Not mentioned in this session" is NOT a reason to remove someone.
+Produce the reconciled people array — the 40 MOST SIGNIFICANT people and pets in the user's life. Significance means: immediate family, partner, children, close friends, business partners, and anyone the user discusses with emotional weight. Peripheral one-time mentions (e.g., a child's friend mentioned once) may be dropped if the list exceeds 40.
 
 RECONCILE: If someone was previously referred to generically ("my oldest daughter", "Daughter 1") and now has a name, unify them into ONE entry using the real name. Remove the placeholder.
 
-DISAMBIGUATE: If two different people share the same name, use the "relationship" and "notes" fields to distinguish them. Example: two entries for "Iris" — one with relationship "daughter" and one with relationship "friend from work." NEVER merge two genuinely different people into one entry.
+DISAMBIGUATE: If two different people share the same name, use the "relationship" field to distinguish them. NEVER merge two genuinely different people into one entry.
 
 EMOTIONAL TRUTH: Record the EMOTIONAL TRUTH of relationships — if a user says their daughter hates their sister, record that. Do NOT idealize or sanitize.
-
-WHEN IN DOUBT, PRESERVE: If a pronoun reference is ambiguous and you cannot confidently determine who the user is talking about, note the ambiguity in the "notes" field rather than making a destructive guess.
 
 ═══ RULES FOR STRUCTURED FIELDS ═══
 
@@ -37,12 +33,12 @@ WHEN IN DOUBT, PRESERVE: If a pronoun reference is ambiguous and you cannot conf
 - Do NOT extract the consultant's analysis or opinions.
 - For interests, produce the COMPLETE reconciled interests list — things the USER PERSONALLY enjoys, not just new additions. Merge existing interests with any new ones from this session. Remove duplicates and consolidate similar entries. Extract specific things ("cookies", "running", "jazz music"), not vague sentiments. CRITICAL: Do NOT include activities that are primarily someone else's interest (e.g., a child's favorite activity at an amusement park). Only include things the user took to or watched because their kid likes them if the user ALSO expressed genuine personal enjoyment. Remove items the user said they no longer enjoy or have stopped doing.
 - For wardrobe, extract specific clothing items the USER owns, wears, or is buying FOR THEMSELVES — not items they are buying for others (children, spouse, gifts). Produce the COMPLETE reconciled wardrobe list, not just new additions. Remove duplicates and items the user said they got rid of.
-- For people, include pets. Each person has TWO descriptive fields — use them correctly:
-  • "who" — Everything about the person THEMSELVES: age, school/job, personality traits, interests, hobbies, characteristics, financial details, health info, and any other stable facts. This is WHO THEY ARE. Build this up over sessions — never overwrite existing facts unless explicitly contradicted.
-    Example: "Junior at CCHS. Likes games, skiing, working out, and watching movies. Friends include Will and Simon. Father was a Chicago union boss."
-  • "dynamic" — Everything about the USER's RELATIONSHIP with this person: how they get along, the emotional quality, the ongoing pattern, shared history, financial ties, agreements, and any other relationship context. NOT what happened in one specific session.
-    Example: "We get along well. He's comfortable and easy with me." or "Deep resentment. Feels cheated and taken advantage of. Holds 9.6% equity in Atrium."
-  CRITICAL: Do NOT include transient session events (e.g., "picked him up from Planet Fitness today"). Only include lasting facts and stable relationship patterns. If a field already has good content, PRESERVE it — only add new information.
+- For people, include pets. Each person has TWO descriptive fields — rewrite BOTH freshly each session:
+  • "who" — A concise summary of who this person IS right now: age, school/job, personality, interests, health, key facts. Rewrite fresh to reflect current understanding — do not accumulate old details unless still relevant.
+    Example: "Junior at CCHS. Likes games, skiing, working out, and watching movies. Friends include Will and Simon."
+  • "dynamic" — The OVERALL relationship between the user and this person: how they relate, the emotional quality, the stable pattern. Not session events, not a log — the current state of the relationship.
+    Example: "We get along well. He's comfortable and easy with me." or "Complicated. Holds 9.6% equity in Atrium. Told his wife the user cheated him."
+  Do NOT include transient session events (e.g., "picked him up from Planet Fitness today"). Only lasting facts and stable patterns.
 - CROSS-REFERENCE DATES: Populate the "birthday" field for each person using any known date — from the CURRENT DOSSIER (Important Dates section), from the session transcript, or from the existing profile. If a birthday exists in the dossier but not on the person entry, add it. Format as YYYY-MM-DD or MM-DD if year is unknown.
 
 LIFE FACTS REWRITE: Produce the complete rewritten "life_facts" field — location, occupation, employer, living situation, relationship status, and any other concrete facts about their current life. Incorporate new information from this session while preserving all existing facts unless explicitly contradicted.
