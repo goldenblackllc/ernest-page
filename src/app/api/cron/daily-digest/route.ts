@@ -40,7 +40,7 @@ export async function GET(req: Request) {
             const userData = userDoc.data();
 
             // Need a compiled bible
-            const compiledBible = userData?.character_bible?.compiled_output?.ideal;
+            const compiledBible = userData?.bible?.sections || userData?.character_bible?.compiled_output?.ideal;
             if (!compiledBible || !Array.isArray(compiledBible) || compiledBible.length === 0) continue;
 
             // Skip users who haven't opened the app recently
@@ -94,9 +94,9 @@ export async function GET(req: Request) {
 
             // Build demographic hint for image generation
             const identity = userData?.identity;
-            const uGender = identity?.gender || '';
-            const uEthnicity = identity?.ethnicity || '';
-            const uAge = computeAge(identity?.birthdate);
+            const uGender = userData?.gender || identity?.gender || '';
+            const uEthnicity = userData?.ethnicity || identity?.ethnicity || '';
+            const uAge = computeAge(userData?.birthdate || identity?.birthdate);
             const demoParts = [
                 uAge ? `approximately ${uAge} years old` : '',
                 uEthnicity,
@@ -106,10 +106,10 @@ export async function GET(req: Request) {
                 ? ` If any human figure, silhouette, or body is shown, they must plausibly be ${demoParts.join(', ')} (skin tone, build, age-appropriate). Do NOT default to any other demographic.`
                 : '';
 
-            const archetype = userData?.character_bible?.source_code?.archetype || '';
-            const identityTitle = identity?.title || '';
+            const archetype = userData?.defining_words?.join(', ') || userData?.character_bible?.source_code?.archetype || '';
+            const identityTitle = userData?.defining_words?.join(', ') || identity?.title || '';
 
-            const voiceId = userData?.character_bible?.voice_id || null;
+            const voiceId = userData?.voice?.id || userData?.character_bible?.voice_id || null;
 
             eligibleUsers.push({ uid, title: pick.title, content: pick.content, demographicHint, archetype, identityTitle, voiceId, nextRotationIndex: nextIndex, compiledBible });
         }

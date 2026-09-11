@@ -1,19 +1,6 @@
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { db } from "./config";
-import { CharacterBible, CharacterProfile } from "@/types/character";
-
-export const DEFAULT_BIBLE: CharacterBible = {
-    source_code: {
-        archetype: "Good Successful Happy Human",
-        manifesto: "I am a good person who is successful, unconditionally loved, and I enjoy my life.",
-        important_people: "",
-    },
-    compiled_bible: {},
-    compiled_output: {
-        ideal: []
-    },
-    last_updated: Date.now()
-};
+import { CharacterProfile, WantItem, ProfilePerson } from "@/types/character";
 
 /**
  * Subscribes to the complete Character Profile for real-time updates.
@@ -23,22 +10,9 @@ export function subscribeToCharacterProfile(uid: string, onUpdate: (profile: Cha
     return onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data() as CharacterProfile;
-
-            // Migrate bible inside profile if needed
-            const migratedBible: CharacterBible = {
-                ...DEFAULT_BIBLE,
-                ...data.character_bible,
-                source_code: {
-                    ...DEFAULT_BIBLE.source_code,
-                    ...(data.character_bible?.source_code || {})
-                },
-                compiled_bible: data.character_bible?.compiled_bible || {},
-                compiled_output: data.character_bible?.compiled_output || { ideal: [] }
-            };
-
-            onUpdate({ ...data, uid, character_bible: migratedBible });
+            onUpdate({ ...data, uid });
         } else {
-            onUpdate({ uid, character_bible: DEFAULT_BIBLE });
+            onUpdate({ uid });
         }
     });
 }
@@ -50,6 +24,60 @@ export async function updateCharacterProfile(uid: string, updates: Partial<Chara
     const docRef = doc(db, "users", uid);
     await setDoc(docRef, {
         ...updates,
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}
+
+// ─── My Life Drawer Helpers ─────────────────────────────────────────────────
+
+/**
+ * Updates the "What I Want" checklist.
+ */
+export async function updateWants(uid: string, wants: WantItem[]) {
+    const docRef = doc(db, "users", uid);
+    await setDoc(docRef, {
+        wants,
+        bible_dirty_since: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}
+
+/**
+ * Updates the "What I Love" interests list.
+ */
+export async function updateLoves(uid: string, interests: string[]) {
+    const docRef = doc(db, "users", uid);
+    await setDoc(docRef, {
+        interests,
+        bible_dirty_since: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}
+
+/**
+ * Updates the "My People" list.
+ */
+export async function updatePeople(uid: string, people: ProfilePerson[]) {
+    const docRef = doc(db, "users", uid);
+    await setDoc(docRef, {
+        people,
+        bible_dirty_since: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}
+
+/**
+ * Updates the "My Dream" fields (defining words, living situation, financial).
+ */
+export async function updateDream(uid: string, updates: {
+    defining_words?: string[];
+    dream_living?: string;
+    dream_financial?: string;
+}) {
+    const docRef = doc(db, "users", uid);
+    await setDoc(docRef, {
+        ...updates,
+        bible_dirty_since: serverTimestamp(),
         updatedAt: serverTimestamp()
     }, { merge: true });
 }

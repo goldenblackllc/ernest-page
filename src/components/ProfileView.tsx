@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
-import { CharacterBible, CharacterProfile, CharacterIdentity } from "@/types/character";
+import { CharacterProfile, Bible } from "@/types/character";
 import { db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
 import { User, ChevronDown, Pencil, FileText, Loader2, Shield, Volume2, Check } from "lucide-react";
@@ -19,14 +19,12 @@ import { useTranslations } from "next-intl";
 export function ProfileView() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
-    const [bible, setBible] = useState<CharacterBible | null>(null);
-    const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
+    const [bible, setBible] = useState<Bible | null>(null);
     const [loading, setLoading] = useState(true);
     const [isAvatarEditOpen, setIsAvatarEditOpen] = useState(false);
 
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
-    const [isDevPanelOpen, setIsDevPanelOpen] = useState(false);
 
     // Dev-only: show bible inputs panel on localhost
     const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -40,8 +38,7 @@ export function ProfileView() {
 
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
             setProfile(data);
-            setBible(data.character_bible);
-            setIdentity(data.identity || null);
+            setBible(data.bible || null);
             setLoading(false);
         });
 
@@ -62,10 +59,10 @@ export function ProfileView() {
     }, []);
 
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
-    if (!bible && !identity) return null;
+    if (!profile) return null;
 
-    const displayTitle = identity?.title || bible?.source_code?.archetype || t('unknownCharacter');
-    const displaySections = bible?.compiled_output?.ideal;
+    const displayTitle = profile?.defining_words?.join(', ') || t('unknownCharacter');
+    const displaySections = bible?.sections;
 
     return (
         <>
@@ -78,8 +75,8 @@ export function ProfileView() {
                             className="w-14 h-14 rounded-full bg-zinc-800 ring-1 ring-zinc-800 overflow-hidden shrink-0 cursor-pointer hover:ring-zinc-700 transition-colors"
                             onClick={() => setIsAvatarEditOpen(true)}
                         >
-                            {bible?.compiled_output?.avatar_url ? (
-                                <img src={bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            {profile?.avatar?.url ? (
+                                <img src={profile?.avatar?.url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-zinc-500">
                                     <User className="w-6 h-6" />
@@ -104,22 +101,15 @@ export function ProfileView() {
 
                 {/* ── MY VOICE ── */}
                 <VoiceBrowser
-                    currentVoiceId={bible?.voice_id}
-                    currentVoiceName={bible?.voice_name}
+                    currentVoiceId={profile?.voice?.id}
+                    currentVoiceName={profile?.voice?.name}
                 />
 
-                {/* IDENTITY VISION (shown when no compiled bible yet) */}
-                {identity?.dream_self && (!displaySections || displaySections.length === 0) && (
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold mb-3">{t('identityTitle')}</p>
-                        <p className="text-sm text-zinc-300 leading-relaxed">{identity.dream_self}</p>
-                    </div>
-                )}
-
-                {/* ACCORDION VAULT (compiled bible sections) */}
+                        
+                {/* ── COMPILED CHARACTER BIBLE (Accordion Vault) ── */}
                 {displaySections && displaySections.length > 0 && (
-                    <div className="space-y-3">
-                        {displaySections.map((section: any, i: number) => {
+                    <div className="space-y-2 px-4">
+                        {displaySections.map((section, i) => {
                             const isOpen = expandedSection === i;
                             return (
                                 <div key={i} className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden transition-all duration-200">
@@ -164,56 +154,6 @@ export function ProfileView() {
                     </div>
                 )}
 
-                {/* ── DEV-ONLY: BIBLE COMPILE INPUTS ── */}
-                {isDev && profile && (
-                    <div className="mt-6">
-                        <button
-                            onClick={() => setIsDevPanelOpen(!isDevPanelOpen)}
-                            className="w-full flex items-center justify-between p-4 bg-amber-900/20 border border-amber-700/30 rounded-xl text-left hover:bg-amber-900/30 transition-colors"
-                        >
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] bg-amber-600/30 text-amber-400 px-2 py-0.5 rounded font-mono">DEV</span>
-                                <h3 className="text-sm font-bold text-amber-300 uppercase tracking-widest">Bible Compile Inputs</h3>
-                            </div>
-                            <ChevronDown className={cn("w-5 h-5 text-amber-500 transition-transform duration-200", isDevPanelOpen && "rotate-180")} />
-                        </button>
-                        {isDevPanelOpen && (
-                            <div className="mt-3 space-y-3">
-                                <DevInputSection title="1. Archetype (source_code.archetype)" content={bible?.source_code?.archetype || 'Not set'} />
-                                <DevInputSection title="2. Manifesto (source_code.manifesto)" content={bible?.source_code?.manifesto || 'Not set'} />
-                                <DevInputSection title="3. Important People (source_code + unified_profile.people)" multiline>
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Source Code (User Input)</p>
-                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{bible?.source_code?.important_people || 'Not set'}</pre>
-                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold mt-3">Unified Profile People Array</p>
-                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{JSON.stringify(profile.unified_profile?.people || [], null, 2)}</pre>
-                                    </div>
-                                </DevInputSection>
-                                <DevInputSection title="4. Things I Enjoy (source_code + unified_profile.interests)" multiline>
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Source Code (User Input)</p>
-                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{bible?.source_code?.things_i_enjoy || 'Not set'}</pre>
-                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold mt-3">Unified Profile Interests</p>
-                                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap bg-black/30 p-2 rounded">{JSON.stringify(profile.unified_profile?.interests || [], null, 2)}</pre>
-                                    </div>
-                                </DevInputSection>
-                                <DevInputSection title="5. Wants (consolidated → feeds into manifesto)" content={JSON.stringify((profile as any)?.wants_for_bible || [], null, 2)} />
-
-                                <div className="border-t border-amber-700/20 pt-3 mt-3">
-                                    <p className="text-[10px] text-amber-400/60 uppercase tracking-wider font-bold mb-3">Additional Context</p>
-                                </div>
-
-                                <DevInputSection title="Unified Profile — Life Facts" content={profile.unified_profile?.life_facts || 'Empty'} />
-                                <DevInputSection title="Unified Profile — Routines" content={profile.unified_profile?.routines || 'Empty'} />
-                                <DevInputSection title="Unified Profile — Milestones" content={profile.unified_profile?.milestones || 'Empty'} />
-                                <DevInputSection title="Unified Profile — Wardrobe" content={JSON.stringify(profile.unified_profile?.wardrobe || [], null, 2)} />
-                                <DevInputSection title="Dossier" content={identity?.dossier || 'No dossier'} />
-                                <DevInputSection title="Session Recaps" content={JSON.stringify(profile.session_recaps || [], null, 2)} />
-                                <DevInputSection title="Genie in the Lamp (dream_rant)" content={identity?.dream_rant || 'No rant'} />
-                            </div>
-                        )}
-                    </div>
-                )}
 
             </div>
 
@@ -221,17 +161,17 @@ export function ProfileView() {
             <EditAvatarModal
                 isOpen={isAvatarEditOpen}
                 onClose={() => setIsAvatarEditOpen(false)}
-                currentCharacterName={bible?.character_name || identity?.character_name || ""}
-                currentGender={identity?.gender || ""}
-                currentBirthdate={identity?.birthdate || ""}
-                currentEthnicity={identity?.ethnicity || ""}
-                currentSkinTone={identity?.skin_tone || ""}
-                currentHairColors={identity?.hair_colors || []}
-                currentHairTexture={identity?.hair_texture || ""}
-                currentHairVolume={identity?.hair_volume || ""}
-                currentEyeColor={identity?.eye_color || ""}
-                currentHeight={identity?.height || ""}
-                avatarUrl={bible?.compiled_output?.avatar_url}
+                currentCharacterName={profile?.name || profile?.name || ""}
+                currentGender={profile?.gender || ""}
+                currentBirthdate={profile?.birthdate || ""}
+                currentEthnicity={profile?.ethnicity || ""}
+                currentSkinTone={profile?.skin_tone || ""}
+                currentHairColors={profile?.hair_colors || []}
+                currentHairTexture={profile?.hair_texture || ""}
+                currentHairVolume={profile?.hair_volume || ""}
+                currentEyeColor={profile?.eye_color || ""}
+                currentHeight={profile?.height || ""}
+                avatarUrl={profile?.avatar?.url}
             />
 
         </>
@@ -297,7 +237,6 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
         try {
             const { doc, setDoc } = await import('firebase/firestore');
             await setDoc(doc(db, 'users', user.uid), {
-                identity: {
                     gender: data.gender.trim(),
                     birthdate: data.birthdate.trim(),
                     ethnicity: data.ethnicity.trim(),
@@ -307,9 +246,8 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
                     hair_volume: data.hair_volume.trim(),
                     eye_color: data.eye_color.trim(),
                     height: data.height.trim(),
-                },
-                character_bible: {
-                    avatar_status: 'pending',
+                avatar: {
+                    status: 'pending',
                 },
             }, { merge: true });
 

@@ -33,7 +33,7 @@ The subsection names should be organic and character-specific — not generic la
 - "Style & Presence" → **The Closet:** A complete, specific, itemized wardrobe this character owns. List actual pieces across categories: suits, blazers, shirts, trousers, denim, outerwear/coats, shoes, underwear/basics, accessories (watches, belts, bags), and seasonal/travel pieces. Use specific brands and descriptions — this is the user's aspirational shopping list, not a mood board. **Grooming:** ... **Physicality:** ... **Travel Style:** ...
 - "Daily Life & Habits" → **Morning Ritual:** ... **The Work:** ... **Weekend Mode:** ... **Passions:** ...
 - "People & Connections" → EVERY person gets their OWN dedicated subsection: **Iris:** ... **Sage:** ... **Brian:** ... **Max:** ... etc. Do NOT group people together. Each person gets their own **Name:** heading. Include pets. End with **Communication Style:** and **Social Energy:** subsections.
-  CRITICAL — MANIFESTO LENS: The people data below is raw reference material written from a human perspective. The CHARACTER is a completely loving, integrated person who has no problems with anyone. Others may carry friction toward the character, but the character does not carry it back. For each person, write how someone who FULLY LIVES the archetype and manifesto would describe them — what they see, what they appreciate, what they understand.
+  CRITICAL — MANIFESTO LENS: The people data below is raw reference material written from a human perspective. The CHARACTER is a completely loving, integrated person who has no problems with anyone. Others may carry friction toward the character, but the character does not carry it back. For each person, write how someone who FULLY LIVES the identity words would describe them — what they see, what they appreciate, what they understand.
 - "The Inner Mind" → **Processing Emotions:** ... **Under Pressure:** ... **Self-Talk:** ... **Relationship with Reality:** ...
 - "Quirks & Details" → **Diet:** ... **Languages:** ... **Guilty Pleasures:** ... **Pets:** ... (include only what applies)
 - "Order & Sanctuary" → **The Home:** ... **The Car:** ... **The Workspace:** ... **Systems & Rituals:** ...
@@ -50,24 +50,40 @@ SPECIFICITY OVER SUMMARY: You must use the specific proper nouns found in the us
 Bad: 'I enjoy coffee and love my wife.'
 Good: 'I enjoy espresso from my Jura and adore my wife Iris.'
 INCLUDE THE DETAILS: If the user mentions specific brands (Jura, Boss), specific locations (Carlisle, Provence), or specific people (Sage, Brian), you MUST weave them into the narrative. Do not scrub these details. They are the soul of the character.
-NO GENERALIZATIONS: Do not turn 'I started Atrium' into 'I started a business.' Use the specific facts provided in the constraints and manifesto.
+NO GENERALIZATIONS: Do not turn 'I started Atrium' into 'I started a business.' Use the specific facts provided.
 
 User Inputs:
-Archetype: {ARCHETYPE}
-Manifesto: {MANIFESTO}
+Identity: {DEFINING_WORDS}
+The user defines themselves with these words. This IS their archetype — the core of who they are. Use these as the foundation for every aspect of the character's voice, decisions, and worldview.
+
+Dream Living Situation: {DREAM_LIVING}
+This is how the character lives. The home, the neighborhood, the space. Write as if this is already real and settled.
+
+Dream Financial Situation: {DREAM_FINANCIAL}
+This is the character's financial reality. Write as if this is already achieved and natural.
+
+What They Want (Active Pursuits): {WANTS_ACTIVE}
+These are things the character is actively working toward or acquiring. Weave these into the character's daily life, decisions, and near-term plans as active goals.
+
+What They Already Have (Achieved): {WANTS_ACHIEVED}
+These are things the character has already accomplished or acquired. Reference these as settled, proud facts of their life.
+
+Physical Traits: {PHYSICAL_TRAITS}
+Use these to inform the character's physicality, style choices, and presence. Do not repeat them verbatim — weave them naturally.
+
 Important People (RAW REFERENCE — human perspective, not the character's voice):
 {IMPORTANT_PEOPLE}
-Things they enjoy: {THINGS_I_ENJOY}`;
+
+Things They Love: {THINGS_I_LOVE}`;
 
 // ─── Core compile logic — called by processChat directly and via HTTP ───
-export async function compileCharacterBibleForUser(uid: string, sourceCodeOverride?: any): Promise<{ success: boolean; ideal?: any[]; error?: string }> {
+export async function compileCharacterBibleForUser(uid: string): Promise<{ success: boolean; ideal?: any[]; error?: string }> {
     const userDocRef = db.collection('users').doc(uid);
     const userDoc = await userDocRef.get();
     const data = userDoc.data();
 
-    const resolvedSourceCode = sourceCodeOverride || data?.character_bible?.source_code;
-    if (!resolvedSourceCode) {
-        return { success: false, error: 'Missing source_code and no existing bible found' };
+    if (!data) {
+        return { success: false, error: 'User data not found' };
     }
 
     const providerOptions = {
@@ -76,27 +92,65 @@ export async function compileCharacterBibleForUser(uid: string, sourceCodeOverri
 
     const userLocale = data?.preferred_locale || 'en';
 
-    // Read people from unified profile (master list)
-    const unifiedPeople = data?.unified_profile?.people || [];
+    // ─── Assemble inputs from My Life data ───
+
+    // Defining words → replaces archetype
+    const definingWords = data?.defining_words || [];
+    const definingWordsString = definingWords.length > 0
+        ? definingWords.join(', ')
+        : 'Not specified';
+
+    // Wants → split into active (unchecked) and achieved (checked)
+    const wants = data?.wants || [];
+    const activeWants = wants.filter((w: any) => !w.completed).map((w: any) => w.text);
+    const achievedWants = wants.filter((w: any) => w.completed).map((w: any) => w.text);
+    const wantsActiveString = activeWants.length > 0 ? activeWants.join(', ') : 'None specified';
+    const wantsAchievedString = achievedWants.length > 0 ? achievedWants.join(', ') : 'None yet';
+
+    // Dream living & financial
+    const dreamLiving = data?.dream_living || 'Not specified';
+    const dreamFinancial = data?.dream_financial || 'Not specified';
+
+    // People
+    const unifiedPeople = data?.people || [];
     const peopleString = unifiedPeople.length > 0
         ? unifiedPeople.map((p: any) =>
             `Name: ${p.name}\nRelationship: ${p.relationship}\nWho: ${p.who || 'N/A'}\nDynamic: ${p.dynamic || 'N/A'}`
         ).join('\n\n')
-        : resolvedSourceCode.important_people || 'None';
+        : 'None';
 
-    // Read interests from unified profile
-    const unifiedInterests = data?.unified_profile?.interests || [];
+    // Interests/loves
+    const unifiedInterests = data?.interests || [];
     const interestsString = unifiedInterests.length > 0
         ? unifiedInterests.join(', ')
-        : resolvedSourceCode.things_i_enjoy || 'Not specified.';
+        : 'Not specified.';
 
-    console.log(`[BibleCompile] Inputs for ${uid}: archetype=${(resolvedSourceCode.archetype || 'EMPTY').substring(0, 50)}, manifesto=${(resolvedSourceCode.manifesto || 'EMPTY').substring(0, 50)}, people=${unifiedPeople.length} entries, interests=${unifiedInterests.length} entries`);
+    // Physical traits
+    const physicalTraits: string[] = [];
+    if (data.gender) physicalTraits.push(data.gender);
+    if (data.birthdate) {
+        const age = computeAge(data.birthdate);
+        if (age !== null) physicalTraits.push(`${age} years old`);
+    }
+    if (data.skin_tone) physicalTraits.push(`skin tone: ${data.skin_tone}`);
+    if (data.hair_colors?.length) physicalTraits.push(`hair: ${data.hair_colors.join('/')}`);
+    if (data.hair_texture) physicalTraits.push(`hair texture: ${data.hair_texture}`);
+    if (data.eye_color) physicalTraits.push(`eyes: ${data.eye_color}`);
+    if (data.height) physicalTraits.push(`height: ${data.height}`);
+    if (data.ethnicity) physicalTraits.push(`ethnicity: ${data.ethnicity}`);
+    const physicalTraitsString = physicalTraits.length > 0 ? physicalTraits.join(', ') : 'Not specified';
+
+    console.log(`[BibleCompile] Inputs for ${uid}: defining_words=${definingWordsString.substring(0, 50)}, wants_active=${activeWants.length}, wants_achieved=${achievedWants.length}, people=${unifiedPeople.length}, interests=${unifiedInterests.length}`);
 
     const idealPrompt = PROMPT_IDEAL_BIBLE
-        .replace('{ARCHETYPE}', resolvedSourceCode.archetype || 'None')
-        .replace('{MANIFESTO}', resolvedSourceCode.manifesto || 'None')
+        .replace('{DEFINING_WORDS}', definingWordsString)
+        .replace('{DREAM_LIVING}', dreamLiving)
+        .replace('{DREAM_FINANCIAL}', dreamFinancial)
+        .replace('{WANTS_ACTIVE}', wantsActiveString)
+        .replace('{WANTS_ACHIEVED}', wantsAchievedString)
+        .replace('{PHYSICAL_TRAITS}', physicalTraitsString)
         .replace('{IMPORTANT_PEOPLE}', peopleString)
-        .replace('{THINGS_I_ENJOY}', interestsString)
+        .replace('{THINGS_I_LOVE}', interestsString)
         + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${userLocale === 'es' ? 'Spanish' : userLocale === 'pt' ? 'Portuguese' : userLocale === 'fr' ? 'French' : userLocale === 'de' ? 'German' : 'English'}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
 
     // Generate Ideal Bible
@@ -137,10 +191,8 @@ export async function compileCharacterBibleForUser(uid: string, sourceCodeOverri
 
     // Save back to Firestore
     if (userDoc.exists) {
-        const currentBible = data?.character_bible || { source_code: resolvedSourceCode, compiled_bible: {}, compiled_output: { ideal: [] }, last_updated: Date.now() };
-
         // Resolve character name
-        const userProvidedName = data?.identity?.character_name || '';
+        const userProvidedName = data?.name || '';
         let characterName = userProvidedName;
 
         if (!characterName) {
@@ -148,7 +200,7 @@ export async function compileCharacterBibleForUser(uid: string, sourceCodeOverri
                 const nameResult = await generateWithFallback({
                     primaryModelId: OPUS_MODEL,
                     abortSignal: AbortSignal.timeout(15_000),
-                    prompt: `Based on this character archetype "${resolvedSourceCode.archetype || 'Unknown'}" and manifesto "${(resolvedSourceCode.manifesto || '').slice(0, 200)}", generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
+                    prompt: `Based on this character archetype "${definingWordsString}" generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
                     schema: z.object({ name: z.string().describe("A single first name") }),
                 });
                 characterName = (nameResult.object as any).name || 'The Architect';
@@ -159,14 +211,14 @@ export async function compileCharacterBibleForUser(uid: string, sourceCodeOverri
 
         // Auto-default voice
         const freshVoiceSnap = await userDocRef.get();
-        const freshBible = freshVoiceSnap.data()?.character_bible || {};
-        let voiceId = freshBible.voice_id || '';
-        let voiceName = freshBible.voice_name || '';
+        const freshData = freshVoiceSnap.data() || {};
+        let voiceId = freshData.voice?.id || '';
+        let voiceName = freshData.voice?.name || '';
 
         if (!voiceId) {
             try {
-                const userGender = (data?.identity?.gender || '').toLowerCase();
-                const userBirthdate = data?.identity?.birthdate || '';
+                const userGender = (data?.gender || '').toLowerCase();
+                const userBirthdate = data?.birthdate || '';
                 const gender = userGender.includes('female') || userGender.includes('woman') ? 'female' : 'male';
 
                 let ageCategory = 'middle_aged';
@@ -208,28 +260,22 @@ export async function compileCharacterBibleForUser(uid: string, sourceCodeOverri
             }
         }
 
-        const updatedBible = {
-            ...currentBible,
-            source_code: {
-                ...currentBible.source_code,
-                ...resolvedSourceCode
-            },
-            compiled_output: {
-                ...currentBible.compiled_output,
-                ideal: idealSections
-            },
-            character_name: characterName,
-            voice_id: voiceId,
-            voice_name: voiceName,
-            last_updated: Date.now()
-        };
-
         // Save bible
         await userDocRef.set({
-            character_bible: {
-                ...updatedBible,
-                avatar_status: 'pending',
-                avatar_attempt_count: 0,
+            bible: {
+                sections: idealSections,
+                status: 'ready',
+                last_updated: Date.now()
+            },
+            name: characterName,
+            voice: {
+                id: voiceId,
+                name: voiceName,
+                confirmed: freshData.voice?.confirmed || false,
+            },
+            avatar: {
+                status: freshData.avatar?.status || 'pending',
+                attempt_count: freshData.avatar?.attempt_count || 0,
             },
             last_compile_at: Date.now(),
         }, { merge: true });
@@ -250,14 +296,14 @@ export const compileCharacterBible = onRequest(
             return;
         }
 
-        const { uid, source_code } = req.body;
+        const { uid } = req.body;
         if (!uid) {
             res.status(400).json({ error: 'Missing uid' });
             return;
         }
 
         try {
-            const result = await compileCharacterBibleForUser(uid, source_code);
+            const result = await compileCharacterBibleForUser(uid);
             if (result.success) {
                 res.json(result);
             } else {

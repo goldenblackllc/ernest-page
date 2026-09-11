@@ -177,22 +177,29 @@ export async function POST(req: Request) {
         }
         // If dossier exists, we leave it untouched here.
 
-        // Also populate the legacy source_code fields for backward compatibility
-        const legacySourceCode = {
-            archetype: data.title,
-            manifesto: data.dream_self,
-            important_people: data.dossier.people,
-            things_i_enjoy: data.dossier.preferences,
-        };
-
         // Set status to 'compiling' so the feed can show the status card.
         // On re-edit, PRESERVE the existing compiled_output so the old bible
         // remains usable for mirror chat while the new compile runs.
         const existingBible = existingUserDoc.data()?.character_bible;
         const topLevelUpdate: Record<string, any> = {
             identity,
+            name: character_name || '',
+            gender: gender || '',
+            birthdate: birthdate || '',
+            skin_tone: skinTone,
+            hair_colors: hairColors,
+            hair_texture: hairTexture,
+            hair_volume: hairVolume,
+            eye_color: eyeColor,
+            height,
+            ethnicity: ethnicity || '',
+            defining_words: data.title.split(',').map((w: string) => w.trim()),
+            onboarding_complete: true,
+            bible: {
+                status: 'compiling',
+                last_updated: Date.now(),
+            },
             character_bible: {
-                source_code: legacySourceCode,
                 compiled_bible: existingBible?.compiled_bible || {},
                 compiled_output: existingBible?.compiled_output || { ideal: [] },
                 last_updated: Date.now(),
@@ -215,6 +222,9 @@ export async function POST(req: Request) {
 
         if (!hasExistingDossier) {
             topLevelUpdate.session_credits = 1;
+            topLevelUpdate.dossier = dossierText;
+            topLevelUpdate.dossier_updated_at = FieldValue.serverTimestamp();
+            topLevelUpdate.session_count = 0;
         }
 
         await db.collection("users").doc(uid).set(topLevelUpdate, { merge: true });
@@ -246,14 +256,16 @@ export async function POST(req: Request) {
                 if (!compileRes.ok) {
                     console.error(`[Onboarding] Background: Bible compile failed with status ${compileRes.status}`);
                     await db.collection("users").doc(uid).set({
-                        character_bible: { status: 'failed', fail_reason: 'error' }
+                        character_bible: { status: 'failed', fail_reason: 'error' },
+                        bible: { status: 'failed', fail_reason: 'error' }
                     }, { merge: true });
                     return;
                 }
 
                 // Mark bible as ready + set last_commit so the feed auto-dismiss timer works
                 await db.collection("users").doc(uid).set({
-                    character_bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() }
+                    character_bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() },
+                    bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() }
                 }, { merge: true });
 
                 // Fire avatar generation independently — non-blocking, errors handled by avatar route
@@ -270,7 +282,8 @@ export async function POST(req: Request) {
             } catch (err: any) {
                 console.error(`[Onboarding] Background generation error for ${uid}:`, err.message);
                 await db.collection("users").doc(uid).set({
-                    character_bible: { status: 'failed' }
+                    character_bible: { status: 'failed' },
+                    bible: { status: 'failed' }
                 }, { merge: true });
             }
         })());

@@ -1,33 +1,4 @@
-export interface CharacterIdentity {
-    title: string;              // 3 visual roles: "Father, Husband, Gentleman"
-    dream_self: string;         // Present-tense identity summary (AI-generated from rant)
-    dream_rant: string;         // Raw user input (their rant about their dream life)
-    important_people: string;   // Foundation: Tell me about the people in your life
-    things_i_enjoy: string;     // Foundation: What does the dream you enjoy?
-    gender: string;             // User-provided gender identity
-    birthdate: string;          // User-provided date of birth (ISO date string)
-    ethnicity?: string;         // Optional — unchangeable physical traits for avatar accuracy
-    /** Skin tone from fixed scale */
-    skin_tone?: string;
-    /** Natural hair color(s) — array for multi-select (e.g., ['Dark Brown', 'Gray']) */
-    hair_colors?: string[];
-    /** Natural hair texture */
-    hair_texture?: string;
-    /** Hair volume/coverage */
-    hair_volume?: string;
-    /** Eye color */
-    eye_color?: string;
-    /** Height (e.g., "5'10" or "178cm") — used in video image generation */
-    height?: string;
-    character_name?: string;    // Optional — user's chosen name for their Ideal Self
-    dossier: string;            // AI-maintained structured case notes
-    dossier_updated_at?: any;   // Firestore Timestamp
-    session_count: number;      // Number of check-in/mirror sessions
-    onboarding_started?: boolean;  // Gender submitted, user can access dashboard
-    onboarding_complete?: boolean; // First session processed, character bible built
-}
-
-/** A person in the user's life — extracted from sessions or manually added */
+/** A person in the user's life */
 export interface ProfilePerson {
     name: string;
     relationship: string;          // e.g., 'daughter', 'boss', 'best friend'
@@ -36,123 +7,132 @@ export interface ProfilePerson {
     birthday?: string;             // ISO date or partial (MM-DD)
 }
 
-/** The unified user profile — single source of truth for factual information */
-export interface UnifiedProfile {
-    people: ProfilePerson[];              // People & relationships (incl. pets)
-    interests: string[];                  // Things they enjoy — simple tag list
-    wardrobe: string[];                   // Clothes the user actually owns
-    routines: string;                     // Daily patterns, schedules, rituals (free text)
-    life_facts: string;                   // Location, occupation, employer, living situation (free text)
-    milestones: string;                   // Sobriety dates, career events, moves (free text)
+/** A single item on the user's "What I Want" checklist */
+export interface WantItem {
+    id: string;
+    text: string;
+    completed: boolean;
+    created_at: number;
 }
 
-export interface CharacterBible {
-    source_code: {
-        archetype: string;
-        manifesto: string;
-        important_people: string;
-        things_i_enjoy?: string; // Preferences & Aesthetics
-    };
-    compiled_bible: {
-        core_identity?: any;
-        psychological_profile?: any;
-        interpersonal_dynamics?: any;
-        lifestyle?: any;
-        behavioral_responses?: any;
-        [key: string]: any;
-    };
-    compiled_output?: {
-        ideal?: Array<{ heading: string, content: string }>;
-        avatar_url?: string;
-    };
-
-    // --- SYSTEM METADATA ---
-    character_name?: string;    // Character's name (user-chosen or AI-generated)
-    voice_id?: string;          // ElevenLabs voice ID — shared library voice
-    voice_name?: string;        // Display name of the selected voice
-    voice_design_prompt?: string; // The prompt used to generate the voice
-    voice_previews?: Array<{      // Generated previews for audition
-        generated_voice_id: string;
-        audio_base64: string;
-        duration_secs: number;
-        is_selected: boolean;
-    }>;
-    avatar_status?: 'ready' | 'generating' | 'pending' | 'failed';
-    avatar_last_attempt?: number;
-    avatar_attempt_count?: number;
-    avatar_error?: string | null;
-    last_updated: number;   // Timestamp for the "Batch Post" logic.
-    version?: number;       // e.g. 1.0, 1.1
-    last_commit?: any;      // Firestore Timestamp of last "Finish & Commit"
-    voice_confirmed?: boolean; // True once user has confirmed their auto-assigned voice
-    fail_reason?: string;   // Why the last compile failed (e.g. 'rate_limit_daily', 'rate_limit_cooldown', 'error')
-    status?: 'stable' | 'compiling' | 'ready' | 'failed'; // Lockout state during updates
+/** Compiled character bible — system-generated output */
+export interface Bible {
+    sections?: Array<{ heading: string; content: string }>;
+    status?: 'stable' | 'compiling' | 'ready' | 'failed';
+    fail_reason?: string;
+    last_updated?: number;
+    last_commit?: any;  // Firestore Timestamp
 }
 
+/** Avatar — system-generated */
+export interface Avatar {
+    url?: string;
+    status?: 'ready' | 'generating' | 'pending' | 'failed';
+    last_attempt?: number;
+    attempt_count?: number;
+    error?: string | null;
+}
+
+/** Voice — system-assigned or user-selected */
+export interface Voice {
+    id?: string;
+    name?: string;
+    confirmed?: boolean;
+}
+
+/** Root user document — `users/{uid}` */
 export interface CharacterProfile {
     uid: string;
-    identity?: CharacterIdentity;   // New onboarding-driven identity
-    character_bible: CharacterBible; // Now mandatory structure
-    my_story?: string;
-    active_todos?: Array<{ id: string, task: string, completed: boolean, priority?: 'immediate' | 'next', unexpected_yield?: string, created_at: any }>;
-    following?: Record<string, string>; // authorId -> archetype title
-    unified_profile?: UnifiedProfile;
-    last_check_in?: any;
-    updatedAt?: any; // Firestore Timestamp
-    saved_posts?: string[]; // Bookmarked posts
-    default_post_routing?: 'private' | 'public' | 'burn'; // Default visibility for new posts
-    last_thirty_day_checkin?: string; // ISO date of last 28-day check-in session
-    session_recaps?: Array<{     // Rolling window of last 3 session recaps
-        date: string;            // ISO date string
-        recap: string;           // 2-3 sentence summary
+
+    // --- User Inputs (top-level, drawer-edited) ---
+    name?: string;                        // Ideal Self character name
+    defining_words?: string[];            // 3 words that define the user
+    wants?: WantItem[];                   // "What I Want" checklist
+    interests?: string[];                 // Things they love
+    people?: ProfilePerson[];             // People in their life
+    dream_living?: string;                // Dream living situation
+    dream_financial?: string;             // Dream financial situation
+
+    // --- Physical Appearance (top-level, EditAvatarModal) ---
+    gender?: string;
+    birthdate?: string;                   // ISO date (YYYY-MM-DD)
+    ethnicity?: string;
+    skin_tone?: string;
+    hair_colors?: string[];
+    hair_texture?: string;
+    hair_volume?: string;
+    eye_color?: string;
+    height?: string;
+
+    // --- System Outputs ---
+    bible?: Bible;
+    avatar?: Avatar;
+    voice?: Voice;
+
+    // --- AI-Maintained ---
+    dossier?: string;                     // 7-section case notes
+    dossier_updated_at?: any;             // Firestore Timestamp
+    session_count?: number;
+    session_recaps?: Array<{
+        date: string;
+        recap: string;
     }>;
+
+    // --- App State ---
+    onboarding_complete?: boolean;
+    bible_dirty_since?: any;              // Firestore Timestamp — triggers recompile cron
+    last_compile_at?: number;
+    compile_count?: number;
+    compile_count_date?: string;
+
+    // --- Account ---
+    active_todos?: Array<{ id: string; task: string; completed: boolean; priority?: 'immediate' | 'next'; unexpected_yield?: string; created_at: any }>;
+    following?: Record<string, string>;
+    updatedAt?: any;
+    saved_posts?: string[];
+    default_post_routing?: 'private' | 'public' | 'burn';
+    last_thirty_day_checkin?: string;
     subscription?: {
         status: 'active' | 'canceled' | 'expired' | 'past_due';
         plan: 'proving_ground' | 'long_game' | 'archangel';
         subscribedAt: string;
-        subscribedUntil?: string;           // Legacy — proving_ground / long_game
-        currentPeriodEnd?: string;          // Archangel — Stripe-managed billing cycle end
-        cancelAtPeriodEnd?: boolean;        // User requested cancel but access continues
-        paymentIntentId?: string;           // Legacy — one-time payment
-        stripeSubscriptionId?: string;      // Archangel — Stripe Subscription ID
-        stripeCustomerId?: string;          // Archangel — Stripe Customer ID
+        subscribedUntil?: string;
+        currentPeriodEnd?: string;
+        cancelAtPeriodEnd?: boolean;
+        paymentIntentId?: string;
+        stripeSubscriptionId?: string;
+        stripeCustomerId?: string;
         grantedBy?: 'admin' | 'stripe';
         canceledAt?: string;
         refunded?: boolean;
-        lastInvoiceId?: string;             // Idempotency — last processed invoice
-        paymentFailedAt?: string;           // When payment last failed
+        lastInvoiceId?: string;
+        paymentFailedAt?: string;
     };
-    session_credits?: number; // Available chat sessions (default 0)
-    sessions_today?: number;   // Sessions consumed today (resets daily)
-    sessions_today_date?: string; // ISO date string (YYYY-MM-DD) — used to detect day rollover
+    session_credits?: number;
+    sessions_today?: number;
+    sessions_today_date?: string;
     session_purchases?: Array<{
-        id: string;               // paymentIntentId
+        id: string;
         type: 'session_single' | 'session_3pack' | 'session_gift';
-        amount: number;           // cents
-        credits: number;          // how many sessions this purchase granted
-        purchasedAt: string;      // ISO date
-        refunded?: boolean;       // Whether this purchase was refunded
-        refundedAt?: string;      // ISO date of refund
+        amount: number;
+        credits: number;
+        purchasedAt: string;
+        refunded?: boolean;
+        refundedAt?: string;
     }>;
-    refund_count?: number;          // Total lifetime refunds issued
-    total_sessions_purchased?: number; // Total lifetime sessions purchased (for trust tier)
-    compile_count?: number;         // Character bible compiles used today
-    compile_count_date?: string;    // ISO date (YYYY-MM-DD) for rollover detection
-    last_compile_at?: number;       // Unix timestamp of last compile (for cooldown)
+    refund_count?: number;
+    total_sessions_purchased?: number;
     daily_digest?: {
         title: string;
         content: string;
         full_content?: string;
         image_url?: string | null;
         imagen_urls?: string[];
-        // Per-message fields (same shape as post feed)
         image_style?: 'per-message';
         image_prompts?: string[];
         message_images?: string[];
         condensed_transcript?: Array<{ role: 'user' | 'ideal_self'; text: string }>;
-        // Thumbnail (poster frame — same as post feed)
         thumbnail_url?: string | null;
-        // Audio
         audio_url?: string | null;
         audio_word_timestamps?: Array<{ word: string; start: number; end: number }>;
         audio_message_boundaries?: Array<{ role: string; startIndex: number; endIndex: number; startTime: number; endTime: number }>;
@@ -160,14 +140,20 @@ export interface CharacterProfile {
         updated_at: string;
     };
     beta_tester?: {
-        cohort: string;           // e.g., "tiktok-june-2026"
-        enrolled_at: string;      // ISO date
-        invite_code: string;      // The code they redeemed
-        source: string;           // e.g., "tiktok", "instagram", "direct"
-        tiktok_handle?: string;   // From the apply form (if provided)
-        name?: string;            // From the apply form (if provided)
+        cohort: string;
+        enrolled_at: string;
+        invite_code: string;
+        source: string;
+        tiktok_handle?: string;
+        name?: string;
     };
 }
+
+// --- Legacy type aliases for backward compatibility during migration ---
+// TODO: Remove these once all imports are updated
+export type CharacterIdentity = any;
+export type CharacterBible = any;
+export type UnifiedProfile = any;
 
 export interface Directive {
     id?: string;
@@ -175,7 +161,7 @@ export interface Directive {
     title: string;
     status: 'active' | 'completed' | 'pending';
     type: 'PROTOCOL' | 'QUEST' | 'SIGNAL';
-    createdAt: any; // Firestore Timestamp
-    source?: string; // e.g., 'spark'
+    createdAt: any;
+    source?: string;
     expiresAt?: any;
 }

@@ -37,23 +37,21 @@ export async function POST(req: Request) {
         }
 
         const data = userDoc.data()!;
-        const identity = data.identity;
-        const bible = data.character_bible;
-
-        if (!identity) {
+        
+        if (!data.defining_words) {
             return Response.json({ error: 'No identity found — complete onboarding first' }, { status: 400 });
         }
 
-        const title = identity.title || 'A person of purpose';
-        const gender = identity.gender || 'person';
-        const birthdate = identity.birthdate || '';
-        // New structured physical fields with legacy fallback
-        const ethnicity = identity.ethnicity || '';
-        const skinTone = identity.skin_tone || '';
-        const hairColors: string[] = identity.hair_colors || [];
-        const hairTexture = identity.hair_texture || '';
-        const hairVolume = identity.hair_volume || '';
-        const eyeColor = identity.eye_color || '';
+        const title = data.defining_words?.join(', ') || 'A person of purpose';
+        const gender = data.gender || 'person';
+        const birthdate = data.birthdate || '';
+        // New structured physical fields
+        const ethnicity = data.ethnicity || '';
+        const skinTone = data.skin_tone || '';
+        const hairColors: string[] = data.hair_colors || [];
+        const hairTexture = data.hair_texture || '';
+        const hairVolume = data.hair_volume || '';
+        const eyeColor = data.eye_color || '';
 
         // Compute age from birth date
         const computedAge = computeAge(birthdate);
@@ -80,7 +78,7 @@ export async function POST(req: Request) {
         ].filter(Boolean).join(' ');
 
         // Extract Style & Presence from compiled bible (character decides styling)
-        const compiledSections = bible?.compiled_output?.ideal || [];
+        const compiledSections = data.bible?.sections || [];
         const styleEntry = compiledSections.find(
             (s: { heading: string; content: string }) =>
                 s.heading === 'Style & Presence' || s.heading === 'Style and Presence'
@@ -89,12 +87,8 @@ export async function POST(req: Request) {
             (s: { heading: string; content: string }) =>
                 s.heading === 'Wardrobe' || s.heading === 'The Closet'
         );
-        // Fallback to legacy path for older profiles
-        const compiledBible = bible?.compiled_bible || {};
-        const legacyStyle = compiledBible.lifestyle?.['Style & Presence']
-            || compiledBible.lifestyle?.['style_and_presence']
-            || '';
-        const rawStyle = styleEntry?.content || legacyStyle;
+        
+        const rawStyle = styleEntry?.content || '';
         const styleCues = typeof rawStyle === 'string'
             ? rawStyle.substring(0, 300)
             : typeof rawStyle === 'object'
@@ -125,9 +119,9 @@ export async function POST(req: Request) {
 
         // Mark avatar as generating
         await db.collection('users').doc(uid).set({
-            character_bible: {
-                avatar_status: 'generating',
-                avatar_last_attempt: Date.now(),
+            avatar: {
+                status: 'generating',
+                last_attempt: Date.now(),
             }
         }, { merge: true });
 
@@ -190,10 +184,10 @@ export async function POST(req: Request) {
         if (!buffer || !referenceBuffer) {
             try {
                 await db.collection('users').doc(uid).set({
-                    character_bible: {
-                        avatar_status: 'failed',
-                        avatar_attempt_count: FieldValue.increment(1),
-                        avatar_error: `Image failed after ${MAX_AVATAR_ATTEMPTS} attempts`,
+                    avatar: {
+                        status: 'failed',
+                        attempt_count: FieldValue.increment(1),
+                        error: `Image failed after ${MAX_AVATAR_ATTEMPTS} attempts`,
                     }
                 }, { merge: true });
             } catch (e) {
@@ -232,18 +226,13 @@ export async function POST(req: Request) {
         const avatarUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}?v=${Date.now()}`;
         console.log(`[Avatar] Saved: ${avatarUrl}`);
 
-        // Save to Firestore under character_bible.compiled_output.avatar_url
-        const currentBible = bible || {};
+        // Save to Firestore under avatar.url
         await db.collection('users').doc(uid).set({
-            character_bible: {
-                ...currentBible,
-                compiled_output: {
-                    ...(currentBible.compiled_output || {}),
-                    avatar_url: avatarUrl,
-                },
-                avatar_status: 'ready',
-                avatar_attempt_count: FieldValue.increment(1),
-                avatar_error: null,
+            avatar: {
+                url: avatarUrl,
+                status: 'ready',
+                attempt_count: FieldValue.increment(1),
+                error: null,
             },
         }, { merge: true });
 
@@ -254,10 +243,10 @@ export async function POST(req: Request) {
         if (uid) {
             try {
                 await db.collection('users').doc(uid).set({
-                    character_bible: {
-                        avatar_status: 'failed',
-                        avatar_attempt_count: FieldValue.increment(1),
-                        avatar_error: (error.message || 'Avatar generation failed').substring(0, 500),
+                    avatar: {
+                        status: 'failed',
+                        attempt_count: FieldValue.increment(1),
+                        error: (error.message || 'Avatar generation failed').substring(0, 500),
                     }
                 }, { merge: true });
             } catch (e) {

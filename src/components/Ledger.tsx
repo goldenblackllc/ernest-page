@@ -297,11 +297,11 @@ export function Ledger() {
 
     // Bible generation status — backed by Firestore, survives page reloads
     // IMPORTANT: These hooks must be ABOVE all early returns to satisfy Rules of Hooks
-    const bibleStatus = profile?.character_bible?.status;
-    const hasBuiltCharacter = !!profile?.character_bible?.compiled_output?.avatar_url
-        || (profile?.character_bible?.compiled_output?.ideal?.length ?? 0) > 0;
+    const bibleStatus = profile?.bible?.status;
+    const hasBuiltCharacter = !!profile?.avatar?.url
+        || (profile?.bible?.sections?.length ?? 0) > 0;
     // Treat "not built yet" the same as "compiling" to avoid premature empty-state CTA
-    const isAwaitingBuild = !bibleStatus && !hasBuiltCharacter && !!profile?.identity?.onboarding_complete;
+    const isAwaitingBuild = !bibleStatus && !hasBuiltCharacter && !!profile?.onboarding_complete;
     const showBibleCompiling = bibleStatus === 'compiling' || isAwaitingBuild;
     const showBibleReady = bibleStatus === 'ready';
 
@@ -311,7 +311,7 @@ export function Ledger() {
         try {
             const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
             await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
-                'character_bible.status': 'stable',
+                'bible.status': 'stable',
             });
         } catch (e) {
             console.error('Failed to dismiss bible ready card:', e);
@@ -323,7 +323,7 @@ export function Ledger() {
     useEffect(() => {
         if (!showBibleReady || !user) return;
 
-        const lc = profile?.character_bible?.last_commit;
+        const lc = profile?.bible?.last_commit;
         const commitTime = lc?.toMillis
             ? lc.toMillis()
             : lc?.seconds
@@ -347,7 +347,7 @@ export function Ledger() {
             }, fifteenMin - ageMs);
             return () => clearTimeout(timer);
         }
-    }, [showBibleReady, user, profile?.character_bible?.last_commit]);
+    }, [showBibleReady, user, profile?.bible?.last_commit]);
 
     // Skeleton loading
     if (loading) {
@@ -382,7 +382,7 @@ export function Ledger() {
         const sub = profile?.subscription;
         const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
         const hasActiveSub = (sub?.status === 'active' || sub?.status === 'past_due') && subEndDate && new Date(subEndDate) > new Date();
-        const isNewUser = !profile?.identity?.session_count || profile.identity.session_count < 1;
+        const isNewUser = !profile?.session_count || profile.session_count < 1;
 
         let badgeText = t('yourFirstSession');
         if (hasActiveSub) {
@@ -399,7 +399,7 @@ export function Ledger() {
                     {badgeText}
                 </p>
                 <h2 className="text-2xl font-black tracking-tight text-white mb-3">
-                    {profile?.identity?.title || t('idealSelfDefault')}
+                    {profile?.defining_words?.join(', ') || t('idealSelfDefault')}
                 </h2>
                 <p className="text-sm text-zinc-400 max-w-xs mx-auto leading-relaxed mb-8">
                     {t('firstSessionSub')}
@@ -426,8 +426,8 @@ export function Ledger() {
                     >
                         <div className="flex items-center gap-4 p-5">
                             <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-white/20 overflow-hidden shrink-0">
-                                {profile?.character_bible?.compiled_output?.avatar_url ? (
-                                    <img src={profile.character_bible.compiled_output.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                {profile?.avatar?.url ? (
+                                    <img src={profile.avatar.url} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
                                         <Loader2 className="w-5 h-5 text-zinc-100 animate-spin" />
@@ -436,7 +436,7 @@ export function Ledger() {
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-white mb-0.5">{t('bibleReadyTitle')}</p>
-                                <p className="text-base font-bold text-white">{profile?.identity?.title || t('idealSelfDefault')}</p>
+                                <p className="text-base font-bold text-white">{profile?.defining_words?.join(', ') || t('idealSelfDefault')}</p>
                                 <p className="text-xs text-zinc-500 mt-0.5">{t('bibleReadySub')}</p>
                             </div>
                         </div>
@@ -445,17 +445,17 @@ export function Ledger() {
 
 
                 {/* Voice Selection — always show until user has confirmed a voice */}
-                {user && !profile?.character_bible?.voice_confirmed && (
+                {user && !profile?.voice?.confirmed && (
                     <VoiceBrowser
-                        currentVoiceId={profile?.character_bible?.voice_id}
-                        currentVoiceName={profile?.character_bible?.voice_name}
+                        currentVoiceId={profile?.voice?.id}
+                        currentVoiceName={profile?.voice?.name}
                         startOpen
                         compact
                         onVoiceSelected={async () => {
                             try {
                                 const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
                                 await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
-                                    'character_bible.voice_confirmed': true,
+                                    'voice.confirmed': true,
                                 });
                             } catch (err) {
                                 console.error('Failed to confirm voice:', err);
@@ -473,7 +473,7 @@ export function Ledger() {
                             id: `digest-${profile.daily_digest.date}`,
                             type: 'checkin',
                             uid: user?.uid,
-                            author_avatar_url: profile.character_bible?.compiled_output?.avatar_url,
+                            author_avatar_url: profile?.avatar?.url,
                             title: profile.daily_digest.title,
                             short_question: profile.daily_digest.title,
                             short_answer: profile.daily_digest.full_content || profile.daily_digest.content,
@@ -552,8 +552,8 @@ export function Ledger() {
                 if (elapsed > CHECKIN_WINDOW_MS) return null; // Auto-hide after 7-day window
                 return (
                     <CheckInCard
-                        characterTitle={profile?.identity?.title || t('idealSelfDefault')}
-                        avatarUrl={profile?.character_bible?.compiled_output?.avatar_url}
+                        characterTitle={profile?.defining_words?.join(', ') || t('idealSelfDefault')}
+                        avatarUrl={profile?.avatar?.url}
                     />
                 );
             })()}
@@ -571,17 +571,17 @@ export function Ledger() {
 
 
             {/* Voice Selection — always show until user has confirmed a voice */}
-            {user && !profile?.character_bible?.voice_confirmed && (
+            {user && !profile?.voice?.confirmed && (
                 <VoiceBrowser
-                    currentVoiceId={profile?.character_bible?.voice_id}
-                    currentVoiceName={profile?.character_bible?.voice_name}
+                    currentVoiceId={profile?.voice?.id}
+                    currentVoiceName={profile?.voice?.name}
                     startOpen
                     compact
                     onVoiceSelected={async () => {
                         try {
                             const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
                             await firestoreUpdate(firestoreDoc(db, 'users', user.uid), {
-                                'character_bible.voice_confirmed': true,
+                                'voice.confirmed': true,
                             });
                         } catch (err) {
                             console.error('Failed to confirm voice:', err);
@@ -599,7 +599,7 @@ export function Ledger() {
                         id: `digest-${profile.daily_digest.date}`,
                         type: 'checkin',
                         uid: user?.uid,
-                        author_avatar_url: profile.character_bible?.compiled_output?.avatar_url,
+                        author_avatar_url: profile?.avatar?.url,
                         title: profile.daily_digest.title,
                         short_question: profile.daily_digest.title,
                         short_answer: profile.daily_digest.full_content || profile.daily_digest.content,

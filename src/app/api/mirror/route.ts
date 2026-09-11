@@ -46,8 +46,8 @@ export async function POST(req: Request) {
         const userData = userDoc.data();
 
         // ─── Access enforcement (subscription OR session credits OR active session OR free onboarding) ───
-        const isLegacyComplete = !!userData?.identity?.title;
-        const isOnboarding = !(userData?.identity?.onboarding_complete || isLegacyComplete);
+        const isLegacyComplete = !!userData?.defining_words?.length || !!userData?.identity?.title;
+        const isOnboarding = !(userData?.onboarding_complete || userData?.identity?.onboarding_complete || isLegacyComplete);
 
         if (!isOnboarding) {
             const sub = userData?.subscription;
@@ -67,12 +67,12 @@ export async function POST(req: Request) {
             }
         }
 
-        const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
-        const dossier = userData?.identity?.dossier || '';
+        const compiledBible = userData?.bible?.sections || userData?.character_bible?.compiled_output?.ideal || [];
+        const dossier = userData?.dossier || userData?.identity?.dossier || '';
         const sessionRecaps = userData?.session_recaps || [];
         const preferredLocale = userData?.preferred_locale || locale || 'en';
-        const characterAge = userData?.identity?.birthdate || '';
-        const characterGender = userData?.identity?.gender || '';
+        const characterAge = userData?.birthdate || userData?.identity?.birthdate || '';
+        const characterGender = userData?.gender || userData?.identity?.gender || '';
 
         // Tone directive removed — the Conversation Spine provides structural flow,
         // and the character's own bible voice should dictate tone, not a generic override.
@@ -93,16 +93,9 @@ export async function POST(req: Request) {
             languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in ENGLISH.";
         }
 
-        const unifiedProfile = userData?.unified_profile || {};
-        const userWardrobe = unifiedProfile.wardrobe && unifiedProfile.wardrobe.length > 0 ? unifiedProfile.wardrobe.join(', ') : 'None recorded yet';
-
         // ─── Build engagement context block (contract + dossier + recaps + unified profile) ───
         let engagementContract = `[ENGAGEMENT CONTRACT — WHY YOU ARE HERE]
 You have been engaged through Earnest Page, a platform for self-actualization. The person you are speaking with is a version of you that wants to become you, but currently is not there yet. You share the same people — every person in your Character Bible is someone they know personally. You share the same preferences and tastes. But your life circumstances may differ: your Character Bible may describe a life they have not yet built. Do not be confused when they reference people from your own world — you know these people. Do not be confused when their current reality does not match yours — they are still becoming you. You do not see them as broken, and you do not believe they have "problems" to fix. You see them as perfectly positioned in their exact present moment, and your role is to help them recognize their own perfection, see the gifts in their circumstances, and align with their most exciting options.
-
-[USER'S ACTUAL WARDROBE]
-While your Character Bible dictates your ideal style, the user currently owns the following items in real life. Use this to give them practical advice based on what they actually have in their closet:
-${userWardrobe}
 
 [DOSSIER — ABOUT THE PERSON YOU ARE SPEAKING TO]
 The following file contains facts about where this person currently is in their life. You share the same people and the same preferences — when they mention someone by name, you likely already know that person from your own Character Bible. However, their current life circumstances (career stage, finances, living situation, accomplishments) may not yet match yours. These facts describe THEIR current reality, not yours. Do not claim their specific accomplishments, projects, or creations as your own — but DO recognize shared people and shared tastes as familiar.

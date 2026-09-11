@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { CharacterIdentity } from '@/types/character';
+import { CharacterProfile } from '@/types/character';
 import { FileText, Calendar, Hash, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
 interface DossierViewProps {
-    identity: CharacterIdentity;
+    profile?: CharacterProfile | null;
+    identity?: CharacterProfile | null;
     isOpen: boolean;
     onClose: () => void;
 }
@@ -26,13 +27,14 @@ function toTitleCase(str: string): string {
         .join(' ');
 }
 
-export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
+export function DossierView({ profile, identity, isOpen, onClose }: DossierViewProps) {
+    const userProfile = profile || identity;
     const [openSections, setOpenSections] = useState<Set<number>>(new Set([0]));
     const t = useTranslations('dossier');
 
     if (!isOpen) return null;
 
-    const sections = parseDossier(identity.dossier);
+    const sections = parseDossier(userProfile?.dossier || '');
 
     const toggleSection = (index: number) => {
         setOpenSections(prev => {
@@ -70,12 +72,12 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
                     <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
                             <Hash className="w-3 h-3" />
-                            <span>{t('sessionsCount', { count: identity.session_count || 0 })}</span>
+                            <span>{t('sessionsCount', { count: userProfile?.session_count || 0 })}</span>
                         </div>
-                        {identity.dossier_updated_at && (
+                        {userProfile?.dossier_updated_at && (
                             <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
                                 <Calendar className="w-3 h-3" />
-                                <span>{t('lastUpdated', { date: formatDate(identity.dossier_updated_at) })}</span>
+                                <span>{t('lastUpdated', { date: formatDate(userProfile.dossier_updated_at) })}</span>
                             </div>
                         )}
                     </div>
@@ -83,7 +85,7 @@ export function DossierView({ identity, isOpen, onClose }: DossierViewProps) {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                    {identity.dossier ? (
+                    {userProfile?.dossier ? (
                         <div className="space-y-3">
                             {sections.map((section, i) => {
                                 const isSectionOpen = openSections.has(i);

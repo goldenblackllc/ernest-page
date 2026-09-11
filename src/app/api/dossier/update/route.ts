@@ -20,20 +20,19 @@ export async function POST(req: Request) {
             );
         }
 
-        // Fetch current identity
+        // Fetch current user data
         const userDoc = await db.collection("users").doc(uid).get();
         const userData = userDoc.data();
-        const identity = userData?.identity;
 
-        if (!identity) {
+        if (!userData) {
             return Response.json(
-                { error: "No identity found. User must complete onboarding first." },
+                { error: "No user found. User must complete onboarding first." },
                 { status: 400 }
             );
         }
 
-        const currentDossier = identity.dossier || "";
-        const sessionCount = (identity.session_count || 0) + 1;
+        const currentDossier = userData.dossier || "";
+        const sessionCount = (userData.session_count || 0) + 1;
 
         const prompt = `${buildDossierPrompt(currentDossier, sessionCount)}
 
@@ -50,12 +49,9 @@ ${conversation_summary}`;
         // Save updated dossier
         await db.collection("users").doc(uid).set(
             {
-                identity: {
-                    ...identity,
-                    dossier: updatedDossier,
-                    dossier_updated_at: FieldValue.serverTimestamp(),
-                    session_count: sessionCount,
-                },
+                dossier: updatedDossier,
+                dossier_updated_at: FieldValue.serverTimestamp(),
+                session_count: sessionCount,
             },
             { merge: true }
         );

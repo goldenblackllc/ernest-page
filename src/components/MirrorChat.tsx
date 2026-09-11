@@ -24,14 +24,13 @@ const MAX_SESSION_MS = MAX_SESSION_HOURS * 60 * 60 * 1000;
 interface MirrorChatProps {
     isOpen: boolean;
     onClose: () => void;
-    bible: CharacterBible | null;
-    identity?: CharacterIdentity | null;
+    profile: any | null;
     uid: string;
     initialContext?: string | null;
     defaultPostRouting?: 'private' | 'public' | 'burn';
 }
 
-export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
+export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
     const { user: authUser } = useAuth();
     const t = useTranslations();
     const locale = useLocale();
@@ -95,7 +94,7 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     const cachedBlobRef = useRef<Blob | null>(null);
     const cachedBlobMsgIdRef = useRef<string | null>(null);
     const ttsInFlightMsgIdRef = useRef<string | null>(null);
-    const voiceId = bible?.voice_id || null;
+    const voiceId = profile?.voice?.id || null;
 
     // Layer 2: Track whether a credit has been consumed for this session
     const [creditConsumed, setCreditConsumed] = useState(false);
@@ -485,10 +484,10 @@ export function MirrorChat({ isOpen, onClose, bible, identity, uid, initialConte
     };
 
     // Character name: user-chosen or AI-generated name is primary; archetype roles are subtitle
-    const characterName = bible?.character_name || identity?.character_name || null;
-    const characterArchetype = identity?.title || bible?.source_code?.archetype || null;
+    const characterName = profile?.name || null;
+    const characterArchetype = profile?.defining_words?.join(', ') || null;
     const displayName = characterName || characterArchetype || "Your Ideal Self";
-    const avatarUrl = bible?.compiled_output?.avatar_url;
+    const avatarUrl = profile?.avatar?.url;
 
     // ═══ TTS — Split text into chunks at sentence boundaries ═══
     const splitTextIntoChunks = (text: string, maxLen: number): string[] => {

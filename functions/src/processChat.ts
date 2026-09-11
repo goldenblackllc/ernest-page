@@ -84,11 +84,11 @@ export const processChat = onDocumentUpdated(
         }
         console.log(`[ProcessChat] User data loaded for ${uid}`);
 
-        const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
+        const compiledBible = userData?.bible?.sections || userData?.character_bible?.compiled_output?.ideal || [];
         const identity = userData?.identity;
-        const gender = identity?.gender || '';
-        const ethnicity = identity?.ethnicity || '';
-        const computedAge = computeAge(identity?.birthdate);
+        const gender = userData?.gender || identity?.gender || '';
+        const ethnicity = userData?.ethnicity || identity?.ethnicity || '';
+        const computedAge = computeAge(userData?.birthdate || identity?.birthdate);
         const demographicParts = [
             computedAge ? `approximately ${computedAge} years old` : '',
             ethnicity,
@@ -104,32 +104,25 @@ export const processChat = onDocumentUpdated(
         const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
         
         const currentProfile = userData?.unified_profile || {};
-        const sessionCount = (identity?.session_count || 0) + 1;
+        const sessionCount = (userData?.session_count || identity?.session_count || 0) + 1;
 
-        const extractionPrompt = buildExtractionPrompt(currentProfile, identity?.dossier || '', transcript);
+        // ─── DISABLED: Profile extraction (people, interests, wardrobe), wants consolidation, manifesto re-derivation, and bible recompile ───
+        // These systems were overwriting user-owned data in unified_profile (people, interests, etc.)
+        // and re-deriving identity.title/source_code.archetype from dream_rant every session.
+        // User data is now owned by the My Life drawers. Bible recompile is handled by the dirty-flag cron.
+        // KEPT: Dossier update (AI-maintained case notes about the user's life)
+        const extractionPrompt = buildExtractionPrompt(currentProfile, userData?.dossier || identity?.dossier || '', transcript);
         const sessionLogPrompt = buildSessionLogPrompt(transcript);
 
         try {
-            console.log(`[ProcessChat] Starting parallel AI calls (condensed + extraction + log)...`);
-            const [condensedResult, extractionResult, recapResult] = await Promise.all([
+            console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + log)...`);
+            const [condensedResult, dossierResult, recapResult] = await Promise.all([
                 generateCondensedTranscript(transcript),
-                // Profile extraction — Opus
+                // Dossier rewrite — Opus (only output we use from extraction)
                 generateWithFallback({
                     primaryModelId: OPUS_MODEL,
                     fallbackModelId: OPUS_FALLBACK,
                     schema: z.object({
-                        all_people: z.array(z.object({
-                            name: z.string(),
-                            relationship: z.string(),
-                            who: z.string().optional().describe('Everything about the person: age, school/job, personality, interests, hobbies, financial details, health, stable facts'),
-                            dynamic: z.string().optional().describe('The USER\'s relationship with this person: how they relate, emotional quality, shared history, financial ties, agreements'),
-                            birthday: z.string().optional(),
-                        })).describe('Complete reconciled list of ALL people/pets in the user\'s life — not just new ones'),
-                        all_interests: z.array(z.string()).describe('Complete reconciled interests list — everything the user enjoys, deduplicated and consolidated'),
-                        all_wardrobe: z.array(z.string()).describe('Complete reconciled wardrobe — items the USER owns/wears, not gifts for others'),
-                        rewritten_life_facts: z.string().optional().describe('Complete rewritten life_facts — location, occupation, employer, living situation, relationship status'),
-                        rewritten_routines: z.string().optional().describe('Complete rewritten routines — daily patterns, schedules, exercise habits, work schedule, rituals'),
-                        rewritten_milestones: z.string().optional().describe('Complete rewritten milestones — sobriety dates, career events, moves, life transitions'),
                         rewritten_dossier: z.string().optional().describe('Complete rewritten dossier with all seven sections (under 1500 words). Null if no changes.'),
                     }),
                     prompt: extractionPrompt,
@@ -146,174 +139,38 @@ export const processChat = onDocumentUpdated(
             ]);
 
             const condensed = condensedResult;
-            const extracted = (extractionResult.object as any);
+            const dossierExtracted = (dossierResult.object as any);
             const recap = (recapResult.object as any);
 
             let condensedMessages: Array<{ role: 'user' | 'ideal_self'; text: string }> | null = null;
             let condensedEditorialNote: string | null = null;
 
-            console.log(`[ProcessChat] AI calls complete. is_publishable=${condensed?.is_publishable} title="${condensed?.title}" msgs=${condensed?.messages?.length || 0}`);
+            console.log(`[ProcessChat] AI calls complete. is_publishable=${condensed?.is_publishable} title="${condensed?.title}" msgs=${condensed?.messages?.length || 0} dossier_changed=${!!dossierExtracted?.rewritten_dossier}`);
 
             if (condensed && condensed.is_publishable && condensed.messages) {
                 condensedMessages = condensed.messages;
                 condensedEditorialNote = condensed.editorial_note || null;
             }
 
-            const dossierPromise = (identity && extracted && recap) ? (async () => {
-                // Build the new session_recaps array (keep last 5)
+            // Write session metadata + dossier — do NOT touch unified_profile, wants_for_bible, or source_code
+            const dossierPromise = (userData && recap) ? (async () => {
                 const existingRecaps = userData?.session_recaps || [];
                 const newRecap = { date: new Date().toISOString().split('T')[0], recap: recap.session_recap };
                 const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
 
-                // Build updated unified profile from LLM-reconciled extraction
-                const profile = userData?.unified_profile || {
-                    people: [],
-                    interests: [],
-                    wardrobe: [],
-                    routines: '',
-                    life_facts: '',
-                    milestones: ''
-                };
-                
-                const updatedProfile = {
-                    people: extracted.all_people || profile.people || [],
-                    interests: extracted.all_interests || profile.interests || [],
-                    wardrobe: extracted.all_wardrobe || profile.wardrobe || [],
-                    routines: extracted.rewritten_routines || profile.routines || '',
-                    life_facts: extracted.rewritten_life_facts || profile.life_facts || '',
-                    milestones: extracted.rewritten_milestones || profile.milestones || '',
-                };
-
-                // ─── WANTS CONSOLIDATION (Separate Sonnet call via generateText) ───
-                // Uses generateText instead of generateObject because Sonnet 5's
-                // extended thinking breaks the AI SDK's structured output parsing.
-                const existingWants = userData?.wants_for_bible || [];
-                let consolidatedWants = existingWants;
-                try {
-                    console.warn(`[ProcessChat] WANTS_CONSOLIDATION_START: ${existingWants.length} existing wants`);
-                    const wantsResult = await generateTextWithFallback({
-                        primaryModelId: SONNET_MODEL,
-                        fallbackModelId: OPUS_FALLBACK,
-                        prompt: `You are a list manager. Your ONLY job is to produce a clean, consolidated wants list.
-
-EXISTING WANTS LIST:
-${existingWants.length > 0 ? existingWants.map((w: string, i: number) => `${i + 1}. ${w}`).join('\n') : 'Empty.'}
-
-SESSION TRANSCRIPT (extract any NEW material wants expressed):
-${transcript}
-
-RULES:
-1. MERGE existing wants with any NEW concrete wants from the session transcript.
-2. AGGRESSIVELY DEDUPLICATE — if multiple entries say similar things, keep ONE clear version.
-3. DROP GARBAGE — remove malformed entries, LLM artifacts, empty strings, single punctuation.
-4. ONLY KEEP MATERIAL/TANGIBLE WANTS — things the character wants to HAVE, OWN, or MEASURABLY ACHIEVE:
-   ✅ KEEP: Cars, houses, trips, fitness goals (specific weight/pace), renovations, relocations, purchases, financial structures, career milestones
-   ❌ DROP: Things ALREADY DONE ("bought X", "completed Y"), systems/habits that describe HOW they work (file organization, document naming), emotional states, mindset shifts, philosophical intentions, diet rules, relationship hopes, self-talk practices
-   TEST: "The character WANTS TO ___" — if it doesn't fit as a future desire, drop it.
-5. The final list should be CONCISE — quality over quantity. Cap at 30.
-
-IMPORTANT: Output ONLY a raw JSON array of strings. No markdown fences, no explanation, no wrapping. Just the array starting with [ and ending with ].`,
-                    });
-                    // Parse JSON from text response (handle markdown fences and thinking blocks)
-                    let text = (wantsResult.text || '').trim();
-                    if (text.startsWith('```')) {
-                        text = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-                    }
-                    const parsed = JSON.parse(text);
-                    if (Array.isArray(parsed)) {
-                        // Programmatic garbage filter as safety net
-                        consolidatedWants = parsed.filter((w: string) => {
-                            if (!w || typeof w !== 'string') return false;
-                            const trimmed = w.trim();
-                            if (trimmed.length < 3) return false;
-                            if (/^[:;,.\-!?]+$/.test(trimmed)) return false;
-                            if (/^(null|no|yes|none|n\/a|placeholder|undefined)$/i.test(trimmed)) return false;
-                            if (/rewritten_dossier|not provided/i.test(trimmed)) return false;
-                            return true;
-                        });
-                    }
-                    console.warn(`[ProcessChat] WANTS_CONSOLIDATION_DONE: ${existingWants.length} → ${consolidatedWants.length}`);
-                } catch (err: any) {
-                    console.error(`[ProcessChat] Wants consolidation failed (keeping existing):`, err.message);
-                }
-
                 await userDoc.ref.set({
-                    identity: {
-                        ...identity,
-                        ...(extracted.rewritten_dossier ? { dossier: extracted.rewritten_dossier } : {}),
-                        dossier_updated_at: FieldValue.serverTimestamp(),
-                        session_count: sessionCount,
-                    },
+                    ...(dossierExtracted?.rewritten_dossier ? { dossier: dossierExtracted.rewritten_dossier } : {}),
+                    dossier_updated_at: FieldValue.serverTimestamp(),
+                    session_count: sessionCount,
                     session_recaps: updatedRecaps,
-                    unified_profile: updatedProfile,
-                    wants_for_bible: consolidatedWants,
                 }, { merge: true });
-                console.log(`[ProcessChat] Profile + log updated for ${uid} (session ${sessionCount})`);
-
-                // Re-derive manifesto and archetype from dream_rant + consolidated wants
-                const dreamRant = identity?.dream_rant || '';
-                if (dreamRant && consolidatedWants.length > 0) {
-                    try {
-                        console.log(`[ProcessChat] Re-deriving manifesto from rant + ${consolidatedWants.length} wants...`);
-                        const wantsText = consolidatedWants.map((w: string) => `I want: ${w}`).join('\n');
-                        const manifestoResult = await generateWithFallback({
-                            primaryModelId: OPUS_MODEL,
-                            fallbackModelId: OPUS_FALLBACK,
-                            schema: z.object({
-                                title: z.string().describe('3 concrete visual roles, comma-separated (e.g. "Father, Husband, Gentleman")'),
-                                dream_self: z.string().describe('Present-tense identity paragraph, 3-5 sentences, AS IF they already are this person'),
-                            }),
-                            prompt: `A user has written a "dream rant" describing who they wish they were. They have also expressed additional desires over time. Combine both into a single identity.
-
-DREAM RANT:
-"${dreamRant}"
-
-ADDITIONAL DESIRES (treat these as part of the rant — they are things the user wants that should be incorporated as present-tense realities):
-${wantsText}
-
-Your job:
-1. TITLE: Extract 3 concrete, VISUAL roles. These should be nouns/roles that instantly paint a picture of who this person is — not abstract traits. Gendered when appropriate (e.g., "Father" not "Parent"). Format: "Role, Role, Role"
-2. DREAM SELF: Write a present-tense identity paragraph (3-5 sentences) describing this person AS IF THEY ALREADY ARE who they described AND already have everything they desire. Transform ALL wish-language into present-tense identity. The output must read as a confident, realized identity — never aspirational.`,
-                        });
-
-                        const manifesto = (manifestoResult.object as any);
-                        if (manifesto?.title && manifesto?.dream_self) {
-                            await userDoc.ref.set({
-                                identity: {
-                                    title: manifesto.title,
-                                    dream_self: manifesto.dream_self,
-                                },
-                                character_bible: {
-                                    source_code: {
-                                        archetype: manifesto.title,
-                                        manifesto: manifesto.dream_self,
-                                    },
-                                },
-                            }, { merge: true });
-                            console.log(`[ProcessChat] Manifesto re-derived: "${manifesto.title}"`);
-                        }
-                    } catch (err: any) {
-                        console.error(`[ProcessChat] Manifesto re-derivation failed (non-fatal):`, err.message);
-                    }
-                }
-
-                // Trigger bible recompile with updated profile — direct call, no HTTP
-                try {
-                    const compileResult = await compileCharacterBibleForUser(uid);
-                    if (compileResult.success) {
-                        console.log(`[ProcessChat] Bible recompile succeeded for ${uid}`);
-                    } else {
-                        console.error(`[ProcessChat] Bible recompile failed for ${uid}: ${compileResult.error}`);
-                    }
-                } catch (err: any) {
-                    console.error(`[ProcessChat] Bible recompile error for ${uid}:`, err.message);
-                }
+                console.log(`[ProcessChat] Session metadata + dossier updated for ${uid} (session ${sessionCount})`);
             })() : Promise.resolve();
 
             if (condensed.is_publishable && condensedMessages && condensedMessages.length > 0) {
                 console.log(`[ProcessChat] Chat IS publishable — creating post and running pipeline...`);
                 const postDocRef = db.collection('posts').doc();
-                const characterVoiceId = userData?.character_bible?.voice_id;
+                const characterVoiceId = userData?.voice?.id || userData?.character_bible?.voice_id;
 
                 const [pipelineResult] = await Promise.all([
                     processPostContent({
@@ -373,7 +230,7 @@ Your job:
                     authorId: uid,
                     authorHash,
                     region: userData?.region || null,
-                    author: userData?.identity?.title || userData?.character_bible?.source_code?.archetype || "Anonymous",
+                    author: userData?.defining_words?.join(', ') || userData?.identity?.title || userData?.character_bible?.source_code?.archetype || "Anonymous",
                     title: condensed.title || null,
                     type: 'checkin',
                     public_post: {
@@ -433,7 +290,7 @@ Your job:
                             service: 'gmail',
                             auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
                         });
-                        const postAuthor = userData?.identity?.title || userData?.character_bible?.source_code?.archetype || 'Anonymous';
+                        const postAuthor = userData?.defining_words?.join(', ') || userData?.identity?.title || userData?.character_bible?.source_code?.archetype || 'Anonymous';
                         const postVisibility = visibility || 'private';
                         const postTitle = condensed.title || null;
                         const postThumbnail = thumbnailUrl || null;

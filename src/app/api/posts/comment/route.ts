@@ -33,8 +33,8 @@ export async function POST(req: Request) {
         const userData = userDoc.data() || {};
         const identity = userData.identity;
         const bible = userData.character_bible;
-        const authorTitle = identity?.title || bible?.source_code?.archetype || 'Someone';
-        const authorAvatarUrl = bible?.compiled_output?.avatar_url || null;
+        const authorTitle = userData.defining_words?.join(', ') || identity?.title || bible?.source_code?.archetype || 'Someone';
+        const authorAvatarUrl = userData.avatar?.url || bible?.compiled_output?.avatar_url || null;
 
         // 3. Save the user's personal comment (visible only to them)
         const personalComment = {
@@ -79,13 +79,14 @@ async function generateAIComment(commenterUid: string, origin: string) {
     const bible = userData.character_bible;
     const identity = userData.identity;
 
-    if (!bible && !identity) return;
+    if (!bible && !identity && !userData.defining_words) return;
 
-    const characterTitle = identity?.title || bible?.source_code?.archetype || 'A thoughtful person';
-    const avatarUrl = bible?.compiled_output?.avatar_url || null;
+    const characterTitle = userData.defining_words?.join(', ') || identity?.title || bible?.source_code?.archetype || 'A thoughtful person';
+    const avatarUrl = userData.avatar?.url || bible?.compiled_output?.avatar_url || null;
 
     // Build a character voice excerpt from the bible
-    const bibleExcerpt = bible?.compiled_output?.ideal
+    const sections = userData.bible?.sections || bible?.compiled_output?.ideal || [];
+    const bibleExcerpt = sections
         ?.slice(0, 2)
         .map((s: any) => s.content?.substring(0, 200))
         .join('\n') || identity?.dream_self || '';

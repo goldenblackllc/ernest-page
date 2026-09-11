@@ -19,16 +19,16 @@ export async function GET(req: Request) {
 
         // Query users with failed or pending avatar status
         const failedSnap = await db.collection('users')
-            .where('character_bible.avatar_status', 'in', ['failed', 'pending'])
+            .where('avatar.status', 'in', ['failed', 'pending'])
             .get();
 
         const eligibleUsers: FirebaseFirestore.QueryDocumentSnapshot[] = [];
 
         for (const doc of failedSnap.docs) {
             const data = doc.data();
-            const bible = data.character_bible || {};
-            const lastAttempt = bible.avatar_last_attempt;
-            const attemptCount = bible.avatar_attempt_count || 0;
+            const avatar = data.avatar || {};
+            const lastAttempt = avatar.last_attempt;
+            const attemptCount = avatar.attempt_count || 0;
 
             // Skip if max retries reached
             if (attemptCount >= 5) {
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
             }
 
             // Skip if user hasn't completed onboarding
-            if (!data.identity) {
+            if (!data.onboarding_complete && !data.defining_words) {
                 summary.skipped++;
                 continue;
             }

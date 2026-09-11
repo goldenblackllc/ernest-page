@@ -3,18 +3,26 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Home, User as UserIcon, BookOpen, Heart } from "lucide-react";
+import { MessageCircle, Home, User as UserIcon } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
-import { subscribeToCharacterProfile } from "@/lib/firebase/character";
+import { subscribeToCharacterProfile, updateWants, updateLoves, updatePeople, updateDream } from "@/lib/firebase/character";
 import { getMostRecentActiveChat } from "@/lib/firebase/chat";
-import { CharacterBible, CharacterIdentity } from "@/types/character";
+import { Bible, CharacterProfile, WantItem, ProfilePerson } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+
+// My Life components
+import { PillBar, MyLifeSection } from "./mylife/PillBar";
+import { MyLifeDrawer } from "./mylife/MyLifeDrawer";
+import { WantsEditor } from "./mylife/WantsEditor";
+import { LovesEditor } from "./mylife/LovesEditor";
+import { PeopleEditor } from "./mylife/PeopleEditor";
+import { DreamEditor } from "./mylife/DreamEditor";
 
 const MAX_SESSIONS_PER_DAY = 5;
 
@@ -37,9 +45,9 @@ export function TriagePanel() {
         setIsMirrorOpen(true);
     }, [pauseAll]);
 
-    // Data for Mirror Chat
-    const [bible, setBible] = useState<CharacterBible | null>(null);
-    const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
+    // Data for Mirror Chat & My Life drawers
+    const [bible, setBible] = useState<Bible | null>(null);
+    const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [defaultPostRouting, setDefaultPostRouting] = useState<'private' | 'public' | 'burn'>('private');
 
     // Onboarding state (triggered when FAB tapped without character bible)
@@ -49,16 +57,19 @@ export function TriagePanel() {
     // Session state
     const [sessionsToday, setSessionsToday] = useState<number>(0);
 
+    // My Life drawer state
+    const [activeSection, setActiveSection] = useState<MyLifeSection | null>(null);
+
     useEffect(() => {
         if (!user) return;
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
-            setBible(data.character_bible);
-            setIdentity(data.identity || null);
+            setBible(data.bible || null);
+            setProfile(data || null);
             setDefaultPostRouting(data.default_post_routing || 'private');
 
             // Check if user needs onboarding (no completed onboarding)
-            const isLegacyComplete = !!data.identity?.title;
-            const hasCompletedOnboarding = data.identity?.onboarding_complete || isLegacyComplete;
+            const isLegacyComplete = !!data.defining_words;
+            const hasCompletedOnboarding = data.onboarding_complete || isLegacyComplete;
             setNeedsOnboarding(!hasCompletedOnboarding);
 
             // Daily session count
@@ -120,7 +131,7 @@ export function TriagePanel() {
         return () => window.removeEventListener('open-mirror-checkin', handleCheckin);
     }, [sessionsToday]);
 
-    const isBibleReady = bible != null && (bible.compiled_output?.ideal?.length ?? 0) > 0;
+    const isBibleReady = bible != null && (bible.sections?.length ?? 0) > 0;
 
 
 
@@ -130,23 +141,18 @@ export function TriagePanel() {
         // Save identity fields + mark onboarding complete + set bible status to 'compiling'
         // immediately so the Ledger never flashes a 'failed' state during the API gap
         await setDoc(doc(db, 'users', user.uid), {
-            identity: {
-                dream_rant: data.rant.trim(),
-                gender: data.gender.trim(),
-                birthdate: data.birthdate.trim(),
-                ethnicity: data.ethnicity.trim(),
-                skin_tone: data.skin_tone.trim(),
-                hair_colors: data.hair_colors,
-                hair_texture: data.hair_texture.trim(),
-                hair_volume: data.hair_volume.trim(),
-                eye_color: data.eye_color.trim(),
-                height: data.height.trim(),
-                important_people: data.people.trim(),
-                things_i_enjoy: data.enjoyments.trim(),
-                character_name: data.character_name.trim(),
-                onboarding_complete: true,
-            },
-            character_bible: { status: 'compiling', last_updated: Date.now() },
+            gender: data.gender.trim(),
+            birthdate: data.birthdate.trim(),
+            ethnicity: data.ethnicity.trim(),
+            skin_tone: data.skin_tone.trim(),
+            hair_colors: data.hair_colors,
+            hair_texture: data.hair_texture.trim(),
+            hair_volume: data.hair_volume.trim(),
+            eye_color: data.eye_color.trim(),
+            height: data.height.trim(),
+            name: data.character_name.trim(),
+            onboarding_complete: true,
+            bible: { status: 'compiling', last_updated: Date.now() },
         }, { merge: true });
 
         // Fire off the character build in the background
@@ -234,56 +240,128 @@ export function TriagePanel() {
         }
     };
 
+    // ─── My Life Drawer Save Handlers ─────────────────────────────────────────
+
+    const handleSaveWants = useCallback((wants: WantItem[]) => {
+        if (!user) return;
+        updateWants(user.uid, wants);
+    }, [user]);
+
+    const handleSaveLoves = useCallback((interests: string[]) => {
+        if (!user) return;
+        updateLoves(user.uid, interests);
+    }, [user]);
+
+    const handleSavePeople = useCallback((people: ProfilePerson[]) => {
+        if (!user) return;
+        updatePeople(user.uid, people);
+    }, [user]);
+
+    const handleSaveDream = useCallback((updates: { defining_words?: string[]; dream_living?: string; dream_financial?: string }) => {
+        if (!user) return;
+        updateDream(user.uid, updates);
+    }, [user]);
+
+    // Close drawer when mirror chat opens
+    useEffect(() => {
+        if (isMirrorOpen) setActiveSection(null);
+    }, [isMirrorOpen]);
+
+    // Render the active drawer's editor content
+    const renderDrawerContent = () => {
+        switch (activeSection) {
+            case 'wants':
+                return (
+                    <WantsEditor
+                        wants={profile?.wants || []}
+                        onSave={handleSaveWants}
+                    />
+                );
+            case 'loves':
+                return (
+                    <LovesEditor
+                        interests={profile?.interests || []}
+                        onSave={handleSaveLoves}
+                    />
+                );
+            case 'people':
+                return (
+                    <PeopleEditor
+                        people={profile?.people || []}
+                        onSave={handleSavePeople}
+                    />
+                );
+            case 'dream':
+                return (
+                    <DreamEditor
+                        key="dream"
+                        definingWords={profile?.defining_words || []}
+                        dreamLiving={profile?.dream_living || ''}
+                        dreamFinancial={profile?.dream_financial || ''}
+                        onSave={handleSaveDream}
+                    />
+                );
+            default:
+                return null;
+        }
+    };
+
 
     return (
         <>
-            {/* BOTTOM NAV BAR */}
+            {/* My Life Drawer Overlay */}
+            <MyLifeDrawer
+                isOpen={activeSection !== null}
+                onClose={() => setActiveSection(null)}
+            >
+                {renderDrawerContent()}
+            </MyLifeDrawer>
+
+            {/* BOTTOM NAV AREA — Pill Bar + Nav Bar */}
             <div className="fixed bottom-0 left-0 w-full z-40 bg-black/90 backdrop-blur-md border-t border-zinc-800 pb-safe">
-                <div className="max-w-md mx-auto px-8 h-16 flex items-center justify-between relative">
-                    <Link href="/" className={cn("p-2 transition-colors", pathname === "/" ? "text-white" : "text-zinc-500 hover:text-white")}>
+                {/* Pill Bar */}
+                <PillBar
+                    activeSection={activeSection}
+                    onSelect={setActiveSection}
+                />
+
+                {/* Nav Bar — Home / FAB / Profile */}
+                <div className="max-w-xs mx-auto px-4 h-14 flex items-center justify-between relative">
+                    <Link href="/" className={cn("p-2 transition-colors flex flex-col items-center gap-0.5", pathname === "/" ? "text-white" : "text-zinc-500 hover:text-white")}>
                         <Home className="w-6 h-6" />
+                        <span className="text-[10px] font-medium">Home</span>
                     </Link>
-                    <Link href="/my-posts" className={cn("p-2 transition-colors", pathname === "/my-posts" ? "text-white" : "text-zinc-500 hover:text-white")}>
-                        <BookOpen className="w-6 h-6" />
-                    </Link>
-                    {/* Spacer for center FAB */}
-                    <div className="w-16" />
-                    <Link href="/saved" className={cn("p-2 transition-colors", pathname === "/saved" ? "text-white" : "text-zinc-500 hover:text-white")}>
-                        <Heart className="w-6 h-6" />
-                    </Link>
-                    <Link href="/profile" className={cn("p-2 transition-colors", pathname === "/profile" ? "text-white" : "text-zinc-500 hover:text-white")}>
+
+                    {/* FAB — centered in nav bar */}
+                    <button
+                        onClick={attemptStartSession}
+                        disabled={!isBibleReady && !needsOnboarding}
+                        className={cn(
+                            "w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black -mt-6",
+                            (!isBibleReady && !needsOnboarding)
+                                ? "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
+                                : "bg-white text-black hover:scale-110 active:scale-95"
+                        )}
+                        title={
+                            needsOnboarding
+                                ? t('triagePanel.startOnboarding')
+                                : !isBibleReady
+                                    ? t('triagePanel.buildingCharacter')
+                                    : t('triagePanel.openChat')
+                        }
+                    >
+                        <MessageCircle className={cn("w-7 h-7", !isBibleReady && !needsOnboarding && "animate-pulse")} />
+                    </button>
+
+                    <Link href="/profile" className={cn("p-2 transition-colors flex flex-col items-center gap-0.5", pathname === "/profile" ? "text-white" : "text-zinc-500 hover:text-white")}>
                         <UserIcon className="w-6 h-6" />
+                        <span className="text-[10px] font-medium">Profile</span>
                     </Link>
                 </div>
-            </div>
-
-            {/* FAB — Opens Mirror Chat, Purchase Modal, or Onboarding */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
-                <button
-                    onClick={attemptStartSession}
-                    disabled={!isBibleReady && !needsOnboarding}
-                    className={cn(
-                        "w-16 h-16 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black",
-                        (!isBibleReady && !needsOnboarding)
-                            ? "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
-                            : "bg-white text-black hover:scale-110 active:scale-95"
-                    )}
-                    title={
-                        needsOnboarding
-                            ? t('triagePanel.startOnboarding')
-                            : !isBibleReady
-                                ? t('triagePanel.buildingCharacter')
-                                : t('triagePanel.openChat')
-                    }
-                >
-                    <MessageCircle className={cn("w-7 h-7", !isBibleReady && !needsOnboarding && "animate-pulse")} />
-                </button>
-
-
 
                 {/* Daily cap toast */}
                 {isDailyCapHit && (
-                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-zinc-900 border border-amber-900/30 text-amber-400 text-xs font-semibold px-4 py-2.5 rounded-xl whitespace-nowrap shadow-lg animate-in fade-in slide-in-from-bottom-2">
+                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-amber-900/30 text-amber-400 text-xs font-semibold px-4 py-2.5 rounded-xl whitespace-nowrap shadow-lg animate-in fade-in slide-in-from-bottom-2">
                         {t('triagePanel.dailyLimit')}
                     </div>
                 )}
@@ -297,8 +375,7 @@ export function TriagePanel() {
                     setIsMirrorOpen(false);
                     setInitialContext(null);
                 }}
-                bible={bible}
-                identity={identity}
+                profile={profile}
                 uid={user?.uid || ""}
                 initialContext={initialContext}
                 defaultPostRouting={defaultPostRouting}
@@ -321,20 +398,20 @@ export function TriagePanel() {
                     {/* Form — fills remaining screen height */}
                     <div className="flex-1 flex flex-col min-h-0 px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
                         <IdentityForm
-                            key={identity ? 'loaded' : 'empty'}
-                            initialValues={identity ? {
-                                character_name: identity.character_name || '',
-                                gender: identity.gender || '',
-                                birthdate: identity.birthdate || '',
-                                ethnicity: identity.ethnicity || '',
-                                skin_tone: identity.skin_tone || '',
-                                hair_colors: identity.hair_colors || [],
-                                hair_texture: identity.hair_texture || '',
-                                hair_volume: identity.hair_volume || '',
-                                eye_color: identity.eye_color || '',
-                                height: identity.height || '',
-                                rant: identity.dream_rant || '',
-                                enjoyments: identity.things_i_enjoy || '',
+                            key={profile ? 'loaded' : 'empty'}
+                            initialValues={profile ? {
+                                character_name: profile.name || '',
+                                gender: profile.gender || '',
+                                birthdate: profile.birthdate || '',
+                                ethnicity: profile.ethnicity || '',
+                                skin_tone: profile.skin_tone || '',
+                                hair_colors: profile.hair_colors || [],
+                                hair_texture: profile.hair_texture || '',
+                                hair_volume: profile.hair_volume || '',
+                                eye_color: profile.eye_color || '',
+                                height: profile.height || '',
+                                rant: '',
+                                enjoyments: '',
                             } : undefined}
                             onSubmit={handleOnboardingSubmit}
                             submitLabel={t('onboarding.submitLabel')}
