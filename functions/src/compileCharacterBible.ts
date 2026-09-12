@@ -62,11 +62,8 @@ This is how the character lives. The home, the neighborhood, the space. Write as
 Dream Financial Situation: {DREAM_FINANCIAL}
 This is the character's financial reality. Write as if this is already achieved and natural.
 
-What They Want (Active Pursuits): {WANTS_ACTIVE}
-These are things the character is actively working toward or acquiring. Weave these into the character's daily life, decisions, and near-term plans as active goals.
-
-What They Already Have (Achieved): {WANTS_ACHIEVED}
-These are things the character has already accomplished or acquired. Reference these as settled, proud facts of their life.
+What They Want: {WANTS}
+These are things the character already IS and already HAS. Every want is realized. "Be fit and strong" means the character IS fit and strong. "Be a rapper" means the character IS a rapper. Write as present-tense fact, not aspiration.
 
 Physical Traits: {PHYSICAL_TRAITS}
 Use these to inform the character's physicality, style choices, and presence. Do not repeat them verbatim — weave them naturally.
@@ -100,12 +97,10 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
         ? definingWords.join(', ')
         : 'Not specified';
 
-    // Wants → split into active (unchecked) and achieved (checked)
+    // Wants → all treated as realized (the character already IS and HAS everything)
     const wants = data?.wants || [];
-    const activeWants = wants.filter((w: any) => !w.completed).map((w: any) => w.text);
-    const achievedWants = wants.filter((w: any) => w.completed).map((w: any) => w.text);
-    const wantsActiveString = activeWants.length > 0 ? activeWants.join(', ') : 'None specified';
-    const wantsAchievedString = achievedWants.length > 0 ? achievedWants.join(', ') : 'None yet';
+    const allWants = wants.map((w: any) => w.text);
+    const wantsString = allWants.length > 0 ? allWants.join(', ') : 'None specified';
 
     // Dream living & financial
     const dreamLiving = data?.dream_living || 'Not specified';
@@ -140,14 +135,13 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
     if (data.ethnicity) physicalTraits.push(`ethnicity: ${data.ethnicity}`);
     const physicalTraitsString = physicalTraits.length > 0 ? physicalTraits.join(', ') : 'Not specified';
 
-    console.log(`[BibleCompile] Inputs for ${uid}: defining_words=${definingWordsString.substring(0, 50)}, wants_active=${activeWants.length}, wants_achieved=${achievedWants.length}, people=${unifiedPeople.length}, interests=${unifiedInterests.length}`);
+    console.log(`[BibleCompile] Inputs for ${uid}: defining_words=${definingWordsString.substring(0, 50)}, wants=${allWants.length}, people=${unifiedPeople.length}, interests=${unifiedInterests.length}`);
 
     const idealPrompt = PROMPT_IDEAL_BIBLE
         .replace('{DEFINING_WORDS}', definingWordsString)
         .replace('{DREAM_LIVING}', dreamLiving)
         .replace('{DREAM_FINANCIAL}', dreamFinancial)
-        .replace('{WANTS_ACTIVE}', wantsActiveString)
-        .replace('{WANTS_ACHIEVED}', wantsAchievedString)
+        .replace('{WANTS}', wantsString)
         .replace('{PHYSICAL_TRAITS}', physicalTraitsString)
         .replace('{IMPORTANT_PEOPLE}', peopleString)
         .replace('{THINGS_I_LOVE}', interestsString)
