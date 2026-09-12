@@ -334,7 +334,7 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                     {isSubmitting ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                        "Create My Character ✦"
+                        "Build My Ideal Self ✦"
                     )}
                 </button>
             </form>
