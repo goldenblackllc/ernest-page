@@ -413,7 +413,29 @@ export function TriagePanel() {
                     {/* Form — fills remaining screen height */}
                     <div className="flex-1 flex flex-col min-h-0 px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
                         <OnboardingForm
+                            key={profile ? 'loaded' : 'empty'}
                             onSubmit={handleOnboardingSubmit}
+                            initialValues={profile ? {
+                                name: profile.name || '',
+                                defining_words: profile.defining_words || [],
+                                wants: (profile.wants || []).map((w: any) => w.text || ''),
+                                interests: profile.interests || [],
+                                people: (profile.people || []).map((p: any) => ({
+                                    name: p.name || '',
+                                    relationship: p.relationship || '',
+                                    about: p.who || '',
+                                })),
+                                dream_living: profile.dream_living || '',
+                                dream_financial: profile.dream_financial || '',
+                                gender: profile.gender || '',
+                                birthdate: profile.birthdate || '',
+                                ethnicity: profile.ethnicity || '',
+                                skin_tone: profile.skin_tone || '',
+                                hair_colors: profile.hair_colors || [],
+                                hair_texture: profile.hair_texture || '',
+                                eye_color: profile.eye_color || '',
+                                height: profile.height || '',
+                            } : undefined}
                         />
                     </div>
                 </div>

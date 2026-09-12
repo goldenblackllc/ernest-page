@@ -25,30 +25,42 @@ export interface OnboardingFormData {
 export interface OnboardingFormProps {
     onSubmit: (data: OnboardingFormData) => void;
     isSubmitting?: boolean;
+    initialValues?: Partial<OnboardingFormData>;
 }
 
 const inputClass = "w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-colors text-sm";
 const labelClass = "text-xs font-medium text-zinc-400 mb-1 block";
 const sectionHeaderClass = "text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2";
 
-export function OnboardingForm({ onSubmit, isSubmitting = false }: OnboardingFormProps) {
-    const [definingWords, setDefiningWords] = useState<string[]>(['', '', '']);
-    const [wants, setWants] = useState<string[]>(['', '', '']);
-    const [loves, setLoves] = useState<string[]>(['', '', '']);
-    const [people, setPeople] = useState(Array(5).fill({ name: '', relationship: '', about: '' }));
+function padArray(arr: string[] | undefined, len: number): string[] {
+    const base = arr || [];
+    return [...base, ...Array(Math.max(0, len - base.length)).fill('')].slice(0, len);
+}
+
+function padPeople(arr: { name: string; relationship: string; about: string }[] | undefined, len: number) {
+    const base = (arr || []).map(p => ({ name: p.name || '', relationship: p.relationship || '', about: p.about || '' }));
+    return [...base, ...Array(Math.max(0, len - base.length)).fill(null).map(() => ({ name: '', relationship: '', about: '' }))].slice(0, len);
+}
+
+export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }: OnboardingFormProps) {
+    const iv = initialValues || {};
+    const [definingWords, setDefiningWords] = useState<string[]>(padArray(iv.defining_words, 3));
+    const [wants, setWants] = useState<string[]>(padArray(iv.wants, 3));
+    const [loves, setLoves] = useState<string[]>(padArray(iv.interests, 3));
+    const [people, setPeople] = useState(padPeople(iv.people, 5));
     
-    const [dreamLiving, setDreamLiving] = useState('');
-    const [dreamFinancial, setDreamFinancial] = useState('');
+    const [dreamLiving, setDreamLiving] = useState(iv.dream_living || '');
+    const [dreamFinancial, setDreamFinancial] = useState(iv.dream_financial || '');
     
-    const [name, setName] = useState('');
-    const [gender, setGender] = useState('');
-    const [birthdate, setBirthdate] = useState('');
-    const [ethnicity, setEthnicity] = useState('');
-    const [skinTone, setSkinTone] = useState('');
-    const [hairColors, setHairColors] = useState<string[]>([]);
-    const [hairTexture, setHairTexture] = useState('');
-    const [eyeColor, setEyeColor] = useState('');
-    const [height, setHeight] = useState('');
+    const [name, setName] = useState(iv.name || '');
+    const [gender, setGender] = useState(iv.gender || '');
+    const [birthdate, setBirthdate] = useState(iv.birthdate || '');
+    const [ethnicity, setEthnicity] = useState(iv.ethnicity || '');
+    const [skinTone, setSkinTone] = useState(iv.skin_tone || '');
+    const [hairColors, setHairColors] = useState<string[]>(iv.hair_colors || []);
+    const [hairTexture, setHairTexture] = useState(iv.hair_texture || '');
+    const [eyeColor, setEyeColor] = useState(iv.eye_color || '');
+    const [height, setHeight] = useState(iv.height || '');
 
     const updateArray = (setter: React.Dispatch<React.SetStateAction<string[]>>, index: number, value: string) => {
         setter(prev => {
@@ -104,7 +116,7 @@ export function OnboardingForm({ onSubmit, isSubmitting = false }: OnboardingFor
                 
                 {/* 1. Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Build Your Character</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Your Ideal Self</h1>
                     <p className="text-zinc-400 text-sm">Tell us about who you are and what you want.</p>
                 </div>
 
