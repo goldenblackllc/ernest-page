@@ -165,7 +165,7 @@ export async function GET(req: Request) {
                 authorDocs.forEach((doc) => {
                     if (doc.exists) {
                         const data = doc.data();
-                        const avatarUrl = data?.character_bible?.compiled_output?.avatar_url;
+                        const avatarUrl = data?.avatar?.url;
                         if (avatarUrl) {
                             avatarMap[doc.id] = avatarUrl;
                         }

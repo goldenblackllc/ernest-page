@@ -20,7 +20,7 @@ export async function GET() {
         }
 
         const userData = userDoc.data();
-        const avatarUrl = userData?.character_bible?.compiled_output?.avatar_url || null;
+        const avatarUrl = userData?.avatar?.url || null;
         const characterName = userData?.character_bible?.character_name || userData?.identity?.character_name || 'Earnest';
 
         return Response.json({ avatarUrl, characterName });
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
         const userData = userDoc.data();
         const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
-        const avatarUrl = userData?.character_bible?.compiled_output?.avatar_url;
+        const avatarUrl = userData?.avatar?.url;
         const characterName = userData?.character_bible?.character_name || userData?.identity?.character_name || 'Earnest';
 
         // Determine language instruction for the AI

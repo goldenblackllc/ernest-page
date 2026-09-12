@@ -47,7 +47,7 @@ export async function GET(
                 const authorDoc = await db.collection("users").doc(data.authorId || data.uid).get();
                 if (authorDoc.exists) {
                     const authorData = authorDoc.data();
-                    post.author_avatar_url = authorData?.character_bible?.compiled_output?.avatar_url || null;
+                    post.author_avatar_url = authorData?.avatar?.url || null;
                 }
             } catch { /* silent */ }
         }

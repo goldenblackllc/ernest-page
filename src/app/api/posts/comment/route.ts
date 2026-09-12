@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         const identity = userData.identity;
         const bible = userData.character_bible;
         const authorTitle = userData.defining_words?.join(', ') || identity?.title || bible?.source_code?.archetype || 'Someone';
-        const authorAvatarUrl = userData.avatar?.url || bible?.compiled_output?.avatar_url || null;
+        const authorAvatarUrl = userData.avatar?.url || null;
 
         // 3. Save the user's personal comment (visible only to them)
         const personalComment = {
@@ -82,7 +82,7 @@ async function generateAIComment(commenterUid: string, origin: string) {
     if (!bible && !identity && !userData.defining_words) return;
 
     const characterTitle = userData.defining_words?.join(', ') || identity?.title || bible?.source_code?.archetype || 'A thoughtful person';
-    const avatarUrl = userData.avatar?.url || bible?.compiled_output?.avatar_url || null;
+    const avatarUrl = userData.avatar?.url || null;
 
     // Build a character voice excerpt from the bible
     const sections = userData.bible?.sections || bible?.compiled_output?.ideal || [];

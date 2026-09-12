@@ -11,7 +11,7 @@ import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
 import { useEffect } from 'react';
 import { detectCountryFromTimezone } from '@/lib/constants/countryCodes';
-import { GuestMirrorChat } from '@/components/GuestMirrorChat';
+
 import { PublicFeed } from '@/components/PublicFeed';
 import { parsePhoneNumber, type CountryCode as PhoneCountryCode } from 'libphonenumber-js';
 
@@ -194,7 +194,7 @@ export function LandingPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        Something bothering you?
+                        Talk to Your Ideal Self
                     </motion.h1>
 
                     <motion.p
@@ -210,16 +210,21 @@ export function LandingPage() {
             </section>
 
             {/* ═══════════════════════════════════════════════════════════
-                DEMO CHAT — Inline guest chat session
+                CTA — Create Your Ideal Self button
                ═══════════════════════════════════════════════════════════ */}
             <section className="px-4 sm:px-6 pb-8">
                 <motion.div
-                    className="max-w-2xl mx-auto"
+                    className="max-w-2xl mx-auto flex justify-center"
                     variants={sectionFade}
                     initial="hidden"
                     animate="visible"
                 >
-                    <GuestMirrorChat />
+                    <button
+                        onClick={openAuthModal}
+                        className="rounded-full bg-white text-black px-8 py-4 text-base sm:text-lg font-bold tracking-tight hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
+                    >
+                        Create Your Ideal Self
+                    </button>
                 </motion.div>
             </section>
 
