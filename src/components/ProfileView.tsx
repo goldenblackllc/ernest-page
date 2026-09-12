@@ -139,7 +139,7 @@ export function ProfileView() {
                                                         {isNestedOpen && (
                                                             <div className="p-4 border-t border-zinc-700/50 bg-black/20">
                                                                 <div className="text-sm text-zinc-300 leading-relaxed prose prose-invert prose-sm max-w-none prose-a:text-emerald-400 prose-strong:text-emerald-300">
-                                                                    <ReactMarkdown>{subSection.body}</ReactMarkdown>
+                                                                    <ReactMarkdown>{subSection.body.replace(/\n/g, '  \n')}</ReactMarkdown>
                                                                 </div>
                                                             </div>
                                                         )}
