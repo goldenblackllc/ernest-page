@@ -1,41 +1,21 @@
-import { z } from "zod";
 import { db } from "@/lib/firebase/admin";
-import { generateWithFallback, OPUS_MODEL } from "@/lib/ai/models";
 import { FieldValue } from "firebase-admin/firestore";
 import { waitUntil } from "@vercel/functions";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
-import { getTranslations } from 'next-intl/server';
-import { cookies } from 'next/headers';
 
 export const maxDuration = 120;
-
-const PROCESS_PROMPT = `You are a Character Simulation Engine for a personal development platform.
-
-A user has written a "dream rant" — a raw, unstructured description of who they wish they were, their ideal life, and their aspirations. Your job is to process this into three outputs:
-
-1. TITLE: Extract 3 concrete, VISUAL roles from the rant. These should be nouns/roles that instantly paint a picture of who this person is — not abstract traits. The roles should be gendered when appropriate (e.g., "Father" not "Parent", "Gentleman" not "Person", "Mother" not "Caregiver"). Infer gender from context clues in the rant (mentions of being a father/mother, husband/wife, he/she, etc.). Use gendered language naturally.
-   - GOOD: "Father, Husband, Gentleman" or "R&B Artist, Son" or "Chef, Traveler, Mother"
-   - BAD: "Disciplined, Present, Free" (these are traits, not visual roles)
-   - BAD: "Leader, Innovator, Visionary" (too corporate/generic)
-   The title should be something someone could share with a stranger, and that stranger would immediately picture a type of person. Format: "Role, Role, Role"
-
-2. DREAM SELF: Write a present-tense identity paragraph (3-5 sentences) describing this person AS IF THEY ALREADY ARE who they described. CRITICAL: The user may express desires as wishes ("I want to be rich", "I wish I was fit"). You MUST transform ALL wish-language into present-tense identity. "I wish I was rich" → "I am financially abundant." "I want to be a better father" → "I am a present, engaged father." The output must read as a confident, realized identity — never aspirational. Use pronouns/gendered language consistent with the rant.
-
-3. INITIAL DOSSIER: Extract any routines, habits, or meaningful dates mentioned. If facts are sparse, that's fine — the dossier will grow over time through conversations. Do NOT extract backstory, childhood history, or past events — this system is forward-looking.
-
-ALL output sections must be strictly written in the target language requested at the bottom of these instructions.
-
-The dream rant:
-"{RANT}"`;
 
 const DOSSIER_TEMPLATE = `DOSSIER — {TITLE}
 Updated: {DATE} | Sessions: 0
 
+═══ ABOUT ═══
+{TITLE}
+
 ═══ IMPORTANT DATES ═══
-{DATES}
+Not yet known
 
 ═══ ROUTINES & HABITS ═══
-{ROUTINES}`;
+Not yet known`;
 
 export async function POST(req: Request) {
     try {
@@ -43,148 +23,37 @@ export async function POST(req: Request) {
         if (!uid) return unauthorizedResponse();
 
         const body = await req.json();
-        const rawBody = body;
+        const definingWords: string[] = body.defining_words || [];
+        const name: string = body.name || '';
 
-        // Server-side length limits (defense-in-depth, mirrors client maxLength)
-        const rant = (rawBody.rant || '').substring(0, 5000);
-        const gender = (rawBody.gender || '').substring(0, 50);
-        const birthdate = (rawBody.birthdate || '').substring(0, 30);
-        const ethnicity = (rawBody.ethnicity || '').substring(0, 300);
-        const skinTone = (rawBody.skin_tone || '').substring(0, 30);
-        const hairColors: string[] = Array.isArray(rawBody.hair_colors)
-            ? rawBody.hair_colors.map((c: string) => String(c).substring(0, 30)).slice(0, 5)
-            : [];
-        const hairTexture = (rawBody.hair_texture || '').substring(0, 30);
-        const hairVolume = (rawBody.hair_volume || '').substring(0, 30);
-        const eyeColor = (rawBody.eye_color || '').substring(0, 30);
-        const height = (rawBody.height || '').substring(0, 20);
-        const important_people = (rawBody.important_people || '').substring(0, 3000);
-        const things_i_enjoy = (rawBody.things_i_enjoy || '').substring(0, 3000);
-        const character_name = (rawBody.character_name || '').substring(0, 100);
-        const cookieStore = await cookies();
-        const preferredLocale = rawBody.locale || cookieStore.get('NEXT_LOCALE')?.value || 'en';
-        const t = await getTranslations('apiErrors');
+        // Check if user already has an existing dossier (re-edit vs first onboarding)
+        const existingUserDoc = await db.collection("users").doc(uid).get();
+        const existingData = existingUserDoc.data();
+        const hasExistingDossier = !!existingData?.dossier;
 
-        if (!rant) {
-            return Response.json(
-                { error: t('rantRequired') },
-                { status: 400 }
-            );
-        }
-
-        // Prepend gender/age/ethnicity context to the rant so the AI has it
-        const contextPrefix = [
-            gender ? `The user identifies as: ${gender}.` : null,
-            birthdate ? `Date of birth: ${birthdate}.` : null,
-            ethnicity ? `Ethnicity/origin: ${ethnicity}.` : null,
-            skinTone ? `Skin tone: ${skinTone}.` : null,
-            eyeColor ? `Eye color: ${eyeColor}.` : null,
-            hairColors.length > 0 ? `Natural hair color: ${hairColors.join(' and ')}.` : null,
-            hairTexture ? `Natural hair texture: ${hairTexture}.` : null,
-            hairVolume ? `Hair volume: ${hairVolume}.` : null,
-            height ? `Height: ${height}.` : null,
-            important_people ? `People in their life: ${important_people}` : null,
-            things_i_enjoy ? `Things they enjoy: ${things_i_enjoy}` : null,
-        ].filter(Boolean).join('\n');
-
-        const rantWithContext = contextPrefix
-            ? `${contextPrefix}\n\n${rant}`
-            : rant;
-
-        // Language instruction
-        let languageInstruction = "The output must be in English.";
-        if (preferredLocale === "es") {
-            languageInstruction = "The output MUST be entirely in SPANISH (Español).";
-        } else if (preferredLocale === "fr") {
-            languageInstruction = "The output MUST be entirely in FRENCH (Français).";
-        } else if (preferredLocale === "de") {
-            languageInstruction = "The output MUST be entirely in GERMAN (Deutsch).";
-        } else if (preferredLocale === "pt") {
-            languageInstruction = "The output MUST be entirely in PORTUGUESE (Português).";
-        }
-
-        const prompt = PROCESS_PROMPT.replace("{RANT}", rantWithContext) + `\n\nCRITICAL: ${languageInstruction}`;
-
-        const result = await generateWithFallback({
-            primaryModelId: OPUS_MODEL,
-            prompt,
-            schema: z.object({
-                title: z.string().describe("3 visual roles, comma-separated"),
-                dream_self: z.string().describe("Present-tense identity paragraph, 3-5 sentences"),
-                dossier: z.object({
-                    people: z.string().describe("Key people mentioned with relationships — or 'Not yet known'"),
-                    dates: z.string().describe("Meaningful dates mentioned (birthdays, anniversaries, milestones) — or 'Not yet known'"),
-                    routines: z.string().describe("Daily habits, rituals, routines mentioned — or 'Not yet known'"),
-                    preferences: z.string().describe("Personal tastes: music, movies, books, food, drinks, brands, hobbies — or 'Not yet known'"),
-                    life_facts: z.string().describe("Location, occupation, family, living situation — or 'Not yet known'"),
-                }),
-            }),
-        });
-
-        const data = result.object as {
-            title: string;
-            dream_self: string;
-            dossier: {
-                people: string;
-                dates: string;
-                routines: string;
-                preferences: string;
-                life_facts: string;
-            };
-        };
-
-        // Build the dossier document
+        // Build initial dossier from structured data (no AI needed)
+        const title = definingWords.length > 0 ? definingWords.join(', ') : name;
         const today = new Date().toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
             day: "numeric",
         });
         const dossierText = DOSSIER_TEMPLATE
-            .replace("{TITLE}", data.title)
-            .replace("{DATE}", today)
-            .replace("{DATES}", data.dossier.dates)
-            .replace("{ROUTINES}", data.dossier.routines);
+            .replace(/\{TITLE\}/g, title)
+            .replace("{DATE}", today);
 
-        // Check if user already has an existing dossier (re-edit vs first onboarding)
-        const existingUserDoc = await db.collection("users").doc(uid).get();
-        const existingData = existingUserDoc.data();
-        const hasExistingDossier = !!existingData?.dossier || !!existingData?.identity?.dossier;
-
-        const topLevelUpdate: Record<string, any> = {
-            name: character_name || '',
-            gender: gender || '',
-            birthdate: birthdate || '',
-            skin_tone: skinTone,
-            hair_colors: hairColors,
-            hair_texture: hairTexture,
-            hair_volume: hairVolume,
-            eye_color: eyeColor,
-            height,
-            ethnicity: ethnicity || '',
-            defining_words: data.title.split(',').map((w: string) => w.trim()),
-            onboarding_complete: true,
-            bible: {
-                status: 'compiling',
-                last_updated: Date.now(),
-            },
-        };
-
-        // Seed interests from raw "things I enjoy" text
-        const seedInterests = things_i_enjoy
-            ? things_i_enjoy.split(/[,\n]+/).map((s: string) => s.trim()).filter((s: string) => s.length > 0)
-            : [];
-        if (seedInterests.length > 0) {
-            topLevelUpdate.interests = seedInterests;
-        }
+        const updates: Record<string, any> = {};
 
         if (!hasExistingDossier) {
-            topLevelUpdate.session_credits = 1;
-            topLevelUpdate.dossier = dossierText;
-            topLevelUpdate.dossier_updated_at = FieldValue.serverTimestamp();
-            topLevelUpdate.session_count = 0;
+            updates.session_credits = 1;
+            updates.dossier = dossierText;
+            updates.dossier_updated_at = FieldValue.serverTimestamp();
+            updates.session_count = 0;
         }
 
-        await db.collection("users").doc(uid).set(topLevelUpdate, { merge: true });
+        if (Object.keys(updates).length > 0) {
+            await db.collection("users").doc(uid).set(updates, { merge: true });
+        }
 
         // Kick off bible + avatar generation in the background
         const origin = new URL(req.url).origin;
@@ -198,34 +67,24 @@ export async function POST(req: Request) {
                         'Content-Type': 'application/json',
                         'x-internal-key': process.env.CRON_SECRET || '',
                     },
-                    body: JSON.stringify({
-                        uid,
-                        source_code: {
-                            archetype: data.title,
-                            manifesto: data.dream_self,
-                            important_people: important_people || '',
-                            things_i_enjoy: things_i_enjoy || '',
-                        },
-                    }),
-                    signal: AbortSignal.timeout(540_000), // 9 min — Cloud Function has room
+                    body: JSON.stringify({ uid }),
+                    signal: AbortSignal.timeout(540_000),
                 });
 
                 if (!compileRes.ok) {
                     console.error(`[Onboarding] Background: Bible compile failed with status ${compileRes.status}`);
                     await db.collection("users").doc(uid).set({
-                        character_bible: { status: 'failed', fail_reason: 'error' },
-                        bible: { status: 'failed', fail_reason: 'error' }
+                        bible: { status: 'failed', fail_reason: 'compile_error' }
                     }, { merge: true });
                     return;
                 }
 
-                // Mark bible as ready + set last_commit so the feed auto-dismiss timer works
+                // Mark bible as ready
                 await db.collection("users").doc(uid).set({
-                    character_bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() },
                     bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() }
                 }, { merge: true });
 
-                // Fire avatar generation independently — non-blocking, errors handled by avatar route
+                // Fire avatar generation independently
                 fetch(`${origin}/api/character/avatar`, {
                     method: 'POST',
                     headers: {
@@ -239,39 +98,28 @@ export async function POST(req: Request) {
             } catch (err: any) {
                 console.error(`[Onboarding] Background generation error for ${uid}:`, err.message);
                 await db.collection("users").doc(uid).set({
-                    character_bible: { status: 'failed' },
-                    bible: { status: 'failed' }
+                    bible: { status: 'failed', fail_reason: err.message }
                 }, { merge: true });
             }
         })());
 
         // Return immediately — client proceeds to dashboard
-        return Response.json({
-            success: true,
-            title: data.title,
-            dream_self: data.dream_self,
-            dossier: dossierText,
-        });
+        return Response.json({ success: true });
     } catch (error: any) {
         console.error("Onboarding Process API Error:", error);
-        const t = await getTranslations('apiErrors');
 
         if (
             error.name === "AbortError" ||
             (error.message || "").toLowerCase().includes("timeout")
         ) {
             return Response.json(
-                {
-                    success: false,
-                    errorType: "TIMEOUT",
-                    message: t('onboardingTimeout'),
-                },
+                { success: false, errorType: "TIMEOUT", message: "Processing timed out" },
                 { status: 504 }
             );
         }
 
         return Response.json(
-            { error: error.message || t('unexpected') },
+            { error: error.message || "Unexpected error" },
             { status: 500 }
         );
     }

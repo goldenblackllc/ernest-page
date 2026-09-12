@@ -12,7 +12,7 @@ import { subscribeToCharacterProfile, updateWants, updateLoves, updatePeople, up
 import { getMostRecentActiveChat } from "@/lib/firebase/chat";
 import { Bible, CharacterProfile, WantItem, ProfilePerson } from "@/types/character";
 import { MirrorChat } from "./MirrorChat";
-import { IdentityForm, IdentityFormData } from "./IdentityForm";
+import { OnboardingForm, OnboardingFormData } from "./OnboardingForm";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
@@ -135,27 +135,46 @@ export function TriagePanel() {
 
 
 
-    const handleOnboardingSubmit = async (data: IdentityFormData) => {
+    const handleOnboardingSubmit = async (data: OnboardingFormData) => {
         if (!user) return;
 
-        // Save identity fields + mark onboarding complete + set bible status to 'compiling'
-        // immediately so the Ledger never flashes a 'failed' state during the API gap
+        // Build wants as WantItem[]
+        const wantItems: WantItem[] = data.wants.map(text => ({
+            id: crypto.randomUUID(),
+            text,
+            completed: false,
+            created_at: Date.now(),
+        }));
+
+        // Build people as ProfilePerson[]
+        const peopleItems: ProfilePerson[] = data.people.map(p => ({
+            name: p.name,
+            relationship: p.relationship,
+            who: p.about,
+        }));
+
+        // Write all fields directly to Firestore
         await setDoc(doc(db, 'users', user.uid), {
+            name: data.name.trim(),
+            defining_words: data.defining_words,
+            wants: wantItems,
+            interests: data.interests,
+            people: peopleItems,
+            dream_living: data.dream_living.trim(),
+            dream_financial: data.dream_financial.trim(),
             gender: data.gender.trim(),
             birthdate: data.birthdate.trim(),
             ethnicity: data.ethnicity.trim(),
             skin_tone: data.skin_tone.trim(),
             hair_colors: data.hair_colors,
             hair_texture: data.hair_texture.trim(),
-            hair_volume: data.hair_volume.trim(),
             eye_color: data.eye_color.trim(),
             height: data.height.trim(),
-            name: data.character_name.trim(),
             onboarding_complete: true,
             bible: { status: 'compiling', last_updated: Date.now() },
         }, { merge: true });
 
-        // Fire off the character build in the background
+        // Trigger bible compile + initial dossier in the background
         try {
             const idToken = await user.getIdToken();
             fetch('/api/onboarding/process', {
@@ -165,19 +184,15 @@ export function TriagePanel() {
                     'Authorization': `Bearer ${idToken}`,
                 },
                 body: JSON.stringify({
-                    rant: data.rant.trim(),
+                    defining_words: data.defining_words,
+                    name: data.name.trim(),
                     gender: data.gender.trim(),
-                    important_people: data.people.trim(),
-                    things_i_enjoy: data.enjoyments.trim(),
                     birthdate: data.birthdate.trim(),
                     ethnicity: data.ethnicity.trim(),
                     skin_tone: data.skin_tone.trim(),
                     hair_colors: data.hair_colors,
-                    hair_texture: data.hair_texture.trim(),
-                    hair_volume: data.hair_volume.trim(),
                     eye_color: data.eye_color.trim(),
                     height: data.height.trim(),
-                    character_name: data.character_name.trim(),
                 }),
             }).catch(err => console.error('[Onboarding] Process error:', err));
         } catch (err) {
@@ -397,24 +412,8 @@ export function TriagePanel() {
 
                     {/* Form — fills remaining screen height */}
                     <div className="flex-1 flex flex-col min-h-0 px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
-                        <IdentityForm
-                            key={profile ? 'loaded' : 'empty'}
-                            initialValues={profile ? {
-                                character_name: profile.name || '',
-                                gender: profile.gender || '',
-                                birthdate: profile.birthdate || '',
-                                ethnicity: profile.ethnicity || '',
-                                skin_tone: profile.skin_tone || '',
-                                hair_colors: profile.hair_colors || [],
-                                hair_texture: profile.hair_texture || '',
-                                hair_volume: profile.hair_volume || '',
-                                eye_color: profile.eye_color || '',
-                                height: profile.height || '',
-                                rant: '',
-                                enjoyments: '',
-                            } : undefined}
+                        <OnboardingForm
                             onSubmit={handleOnboardingSubmit}
-                            submitLabel={t('onboarding.submitLabel')}
                         />
                     </div>
                 </div>
