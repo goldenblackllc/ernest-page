@@ -147,42 +147,10 @@ export async function POST(req: Request) {
 
         // Check if user already has an existing dossier (re-edit vs first onboarding)
         const existingUserDoc = await db.collection("users").doc(uid).get();
-        const existingIdentity = existingUserDoc.data()?.identity;
-        const hasExistingDossier = !!existingIdentity?.dossier;
+        const existingData = existingUserDoc.data();
+        const hasExistingDossier = !!existingData?.dossier || !!existingData?.identity?.dossier;
 
-        // Build identity — preserve existing dossier if one exists
-        const identity: Record<string, any> = {
-            title: data.title,
-            dream_self: data.dream_self,
-            dream_rant: rant,
-            important_people: important_people || '',
-            things_i_enjoy: things_i_enjoy || '',
-            gender: gender || '',
-            birthdate: birthdate || '',
-            character_name: character_name || '',
-            skin_tone: skinTone,
-            hair_colors: hairColors,
-            hair_texture: hairTexture,
-            hair_volume: hairVolume,
-            eye_color: eyeColor,
-            height,
-            ethnicity: ethnicity || '',
-        };
-
-        if (!hasExistingDossier) {
-            // First onboarding: set the initial dossier
-            identity.dossier = dossierText;
-            identity.dossier_updated_at = FieldValue.serverTimestamp();
-            identity.session_count = 0;
-        }
-        // If dossier exists, we leave it untouched here.
-
-        // Set status to 'compiling' so the feed can show the status card.
-        // On re-edit, PRESERVE the existing compiled_output so the old bible
-        // remains usable for mirror chat while the new compile runs.
-        const existingBible = existingUserDoc.data()?.character_bible;
         const topLevelUpdate: Record<string, any> = {
-            identity,
             name: character_name || '',
             gender: gender || '',
             birthdate: birthdate || '',
@@ -199,25 +167,14 @@ export async function POST(req: Request) {
                 status: 'compiling',
                 last_updated: Date.now(),
             },
-            character_bible: {
-                compiled_bible: existingBible?.compiled_bible || {},
-                compiled_output: existingBible?.compiled_output || { ideal: [] },
-                last_updated: Date.now(),
-                status: 'compiling',
-                // Preserve existing character_name during re-compile
-                ...(existingBible?.character_name ? { character_name: existingBible.character_name } : {}),
-            },
         };
 
-        // Seed unified_profile.interests from raw "things I enjoy" text
+        // Seed interests from raw "things I enjoy" text
         const seedInterests = things_i_enjoy
             ? things_i_enjoy.split(/[,\n]+/).map((s: string) => s.trim()).filter((s: string) => s.length > 0)
             : [];
         if (seedInterests.length > 0) {
-            topLevelUpdate.unified_profile = {
-                ...(topLevelUpdate.unified_profile || {}),
-                interests: seedInterests,
-            };
+            topLevelUpdate.interests = seedInterests;
         }
 
         if (!hasExistingDossier) {
