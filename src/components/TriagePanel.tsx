@@ -138,28 +138,67 @@ export function TriagePanel() {
     const handleOnboardingSubmit = async (data: OnboardingFormData) => {
         if (!user) return;
 
-        // Build wants as WantItem[]
-        const wantItems: WantItem[] = data.wants.map(text => ({
-            id: crypto.randomUUID(),
-            text,
-            completed: false,
-            created_at: Date.now(),
-        }));
+        const existing = profile || {} as any;
 
-        // Build people as ProfilePerson[]
-        const peopleItems: ProfilePerson[] = data.people.map(p => ({
-            name: p.name,
-            relationship: p.relationship,
-            who: p.about,
-        }));
+        // --- Merge wants: update existing items in place, append new ones, keep extras ---
+        const existingWants: WantItem[] = existing.wants || [];
+        const mergedWants = [...existingWants];
+        data.wants.forEach((text, i) => {
+            if (i < mergedWants.length) {
+                // Update existing item's text (preserve id, completed, created_at)
+                mergedWants[i] = { ...mergedWants[i], text };
+            } else {
+                // Append new item
+                mergedWants.push({
+                    id: crypto.randomUUID(),
+                    text,
+                    completed: false,
+                    created_at: Date.now(),
+                });
+            }
+        });
 
-        // Write all fields directly to Firestore
+        // --- Merge interests: update in place, keep extras ---
+        const existingInterests: string[] = existing.interests || [];
+        const mergedInterests = [...existingInterests];
+        data.interests.forEach((val, i) => {
+            if (i < mergedInterests.length) {
+                mergedInterests[i] = val;
+            } else {
+                mergedInterests.push(val);
+            }
+        });
+
+        // --- Merge defining_words: update in place, keep extras ---
+        const existingWords: string[] = existing.defining_words || [];
+        const mergedWords = [...existingWords];
+        data.defining_words.forEach((val, i) => {
+            if (i < mergedWords.length) {
+                mergedWords[i] = val;
+            } else {
+                mergedWords.push(val);
+            }
+        });
+
+        // --- Merge people: update in place, keep extras ---
+        const existingPeople: ProfilePerson[] = existing.people || [];
+        const mergedPeople = [...existingPeople];
+        data.people.forEach((p, i) => {
+            const person: ProfilePerson = { name: p.name, relationship: p.relationship, who: p.about };
+            if (i < mergedPeople.length) {
+                mergedPeople[i] = { ...mergedPeople[i], ...person };
+            } else {
+                mergedPeople.push(person);
+            }
+        });
+
+        // Write merged data to Firestore
         await setDoc(doc(db, 'users', user.uid), {
             name: data.name.trim(),
-            defining_words: data.defining_words,
-            wants: wantItems,
-            interests: data.interests,
-            people: peopleItems,
+            defining_words: mergedWords,
+            wants: mergedWants,
+            interests: mergedInterests,
+            people: mergedPeople,
             dream_living: data.dream_living.trim(),
             dream_financial: data.dream_financial.trim(),
             gender: data.gender.trim(),
