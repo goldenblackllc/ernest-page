@@ -151,7 +151,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
     const idealResult = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
         abortSignal: AbortSignal.timeout(480_000), // 8 min — Cloud Functions have room
-        maxTokens: 16000,
+        maxTokens: 32000,
         providerOptions,
         system: SYSTEM_PROMPT,
         prompt: idealPrompt,
