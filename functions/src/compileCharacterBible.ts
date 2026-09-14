@@ -1,7 +1,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from './lib/firebase/admin.js';
-import { generateWithFallback, OPUS_MODEL } from './lib/ai/models.js';
+import { generateWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 
 // --- SAFETY SETTINGS ---
@@ -18,7 +18,56 @@ CREATIVITY RULE: You are a Visionary Biographer. The user gives you the 'seeds' 
 Fill in the gaps: If the user says they are a 'Gentleman,' invent how they keep their desk (impeccable), how they handle their laundry (folded immediately), and the scent of their home (warm amber and fresh linen).
 Visualize: Use sensory language. Make the user feel the ideal life.`;
 
-const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the following User Inputs. Your task is to output a comprehensive Character Bible perfectly broken out into these 7 exact sections:
+// --- PHASE 1: FACT COMPILER (translates aspirational inputs → present-tense character facts) ---
+const PHASE1_SYSTEM_PROMPT = `You are a Fact Compiler. Your sole job is to take raw personal data — goals, dreams, desires, physical descriptions, and relationship notes — and rewrite them as present-tense statements of fact about an existing person who is completely loving, integrated, and at peace.
+
+Rules:
+- Every output statement must be present tense. "I am," "I have," "I live," "I earn." Never "I want," "I'm working toward," "I dream of," "I'm building."
+- Do not invent new details. Only rewrite what is provided.
+- Do not editorialize or add emotional color. Just state facts.
+- If two inputs overlap or contradict, merge them into one clean statement. Example: want="be financially free" + dream_financial="$3M net worth" → "I have a $3M net worth."
+- Physical traits should be stated as natural attributes, not achievements. Example: "be 182 pounds, be strong and fit" + height="6'1" → "I'm six-one, 182 pounds, strong and fit."
+- Strip the aspiration, keep the specificity. Every brand, number, place name, and proper noun survives.
+- For people: rewrite each person's dynamic from the perspective of someone who is completely loving and at peace. Others may carry friction toward this person, but this person does not carry it back. State the relationship as settled, warm, and clear-eyed — not aspirational, not conflicted.`;
+
+const PHASE1_USER_PROMPT = `Rewrite the following raw inputs as present-tense facts about a real, living person who is fully actualized and at peace.
+
+--- RAW INPUTS ---
+
+Goals & Desires: {WANTS}
+
+Dream Living Situation: {DREAM_LIVING}
+
+Dream Financial Situation: {DREAM_FINANCIAL}
+
+Physical Description: {PHYSICAL_TRAITS}
+
+People:
+{IMPORTANT_PEOPLE}
+
+--- OUTPUT FORMAT ---
+
+Rewrite into these sections:
+
+1. "Living Situation" — Where and how this person lives. Present tense.
+2. "Financial Reality" — This person's financial standing. Present tense.
+3. "Physical Profile" — This person's body, appearance, and physical state. Present tense.
+4. "Character Facts" — Everything else from the goals/desires, restated as facts about who this person already is and what they already do. Present tense.
+5. "People" — For each person provided, rewrite their entry as a present-tense fact about the relationship, from the perspective of someone who is loving and at peace.`;
+
+const PHASE1_SCHEMA = z.object({
+    living_situation: z.string().describe("Where and how this person lives — present tense fact"),
+    financial_reality: z.string().describe("This person's financial standing — present tense fact"),
+    physical_profile: z.string().describe("Body, appearance, physical state — present tense fact"),
+    character_facts: z.string().describe("Everything else restated as present-tense facts about who they are"),
+    people: z.array(z.object({
+        name: z.string().describe("Person's name"),
+        relationship: z.string().describe("Relationship label — e.g. daughter, business partner, ex-wife"),
+        description: z.string().describe("Present-tense, loving description of this person and the relationship"),
+    })).describe("Each person rewritten as a present-tense, loving relationship fact"),
+});
+
+const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Your task is to output a comprehensive Character Bible perfectly broken out into these 7 exact sections:
 1. "Style & Presence" (Aesthetics, Wardrobe, Physicality)
 2. "Daily Life & Habits" (Routines, Occupations, Passions)
 3. "People & Connections" (Relationships, Communication, Social Interaction)
@@ -30,46 +79,40 @@ const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Read the foll
 CRITICAL FORMATTING RULE — SUBSECTIONS:
 Each of the 7 sections above MUST be broken into multiple subsections using bold markdown subheadings. Use the format: **Subheading:** followed by the prose for that subsection.
 The subsection names should be organic and character-specific — not generic labels. Here are examples of the kind of subsections expected for each section:
-- "Style & Presence" → **The Closet:** A complete, specific, itemized wardrobe this character owns. List actual pieces across categories: suits, blazers, shirts, trousers, denim, outerwear/coats, shoes, underwear/basics, accessories (watches, belts, bags), and seasonal/travel pieces. Use specific brands and descriptions — this is the user's aspirational shopping list, not a mood board. **Grooming:** ... **Physicality:** ... **Travel Style:** ...
+- "Style & Presence" → **The Closet:** A complete, specific, itemized wardrobe this character owns. List actual pieces across categories: suits, blazers, shirts, trousers, denim, outerwear/coats, shoes, underwear/basics, accessories (watches, belts, bags), and seasonal/travel pieces. Use specific brands and descriptions — this is the character's wardrobe, not a mood board. **Grooming:** ... **Physicality:** ... **Travel Style:** ...
 - "Daily Life & Habits" → **Morning Ritual:** ... **The Work:** ... **Weekend Mode:** ... **Passions:** ...
 - "People & Connections" → EVERY person gets their OWN dedicated subsection: **Iris:** ... **Sage:** ... **Brian:** ... **Max:** ... etc. Do NOT group people together. Each person gets their own **Name:** heading. Include pets. End with **Communication Style:** and **Social Energy:** subsections.
-  CRITICAL — MANIFESTO LENS: The people data below is raw reference material written from a human perspective. The CHARACTER is a completely loving, integrated person who has no problems with anyone. Others may carry friction toward the character, but the character does not carry it back. For each person, write how someone who FULLY LIVES the identity words would describe them — what they see, what they appreciate, what they understand.
 - "The Inner Mind" → **Processing Emotions:** ... **Under Pressure:** ... **Self-Talk:** ... **Relationship with Reality:** ...
 - "Quirks & Details" → **Diet:** ... **Languages:** ... **Guilty Pleasures:** ... **Pets:** ... (include only what applies)
 - "Order & Sanctuary" → **The Home:** ... **The Car:** ... **The Workspace:** ... **Systems & Rituals:** ...
 - "The World I Love" → **The Music:** ... **The Screen:** ... **The Table:** ... **The Game:** ...
-  CRITICAL — NAMES NOT VIBES: This section exists to preserve the specific artists, shows, movies, books, foods, restaurants, games, and cultural references that make this person *them*. Do NOT abstract these into aesthetic descriptions. "Billie Eilish" must stay "Billie Eilish" — not become "dark, moody music." "Dr. Who" must stay "Dr. Who" — not become "a love of British sci-fi." Use the real names. Describe the *relationship* to each one — when they listen, how it makes them feel, what it means to them. If the user only gave a few seeds, extrapolate adjacent tastes that would logically fit, but always use specific names and titles, never genres or moods alone.
+  CRITICAL — NAMES NOT VIBES: This section exists to preserve the specific artists, shows, movies, books, foods, restaurants, games, and cultural references that make this person *them*. Do NOT abstract these into aesthetic descriptions. "Billie Eilish" must stay "Billie Eilish" — not become "dark, moody music." "Dr. Who" must stay "Dr. Who" — not become "a love of British sci-fi." Use the real names. Describe the *relationship* to each one — when they listen, how it makes them feel, what it means to them. If only a few seeds are given, extrapolate adjacent tastes that would logically fit, but always use specific names and titles, never genres or moods alone.
 These are examples — you MUST adapt the subsection names to fit the actual character. Invent subsections that make sense for who they are. Every subsection must use the **Name:** format so the UI can parse them.
 
-Crucial Instruction: Use the user inputs as your foundation, but actively extrapolate and invent logical details. Do not just repeat what I gave you; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead. 
+Crucial Instruction: Use the character facts as your foundation, but actively extrapolate and invent logical details. Do not just repeat what was given; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead. 
 
 CRITICAL: Do NOT output "Core Beliefs" or "Manifesto" in the generated text, as the user already knows these.
 
 CRITICAL CONTENT RULES:
-SPECIFICITY OVER SUMMARY: You must use the specific proper nouns found in the user's source code.
+SPECIFICITY OVER SUMMARY: You must use the specific proper nouns found in the character facts.
 Bad: 'I enjoy coffee and love my wife.'
 Good: 'I enjoy espresso from my Jura and adore my wife Iris.'
-INCLUDE THE DETAILS: If the user mentions specific brands (Jura, Boss), specific locations (Carlisle, Provence), or specific people (Sage, Brian), you MUST weave them into the narrative. Do not scrub these details. They are the soul of the character.
-NO GENERALIZATIONS: Do not turn 'I started Atrium' into 'I started a business.' Use the specific facts provided.
+INCLUDE THE DETAILS: If the character facts mention specific brands (Jura, Boss), specific locations (Carlisle, Provence), or specific people (Sage, Brian), you MUST weave them into the narrative. Do not scrub these details. They are the soul of the character.
+NO GENERALIZATIONS: Do not turn 'I run Atrium' into 'I run a business.' Use the specific facts provided.
 
-User Inputs:
-Identity: {DEFINING_WORDS}
-The user defines themselves with these words. This IS their archetype — the core of who they are. Use these as the foundation for every aspect of the character's voice, decisions, and worldview.
+Character Identity: {DEFINING_WORDS}
+These words define the character's archetype — the core of who they are. Use these as the foundation for every aspect of the character's voice, decisions, and worldview.
 
-Dream Living Situation: {DREAM_LIVING}
-This is how the character lives. The home, the neighborhood, the space. Write as if this is already real and settled.
+Living Situation: {PRESENT_LIVING}
 
-Dream Financial Situation: {DREAM_FINANCIAL}
-This is the character's financial reality. Write as if this is already achieved and natural.
+Financial Reality: {PRESENT_FINANCIAL}
 
-What They Want: {WANTS}
-These are things the character already IS and already HAS. Every want is realized. "Be fit and strong" means the character IS fit and strong. "Be a rapper" means the character IS a rapper. Write as present-tense fact, not aspiration.
+Physical Profile: {PRESENT_PHYSICAL}
 
-Physical Traits: {PHYSICAL_TRAITS}
-Use these to inform the character's physicality, style choices, and presence. Do not repeat them verbatim — weave them naturally.
+About the Character: {PRESENT_FACTS}
 
-Important People (RAW REFERENCE — human perspective, not the character's voice):
-{IMPORTANT_PEOPLE}
+People:
+{PRESENT_PEOPLE}
 
 Things They Love: {THINGS_I_LOVE}`;
 
@@ -89,24 +132,24 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
 
     const userLocale = data?.preferred_locale || 'en';
 
-    // ─── Assemble inputs from My Life data ───
+    // ─── Assemble raw inputs from My Life data ───
 
-    // Defining words → replaces archetype
+    // Defining words (pass through to Phase 2 unchanged)
     const definingWords = data?.defining_words || [];
     const definingWordsString = definingWords.length > 0
         ? definingWords.join(', ')
         : 'Not specified';
 
-    // Wants → all treated as realized (the character already IS and HAS everything)
+    // Wants (raw — will be translated by Phase 1)
     const wants = data?.wants || [];
     const allWants = wants.map((w: any) => w.text);
     const wantsString = allWants.length > 0 ? allWants.join(', ') : 'None specified';
 
-    // Dream living & financial
+    // Dream living & financial (raw — will be translated by Phase 1)
     const dreamLiving = data?.dream_living || 'Not specified';
     const dreamFinancial = data?.dream_financial || 'Not specified';
 
-    // People
+    // People (raw — will be translated by Phase 1)
     const unifiedPeople = data?.people || [];
     const peopleString = unifiedPeople.length > 0
         ? unifiedPeople.map((p: any) =>
@@ -114,13 +157,13 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
         ).join('\n\n')
         : 'None';
 
-    // Interests/loves
+    // Interests/loves (pass through to Phase 2 unchanged)
     const unifiedInterests = data?.interests || [];
     const interestsString = unifiedInterests.length > 0
         ? unifiedInterests.join(', ')
         : 'Not specified.';
 
-    // Physical traits
+    // Physical traits (raw — will be translated by Phase 1)
     const physicalTraits: string[] = [];
     if (data.gender) physicalTraits.push(data.gender);
     if (data.birthdate) {
@@ -137,17 +180,45 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
 
     console.log(`[BibleCompile] Inputs for ${uid}: defining_words=${definingWordsString.substring(0, 50)}, wants=${allWants.length}, people=${unifiedPeople.length}, interests=${unifiedInterests.length}`);
 
-    const idealPrompt = PROMPT_IDEAL_BIBLE
-        .replace('{DEFINING_WORDS}', definingWordsString)
+    // ─── PHASE 1: Translate aspirational inputs → present-tense character facts ───
+    const phase1Prompt = PHASE1_USER_PROMPT
+        .replace('{WANTS}', wantsString)
         .replace('{DREAM_LIVING}', dreamLiving)
         .replace('{DREAM_FINANCIAL}', dreamFinancial)
-        .replace('{WANTS}', wantsString)
         .replace('{PHYSICAL_TRAITS}', physicalTraitsString)
-        .replace('{IMPORTANT_PEOPLE}', peopleString)
+        .replace('{IMPORTANT_PEOPLE}', peopleString);
+
+    console.log(`[BibleCompile] Phase 1: Translating inputs to present-tense facts...`);
+    const phase1Result = await generateWithFallback({
+        primaryModelId: SONNET_MODEL,
+        abortSignal: AbortSignal.timeout(30_000), // 30s — this is a fast, small task
+        maxTokens: 2000,
+        providerOptions,
+        system: PHASE1_SYSTEM_PROMPT,
+        prompt: phase1Prompt,
+        schema: PHASE1_SCHEMA,
+    });
+
+    const phase1 = phase1Result.object as z.infer<typeof PHASE1_SCHEMA>;
+    console.log(`[BibleCompile] Phase 1 complete: living=${phase1.living_situation.length}ch, financial=${phase1.financial_reality.length}ch, physical=${phase1.physical_profile.length}ch, facts=${phase1.character_facts.length}ch, people=${phase1.people.length}`);
+
+    // Format Phase 1 people output for Phase 2
+    const presentPeopleString = phase1.people.length > 0
+        ? phase1.people.map(p => `**${p.name}** (${p.relationship}): ${p.description}`).join('\n\n')
+        : 'None';
+
+    // ─── PHASE 2: Generate Character Bible from pre-translated facts ───
+    const idealPrompt = PROMPT_IDEAL_BIBLE
+        .replace('{DEFINING_WORDS}', definingWordsString)
+        .replace('{PRESENT_LIVING}', phase1.living_situation)
+        .replace('{PRESENT_FINANCIAL}', phase1.financial_reality)
+        .replace('{PRESENT_PHYSICAL}', phase1.physical_profile)
+        .replace('{PRESENT_FACTS}', phase1.character_facts)
+        .replace('{PRESENT_PEOPLE}', presentPeopleString)
         .replace('{THINGS_I_LOVE}', interestsString)
         + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${userLocale === 'es' ? 'Spanish' : userLocale === 'pt' ? 'Portuguese' : userLocale === 'fr' ? 'French' : userLocale === 'de' ? 'German' : 'English'}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
 
-    // Generate Ideal Bible
+    // Generate Ideal Bible (Phase 2)
     const idealResult = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
         abortSignal: AbortSignal.timeout(480_000), // 8 min — Cloud Functions have room
