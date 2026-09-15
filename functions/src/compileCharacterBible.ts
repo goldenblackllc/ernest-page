@@ -12,11 +12,7 @@ const SAFETY_SETTINGS = [
     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
 ];
 
-const SYSTEM_PROMPT = `You are a Character Simulation Engine. You are creating a specific persona who is completely loving, integrated, and at peace. The character's manifesto (provided in the user inputs) defines their worldview — they live it, they don't preach it.
-ENFORCE MAXIMUM ENTITY DENSITY: Always prioritize maximum entity density by using the specific names, locations, brands, and concrete nouns provided by the user instead of generic summaries.
-CREATIVITY RULE: You are a Visionary Biographer. The user gives you the 'seeds' (e.g., 'I dress well'). Your job is to grow the 'tree' (e.g., 'The closet is edited, not stuffed — every piece earns its place. A tailored blazer hangs next to broken-in denim, ready for whatever the evening demands.').
-Fill in the gaps: If the user says they are a 'Gentleman,' invent how they keep their desk (impeccable), how they handle their laundry (folded immediately), and the scent of their home (warm amber and fresh linen).
-Visualize: Use sensory language. Make the user feel the ideal life.`;
+const SYSTEM_PROMPT = `Write in first person, present tense. Preserve every proper noun, brand, name, and specific detail from the inputs — never generalize them.`;
 
 // --- PHASE 1: FACT COMPILER (translates aspirational inputs → present-tense character facts) ---
 const PHASE1_SYSTEM_PROMPT = `You are a Fact Compiler. Your sole job is to take raw personal data — goals, dreams, desires, physical descriptions, and relationship notes — and rewrite them as present-tense statements of fact about an existing person who is completely loving, integrated, and at peace.
@@ -67,41 +63,20 @@ const PHASE1_SCHEMA = z.object({
     })).describe("Each person rewritten as a present-tense, loving relationship fact"),
 });
 
-const PROMPT_IDEAL_BIBLE = `You are a Character Simulation Engine. Your task is to output a comprehensive Character Bible perfectly broken out into these 7 exact sections:
-1. "Style & Presence" (Aesthetics, Wardrobe, Physicality)
-2. "Daily Life & Habits" (Routines, Occupations, Passions)
-3. "People & Connections" (Relationships, Communication, Social Interaction)
-4. "The Inner Mind" (How they process emotions, crisis, and reality)
-5. "Quirks & Details" (Pets, diet, languages, unique variables)
-6. "Order & Sanctuary" (Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace)
-7. "The World I Love" (Music, Shows, Movies, Books, Food, Games, Sports — the named cultural touchpoints that define who they are)
+const PROMPT_IDEAL_BIBLE = `Build a Character Bible from the following inputs. Output exactly 7 sections. Each section must contain multiple subsections using **Subheading:** format. Expand beyond the inputs: invent logical details that fit the character. Use sensory language. Do not include dates — use ages or durations. Do not mention "Core Beliefs" or "Manifesto."
 
-CRITICAL FORMATTING RULE — SUBSECTIONS:
-Each of the 7 sections above MUST be broken into multiple subsections using bold markdown subheadings. Use the format: **Subheading:** followed by the prose for that subsection.
-The subsection names should be organic and character-specific — not generic labels. Here are examples of the kind of subsections expected for each section:
-- "Style & Presence" → **The Closet:** A complete, specific, itemized wardrobe this character owns. List actual pieces across categories: suits, blazers, shirts, trousers, denim, outerwear/coats, shoes, underwear/basics, accessories (watches, belts, bags), and seasonal/travel pieces. Use specific brands and descriptions — this is the character's wardrobe, not a mood board. **Grooming:** ... **Physicality:** ... **Travel Style:** ...
-- "Daily Life & Habits" → **Morning Ritual:** ... **The Work:** ... **Weekend Mode:** ... **Passions:** ...
-- "People & Connections" → EVERY person gets their OWN dedicated subsection: **Iris:** ... **Sage:** ... **Brian:** ... **Max:** ... etc. Do NOT group people together. Each person gets their own **Name:** heading. Include pets. End with **Communication Style:** and **Social Energy:** subsections.
-- "The Inner Mind" → **Processing Emotions:** ... **Under Pressure:** ... **Self-Talk:** ... **Relationship with Reality:** ...
-- "Quirks & Details" → **Diet:** ... **Languages:** ... **Guilty Pleasures:** ... **Pets:** ... (include only what applies)
-- "Order & Sanctuary" → **The Home:** ... **The Car:** ... **The Workspace:** ... **Systems & Rituals:** ...
-- "The World I Love" → **The Music:** ... **The Screen:** ... **The Table:** ... **The Game:** ...
-  CRITICAL — NAMES NOT VIBES: This section exists to preserve the specific artists, shows, movies, books, foods, restaurants, games, and cultural references that make this person *them*. Do NOT abstract these into aesthetic descriptions. "Billie Eilish" must stay "Billie Eilish" — not become "dark, moody music." "Dr. Who" must stay "Dr. Who" — not become "a love of British sci-fi." Use the real names. Describe the *relationship* to each one — when they listen, how it makes them feel, what it means to them. If only a few seeds are given, extrapolate adjacent tastes that would logically fit, but always use specific names and titles, never genres or moods alone.
-These are examples — you MUST adapt the subsection names to fit the actual character. Invent subsections that make sense for who they are. Every subsection must use the **Name:** format so the UI can parse them.
+Sections:
+1. "Style & Presence" — Wardrobe (specific items and brands), grooming, physicality, travel style
+2. "Daily Life & Habits" — Morning ritual, work, weekends, passions
+3. "People & Connections" — Each person gets their OWN **Name:** subsection. End with **Communication Style:** and **Social Energy:**
+4. "The Inner Mind" — Emotions, pressure, self-talk, relationship with reality
+5. "Quirks & Details" — Diet, languages, pets, guilty pleasures
+6. "Order & Sanctuary" — Home, car, workspace, systems
+7. "The World I Love" — Specific artists, shows, movies, books, food, games, sports. Use real names, not genres. Describe the relationship to each one.
 
-Crucial Instruction: Use the character facts as your foundation, but actively extrapolate and invent logical details. Do not just repeat what was given; breathe life into them. Write the responses in the first person as if the character is describing themselves using their own voice, style, and tone. Do not include dates in the response. Use ages or durations instead. 
+--- CHARACTER INPUTS ---
 
-CRITICAL: Do NOT output "Core Beliefs" or "Manifesto" in the generated text, as the user already knows these.
-
-CRITICAL CONTENT RULES:
-SPECIFICITY OVER SUMMARY: You must use the specific proper nouns found in the character facts.
-Bad: 'I enjoy coffee and love my wife.'
-Good: 'I enjoy espresso from my Jura and adore my wife Iris.'
-INCLUDE THE DETAILS: If the character facts mention specific brands (Jura, Boss), specific locations (Carlisle, Provence), or specific people (Sage, Brian), you MUST weave them into the narrative. Do not scrub these details. They are the soul of the character.
-NO GENERALIZATIONS: Do not turn 'I run Atrium' into 'I run a business.' Use the specific facts provided.
-
-Character Identity: {DEFINING_WORDS}
-These words define the character's archetype — the core of who they are. Use these as the foundation for every aspect of the character's voice, decisions, and worldview.
+Identity: {DEFINING_WORDS}
 
 Living Situation: {PRESENT_LIVING}
 
