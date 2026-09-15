@@ -26,8 +26,48 @@ const hkGrotesk = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Earnest Page Beta",
-  description: "Stop reacting. Start commanding. Build your real-life character bible.",
+  title: {
+    default: "Earnest Page — Your Character Editor for Reality",
+    template: "%s | Earnest Page",
+  },
+  description:
+    "Stop reacting. Start commanding. Earnest Page is a social app that helps you build your real-life character bible — track beliefs, shift patterns, and level up who you are.",
+  metadataBase: new URL("https://earnestpage.com"),
+  alternates: {
+    canonical: "/",
+  },
+  keywords: [
+    "earnest page",
+    "earnestpage",
+    "character editor",
+    "self improvement app",
+    "belief tracking",
+    "personal growth social media",
+  ],
+  openGraph: {
+    title: "Earnest Page — Your Character Editor for Reality",
+    description:
+      "Stop reacting. Start commanding. Build your real-life character bible.",
+    url: "https://earnestpage.com",
+    siteName: "Earnest Page",
+    type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Earnest Page — Your Character Editor for Reality",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Earnest Page — Your Character Editor for Reality",
+    description:
+      "Stop reacting. Start commanding. Build your real-life character bible.",
+    images: ["/og-image.png"],
+  },
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -60,6 +100,22 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        {/* Structured Data (JSON-LD) for search engines */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "Earnest Page",
+              url: "https://earnestpage.com",
+              description:
+                "A social app that helps you build your real-life character bible — track beliefs, shift patterns, and level up who you are.",
+              applicationCategory: "LifestyleApplication",
+              operatingSystem: "Web",
+            }),
+          }}
+        />
         {/* TikTok Pixel */}
         <script
           dangerouslySetInnerHTML={{
