@@ -25,9 +25,6 @@ export async function GET(req: Request) {
         const totalUsers = allUsers.length;
 
         let newSignups = 0;
-        let activeSubscriptions = 0;
-        let canceledLast24h = 0;
-        let paidLast24h = 0;
 
         for (const userDoc of allUsers) {
             const data = userDoc.data();
@@ -38,19 +35,6 @@ export async function GET(req: Request) {
             if (createdAt && createdAt > yesterday) {
                 newSignups++;
             }
-
-            const sub = data?.subscription;
-            if (sub) {
-                if (sub.status === 'active' && sub.subscribedUntil && new Date(sub.subscribedUntil) > now) {
-                    activeSubscriptions++;
-                }
-                if (sub.subscribedAt && new Date(sub.subscribedAt) > yesterday) {
-                    paidLast24h++;
-                }
-                if (sub.canceledAt && new Date(sub.canceledAt) > yesterday) {
-                    canceledLast24h++;
-                }
-            }
         }
 
         // Posts created in last 24h
@@ -59,36 +43,17 @@ export async function GET(req: Request) {
             .get();
         const postsCreated = postsSnapshot.size;
 
-        // Guest sessions in last 24h
-        const guestSessionsSnapshot = await db.collection('guest_sessions')
-            .where('lastActivity', '>=', yesterday)
-            .get();
-        const guestSessions = guestSessionsSnapshot.size;
 
-        // Funnel metrics — unique visitors, landing views, logins
+
+        // Funnel metrics — landing views, logins
         // Read only yesterday's funnel doc (the cron runs at 8am UTC, so
         // yesterday is the complete 24h window we care about).
         const yesterdayDateStr = yesterday.toLocaleDateString('en-CA'); // YYYY-MM-DD
         const funnelDoc = await db.collection('funnel').doc(yesterdayDateStr).get();
         const funnelData = funnelDoc.exists ? funnelDoc.data() : null;
-        const uniqueVisitors = funnelData?.unique_visitors || 0;
         const landingViews = funnelData?.landing_views || 0;
         const funnelLogins = funnelData?.logins || 0;
-        const landingPct = uniqueVisitors > 0 ? Math.round((landingViews / uniqueVisitors) * 100) : 0;
         const loginPct = landingViews > 0 ? Math.round((funnelLogins / landingViews) * 100) : 0;
-
-        // Active sessions in last 24h (from already-fetched user data)
-        let activeSessions = 0;
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        const todayStr = now.toISOString().split('T')[0];
-        for (const userDoc of allUsers) {
-            const data = userDoc.data();
-            const sessionDate = data?.sessions_today_date;
-            if ((sessionDate === yesterdayStr || sessionDate === todayStr)
-                && (data?.sessions_today || 0) > 0) {
-                activeSessions++;
-            }
-        }
 
         // ── Beta Tester Engagement ─────────────────────────────────
         interface BetaTesterRow {
@@ -171,28 +136,8 @@ export async function GET(req: Request) {
             <td style="padding: 10px 0; text-align: right; color: #34d399; font-weight: 600;">${newSignups}</td>
         </tr>
         <tr style="border-bottom: 1px solid #27272a;">
-            <td style="padding: 10px 0; color: #a1a1aa;">Active Subscriptions</td>
-            <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${activeSubscriptions}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #27272a;">
-            <td style="padding: 10px 0; color: #a1a1aa;">New Payments (24h)</td>
-            <td style="padding: 10px 0; text-align: right; color: #34d399; font-weight: 600;">${paidLast24h}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #27272a;">
-            <td style="padding: 10px 0; color: #a1a1aa;">Cancellations (24h)</td>
-            <td style="padding: 10px 0; text-align: right; color: #f87171; font-weight: 600;">${canceledLast24h}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #27272a;">
-            <td style="padding: 10px 0; color: #a1a1aa;">Active Sessions (24h)</td>
-            <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${activeSessions}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #27272a;">
             <td style="padding: 10px 0; color: #a1a1aa;">Posts Created (24h)</td>
             <td style="padding: 10px 0; text-align: right; color: #fff; font-weight: 600;">${postsCreated}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #27272a;">
-            <td style="padding: 10px 0; color: #a1a1aa;">Guest Sessions (24h)</td>
-            <td style="padding: 10px 0; text-align: right; color: #60a5fa; font-weight: 600;">${guestSessions}</td>
         </tr>
     </table>
 
@@ -200,12 +145,8 @@ export async function GET(req: Request) {
         <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #71717a; margin: 0 0 12px 0;">Visitor Funnel (24h)</p>
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <tr style="border-bottom: 1px solid #27272a;">
-                <td style="padding: 8px 0; color: #a1a1aa;">Unique Visitors</td>
-                <td style="padding: 8px 0; text-align: right; color: #60a5fa; font-weight: 600;">${uniqueVisitors}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #27272a;">
                 <td style="padding: 8px 0; color: #a1a1aa;">Landing Page Views</td>
-                <td style="padding: 8px 0; text-align: right; color: #60a5fa; font-weight: 600;">${landingViews} <span style="color: #52525b; font-size: 11px;">(${landingPct}%)</span></td>
+                <td style="padding: 8px 0; text-align: right; color: #60a5fa; font-weight: 600;">${landingViews}</td>
             </tr>
             <tr>
                 <td style="padding: 8px 0; color: #a1a1aa;">Logins</td>
@@ -255,13 +196,12 @@ export async function GET(req: Request) {
         if (!process.env.GMAIL_APP_PASSWORD) {
             console.warn('[Daily Report] GMAIL_APP_PASSWORD not set. Logging report to console.');
             console.log('[Daily Report]', {
-                totalUsers, newSignups, activeSubscriptions, paidLast24h,
-                canceledLast24h, activeSessions, postsCreated, uniqueVisitors, landingViews, funnelLogins,
+                totalUsers, newSignups, postsCreated, landingViews, funnelLogins,
             });
             return NextResponse.json({
                 success: true,
                 warning: 'GMAIL_APP_PASSWORD not configured. Report logged to console.',
-                metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, guestSessions, uniqueVisitors, landingViews, funnelLogins },
+                metrics: { totalUsers, newSignups, postsCreated, landingViews, funnelLogins },
             });
         }
 
@@ -276,7 +216,7 @@ export async function GET(req: Request) {
         await transporter.sendMail({
             from: `Earnest Page <${ADMIN_EMAIL}>`,
             to: ADMIN_EMAIL,
-            subject: `📊 Daily Report — ${newSignups} new · ${uniqueVisitors} visitors · ${guestSessions} guest chats · ${funnelLogins} logins · ${postsCreated} posts`,
+            subject: `Daily Report -- ${funnelLogins} logins, ${newSignups} new`,
             html: htmlReport,
         });
 
@@ -284,7 +224,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({
             success: true,
-            metrics: { totalUsers, newSignups, activeSubscriptions, paidLast24h, canceledLast24h, activeSessions, postsCreated, guestSessions, uniqueVisitors, landingViews, funnelLogins },
+            metrics: { totalUsers, newSignups, postsCreated, landingViews, funnelLogins },
         });
 
     } catch (error: any) {
