@@ -1,6 +1,7 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateObject, streamText, generateText } from 'ai';
+import { generateObject, streamText, generateText, jsonSchema as createJsonSchema } from 'ai';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
@@ -16,10 +17,22 @@ function getProviderModel(modelName: string) {
     return anthropic(modelName);
 }
 
+/**
+ * Convert a Zod schema to a JSON Schema with `type: 'object'` at the top level.
+ * claude-opus-5 requires `type` in the tool input_schema; discriminated unions
+ * produce schemas without it, causing validation errors.
+ */
+function fixSchema(zodSchema: any) {
+    const converted: any = zodToJsonSchema(zodSchema, { $refStrategy: 'none' });
+    if (!converted.type) converted.type = 'object';
+    return createJsonSchema(converted);
+}
+
 export async function generateWithFallback(options: any) {
     const primary = options.primaryModelId || OPUS_MODEL;
     const fallback = options.fallbackModelId || OPUS_FALLBACK;
-    const { primaryModelId, fallbackModelId, abortSignal, ...aiOptions } = options;
+    const { primaryModelId, fallbackModelId, abortSignal, schema, ...aiOptions } = options;
+    const fixedSchema = fixSchema(schema);
 
     // Disable extended thinking for structured output — thinking conflicts
     // with forced tool calls that generateObject uses for schema compliance.
@@ -35,6 +48,7 @@ export async function generateWithFallback(options: any) {
         console.log(`Attempting generation with primary model (${primary})...`);
         return await generateObject({
             ...aiOptions,
+            schema: fixedSchema,
             providerOptions,
             ...(abortSignal && { abortSignal }),
             model: getProviderModel(primary),
@@ -44,6 +58,7 @@ export async function generateWithFallback(options: any) {
         console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
         return await generateObject({
             ...aiOptions,
+            schema: fixedSchema,
             providerOptions,
             abortSignal: AbortSignal.timeout(150_000),
             model: getProviderModel(fallback),
