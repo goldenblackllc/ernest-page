@@ -71,7 +71,18 @@ export async function GET(req: Request) {
                             'bible.status': 'ready',
                         });
 
-                        console.log(`[RecompileBibles] ✅ ${uid} — recompiled successfully`);
+                        // Fire avatar regeneration in the background (bible changed → avatar should update)
+                        const origin = new URL(req.url).origin;
+                        fetch(`${origin}/api/character/avatar`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-internal-key': process.env.CRON_SECRET || '',
+                            },
+                            body: JSON.stringify({ uid }),
+                        }).catch(err => console.error(`[RecompileBibles] Avatar trigger failed for ${uid} (non-fatal):`, err.message));
+
+                        console.log(`[RecompileBibles] ✅ ${uid} — recompiled successfully, avatar regeneration triggered`);
                         return { uid, status: 'success' as const };
                     } catch (err: any) {
                         console.error(`[RecompileBibles] ❌ ${uid} — ${err.message}`);

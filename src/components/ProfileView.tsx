@@ -235,7 +235,7 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
         setError(null);
 
         try {
-            const { doc, setDoc } = await import('firebase/firestore');
+            const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
             await setDoc(doc(db, 'users', user.uid), {
                     gender: data.gender.trim(),
                     birthdate: data.birthdate.trim(),
@@ -249,9 +249,10 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
                 avatar: {
                     status: 'pending',
                 },
+                bible_dirty_since: serverTimestamp(),
             }, { merge: true });
 
-            // Fire avatar regeneration in the background (no bible recompile needed)
+            // Fire avatar regeneration in the background
             const idToken = await user.getIdToken();
             fetch('/api/character/avatar', {
                 method: 'POST',
