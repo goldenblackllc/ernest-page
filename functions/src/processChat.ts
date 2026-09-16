@@ -33,12 +33,13 @@ export const processChat = onDocumentUpdated(
         const uid = event.params.uid;
         const sessionId = event.params.sessionId;
 
-        console.log(`[ProcessChat] Trigger fired for user=${uid} session=${sessionId} isClosed=${after?.isClosed} before.isClosed=${before?.isClosed} processing=${after?.processing}`);
-        
+        // Early exit: this triggers on every chat message update, but we only
+        // care when the chat is closed. Skip silently to avoid log spam.
         if (!after || after.isClosed !== true) {
-            console.log(`[ProcessChat] Skipping — isClosed is not true`);
             return;
         }
+
+        console.log(`[ProcessChat] Trigger fired for user=${uid} session=${sessionId} isClosed=${after?.isClosed} before.isClosed=${before?.isClosed} processing=${after?.processing}`);
         
         const now = Date.now();
         // Skip if already being processed (unless the claim is stale > 10 min)

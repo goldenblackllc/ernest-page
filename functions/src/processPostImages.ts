@@ -39,6 +39,9 @@ const MAX_POSTS_PER_RUN = 3;
 /** Per-post retry cap — after this many attempts, accept partial images and publish */
 const MAX_IMAGE_RETRIES = 10;
 
+/** How long a batch job can stay in RUNNING/PENDING before we treat it as failed (60 min) */
+const BATCH_TIMEOUT_MS = 60 * 60 * 1000;
+
 export const processPostImages = onSchedule(
     {
         schedule: 'every 10 minutes',
@@ -48,6 +51,10 @@ export const processPostImages = onSchedule(
         maxInstances: 1,  // Only one instance at a time — no parallel runs
     },
     async () => {
+        // Track post IDs that already have a batch in flight so Phase B
+        // doesn't submit duplicate batches for the same posts.
+        const postsWithActiveBatches = new Set<string>();
+
         // ═════════════════════════════════════════════════════════════════════
         // Phase A: Poll active batch jobs and collect completed results
         // ═════════════════════════════════════════════════════════════════════
@@ -58,8 +65,31 @@ export const processPostImages = onSchedule(
             if (activeJobs.length > 0) {
                 console.log(`[Phase2] Polling ${activeJobs.length} active batch job(s)...`);
 
+                let timedOut = 0;
+                let stillRunning = 0;
+                let completed = 0;
+
                 for (const job of activeJobs) {
+                    // Record which posts are covered by this batch before polling,
+                    // so we skip them in Phase B even if the job is still running.
+                    job.post_ids.forEach(id => postsWithActiveBatches.add(id));
+
+                    const prevState = job.state;
                     await processCompletedBatch(job);
+
+                    // Count outcomes for summary (re-read isn't needed; infer from state)
+                    const ageMs = Date.now() - (job.created_at || 0);
+                    if (ageMs > BATCH_TIMEOUT_MS) {
+                        timedOut++;
+                    } else if (prevState === 'JOB_STATE_RUNNING' || prevState === 'JOB_STATE_PENDING') {
+                        stillRunning++;
+                    } else {
+                        completed++;
+                    }
+                }
+
+                if (timedOut > 0 || completed > 0) {
+                    console.log(`[Phase2] Poll summary: ${stillRunning} still running, ${completed} completed, ${timedOut} timed out`);
                 }
             }
         } catch (err: any) {
@@ -159,6 +189,12 @@ export const processPostImages = onSchedule(
         const postsToIncrement: Array<{ ref: FirebaseFirestore.DocumentReference; retryCount: number }> = [];
 
         for (const postDoc of pendingPosts.docs) {
+            // Skip posts that already have an active batch — avoids duplicate submissions
+            if (postsWithActiveBatches.has(postDoc.id)) {
+                console.log(`[Phase2] Skipping post ${postDoc.id} — already has active batch`);
+                continue;
+            }
+
             const postData = postDoc.data();
             const imagePrompts: string[] = postData.image_prompts || [];
             const existingImages: string[] = postData.message_images || [];
@@ -286,11 +322,25 @@ export const processPostImages = onSchedule(
 async function processCompletedBatch(job: BatchJobRecord): Promise<void> {
     try {
         const status = await pollBatchJob(job.jobName);
-        console.log(`[Phase2] Batch ${job.jobName} state: ${status.state}`);
+
+        // Only log state when it changes — avoids flooding logs with 'still running' for every batch every 10 min
+        if (status.state !== job.state) {
+            console.log(`[Phase2] Batch ${job.jobName} state: ${job.state} → ${status.state}`);
+        }
 
         if (status.state === 'JOB_STATE_PENDING' || status.state === 'JOB_STATE_RUNNING') {
-            // Still in progress — update state in tracker and wait for next cycle
-            await updateBatchJobState(job.jobName, status.state as BatchJobRecord['state']);
+            // Check if the batch has been stuck for too long
+            const ageMs = Date.now() - (job.created_at || 0);
+            if (ageMs > BATCH_TIMEOUT_MS) {
+                const ageMin = Math.round(ageMs / 60000);
+                console.warn(`[Phase2] Batch ${job.jobName} timed out after ${ageMin} min (state: ${status.state}) — marking failed and cleaning up`);
+                await updateBatchJobState(job.jobName, 'JOB_STATE_FAILED', `Timed out after ${ageMin} minutes in ${status.state}`);
+                await deleteBatchRecord(job.jobName);
+                return;
+            }
+
+            // Still in progress and within timeout — update state in tracker and wait for next cycle
+            await updateBatchJobState(job.jobName, status.state as BatchJobRecord['state'], undefined, job.state);
             return;
         }
 

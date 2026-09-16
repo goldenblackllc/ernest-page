@@ -111,14 +111,25 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                 <h2 className="text-xl font-bold text-white">My People</h2>
             </div>
 
-            {/* Scrollable list of people */}
+            {/* Scrollable list of people, sorted alphabetically by name */}
             <div className="flex-1 overflow-y-auto min-h-0 py-1 pr-1">
                 {items.length === 0 ? (
                     <div className="py-8 text-center text-sm text-zinc-500">
                         No people added yet. Tap below to add someone.
                     </div>
                 ) : (
-                    items.map((person, index) => {
+                    items
+                        .map((person, index) => ({ person, originalIndex: index }))
+                        .sort((a, b) => {
+                            const nameA = a.person.name.trim().toLowerCase();
+                            const nameB = b.person.name.trim().toLowerCase();
+                            // Push empty names to the end
+                            if (!nameA && !nameB) return 0;
+                            if (!nameA) return 1;
+                            if (!nameB) return -1;
+                            return nameA.localeCompare(nameB);
+                        })
+                        .map(({ person, originalIndex: index }) => {
                         const isExpanded = expandedIndex === index;
 
                         return (

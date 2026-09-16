@@ -62,7 +62,6 @@ export async function getActiveBatchJobs(): Promise<BatchJobRecord[]> {
             jobs.push(doc.data() as BatchJobRecord);
         });
         
-        console.log(`[BatchTracker] Found ${jobs.length} active batch jobs`);
         return jobs;
     } catch (error) {
         console.error('[BatchTracker] Error fetching active batch jobs:', error);
@@ -80,7 +79,9 @@ export async function getActiveBatchJobs(): Promise<BatchJobRecord[]> {
 export async function updateBatchJobState(
     jobName: string, 
     state: BatchJobRecord['state'], 
-    error?: string
+    error?: string,
+    /** Pass the previous state to suppress log noise when state hasn't changed */
+    previousState?: string,
 ): Promise<void> {
     try {
         const docId = getDocId(jobName);
@@ -94,7 +95,11 @@ export async function updateBatchJobState(
         }
 
         await db.collection(COLLECTION_NAME).doc(docId).update(updateData);
-        console.log(`[BatchTracker] Updated batch job ${jobName} state to ${state}`);
+
+        // Only log when the state actually changed to avoid log spam from polling
+        if (state !== previousState) {
+            console.log(`[BatchTracker] Updated batch job ${jobName} state to ${state}`);
+        }
     } catch (err) {
         console.error(`[BatchTracker] Error updating batch job state for ${jobName}:`, err);
         throw err;
