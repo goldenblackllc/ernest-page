@@ -54,7 +54,7 @@ service cloud.firestore {
         && (resource.data.uid == request.auth.uid
             || resource.data.authorId == request.auth.uid)
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['visibility', 'is_public']);
+            .hasOnly(['visibility', 'is_public', 'shareToken']);
 
       // Authors can delete their own posts
       allow delete: if request.auth != null

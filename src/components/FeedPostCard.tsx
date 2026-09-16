@@ -87,6 +87,7 @@ interface FeedPostProps {
         short_video_url?: string;
         translations?: Record<string, any>;
         _translated?: Record<string, any>;
+        shareToken?: string;
     };
     followingMap?: Record<string, string>;
     onFollowClick?: (authorId: string) => void;
@@ -218,10 +219,49 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         return () => { probe.src = ''; };
     }, [unifiedAudioUrl]);
 
-    // Share handler — Web Share API with clipboard fallback
+    const { user } = useAuth();
+
+    // Share handler — author gets unlisted /s/:token link, others get /post/:id
     const [shareToast, setShareToast] = useState(false);
+    const shareTokenRef = useRef<string | null>(post.shareToken || null);
+    const [isGeneratingShare, setIsGeneratingShare] = useState(false);
     const handleShare = useCallback(async () => {
-        const url = `${window.location.origin}/post/${post.id}`;
+        const postAuthor = post.authorId || post.uid;
+        const isOwner = user?.uid === postAuthor;
+
+        let url: string;
+
+        if (isOwner) {
+            // Author flow: generate or reuse a share token
+            if (shareTokenRef.current) {
+                url = `${window.location.origin}/s/${shareTokenRef.current}`;
+            } else {
+                setIsGeneratingShare(true);
+                try {
+                    const idToken = await user!.getIdToken();
+                    const res = await fetch('/api/share', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${idToken}`,
+                        },
+                        body: JSON.stringify({ postId: post.id }),
+                    });
+                    if (!res.ok) throw new Error('Failed to generate share link');
+                    const data = await res.json();
+                    shareTokenRef.current = data.shareToken;
+                    url = `${window.location.origin}/s/${data.shareToken}`;
+                } catch {
+                    // Fallback to regular post link
+                    url = `${window.location.origin}/post/${post.id}`;
+                } finally {
+                    setIsGeneratingShare(false);
+                }
+            }
+        } else {
+            url = `${window.location.origin}/post/${post.id}`;
+        }
+
         try {
             if (navigator.share) {
                 await navigator.share({ title: 'Earnest Page', url });
@@ -231,7 +271,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 setTimeout(() => setShareToast(false), 2000);
             }
         } catch { /* user cancelled share sheet */ }
-    }, [post.id]);
+    }, [post.id, post.authorId, post.uid, post.shareToken, user]);
 
     // Compute letter word ratio for phase boundary estimation
     const { letter: letterText, response: responseText } = getPostText(post);
@@ -632,8 +672,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             setTranslatedData(post._translated);
         }
     }, [post._translated]);
-
-    const { user } = useAuth();
 
     // Comment state
     const [isCommentOpen, setIsCommentOpen] = useState(false);
