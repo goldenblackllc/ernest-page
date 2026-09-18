@@ -10,14 +10,12 @@ describe('PeopleEditor', () => {
             name: 'Sarah Connor',
             relationship: 'Partner',
             who: 'Engineer, loves sci-fi',
-            dynamic: 'Supportive and adventurous',
             birthday: '1990-05-12',
         },
         {
             name: 'John Doe',
             relationship: 'Mentor',
             who: 'Retired professor',
-            dynamic: 'Weekly coffee chats',
             birthday: '08-15',
         },
     ];
@@ -52,15 +50,13 @@ describe('PeopleEditor', () => {
         // Fields are now visible
         expect(screen.getByPlaceholderText('Full name')).toHaveValue('Sarah Connor');
         expect(screen.getByPlaceholderText('e.g. Partner, Friend, Coworker')).toHaveValue('Partner');
-        expect(screen.getByPlaceholderText('Age, personality, interests...')).toHaveValue('Engineer, loves sci-fi');
-        expect(screen.getByPlaceholderText('Your relationship with them...')).toHaveValue('Supportive and adventurous');
+        expect(screen.getByPlaceholderText('Age, personality, interests, your relationship dynamic...')).toHaveValue('Engineer, loves sci-fi');
         expect(screen.getByPlaceholderText('MM-DD or YYYY-MM-DD')).toHaveValue('1990-05-12');
 
         // Labels are present
         expect(screen.getByLabelText(/Name/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Relationship/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/About them/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Your dynamic/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Birthday/i)).toBeInTheDocument();
     });
 

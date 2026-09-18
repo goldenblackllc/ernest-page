@@ -24,7 +24,7 @@ Rules:
 - If two inputs overlap or contradict, merge them into one clean statement. Example: want="be financially free" + dream_financial="$3M net worth" → "I have a $3M net worth."
 - Physical traits should be stated as natural attributes, not achievements. Example: "be 182 pounds, be strong and fit" + height="6'1" → "I'm six-one, 182 pounds, strong and fit."
 - Strip the aspiration, keep the specificity. Every brand, number, place name, and proper noun survives.
-- For people: rewrite each person's dynamic from the perspective of someone who is completely loving and at peace. Others may carry friction toward this person, but this person does not carry it back. State the relationship as settled, warm, and clear-eyed — not aspirational, not conflicted.`;
+- For people: rewrite each person's description from the perspective of someone who is completely loving and at peace. Others may carry friction toward this person, but this person does not carry it back. State the relationship as settled, warm, and clear-eyed — not aspirational, not conflicted.`;
 
 const PHASE1_USER_PROMPT = `Rewrite the following raw inputs as present-tense facts about a real, living person who is fully actualized and at peace.
 
@@ -128,7 +128,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
     const unifiedPeople = data?.people || [];
     const peopleString = unifiedPeople.length > 0
         ? unifiedPeople.map((p: any) =>
-            `Name: ${p.name}\nRelationship: ${p.relationship}\nWho: ${p.who || 'N/A'}\nDynamic: ${p.dynamic || 'N/A'}`
+            `Name: ${p.name}\nRelationship: ${p.relationship}\nAbout: ${p.who || 'N/A'}`
         ).join('\n\n')
         : 'None';
 

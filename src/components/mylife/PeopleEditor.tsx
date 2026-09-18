@@ -101,7 +101,7 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
         'transition-colors'
     );
 
-    const textareaClasses = cn(inputClasses, 'resize-none min-h-[60px]');
+    const textareaClasses = cn(inputClasses, 'resize-none min-h-[120px]');
 
     return (
         <div className={cn('flex flex-col h-full w-full min-h-0', className)}>
@@ -227,27 +227,7 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                                         handleFieldChange(index, 'who', e.target.value)
                                                     }
                                                     onBlur={handleFieldBlur}
-                                                    placeholder="Age, personality, interests..."
-                                                    className={textareaClasses}
-                                                />
-                                            </div>
-
-                                            {/* Your dynamic (Optional) */}
-                                            <div>
-                                                <label
-                                                    htmlFor={`person-${index}-dynamic`}
-                                                    className="block text-xs text-zinc-500 uppercase tracking-wide mb-1 font-medium"
-                                                >
-                                                    Your dynamic
-                                                </label>
-                                                <textarea
-                                                    id={`person-${index}-dynamic`}
-                                                    value={person.dynamic ?? ''}
-                                                    onChange={(e) =>
-                                                        handleFieldChange(index, 'dynamic', e.target.value)
-                                                    }
-                                                    onBlur={handleFieldBlur}
-                                                    placeholder="Your relationship with them..."
+                                                    placeholder="Age, personality, interests, your relationship dynamic..."
                                                     className={textareaClasses}
                                                 />
                                             </div>
