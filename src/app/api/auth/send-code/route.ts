@@ -7,9 +7,38 @@ const client = twilio(
 );
 
 const VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID!;
+const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 
 // 5 SMS requests per 15 minutes per IP
 const SEND_CODE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
+
+/**
+ * Verify a Cloudflare Turnstile token server-side.
+ * Returns true if the token is valid, false otherwise.
+ */
+async function verifyTurnstileToken(token: string, ip: string): Promise<boolean> {
+    if (!TURNSTILE_SECRET_KEY) {
+        console.warn('[send-code] TURNSTILE_SECRET_KEY not set — skipping Turnstile verification');
+        return true; // Allow in dev/staging when key isn't configured
+    }
+
+    try {
+        const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                secret: TURNSTILE_SECRET_KEY,
+                response: token,
+                remoteip: ip,
+            }),
+        });
+        const data = await res.json();
+        return data.success === true;
+    } catch (err) {
+        console.error('[send-code] Turnstile verification error:', err);
+        return false;
+    }
+}
 
 export async function POST(req: Request) {
     try {
@@ -18,7 +47,19 @@ export async function POST(req: Request) {
         const rl = checkRateLimit(`send-code-ip:${ip}`, SEND_CODE_LIMIT);
         if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
-        const { phone, channel } = await req.json();
+        const { phone, channel, turnstileToken } = await req.json();
+
+        // Verify Turnstile token (bot protection)
+        if (TURNSTILE_SECRET_KEY) {
+            if (!turnstileToken) {
+                return Response.json({ error: "Security verification required." }, { status: 403 });
+            }
+            const isHuman = await verifyTurnstileToken(turnstileToken, ip);
+            if (!isHuman) {
+                console.warn('[send-code] Turnstile verification failed for IP:', ip);
+                return Response.json({ error: "Security verification failed. Please refresh and try again." }, { status: 403 });
+            }
+        }
 
         if (!phone) {
             return Response.json({ error: "Phone number is required." }, { status: 400 });

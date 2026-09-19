@@ -9,6 +9,7 @@ import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
 import { detectCountryFromTimezone } from '@/lib/constants/countryCodes';
 import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 import { parsePhoneNumber, type CountryCode as PhoneCountryCode } from 'libphonenumber-js';
+import Turnstile from '@/components/auth/Turnstile';
 
 /**
  * Parses any phone input into E.164 format using libphonenumber-js.
@@ -42,6 +43,7 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState(() => detectCountryFromTimezone());
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const router = useRouter();
     const { trackEvent } = useTrackEvent();
 
@@ -67,17 +69,19 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
             const res = await fetch('/api/auth/send-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: normalized }),
+                body: JSON.stringify({ phone: normalized, turnstileToken }),
             });
             const data = await res.json();
             if (!res.ok) {
                 setError(data.error || t('errorSendFailed'));
+                setTurnstileToken(null); // Reset so user must re-verify
                 return;
             }
             setStep('INPUT_CODE');
         } catch (err: any) {
             console.error("Error sending code:", err);
             setError(t('errorSendFailed'));
+            setTurnstileToken(null);
         } finally {
             setLoading(false);
         }
@@ -134,9 +138,14 @@ export default function OTPLogin({ onSuccess }: { onSuccess?: () => void } = {})
                             className="flex-1 min-w-0 border-2 border-black p-4 text-lg outline-none placeholder:text-gray-400"
                         />
                     </div>
+                    <Turnstile
+                        onVerify={setTurnstileToken}
+                        onExpire={() => setTurnstileToken(null)}
+                        theme="light"
+                    />
                     <button
                         onClick={handleSendCode}
-                        disabled={loading}
+                        disabled={loading || !turnstileToken}
                         className="bg-black text-white p-4 text-lg font-bold uppercase hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
                         {loading ? t('sending') : t('sendCode')}

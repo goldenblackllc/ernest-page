@@ -14,6 +14,7 @@ import { detectCountryFromTimezone } from '@/lib/constants/countryCodes';
 
 import { PublicFeed } from '@/components/PublicFeed';
 import { parsePhoneNumber, type CountryCode as PhoneCountryCode } from 'libphonenumber-js';
+import Turnstile from '@/components/auth/Turnstile';
 
 /**
  * Parses any phone input into E.164 format using libphonenumber-js.
@@ -74,6 +75,7 @@ export function LandingPage() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState('US'); // Fallback for SSR
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
     useEffect(() => {
         // Detect timezone-based country after hydration to avoid SSR mismatch
@@ -110,17 +112,19 @@ export function LandingPage() {
             const res = await fetch('/api/auth/send-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: normalized }),
+                body: JSON.stringify({ phone: normalized, turnstileToken }),
             });
             const data = await res.json();
             if (!res.ok) {
                 setError(data.error || t('landing.auth.errorSendFailed'));
+                setTurnstileToken(null);
                 return;
             }
             setStep('INPUT_CODE');
         } catch (err: any) {
             console.error('Error sending code:', err);
             setError(t('landing.auth.errorSendFailed'));
+            setTurnstileToken(null);
         } finally {
             setLoading(false);
         }
@@ -291,9 +295,14 @@ export function LandingPage() {
                                             className="flex-1 min-w-0 bg-zinc-900/80 border border-white/10 px-4 py-3.5 text-base text-white placeholder-zinc-600 rounded-xl focus:border-zinc-500 transition-all duration-150"
                                         />
                                     </div>
+                                    <Turnstile
+                                        onVerify={setTurnstileToken}
+                                        onExpire={() => setTurnstileToken(null)}
+                                        theme="dark"
+                                    />
                                     <button
                                         onClick={handleSendCode}
-                                        disabled={loading}
+                                        disabled={loading || !turnstileToken}
                                         className="w-full bg-white text-black py-3.5 text-sm font-bold tracking-wide rounded-full hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:hover:bg-white"
                                     >
                                         {loading ? t('landing.auth.sending') : t('landing.auth.sendCode')}
