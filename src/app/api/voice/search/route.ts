@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
         // Build ElevenLabs shared voices URL
         const params = new URLSearchParams({
-            page_size: '24',
+            page_size: '50',
             language,
             sort: 'usage_character_count_1y',
             ...(gender && { gender }),

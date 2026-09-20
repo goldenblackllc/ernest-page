@@ -20,8 +20,13 @@ export async function POST(req: Request) {
             return Response.json({ error: 'Invalid voice ID' }, { status: 400 });
         }
 
-        // Just update the bible with the new shared voice ID — no ElevenLabs creation needed
+        // Update the user's voice selection
         await db.collection('users').doc(uid).set({
+            voice: {
+                id: voiceId,
+                name: voiceName || '',
+            },
+            // Keep character_bible in sync for server-side TTS consumers
             character_bible: {
                 voice_id: voiceId,
                 voice_name: voiceName || '',

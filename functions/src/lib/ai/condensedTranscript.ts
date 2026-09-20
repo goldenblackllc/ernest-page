@@ -14,30 +14,17 @@ import { z } from 'zod';
 
 // ─── Zod Schema ──────────────────────────────────────────────────────────────
 
-export const CondensedTranscriptSchema = z.discriminatedUnion('is_publishable', [
-    z.object({
-        is_publishable: z.literal(true),
-        title: z.string().describe('A punchy first-person hook (3-6 words) — raw, confessional, thumb-stopping'),
-        messages: z.array(z.object({
-            role: z.enum(['user', 'ideal_self']),
-            text: z.string(),
-        })).describe('The condensed conversation — alternating user and ideal_self messages'),
-        editorial_note: z.string().describe('Brief note on what you preserved and what you cut'),
-        language: z.string().optional().describe('Primary language of the conversation (e.g., "English", "Español", "日本語")'),
-        reached_close: z.boolean().describe('Did the Ideal Self reach the CLOSE phase — naming the belief shift, assigning specific actions, and releasing the user with warmth? True only if the conversation completed its full arc. False if the user quit early, the conversation stalled, or it never progressed past surface-level Q&A.'),
-    }),
-    z.object({
-        is_publishable: z.literal(false),
-        title: z.string().optional(),
-        messages: z.array(z.object({
-            role: z.enum(['user', 'ideal_self']),
-            text: z.string(),
-        })).optional(),
-        editorial_note: z.string().optional(),
-        language: z.string().optional(),
-        reached_close: z.boolean().optional().describe('Did the conversation reach the CLOSE phase?'),
-    }),
-]);
+export const CondensedTranscriptSchema = z.object({
+    is_publishable: z.boolean().describe('Whether this transcript is worth publishing'),
+    title: z.string().optional().describe('A punchy first-person hook (3-6 words) — raw, confessional, thumb-stopping'),
+    messages: z.array(z.object({
+        role: z.enum(['user', 'ideal_self']),
+        text: z.string(),
+    })).optional().describe('The condensed conversation — alternating user and ideal_self messages'),
+    editorial_note: z.string().optional().describe('Brief note on what you preserved and what you cut'),
+    language: z.string().optional().describe('Primary language of the conversation (e.g., "English", "Español", "日本語")'),
+    reached_close: z.boolean().optional().describe('Did the Ideal Self reach the CLOSE phase — naming the belief shift, assigning specific actions, and releasing the user with warmth? True only if the conversation completed its full arc. False if the user quit early, the conversation stalled, or it never progressed past surface-level Q&A.'),
+});
 
 export type CondensedTranscript = z.infer<typeof CondensedTranscriptSchema>;
 
