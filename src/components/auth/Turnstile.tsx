@@ -40,6 +40,7 @@ export default function Turnstile({ onVerify, onExpire, theme = 'auto', classNam
             'expired-callback': () => onExpireRef.current?.(),
             theme,
             size: 'flexible',
+            appearance: 'interaction-only',
         });
     }, [theme]);
 
