@@ -182,7 +182,7 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                 <section>
                     <h2 className={sectionHeaderClass}>
                         <Users className="w-4 h-4 text-amber-500" />
-                        My People
+                        My People / Pets
                     </h2>
                     <div className="space-y-4">
                         {people.map((person, i) => (
