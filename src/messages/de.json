@@ -660,7 +660,10 @@
       "td5_3": "Telefonnummer (nur für OTP-Zustellung)",
       "td6_1": "Vercel",
       "td6_2": "Hosting und Bereitstellung",
-      "td6_3": "Serverprotokolle, Anfragemetadaten"
+      "td6_3": "Serverprotokolle, Anfragemetadaten",
+      "td7_1": "Cloudflare Turnstile",
+      "td7_2": "Bot-Schutz beim Anmelden",
+      "td7_3": "Browsersignale (keine personenbezogenen Daten erhoben)"
     },
     "s5": {
       "title": "5. Anonymität & öffentliche Inhalte",

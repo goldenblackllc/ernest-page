@@ -643,7 +643,10 @@
       "td5_3": "Número de telefone (apenas para envio de OTP)",
       "td6_1": "Vercel",
       "td6_2": "Hospedagem e implantação",
-      "td6_3": "Logs do servidor, metadados de requisições"
+      "td6_3": "Logs do servidor, metadados de requisições",
+      "td7_1": "Cloudflare Turnstile",
+      "td7_2": "Proteção contra bots durante o login",
+      "td7_3": "Sinais do navegador (nenhum dado pessoal coletado)"
     },
     "s5": {
       "title": "5. Anonimato e Conteúdo Público",

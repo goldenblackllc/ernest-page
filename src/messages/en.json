@@ -663,7 +663,10 @@
       "td5_3": "Phone number (for OTP delivery only)",
       "td6_1": "Vercel",
       "td6_2": "Hosting and deployment",
-      "td6_3": "Server logs, request metadata"
+      "td6_3": "Server logs, request metadata",
+      "td7_1": "Cloudflare Turnstile",
+      "td7_2": "Bot protection during login",
+      "td7_3": "Browser signals (no personal data collected)"
     },
     "s5": {
       "title": "5. Anonymity & Public Content",
