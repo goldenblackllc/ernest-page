@@ -149,7 +149,7 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                                 <Circle className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="text"
-                                    placeholder="I want to..."
+                                    placeholder="I want..."
                                     className={cn(inputClass, "pl-9")}
                                     value={wants[i]}
                                     onChange={(e) => updateArray(setWants, i, e.target.value)}
