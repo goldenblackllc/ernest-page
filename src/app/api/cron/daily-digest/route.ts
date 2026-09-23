@@ -47,7 +47,7 @@ export async function GET(req: Request) {
             const lastActive = userData?.last_active_date;
             if (!lastActive) continue; // No activity tracking yet — user hasn't opened app since deploy
             const daysSinceActive = Math.floor((Date.now() - new Date(lastActive).getTime()) / (24 * 60 * 60 * 1000));
-            if (daysSinceActive > 7) continue;
+            if (daysSinceActive > 1) continue;
 
             // Split each category into subcategories
             const allSubsections: { title: string; content: string }[] = [];
