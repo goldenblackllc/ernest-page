@@ -144,6 +144,7 @@
     }
   },
   "onboarding": {
+    "headerTitle": "Comenzar",
     "processing": "Construyendo tu personaje...",
     "processingSubtext": "Esto toma un momento. Espera un poco.",
     "submitLabel": "Crear Mi Personaje",
@@ -154,6 +155,7 @@
       "genderLabel": "Género",
       "genderPlaceholder": "Hombre, Mujer, etc.",
       "bornLabel": "Fecha de nacimiento",
+      "aboutYouLabel": "Sobre Ti",
       "ethnicityLabel": "Etnia (opcional)",
       "ethnicityPlaceholder": "ej., Dominicano, Filipino, Persa, Nigeriano, Irlandés-Italiano",
       "skinToneLabel": "Tono de Piel",
