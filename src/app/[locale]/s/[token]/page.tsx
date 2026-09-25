@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, Heart, MessageCircle, Share2 } from "lucide-react";
 import { use } from "react";
 import { getPostText } from '@/lib/getPostText';
+import { useTranslations } from 'next-intl';
 
 /**
  * Shared post viewer — public page, no auth required.
@@ -15,6 +16,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
     const [post, setPost] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const t = useTranslations("post");
 
     // Audio state
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -122,7 +124,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
         const url = window.location.href;
         try {
             if (navigator.share) {
-                await navigator.share({ title: 'Earnest Page', url });
+                await navigator.share({ title: t('brand'), url });
             } else {
                 await navigator.clipboard.writeText(url);
             }
@@ -141,8 +143,8 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center px-8">
-                    <h1 className="text-xl font-bold text-white mb-2">Post not found</h1>
-                    <p className="text-zinc-500 text-sm mb-6">This shared link may have expired or been removed.</p>
+                    <h1 className="text-xl font-bold text-white mb-2">{t('notFound')}</h1>
+                    <p className="text-zinc-500 text-sm mb-6">{t('sharedNotFoundDesc')}</p>
                     <a href="/" className="text-sm text-white underline underline-offset-4 hover:text-zinc-300">
                         Visit Earnest Page
                     </a>
@@ -249,8 +251,8 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
 
     return (
         <div className="min-h-screen bg-black flex items-center justify-center p-4">
-            <title>{publicTitle || 'Earnest Page'}</title>
-            <meta property="og:title" content={publicTitle || 'Earnest Page'} />
+            <title>{publicTitle || t('brand')}</title>
+            <meta property="og:title" content={publicTitle || t('brand')} />
             <meta property="og:description" content={publicLetter?.slice(0, 160) || 'A letter on Earnest Page'} />
             {heroUrl && <meta property="og:image" content={heroUrl} />}
             <meta property="og:type" content="article" />
@@ -273,7 +275,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
 
                             {/* Title + Branding */}
                             <div className="absolute top-4 left-4 right-4 z-20">
-                                <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 font-bold mb-1">Earnest Page</p>
+                                <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 font-bold mb-1">{t('brand')}</p>
                                 <h2 className="text-lg font-bold text-white leading-tight drop-shadow-lg">{publicTitle}</h2>
                             </div>
 
@@ -364,7 +366,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                         <h1 className="text-xl font-bold text-white mb-3">{publicTitle}</h1>
                         <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap mb-4">{publicLetter}</div>
                         <div className="border-t border-white/10 pt-4 mt-4">
-                            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">The Response</p>
+                            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">{t('theResponse')}</p>
                             <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">{publicResponse}</div>
                         </div>
                         <div className="mt-6 text-center border-t border-white/10 pt-4">

@@ -2022,7 +2022,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                 <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                             <img
                                                 src={displayUrl}
-                                                alt="Post image"
+                                                alt={t('postImageAlt')}
                                                 className="w-full h-full object-cover transition-all duration-500"
                                             />
                                             {/* Audio play/pause overlay */}
@@ -2087,7 +2087,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     <div className="relative w-full aspect-[21/9] sm:aspect-video object-cover rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                         <Image
                                             src={post.imageUrl}
-                                            alt="Post image"
+                                            alt={t('postImageAlt')}
                                             fill
                                             className={cn(
                                                 "object-cover transition-all duration-500",

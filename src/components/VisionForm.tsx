@@ -172,7 +172,7 @@ export function VisionForm() {
                         <>
                             <img
                                 src={imagePreview}
-                                alt="Vision"
+                                alt={t('visionAlt')}
                                 className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">

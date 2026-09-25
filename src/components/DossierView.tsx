@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { CharacterProfile } from '@/types/character';
 import { FileText, Calendar, Hash, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useFormatter } from 'next-intl';
 
 interface DossierViewProps {
     profile?: CharacterProfile | null;
@@ -31,6 +31,7 @@ export function DossierView({ profile, identity, isOpen, onClose }: DossierViewP
     const userProfile = profile || identity;
     const [openSections, setOpenSections] = useState<Set<number>>(new Set([0]));
     const t = useTranslations('dossier');
+    const format = useFormatter();
 
     if (!isOpen) return null;
 
@@ -77,7 +78,7 @@ export function DossierView({ profile, identity, isOpen, onClose }: DossierViewP
                         {userProfile?.dossier_updated_at && (
                             <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
                                 <Calendar className="w-3 h-3" />
-                                <span>{t('lastUpdated', { date: formatDate(userProfile.dossier_updated_at) })}</span>
+                                <span>{t('lastUpdated', { date: formatDate(userProfile.dossier_updated_at, format) })}</span>
                             </div>
                         )}
                     </div>
@@ -177,12 +178,12 @@ function parseDossier(dossier: string): Array<{ heading?: string; content: strin
     return sections;
 }
 
-function formatDate(timestamp: any): string {
+function formatDate(timestamp: any, format: any): string {
     if (!timestamp) return '';
     try {
         // Handle Firestore Timestamp
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-        return date.toLocaleDateString('en-US', {
+        return format.dateTime(date, {
             month: 'short',
             day: 'numeric',
         });

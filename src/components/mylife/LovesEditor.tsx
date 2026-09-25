@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 export interface LovesEditorProps {
     interests: string[];
@@ -10,6 +11,7 @@ export interface LovesEditorProps {
 }
 
 export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
+    const t = useTranslations("mylife.loves");
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingValue, setEditingValue] = useState('');
     const [newInterest, setNewInterest] = useState('');
@@ -107,7 +109,7 @@ export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
             {/* Header */}
             <div className="flex items-center gap-2 mb-4 shrink-0">
                 <Heart className="w-5 h-5 text-amber-400 shrink-0" />
-                <h2 className="text-xl font-bold text-white">What I Love</h2>
+                <h2 className="text-xl font-bold text-white">{t("title")}</h2>
             </div>
 
             {/* Add Input */}
@@ -117,7 +119,7 @@ export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
                     type="text"
                     value={newInterest}
                     onChange={(e) => setNewInterest(e.target.value)}
-                    placeholder="Add something you love..."
+                    placeholder={t("addPlaceholder")}
                     className={cn(
                         "w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50",
                         "text-white placeholder-zinc-500 text-sm",
@@ -132,7 +134,7 @@ export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
             <div className="flex-1 overflow-y-auto min-h-0 pr-1">
                 {interests.length === 0 ? (
                     <div className="py-8 text-center text-sm text-zinc-500">
-                        No interests added yet. Add what you love below.
+                        {t("noLoves")}
                     </div>
                 ) : (
                     interests.map((interest, index) => {
@@ -164,7 +166,7 @@ export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
                                         <span
                                             onClick={() => handleStartEdit(index, interest)}
                                             className="flex-1 text-white text-sm sm:text-base cursor-pointer hover:text-zinc-200 transition-colors py-1 truncate select-none"
-                                            title="Click to edit"
+                                            title={t("clickToEdit")}
                                         >
                                             {interest}
                                         </span>
@@ -175,8 +177,8 @@ export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
                                     type="button"
                                     onClick={() => handleDelete(index)}
                                     className="ml-2 p-1 text-zinc-600 hover:text-red-400 transition-colors rounded shrink-0"
-                                    aria-label={`Delete ${interest}`}
-                                    title="Delete"
+                                    aria-label={t("deleteItem", { text: interest })}
+                                    title={t("deleteTitle")}
                                 >
                                     <X className="w-4 h-4" />
                                 </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export type MyLifeSection = "wants" | "loves" | "people" | "dream";
 
@@ -15,12 +16,7 @@ interface PillConfig {
   label: string;
 }
 
-const SECTIONS: PillConfig[] = [
-  { id: "wants", label: "Wants" },
-  { id: "loves", label: "Loves" },
-  { id: "people", label: "People" },
-  { id: "dream", label: "Dream" },
-];
+
 
 /**
  * PillBar component renders four pill-shaped buttons in a horizontal row.
@@ -30,6 +26,15 @@ const SECTIONS: PillConfig[] = [
  * Tapping an inactive pill calls `onSelect(section)` to switch sections.
  */
 export function PillBar({ activeSection, onSelect, className }: PillBarProps) {
+  const t = useTranslations("mylife.pillbar");
+  
+  const SECTIONS: PillConfig[] = [
+    { id: "wants", label: t("wants") },
+    { id: "loves", label: t("loves") },
+    { id: "people", label: t("people") },
+    { id: "dream", label: t("dream") },
+  ];
+
   const handleClick = (section: MyLifeSection) => {
     if (activeSection === section) {
       onSelect(null);
@@ -41,7 +46,7 @@ export function PillBar({ activeSection, onSelect, className }: PillBarProps) {
   return (
     <div
       role="toolbar"
-      aria-label="My Life sections"
+      aria-label={t("ariaLabel")}
       className={cn("flex items-center justify-between gap-2 px-4 py-2", className)}
     >
       {SECTIONS.map(({ id, label }) => {

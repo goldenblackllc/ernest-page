@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { Heart } from "lucide-react";
 import { Timestamp, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -17,6 +18,7 @@ export default function SavedPage() {
     const [posts, setPosts] = useState<any[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
+    const t = useTranslations("saved");
 
     const handleConfirmDelete = async () => {
         if (!postToDelete) return;
@@ -59,7 +61,7 @@ export default function SavedPage() {
     if (loading) {
         return (
             <main className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-600 animate-pulse">Loading...</div>
+                <div className="text-[10px] uppercase tracking-widest text-zinc-600 animate-pulse">{t("loading")}</div>
             </main>
         );
     }
@@ -77,9 +79,9 @@ export default function SavedPage() {
                 <div className="px-4 sm:px-0 mb-6">
                     <div className="flex items-center gap-3 mb-2">
                         <Heart className="w-5 h-5 text-zinc-500" />
-                        <h1 className="text-2xl font-bold text-white tracking-tight">Liked</h1>
+                        <h1 className="text-2xl font-bold text-white tracking-tight">{t("title")}</h1>
                     </div>
-                    <p className="text-sm text-zinc-500">Posts you've shown love to.</p>
+                    <p className="text-sm text-zinc-500">{t("subtitle")}</p>
                 </div>
 
                 {loadingPosts ? (
@@ -94,7 +96,7 @@ export default function SavedPage() {
                 ) : posts.length === 0 ? (
                     <div className="p-12 text-center border border-zinc-800 border-dashed rounded-xl bg-transparent">
                         <Heart className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
-                        <p className="text-sm text-zinc-500">No liked posts yet. Tap the heart on any post to save it here.</p>
+                        <p className="text-sm text-zinc-500">{t("empty")}</p>
                     </div>
                 ) : (
                     <section className="flex flex-col gap-6">

@@ -80,18 +80,9 @@ export async function POST(req: Request) {
         const toneDirective = '';
 
         // Determine language instruction for the AI
-        let languageInstruction = "";
-        if (preferredLocale === "es") {
-            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in SPANISH (Español). Do not use English unless the user explicitly asks for an English word.";
-        } else if (preferredLocale === "fr") {
-            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in FRENCH (Français). Do not use English unless the user explicitly asks for an English word.";
-        } else if (preferredLocale === "de") {
-            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in GERMAN (Deutsch). Do not use English unless the user explicitly asks for an English word.";
-        } else if (preferredLocale === "pt") {
-            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in PORTUGUESE (Português). Do not use English unless the user explicitly asks for an English word.";
-        } else {
-            languageInstruction = "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in ENGLISH.";
-        }
+        const localeNames: Record<string, string> = { es: 'SPANISH', fr: 'FRENCH', de: 'GERMAN', pt: 'PORTUGUESE' };
+        const defaultLang = localeNames[preferredLocale] || 'ENGLISH';
+        const languageInstruction = `\n[LANGUAGE DEFAULT]\nYour default language is ${defaultLang}. However, if the user writes to you in a different language, respond in THEIR language — follow the user's lead naturally. Do not force a language they are not speaking.`;
 
         // ─── Build engagement context block (contract + dossier + recaps + unified profile) ───
         let engagementContract = `[ENGAGEMENT CONTRACT — WHY YOU ARE HERE]
@@ -123,9 +114,8 @@ ${sessionRecaps.map((r: { date: string; recap: string }) => `${r.date}: ${r.reca
             mandatePostlude: `- Reference their specifics — their real constraints, the people in their life, what they enjoy. Make them feel known.
 - DO NOT lecture. Suggest, playfully challenge, or ask a sharp question instead.
 - If you detect limiting beliefs, do not confront them aggressively. Starve the problem and feed the possibility instead.
-- End your responses thoughtfully—often with a question that shifts their perspective toward what they actually want.
 - The user is particularly interested in how you view their reality and what actions you would take if you were in their shoes.
-- If the person notes that you do not remember something from a previous session, do not apologize for it. Tell them the truth: you prefer to hear their story as it is today. What they say now is more important than what they said before.`,
+- If the person notes that you do not remember something from a previous session, do not apologize for it. Tell them the truth: you forget on purpose because people get stuck in their stories and you want to hear the current version.`,
             dynamicFilterText: `STEP B - THE DYNAMIC FILTER: Check the "Relationships" node. The character is an equal and a peer. Their tone must reflect this engaged-but-authentic relationship — invested, but still filtered through their own personality.`,
             enableWantingPath: process.env.ENABLE_WANTING_PATH === 'true',
         });

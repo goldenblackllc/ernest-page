@@ -89,7 +89,7 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
                 <button
                     onClick={() => setInternalOpen(true)}
                     className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-zinc-900 border border-zinc-700 shadow-lg flex items-center justify-center hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
-                    aria-label="Open support chat"
+                    aria-label={t('openSupportChat')}
                 >
                     <HelpCircle className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" />
                 </button>

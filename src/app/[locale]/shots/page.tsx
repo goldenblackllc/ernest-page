@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MessageCircle, Clock, Shield, Zap, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 
 // ─── Animation Variants ────────────────────────────────────────────
 const fadeUp = {
@@ -35,54 +36,23 @@ const sectionFade = {
 
 // ─── Entry Points (The Problem Stack) ──────────────────────────────
 const ENTRY_POINTS = [
-    {
-        label: "I'm stuck and I don't know why",
-        subtext: 'Career paralysis, life transitions, feeling frozen',
-        color: 'from-blue-500/20 to-transparent',
-    },
-    {
-        label: "I can't say this out loud to anyone",
-        subtext: 'The thing you carry alone',
-        color: 'from-purple-500/20 to-transparent',
-    },
-    {
-        label: 'I keep making the same mistake',
-        subtext: 'Patterns you can see but can\'t stop',
-        color: 'from-amber-500/20 to-transparent',
-    },
-    {
-        label: 'I know what I should do but I can\'t do it',
-        subtext: 'The gap between intention and action',
-        color: 'from-emerald-500/20 to-transparent',
-    },
-    {
-        label: 'Everyone thinks I\'m fine',
-        subtext: 'The high-functioning mask',
-        color: 'from-rose-500/20 to-transparent',
-    },
+    { key: 'stuck', color: 'from-blue-500/20 to-transparent' },
+    { key: 'secret', color: 'from-purple-500/20 to-transparent' },
+    { key: 'pattern', color: 'from-amber-500/20 to-transparent' },
+    { key: 'gap', color: 'from-emerald-500/20 to-transparent' },
+    { key: 'mask', color: 'from-rose-500/20 to-transparent' },
 ];
 
 // ─── How It Works Steps ────────────────────────────────────────────
 const STEPS = [
-    {
-        icon: Zap,
-        title: 'Choose your entry point',
-        text: 'Pick the thing that\'s on your mind. No intake forms. No waiting rooms. No small talk.',
-    },
-    {
-        icon: MessageCircle,
-        title: 'Have the conversation',
-        text: 'You\'ll speak with someone who doesn\'t give you the easy answer. They sit in the mess with you until you can see it clearly.',
-    },
-    {
-        icon: Clock,
-        title: 'Walk away with clarity',
-        text: 'Not a prescription. Not a to-do list. A shift in how you see the problem — which changes everything.',
-    },
+    { icon: Zap, key: 'step1' },
+    { icon: MessageCircle, key: 'step2' },
+    { icon: Clock, key: 'step3' },
 ];
 
 // ─── Component ─────────────────────────────────────────────────────
 export default function TherapyShotsPage() {
+    const t = useTranslations("shots");
     const [hoveredEntry, setHoveredEntry] = useState<number | null>(null);
     const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
@@ -97,8 +67,8 @@ export default function TherapyShotsPage() {
             <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
                     <div className="flex items-center gap-3">
-                        <span className="font-bold text-lg text-zinc-100 tracking-tight">Earnest Page</span>
-                        <span className="text-zinc-600 text-sm font-medium">/ Clarity Sessions</span>
+                        <span className="font-bold text-lg text-zinc-100 tracking-tight">{t('navBrand')}</span>
+                        <span className="text-zinc-600 text-sm font-medium">{t('navSession')}</span>
                     </div>
                     <button
                         onClick={scrollToCTA}
@@ -136,9 +106,7 @@ export default function TherapyShotsPage() {
                         variants={fadeUp}
                         initial="hidden"
                         animate="visible"
-                    >
-                        No account. No commitment. Just a conversation.
-                    </motion.p>
+                    >{t('heroSubtext')}</motion.p>
 
                     <motion.h1
                         className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-8"
@@ -147,11 +115,7 @@ export default function TherapyShotsPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        You know that thing
-                        <br />
-                        <span className="text-zinc-500">you keep thinking about</span>
-                        <br />
-                        at 2am?
+                        {t('heroTitle1')}<br /><span className="text-zinc-500">{t('heroTitle2')}</span><br />{t('heroTitle3')}
                     </motion.h1>
 
                     <motion.p
@@ -161,8 +125,7 @@ export default function TherapyShotsPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        Talk to someone who won&rsquo;t judge, won&rsquo;t forget what you said
-                        ten minutes ago, and won&rsquo;t charge you $200.
+                        {t('heroDesc')}
                     </motion.p>
 
                     <motion.p
@@ -172,7 +135,7 @@ export default function TherapyShotsPage() {
                         initial="hidden"
                         animate="visible"
                     >
-                        Free. Start right now.
+                        {t('heroFree')}
                     </motion.p>
 
                     <motion.div
@@ -185,16 +148,13 @@ export default function TherapyShotsPage() {
                         <button
                             onClick={scrollToCTA}
                             className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
-                        >
-                            Start a Session
-                        </button>
+                        >{t('startSession')}</button>
                         <button
                             onClick={scrollToCTA}
                             className="rounded-full border border-white/20 bg-transparent text-white px-8 py-4 font-semibold text-base hover:bg-white/10 active:scale-[0.97] transition-all duration-150 flex items-center gap-2"
                         >
                             <ArrowRight className="w-4 h-4" />
-                            Learn More
-                        </button>
+                            {t('learnMore')}</button>
                     </motion.div>
                 </div>
 
@@ -225,13 +185,9 @@ export default function TherapyShotsPage() {
                     whileInView="visible"
                     viewport={{ once: true, margin: '-80px' }}
                 >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        Sound Familiar?
-                    </p>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">{t('problemLabel')}</p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-16">
-                        Pick the one that
-                        <br />
-                        <span className="text-zinc-500">won&rsquo;t leave you alone.</span>
+                        {t('problemTitle1')}<br /><span className="text-zinc-500">{t('problemTitle2')}</span>
                     </h2>
 
                     <div className="space-y-3">
@@ -255,10 +211,10 @@ export default function TherapyShotsPage() {
                                 <div className="relative z-10 flex items-center justify-between">
                                     <div>
                                         <p className="text-lg sm:text-xl font-bold text-white mb-1">
-                                            &ldquo;{entry.label}&rdquo;
+                                            &ldquo;{t(entry.key)}&rdquo;
                                         </p>
                                         <p className="text-sm text-zinc-500">
-                                            {entry.subtext}
+                                            {t(`${entry.key}Sub` as any)}
                                         </p>
                                     </div>
                                     <ArrowRight
@@ -285,28 +241,19 @@ export default function TherapyShotsPage() {
                     whileInView="visible"
                     viewport={{ once: true, margin: '-80px' }}
                 >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        The Difference
-                    </p>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">{t('diffLabel')}</p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-10">
-                        This is not a chatbot.
-                        <br />
-                        <span className="text-zinc-500">This is not therapy.</span>
+                        {t('diffTitle1')}<br /><span className="text-zinc-500">{t('diffTitle2')}</span>
                     </h2>
                     <div className="space-y-6 text-base sm:text-lg text-zinc-400 leading-relaxed">
                         <p>
-                            Chatbots validate you. Therapists analyze you. Neither of them will sit in front
-                            of you, look at the mess of your life, and tell you the thing you already know
-                            but haven&rsquo;t been able to say out loud.
+                            {t('diffBody1')}
                         </p>
                         <p className="text-zinc-300 font-semibold">
-                            This is a conversation with someone who sees the pattern you can&rsquo;t see
-                            from the inside.
+                            {t('diffBody2')}
                         </p>
                         <p>
-                            You choose someone you admire &mdash; an archetype built from real psychology,
-                            real philosophy, and real lived experience. They don&rsquo;t tell you what to do.
-                            They help you see clearly enough to know for yourself.
+                            {t('diffBody3')}
                         </p>
                     </div>
 
@@ -315,7 +262,7 @@ export default function TherapyShotsPage() {
                         onClick={() => setIsComparisonOpen(!isComparisonOpen)}
                         className="mt-10 flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
                     >
-                        <span>{isComparisonOpen ? 'Hide comparison' : 'See how this compares'}</span>
+                        <span>{isComparisonOpen ? t('toggleHide') : t('toggleShow')}</span>
                         <motion.span
                             animate={{ rotate: isComparisonOpen ? 180 : 0 }}
                             transition={{ duration: 0.3 }}
@@ -376,19 +323,15 @@ export default function TherapyShotsPage() {
                     whileInView="visible"
                     viewport={{ once: true, margin: '-80px' }}
                 >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        How It Works
-                    </p>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">{t('stepsLabel')}</p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-16">
-                        Three steps. Twenty dollars.
-                        <br />
-                        <span className="text-zinc-500">Zero small talk.</span>
+                        {t('stepsTitle1')}<br /><span className="text-zinc-500">{t('stepsTitle2')}</span>
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {STEPS.map((step, i) => (
                             <motion.div
-                                key={step.title}
+                                key={step.key}
                                 className="group relative rounded-2xl border border-white/[0.08] bg-zinc-950 p-8 transition-colors duration-200 hover:border-white/20 hover:bg-zinc-900/60"
                                 custom={i}
                                 variants={cardReveal}
@@ -405,10 +348,10 @@ export default function TherapyShotsPage() {
                                     </span>
                                 </div>
                                 <h3 className="text-lg font-bold tracking-tight text-white mb-3">
-                                    {step.title}
+                                    {t(`${step.key}Title` as any)}
                                 </h3>
                                 <p className="text-sm text-zinc-500 leading-relaxed">
-                                    {step.text}
+                                    {t(`${step.key}Text` as any)}
                                 </p>
                             </motion.div>
                         ))}
@@ -433,15 +376,12 @@ export default function TherapyShotsPage() {
                     <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto mb-8">
                         <Shield className="w-7 h-7 text-zinc-400" />
                     </div>
-                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] mb-6">
-                        What you say stays here.
-                    </h2>
+                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] mb-6">{t('trustTitle')}</h2>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-4">
-                        No account required. No email. No data sold. Your conversation exists for you,
-                        during your session, and nowhere else. When it ends, it ends.
+                        {t('trustDesc')}
                     </p>
                     <p className="text-sm text-zinc-600">
-                        Built by the maker of Earnest Page &mdash; a platform where privacy is the foundation, not the feature.
+                        {t('trustSub')}
                     </p>
                 </motion.div>
             </section>
@@ -460,26 +400,17 @@ export default function TherapyShotsPage() {
                     whileInView="visible"
                     viewport={{ once: true, margin: '-80px' }}
                 >
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">
-                        Completely Free
-                    </p>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-600 mb-6">{t('ctaLabel')}</p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
-                        One conversation.
-                        <br />
-                        <span className="text-zinc-500">No strings attached.</span>
+                        {t('ctaTitle1')}<br /><span className="text-zinc-500">{t('ctaTitle2')}</span>
                     </h2>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-xl mx-auto mb-10">
-                        Up to 5 sessions a day. No credit card. No subscription. No catch.
-                        Just you and your Ideal Self.
+                        {t('ctaDesc')}
                     </p>
                     <button
                         className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
-                    >
-                        Start Free
-                    </button>
-                    <p className="text-sm text-zinc-600 mt-8">
-                        No account required. No data stored after your session.
-                    </p>
+                    >{t('ctaBtn')}</button>
+                    <p className="text-sm text-zinc-600 mt-8">{t('ctaNote')}</p>
                 </motion.div>
             </section>
 
@@ -498,19 +429,15 @@ export default function TherapyShotsPage() {
                     viewport={{ once: true, margin: '-80px' }}
                 >
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-[1.1] mb-6">
-                        The thing you keep carrying
-                        <br />
-                        <span className="text-zinc-500">doesn&rsquo;t have to stay invisible.</span>
+                        {t('closeTitle1')}<br /><span className="text-zinc-500">{t('closeTitle2')}</span>
                     </h2>
                     <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-xl mx-auto mb-10">
-                        One conversation. Completely free. No one has to know.
+                        {t('closeDesc')}
                     </p>
                     <button
                         onClick={() => document.getElementById('start-section')?.scrollIntoView({ behavior: 'smooth' })}
                         className="rounded-full bg-white text-black px-10 py-4 font-bold text-base hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
-                    >
-                        Start a Session
-                    </button>
+                    >{t('startSession')}</button>
                 </motion.div>
             </section>
 
@@ -518,11 +445,10 @@ export default function TherapyShotsPage() {
             <footer className="border-t border-white/[0.06] px-6 py-8">
                 <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-zinc-700">
-                        &copy; {new Date().getFullYear()} Earnest Page. All rights reserved.
+                        {t('footerCopyright', { year: new Date().getFullYear() })}
                     </p>
                     <p className="text-[10px] text-zinc-700 text-center sm:text-right max-w-sm">
-                        Clarity Sessions are not a substitute for licensed therapy or psychiatric care.
-                        If you are in crisis, please contact the 988 Suicide &amp; Crisis Lifeline.
+                        {t('footerDisclaimer')}
                     </p>
                 </div>
             </footer>

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CloudSun } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 export interface DreamEditorProps {
     definingWords: string[];   // max 3 strings
@@ -34,6 +35,7 @@ export function DreamEditor({
     onSave,
     className,
 }: DreamEditorProps) {
+    const t = useTranslations('mylife.dream');
     // Initialize local state once from props on mount (not continuously synced)
     const [words, setWords] = useState<string[]>(() => [
         definingWords[0] || '',
@@ -126,16 +128,16 @@ export function DreamEditor({
             {/* Header */}
             <div className="flex items-center gap-2 shrink-0">
                 <CloudSun className="w-5 h-5 text-amber-400 shrink-0" />
-                <h2 className="text-xl font-bold text-white">My Dream</h2>
+                <h2 className="text-xl font-bold text-white">{t("title")}</h2>
             </div>
 
             {/* Section 1: Defining Words */}
             <div className="space-y-2">
                 <label className="text-sm text-zinc-400 block">
-                    Three words that define you
+                    {t("definingWordsLabel")}
                 </label>
                 <div className="space-y-2">
-                    {DEFINING_WORD_PLACEHOLDERS.map((placeholder, index) => (
+                    {[t("wordPlaceholder1"), t("wordPlaceholder2"), t("wordPlaceholder3")].map((placeholder, index) => (
                         <input
                             key={index}
                             type="text"
@@ -156,12 +158,12 @@ export function DreamEditor({
             {/* Section 2: Living Situation */}
             <div className="space-y-2">
                 <label className="text-sm text-zinc-400 block">
-                    Living Situation
+                    {t("livingLabel")}
                 </label>
                 <textarea
                     value={living}
                     onChange={handleLivingChange}
-                    placeholder="Describe your dream living situation..."
+                    placeholder={t("livingPlaceholder")}
                     rows={4}
                     className={cn(
                         "w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 px-3 py-2.5",
@@ -175,12 +177,12 @@ export function DreamEditor({
             {/* Section 3: Financial */}
             <div className="space-y-2">
                 <label className="text-sm text-zinc-400 block">
-                    Financial
+                    {t("financialLabel")}
                 </label>
                 <textarea
                     value={financial}
                     onChange={handleFinancialChange}
-                    placeholder="Describe your dream financial situation..."
+                    placeholder={t("financialPlaceholder")}
                     rows={4}
                     className={cn(
                         "w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 px-3 py-2.5",

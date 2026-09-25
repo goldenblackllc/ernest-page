@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { CheckCircle2, Circle, X, Plus } from "lucide-react";
 import { WantItem } from "@/types/character";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export interface WantsEditorProps {
     wants: WantItem[];
@@ -17,6 +18,7 @@ export interface WantsEditorProps {
  * allows toggling completion status, deleting items, and adding new items.
  */
 export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps) {
+    const t = useTranslations("mylife.wants");
     const [inputValue, setInputValue] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editValue, setEditValue] = useState("");
@@ -93,7 +95,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
         <div className={cn("flex flex-col h-full min-h-0", className)}>
             {/* Title */}
             <div className="pb-4 shrink-0">
-                <h2 className="text-xl font-bold text-white">What I Want</h2>
+                <h2 className="text-xl font-bold text-white">{t("title")}</h2>
             </div>
 
             {/* Top input */}
@@ -103,7 +105,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                         type="submit"
                         disabled={!inputValue.trim()}
                         className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500 hover:text-white disabled:hover:text-zinc-500 transition-colors"
-                        aria-label="Add want"
+                        aria-label={t("addAria")}
                         tabIndex={-1}
                     >
                         <Plus className="w-4 h-4" />
@@ -112,7 +114,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="Add a want..."
+                        placeholder={t("addPlaceholder")}
                         className="w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 pl-9 pr-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-colors"
                     />
                 </div>
@@ -122,7 +124,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
             <div className="flex-1 overflow-y-auto min-h-0">
                 {sortedWants.length === 0 ? (
                     <div className="py-8 text-center text-zinc-500 text-sm">
-                        No wants yet. Add your first want below.
+                        {t("noWants")}
                     </div>
                 ) : (
                     sortedWants.map((item) => (
@@ -136,7 +138,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                                     type="button"
                                     onClick={() => handleToggle(item.id)}
                                     className="shrink-0 p-0.5 text-zinc-400 hover:text-white transition-colors focus:outline-none"
-                                    aria-label={item.completed ? `Mark "${item.text}" as incomplete` : `Mark "${item.text}" as complete`}
+                                    aria-label={item.completed ? t("markIncomplete", { text: item.text }) : t("markComplete", { text: item.text })}
                                 >
                                     {item.completed ? (
                                         <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
@@ -164,7 +166,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                                             "text-sm break-words flex-1 cursor-pointer select-none transition-colors",
                                             item.completed ? "text-zinc-500 line-through" : "text-white"
                                         )}
-                                        title="Tap to edit"
+                                        title={t("tapToEdit")}
                                     >
                                         {item.text}
                                     </span>
@@ -176,8 +178,8 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                                 type="button"
                                 onClick={() => handleDelete(item.id)}
                                 className="shrink-0 p-1 text-zinc-600 hover:text-red-400 transition-colors rounded focus:outline-none"
-                                aria-label={`Delete "${item.text}"`}
-                                title="Delete"
+                                aria-label={t("deleteItem", { text: item.text })}
+                                title={t("deleteTitle")}
                             >
                                 <X className="w-4 h-4" />
                             </button>

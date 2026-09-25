@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Circle, Heart, CloudSun, Loader2, Users, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 export interface OnboardingFormData {
     defining_words: string[];
@@ -43,6 +44,7 @@ function padPeople(arr: { name: string; relationship: string; about: string }[] 
 }
 
 export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }: OnboardingFormProps) {
+    const t = useTranslations('onboarding.form');
     const iv = initialValues || {};
     const [definingWords, setDefiningWords] = useState<string[]>(padArray(iv.defining_words, 3));
     const [wants, setWants] = useState<string[]>(padArray(iv.wants, 3));
@@ -116,22 +118,22 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                 
                 {/* 1. Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Your Ideal Self</h1>
-                    <p className="text-zinc-400 text-sm">Tell us about who you are and what you want.</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{t('title')}</h1>
+                    <p className="text-zinc-400 text-sm">{t('subtitle')}</p>
                 </div>
 
-                {/* 2. "3 Words That Define You" */}
+                {/* 2. t('definingWords') */}
                 <section>
                     <h2 className={sectionHeaderClass}>
                         <Sparkles className="w-4 h-4 text-amber-500" />
-                        3 Words That Define You
+                        {t('definingWords')}
                     </h2>
                     <div className="flex gap-3">
                         {[1, 2, 3].map((num, i) => (
                             <input
                                 key={`word-${num}`}
                                 type="text"
-                                placeholder={`Word ${num}`}
+                                placeholder={t("wordPlaceholder", { num })}
                                 className={cn(inputClass, "flex-1 text-center")}
                                 value={definingWords[i]}
                                 onChange={(e) => updateArray(setDefiningWords, i, e.target.value)}
@@ -140,16 +142,16 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                     </div>
                 </section>
 
-                {/* 3. "What I Want" */}
+                {/* 3. "{t('whatIWant')}" */}
                 <section>
-                    <h2 className={sectionHeaderClass}>What I Want</h2>
+                    <h2 className={sectionHeaderClass}>{t('whatIWant')}</h2>
                     <div className="space-y-3">
                         {[0, 1, 2].map((i) => (
                             <div key={`want-${i}`} className="relative">
                                 <Circle className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="text"
-                                    placeholder="I want..."
+                                    placeholder={t('wantPlaceholder')}
                                     className={cn(inputClass, "pl-9")}
                                     value={wants[i]}
                                     onChange={(e) => updateArray(setWants, i, e.target.value)}
@@ -159,16 +161,16 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                     </div>
                 </section>
 
-                {/* 4. "What I Love" */}
+                {/* 4. "{t('whatILove')}" */}
                 <section>
-                    <h2 className={sectionHeaderClass}>What I Love</h2>
+                    <h2 className={sectionHeaderClass}>{t('whatILove')}</h2>
                     <div className="space-y-3">
                         {[0, 1, 2].map((i) => (
                             <div key={`love-${i}`} className="relative">
                                 <Heart className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="text"
-                                    placeholder="I love..."
+                                    placeholder={t('lovePlaceholder')}
                                     className={cn(inputClass, "pl-9")}
                                     value={loves[i]}
                                     onChange={(e) => updateArray(setLoves, i, e.target.value)}
@@ -182,7 +184,7 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                 <section>
                     <h2 className={sectionHeaderClass}>
                         <Users className="w-4 h-4 text-amber-500" />
-                        My People / Pets
+                        {t('myPeople')}
                     </h2>
                     <div className="space-y-4">
                         {people.map((person, i) => (
@@ -190,14 +192,14 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                                 <div className="grid grid-cols-2 gap-3">
                                     <input
                                         type="text"
-                                        placeholder="Name"
+                                        placeholder={t("personNamePlaceholder")}
                                         className={inputClass}
                                         value={person.name}
                                         onChange={(e) => updatePerson(i, 'name', e.target.value)}
                                     />
                                     <input
                                         type="text"
-                                        placeholder="Relationship (e.g. Wife)"
+                                        placeholder={t("personRelationshipPlaceholder")}
                                         className={inputClass}
                                         value={person.relationship}
                                         onChange={(e) => updatePerson(i, 'relationship', e.target.value)}
@@ -205,7 +207,7 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="About this person..."
+                                    placeholder={t("personAboutPlaceholder")}
                                     className={inputClass}
                                     value={person.about}
                                     onChange={(e) => updatePerson(i, 'about', e.target.value)}
@@ -219,19 +221,19 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                 <section>
                     <h2 className={sectionHeaderClass}>
                         <CloudSun className="w-4 h-4 text-amber-500" />
-                        My Dream
+                        {t('myDream')}
                     </h2>
                     <div className="space-y-3">
                         <input
                             type="text"
-                            placeholder="Dream living situation..."
+                            placeholder={t("dreamLivingPlaceholder")}
                             className={inputClass}
                             value={dreamLiving}
                             onChange={(e) => setDreamLiving(e.target.value)}
                         />
                         <input
                             type="text"
-                            placeholder="Dream financial situation..."
+                            placeholder={t("dreamFinancialPlaceholder")}
                             className={inputClass}
                             value={dreamFinancial}
                             onChange={(e) => setDreamFinancial(e.target.value)}
@@ -239,85 +241,85 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                     </div>
                 </section>
 
-                {/* 7. "My Look" */}
+                {/* 7. "{t('myLook')}" */}
                 <section>
-                    <h2 className={sectionHeaderClass}>My Look</h2>
+                    <h2 className={sectionHeaderClass}>{t('myLook')}</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className={labelClass}>Name</label>
+                            <label className={labelClass}>{t("nameLabel")}</label>
                             <input type="text" className={inputClass} value={name} onChange={e => setName(e.target.value)} />
                         </div>
                         <div>
-                            <label className={labelClass}>Gender</label>
+                            <label className={labelClass}>{t("genderLabel")}</label>
                             <select className={cn(inputClass, "appearance-none")} value={gender} onChange={e => setGender(e.target.value)}>
-                                <option value="">Select...</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
+                                <option value="">{t("genderSelect")}</option>
+                                <option value="Male">{t("genderMale")}</option>
+                                <option value="Female">{t("genderFemale")}</option>
 
-                                <option value="Prefer not to say">Prefer not to say</option>
+                                <option value="Prefer not to say">{t("genderPreferNotToSay")}</option>
                             </select>
                         </div>
                         <div>
-                            <label className={labelClass}>Birthdate</label>
+                            <label className={labelClass}>{t("birthdateLabel")}</label>
                             <input type="date" className={inputClass} value={birthdate} onChange={e => setBirthdate(e.target.value)} />
                         </div>
                         <div>
-                            <label className={labelClass}>Ethnicity</label>
+                            <label className={labelClass}>{t("ethnicityLabel")}</label>
                             <input type="text" className={inputClass} value={ethnicity} onChange={e => setEthnicity(e.target.value)} />
                         </div>
                         <div>
-                            <label className={labelClass}>Skin Tone</label>
+                            <label className={labelClass}>{t("skinToneLabel")}</label>
                             <select className={cn(inputClass, "appearance-none")} value={skinTone} onChange={e => setSkinTone(e.target.value)}>
-                                <option value="">Select...</option>
-                                <option value="Fair">Fair</option>
-                                <option value="Light">Light</option>
-                                <option value="Medium">Medium</option>
-                                <option value="Olive">Olive</option>
-                                <option value="Tan">Tan</option>
-                                <option value="Brown">Brown</option>
-                                <option value="Dark Brown">Dark Brown</option>
-                                <option value="Deep">Deep</option>
+                                <option value="">{t("genderSelect")}</option>
+                                <option value="Fair">{t("skinToneFair")}</option>
+                                <option value="Light">{t("skinToneLight")}</option>
+                                <option value="Medium">{t("skinToneMedium")}</option>
+                                <option value="Olive">{t("skinToneOlive")}</option>
+                                <option value="Tan">{t("skinToneTan")}</option>
+                                <option value="Brown">{t("skinToneBrown")}</option>
+                                <option value="Dark Brown">{t("skinToneDarkBrown")}</option>
+                                <option value="Deep">{t("skinToneDeep")}</option>
                             </select>
                         </div>
                         <div>
-                            <label className={labelClass}>Hair Texture</label>
+                            <label className={labelClass}>{t("hairTextureLabel")}</label>
                             <select className={cn(inputClass, "appearance-none")} value={hairTexture} onChange={e => setHairTexture(e.target.value)}>
-                                <option value="">Select...</option>
-                                <option value="Straight">Straight</option>
-                                <option value="Wavy">Wavy</option>
-                                <option value="Curly">Curly</option>
-                                <option value="Coily">Coily</option>
+                                <option value="">{t("genderSelect")}</option>
+                                <option value="Straight">{t("hairTextureStraight")}</option>
+                                <option value="Wavy">{t("hairTextureWavy")}</option>
+                                <option value="Curly">{t("hairTextureCurly")}</option>
+                                <option value="Coily">{t("hairTextureCoily")}</option>
                             </select>
                         </div>
                         <div>
-                            <label className={labelClass}>Eye Color</label>
+                            <label className={labelClass}>{t("eyeColorLabel")}</label>
                             <select className={cn(inputClass, "appearance-none")} value={eyeColor} onChange={e => setEyeColor(e.target.value)}>
-                                <option value="">Select...</option>
-                                <option value="Brown">Brown</option>
-                                <option value="Blue">Blue</option>
-                                <option value="Green">Green</option>
-                                <option value="Hazel">Hazel</option>
-                                <option value="Gray">Gray</option>
-                                <option value="Amber">Amber</option>
+                                <option value="">{t("genderSelect")}</option>
+                                <option value="Brown">{t("skinToneBrown")}</option>
+                                <option value="Blue">{t("eyeColorBlue")}</option>
+                                <option value="Green">{t("eyeColorGreen")}</option>
+                                <option value="Hazel">{t("eyeColorHazel")}</option>
+                                <option value="Gray">{t("eyeColorGray")}</option>
+                                <option value="Amber">{t("eyeColorAmber")}</option>
                             </select>
                         </div>
                         <div>
-                            <label className={labelClass}>Height</label>
-                            <input type="text" placeholder="5'10&quot; or 178cm" className={inputClass} value={height} onChange={e => setHeight(e.target.value)} />
+                            <label className={labelClass}>{t("heightLabel")}</label>
+                            <input type="text" placeholder={t("heightPlaceholder")} className={inputClass} value={height} onChange={e => setHeight(e.target.value)} />
                         </div>
                         
                         <div className="sm:col-span-2">
-                            <label className={labelClass}>Hair Color (Select all that apply)</label>
+                            <label className={labelClass}>{t("hairColorLabel")}</label>
                             <div className="flex flex-wrap gap-3 mt-2">
                                 {HAIR_COLOR_OPTIONS.map(color => (
-                                    <label key={color} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+                                    <label key={t(`hairColor${color}` as any)} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             className="rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-amber-500/50"
                                             checked={hairColors.includes(color)}
                                             onChange={() => toggleHairColor(color)}
                                         />
-                                        {color}
+                                        {t(`hairColor${color}` as any)}
                                     </label>
                                 ))}
                             </div>
@@ -334,7 +336,7 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                     {isSubmitting ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                        "Build My Ideal Self"
+                        t('submitButton')
                     )}
                 </button>
             </form>

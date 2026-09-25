@@ -14,10 +14,11 @@ import { VoiceBrowser } from "./VoiceBrowser";
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useFormatter } from "next-intl";
 
 export function ProfileView() {
     const { user } = useAuth();
+    const format = useFormatter();
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [bible, setBible] = useState<Bible | null>(null);
     const [loading, setLoading] = useState(true);
@@ -76,7 +77,7 @@ export function ProfileView() {
                             onClick={() => setIsAvatarEditOpen(true)}
                         >
                             {profile?.avatar?.url ? (
-                                <img src={profile?.avatar?.url} alt="Avatar" className="w-full h-full object-cover" />
+                                <img src={profile?.avatar?.url} alt={t('avatarAlt')} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-zinc-500">
                                     <User className="w-6 h-6" />
@@ -92,7 +93,7 @@ export function ProfileView() {
                             </p>
                             {bible?.last_updated && (
                                 <p className="text-[10px] text-zinc-400 mt-0.5">
-                                    {t('lastUpdated', { date: new Date(bible.last_updated).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) })}
+                                    {t('lastUpdated', { date: format.dateTime(new Date(bible.last_updated), { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) })}
                                 </p>
                             )}
                         </div>
@@ -293,7 +294,7 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
                     <div className="relative w-24 h-24">
                         <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-zinc-700">
                             {displayUrl ? (
-                                <img src={displayUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                <img src={displayUrl} alt={t('avatarAlt')} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-500">
                                     <User className="w-8 h-8" />

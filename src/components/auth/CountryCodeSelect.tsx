@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { COUNTRY_CODES, type CountryCode } from '@/lib/constants/countryCodes';
+import { useTranslations } from 'next-intl';
 
 interface CountryCodeSelectProps {
     value: string;  // ISO country code e.g. 'US'
@@ -10,6 +11,7 @@ interface CountryCodeSelectProps {
 }
 
 export function CountryCodeSelect({ value, onChange, className = '' }: CountryCodeSelectProps) {
+    const t = useTranslations('auth');
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -51,7 +53,7 @@ export function CountryCodeSelect({ value, onChange, className = '' }: CountryCo
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/[0.08] bg-zinc-950 text-white text-sm hover:border-white/20 transition-colors duration-150 min-w-[90px]"
-                aria-label="Select country code"
+                aria-label={t('selectCountryCode')}
             >
                 <span className="text-base leading-none">{selected.flag}</span>
                 <span className="text-zinc-300 font-medium">{selected.dial}</span>
@@ -70,7 +72,7 @@ export function CountryCodeSelect({ value, onChange, className = '' }: CountryCo
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search country..."
+                            placeholder={t('searchCountry')}
                             className="w-full px-3 py-2 bg-zinc-900 border border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-600 outline-none focus:border-white/20 transition-colors"
                         />
                     </div>

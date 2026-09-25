@@ -427,7 +427,7 @@ export function Ledger() {
                         <div className="flex items-center gap-4 p-5">
                             <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-white/20 overflow-hidden shrink-0">
                                 {profile?.avatar?.url ? (
-                                    <img src={profile.avatar.url} alt="Avatar" className="w-full h-full object-cover" />
+                                    <img src={profile.avatar.url} alt={t('avatarAlt')} className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
                                         <Loader2 className="w-5 h-5 text-zinc-100 animate-spin" />

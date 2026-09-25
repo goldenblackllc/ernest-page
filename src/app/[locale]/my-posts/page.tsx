@@ -9,6 +9,7 @@ import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal
 import { Loader2 } from "lucide-react";
 import { Timestamp, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { useTranslations } from "next-intl";
 
 export default function MyPostsPage() {
     const { user } = useAuth();
@@ -18,6 +19,7 @@ export default function MyPostsPage() {
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
+    const t = useTranslations("myPosts");
 
     const handleConfirmDelete = async () => {
         if (!postToDelete) return;
@@ -99,8 +101,8 @@ export default function MyPostsPage() {
 
             <div className="container mx-auto px-0 sm:px-4 pt-[calc(64px+env(safe-area-inset-top))] pb-32 max-w-3xl">
                 <div className="px-4 sm:px-0 mb-6">
-                    <h1 className="text-2xl font-black tracking-tight">My Posts</h1>
-                    <p className="text-sm text-zinc-500 mt-1">Your journal entries and reflections.</p>
+                    <h1 className="text-2xl font-black tracking-tight">{t("title")}</h1>
+                    <p className="text-sm text-zinc-500 mt-1">{t("subtitle")}</p>
                 </div>
 
                 {loading ? (
@@ -123,7 +125,7 @@ export default function MyPostsPage() {
                     </div>
                 ) : posts.length === 0 ? (
                     <div className="p-12 text-center border border-zinc-800 border-dashed rounded-xl">
-                        <p className="text-sm text-zinc-500">No posts yet. Start a conversation to create your first post.</p>
+                        <p className="text-sm text-zinc-500">{t("empty")}</p>
                     </div>
                 ) : (
                     <section className="flex flex-col gap-8">
@@ -145,7 +147,7 @@ export default function MyPostsPage() {
 
                         {!nextCursor && posts.length > 0 && !loadingMore && (
                             <div className="text-center py-8">
-                                <p className="text-xs text-zinc-600">You've seen all your posts.</p>
+                                <p className="text-xs text-zinc-600">{t("end")}</p>
                             </div>
                         )}
                     </section>

@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { Check, ArrowRight, Loader2 } from 'lucide-react';
 import OTPLogin from '@/components/auth/OTPLogin';
 import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 
 type PaymentMethod = 'venmo' | 'cashapp';
 type PageStep = 'form' | 'login' | 'activating' | 'done';
@@ -12,6 +13,7 @@ type PageStep = 'form' | 'login' | 'activating' | 'done';
 export default function ApplyPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const t = useTranslations('apply');
 
     const [step, setStep] = useState<PageStep>('form');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('venmo');
@@ -55,7 +57,7 @@ export default function ApplyPage() {
             setStep('done');
         } catch (err: any) {
             console.error('Beta activation failed:', err);
-            setError(err.message || 'Something went wrong. Try refreshing.');
+            setError(err.message || t('errorGeneral'));
             setStep('form');
         }
     }, [paymentMethod, paymentHandle]);
@@ -90,14 +92,14 @@ export default function ApplyPage() {
             setStep('done');
         } catch (err: any) {
             console.error('Beta activation failed:', err);
-            setError(err.message || 'Something went wrong.');
+            setError(err.message || t('errorActivate'));
             setStep('form');
         }
     }, [user, paymentMethod, paymentHandle]);
 
     const handleFormSubmit = () => {
         if (!paymentHandle.trim()) {
-            setError('Enter your handle so we know where to send $20.');
+            setError(t('errorEmpty'));
             return;
         }
         setError(null);
@@ -126,21 +128,18 @@ export default function ApplyPage() {
                     <>
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-black tracking-tight mb-4 leading-tight">
-                                Is something bothering you?
+                                {t('title1')}
                                 <br />
-                                <span className="text-zinc-500">You&apos;re lucky.</span>
+                                <span className="text-zinc-500">{t('title2')}</span>
                             </h1>
                             <p className="text-[15px] text-zinc-400 leading-relaxed">
-                                There&apos;s nothing wrong with you. Feelings are your superpower. 
-                                The worse you feel, the luckier you are. You&apos;re special. 
-                                Discover what your feelings are telling you.
+                                {t('desc1')}
                             </p>
                         </div>
 
                         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
                             <p className="text-sm text-zinc-300 leading-relaxed mb-4">
-                                We&apos;re new and we need your perspective. 
-                                Not a survey. Not a raffle. You finish, you get $20.
+                                {t('desc2')}
                             </p>
 
                             {/* Payment method toggle */}
@@ -169,7 +168,7 @@ export default function ApplyPage() {
 
                             <input
                                 type="text"
-                                placeholder={paymentMethod === 'venmo' ? '@username' : '$cashtag'}
+                                placeholder={paymentMethod === 'venmo' ? t('venmoPlaceholder') : t('cashappPlaceholder')}
                                 value={paymentHandle}
                                 onChange={(e) => setPaymentHandle(e.target.value)}
                                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-zinc-500 transition-colors text-sm"
@@ -184,12 +183,12 @@ export default function ApplyPage() {
                             onClick={handleFormSubmit}
                             className="w-full rounded-full bg-white text-black py-3.5 text-sm font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
                         >
-                            I&apos;m in
+                            {t('btnIn')}
                             <ArrowRight className="w-4 h-4" />
                         </button>
 
                         <p className="text-[10px] text-zinc-600 text-center mt-4 leading-relaxed">
-                            Everything is anonymous. No real names ever appear.
+                            {t('anonNote')}
                         </p>
                     </>
                 )}
@@ -199,10 +198,10 @@ export default function ApplyPage() {
                     <div className="space-y-6">
                         <div className="text-center mb-4">
                             <h1 className="text-xl font-bold tracking-tight mb-2">
-                                Enter your phone number
+                                {t('loginTitle')}
                             </h1>
                             <p className="text-sm text-zinc-500">
-                                We&apos;ll text you a code. Takes 10 seconds.
+                                {t('loginSub')}
                             </p>
                         </div>
 
@@ -214,7 +213,7 @@ export default function ApplyPage() {
                             onClick={() => setStep('form')}
                             className="text-zinc-600 text-xs underline w-full text-center"
                         >
-                            ← Back
+                            {t('back')}
                         </button>
                     </div>
                 )}
@@ -223,8 +222,8 @@ export default function ApplyPage() {
                 {step === 'activating' && (
                     <div className="text-center py-12">
                         <Loader2 className="w-10 h-10 text-white animate-spin mx-auto mb-4" />
-                        <h2 className="text-lg font-bold mb-2">Setting up your account...</h2>
-                        <p className="text-sm text-zinc-500">This takes a few seconds.</p>
+                        <h2 className="text-lg font-bold mb-2">{t('activatingTitle')}</h2>
+                        <p className="text-sm text-zinc-500">{t('activatingSub')}</p>
                     </div>
                 )}
 
@@ -234,16 +233,16 @@ export default function ApplyPage() {
                         <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-5">
                             <Check className="w-8 h-8 text-emerald-400" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">You&apos;re in.</h2>
+                        <h2 className="text-2xl font-bold mb-2">{t('doneTitle')}</h2>
                         <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
-                            Be honest. Say when you disagree.<br />
-                            That&apos;s where it gets interesting.
+                            {t('doneSub1')}<br />
+                            {t('doneSub2')}
                         </p>
                         <a
                             href="/"
                             className="inline-flex items-center gap-2 rounded-full bg-white text-black py-3.5 px-8 text-sm font-bold hover:bg-zinc-200 transition-all active:scale-[0.98]"
                         >
-                            Let&apos;s go
+                            {t('btnGo')}
                             <ArrowRight className="w-4 h-4" />
                         </a>
                     </div>

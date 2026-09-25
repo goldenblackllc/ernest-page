@@ -970,7 +970,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                         <button
                             onClick={handleClose}
                             className="shrink-0 w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-full transition-colors"
-                            aria-label="Close"
+                            aria-label={t('common.close')}
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -1131,7 +1131,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                                                 ? "text-red-400 border-red-800/40 hover:border-red-700/60 bg-red-950/20"
                                                 : "text-zinc-500 border-zinc-700/50 hover:text-zinc-300 hover:border-zinc-600"
                                         )}
-                                        aria-label="Session routing settings"
+                                        aria-label={t('mirrorChat.sessionRoutingSettings')}
                                     >
                                         {sessionRouting === 'public' && <Globe className="w-3 h-3" />}
                                         {sessionRouting === 'private' && <Lock className="w-3 h-3" />}
@@ -1204,7 +1204,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                                     <button
                                         onClick={handleRemovePhoto}
                                         className="w-5 h-5 flex items-center justify-center text-zinc-600 hover:text-red-400 transition-colors"
-                                        aria-label="Remove photo"
+                                        aria-label={t('mirrorChat.removePhoto')}
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
@@ -1264,7 +1264,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                                         <button
                                             onClick={stop}
                                             className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-red-400 hover:border-red-800 transition-colors"
-                                            aria-label="Stop"
+                                            aria-label={t('mirrorChat.stop')}
                                         >
                                             <Square className="w-3.5 h-3.5 fill-current" />
                                         </button>
@@ -1278,7 +1278,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                                                     ? "bg-white text-black shadow-lg hover:bg-zinc-200"
                                                     : "bg-zinc-800/80 text-zinc-600 cursor-not-allowed"
                                             )}
-                                            aria-label="Send"
+                                            aria-label={t('mirrorChat.send')}
                                         >
                                             <ArrowUp className="w-4 h-4" />
                                         </button>

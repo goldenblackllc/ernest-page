@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Users, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { ProfilePerson } from '@/types/character';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 export interface PeopleEditorProps {
     people: ProfilePerson[];
@@ -16,6 +17,7 @@ export interface PeopleEditorProps {
  * Supports accordion expansion, adding, deleting, and saving on blur.
  */
 export function PeopleEditor({ people = [], onSave, className }: PeopleEditorProps) {
+    const t = useTranslations('mylife.people');
     // Local state for smooth edits
     const [items, setItems] = useState<ProfilePerson[]>(people);
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
@@ -108,14 +110,14 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
             {/* Title Header */}
             <div className="flex items-center gap-2 pb-4 shrink-0 border-b border-zinc-800/50">
                 <Users className="w-5 h-5 text-amber-400 shrink-0" />
-                <h2 className="text-xl font-bold text-white">My People</h2>
+                <h2 className="text-xl font-bold text-white">{t('title')}</h2>
             </div>
 
             {/* Scrollable list of people, sorted alphabetically by name */}
             <div className="flex-1 overflow-y-auto min-h-0 py-1 pr-1">
                 {items.length === 0 ? (
                     <div className="py-8 text-center text-sm text-zinc-500">
-                        No people added yet. Tap below to add someone.
+                        {t('noPeople')}
                     </div>
                 ) : (
                     items
@@ -146,11 +148,11 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                                 aria-expanded={true}
                                             >
                                                 <span className="font-medium text-white truncate">
-                                                    {person.name.trim() || 'Unnamed'}
+                                                    {person.name.trim() || t('unnamed')}
                                                 </span>
                                                 <span className="text-zinc-600 select-none">—</span>
                                                 <span className="text-zinc-400 italic truncate text-sm">
-                                                    {person.relationship.trim() || 'No relationship'}
+                                                    {person.relationship.trim() || t('noRelationship')}
                                                 </span>
                                                 <ChevronUp className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors shrink-0" />
                                             </button>
@@ -158,8 +160,8 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                                 type="button"
                                                 onClick={() => handleDelete(index)}
                                                 className="p-1.5 text-zinc-600 hover:text-red-400 transition-colors rounded hover:bg-zinc-800/50 shrink-0 cursor-pointer"
-                                                title="Delete person"
-                                                aria-label={`Delete ${person.name || 'person'}`}
+                                                title={t("deletePerson")}
+                                                aria-label={t("deleteAria", { name: person.name || t("unnamed") })}
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -185,7 +187,7 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                                         handleFieldChange(index, 'name', e.target.value)
                                                     }
                                                     onBlur={handleFieldBlur}
-                                                    placeholder="Full name"
+                                                    placeholder={t("namePlaceholder")}
                                                     className={inputClasses}
                                                 />
                                             </div>
@@ -207,7 +209,7 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                                         handleFieldChange(index, 'relationship', e.target.value)
                                                     }
                                                     onBlur={handleFieldBlur}
-                                                    placeholder="e.g. Partner, Friend, Coworker"
+                                                    placeholder={t("relationshipPlaceholder")}
                                                     className={inputClasses}
                                                 />
                                             </div>
@@ -227,7 +229,7 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                                         handleFieldChange(index, 'who', e.target.value)
                                                     }
                                                     onBlur={handleFieldBlur}
-                                                    placeholder="Age, personality, interests, your relationship dynamic..."
+                                                    placeholder={t("aboutPlaceholder")}
                                                     className={textareaClasses}
                                                 />
                                             </div>
@@ -248,7 +250,7 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                                         handleFieldChange(index, 'birthday', e.target.value)
                                                     }
                                                     onBlur={handleFieldBlur}
-                                                    placeholder="MM-DD or YYYY-MM-DD"
+                                                    placeholder={t("birthdayPlaceholder")}
                                                     className={inputClasses}
                                                 />
                                             </div>
@@ -271,11 +273,11 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                                     >
                                         <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
                                             <span className="font-medium text-white truncate">
-                                                {person.name.trim() || 'Unnamed'}
+                                                {person.name.trim() || t('unnamed')}
                                             </span>
                                             <span className="text-zinc-600 select-none">—</span>
                                             <span className="text-zinc-400 italic truncate text-sm">
-                                                {person.relationship.trim() || 'No relationship'}
+                                                {person.relationship.trim() || t('noRelationship')}
                                             </span>
                                         </div>
                                         <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors shrink-0" />
@@ -294,7 +296,7 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
                     onClick={handleAddPerson}
                     className="flex items-center gap-1.5 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors py-2 px-1 focus:outline-none cursor-pointer"
                 >
-                    + Add a person
+                    {t("addPerson")}
                 </button>
             </div>
         </div>

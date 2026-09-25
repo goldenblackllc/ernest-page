@@ -262,7 +262,7 @@ export function LandingPage() {
                             <button
                                 onClick={closeAuthModal}
                                 className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5"
-                                aria-label="Close"
+                                aria-label={t('common.close')}
                             >
                                 ✕
                             </button>
