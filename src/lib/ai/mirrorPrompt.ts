@@ -175,8 +175,6 @@ export interface MirrorPromptConfig {
     mandatePostlude: string;
     /** Step B dynamic filter description */
     dynamicFilterText: string;
-    /** Enable the Wanting Path — alternative spine for users in a wanting state */
-    enableWantingPath?: boolean;
 }
 
 /**
@@ -249,7 +247,7 @@ ${CONVERSATION_SPINE}
 
 ${negativeInventory}
 
-${config.enableWantingPath ? WANTING_PATH : ''}
+${WANTING_PATH}
 
 ${OUTPUT_RULES}
 

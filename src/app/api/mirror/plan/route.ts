@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase/admin';
-import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
+import { generateTextWithFallback, MIRROR_MODEL, MIRROR_FALLBACK, MIRROR_EFFORT } from '@/lib/ai/models';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 export const maxDuration = 300;
@@ -77,10 +77,11 @@ LANGUAGE: ${languageInstruction}`;
         ).join('\n\n');
 
         const result = await generateTextWithFallback({
-            primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
+            primaryModelId: MIRROR_MODEL,
+            fallbackModelId: MIRROR_FALLBACK,
             system: systemPrompt,
             messages: [{ role: 'user', content: `Based on this conversation, generate the action plan:\n\n${conversationContext}` }],
+            providerOptions: { anthropic: { effort: MIRROR_EFFORT } },
             abortSignal: AbortSignal.timeout(120000)
         });
 

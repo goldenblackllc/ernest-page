@@ -10,6 +10,13 @@ const google = createGoogleGenerativeAI({
 export const OPUS_MODEL = 'claude-opus-5'; // Primary — Deep Reasoning Engine (all features)
 export const OPUS_FALLBACK = 'claude-opus-4-8'; // Stable Fallback for Opus
 
+// Mirror Chat (chat + plan). Text-only, so Opus 5.5's always-on thinking and
+// no-forced-tool-use rules don't apply. Its default effort is 'medium', so
+// MIRROR_EFFORT is passed explicitly.
+export const MIRROR_MODEL = 'claude-opus-5-5';
+export const MIRROR_FALLBACK = 'claude-opus-5';
+export const MIRROR_EFFORT = 'high';
+
 function getProviderModel(modelName: string) {
     if (modelName.includes('gemini')) {
         return google(modelName);

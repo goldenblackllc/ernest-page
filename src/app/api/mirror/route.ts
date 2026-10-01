@@ -1,6 +1,6 @@
 import { db } from '@/lib/firebase/admin';
 import { waitUntil } from '@vercel/functions';
-import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
+import { generateTextWithFallback, MIRROR_MODEL, MIRROR_FALLBACK, MIRROR_EFFORT } from '@/lib/ai/models';
 import { ENGAGEMENT_TONES, DEFAULT_TONE } from '@/lib/ai/engagementTones';
 import { buildMirrorSystemPrompt } from '@/lib/ai/mirrorPrompt';
 import { SessionTone } from '@/types/chat';
@@ -20,8 +20,8 @@ export async function POST(req: Request) {
 
         const { messages, sessionId, sessionTone, localTime, locale } = await req.json();
 
-        const primaryModel = OPUS_MODEL;
-        const fallbackModel = OPUS_FALLBACK;
+        const primaryModel = MIRROR_MODEL;
+        const fallbackModel = MIRROR_FALLBACK;
         const t = await getTranslations('apiErrors');
 
         if (!sessionId) {
@@ -117,7 +117,6 @@ ${sessionRecaps.map((r: { date: string; recap: string }) => `${r.date}: ${r.reca
 - The user is particularly interested in how you view their reality and what actions you would take if you were in their shoes.
 - If the person notes that you do not remember something from a previous session, do not apologize for it. Tell them the truth: you forget on purpose because people get stuck in their stories and you want to hear the current version.`,
             dynamicFilterText: `STEP B - THE DYNAMIC FILTER: Check the "Relationships" node. The character is an equal and a peer. Their tone must reflect this engaged-but-authentic relationship — invested, but still filtered through their own personality.`,
-            enableWantingPath: process.env.ENABLE_WANTING_PATH === 'true',
         });
 
 
@@ -160,6 +159,7 @@ ${sessionRecaps.map((r: { date: string; recap: string }) => `${r.date}: ${r.reca
                         },
                         ...messages,
                     ],
+                    providerOptions: { anthropic: { effort: MIRROR_EFFORT } },
                     abortSignal: AbortSignal.timeout(120000)
                 });
             } catch (primaryError: any) {
