@@ -768,28 +768,6 @@
     "subtitle": "Publicaciones a las que has mostrado amor.",
     "empty": "Aún no hay publicaciones que te gusten. Toca el corazón en cualquier publicación para guardarla aquí."
   },
-  "apply": {
-    "title1": "¿Te molesta algo?",
-    "title2": "Tienes suerte.",
-    "desc1": "No hay nada malo contigo. Los sentimientos son tu superpoder. Cuanto peor te sientas, más suerte tienes. Eres especial. Descubre lo que tus sentimientos te están diciendo.",
-    "desc2": "Somos nuevos y necesitamos tu perspectiva. No es una encuesta. No es una rifa. Terminas, obtienes $20.",
-    "venmoPlaceholder": "@usuario",
-    "cashappPlaceholder": "$cashtag",
-    "errorEmpty": "Ingresa tu usuario para que sepamos a dónde enviar $20.",
-    "errorGeneral": "Algo salió mal. Intenta actualizar.",
-    "errorActivate": "Algo salió mal.",
-    "btnIn": "Estoy dentro",
-    "anonNote": "Todo es anónimo. Nunca aparecen nombres reales.",
-    "loginTitle": "Ingresa tu número de teléfono",
-    "loginSub": "Te enviaremos un código por mensaje de texto. Toma 10 segundos.",
-    "back": "← Volver",
-    "activatingTitle": "Configurando tu cuenta...",
-    "activatingSub": "Esto toma unos segundos.",
-    "doneTitle": "Estás dentro.",
-    "doneSub1": "Sé honesto. Di cuando no estés de acuerdo.",
-    "doneSub2": "Ahí es donde se pone interesante.",
-    "btnGo": "Vamos"
-  },
   "post": {
     "notFound": "Publicación no encontrada",
     "notFoundDesc": "Esta publicación puede ser privada o ya no existe.",
@@ -799,24 +777,5 @@
     "tapToListen": "Toca para escuchar",
     "theResponse": "La Respuesta",
     "tryEarnestPage": "Prueba Earnest Page →"
-  },
-  "beta": {
-    "title": "Has sido invitado.",
-    "subtitle": "30 días de acceso ilimitado. Sin tarjeta de crédito. Sin trampas. Solo úsalo.",
-    "loginPrompt": "Inicia sesión para reclamar tu acceso",
-    "point1Amount": "30 días",
-    "point1Text": " de sesiones ilimitadas",
-    "point2Text1": "Habla con tu ",
-    "point2Highlight": "Ideal Self",
-    "point2Text2": " — la IA construye tu personaje a partir de la conversación",
-    "point3Text1": "Tus conversaciones se convierten en ",
-    "point3Highlight": "cartas anónimas",
-    "point3Text2": " en el muro público — nombres cambiados, detalles eliminados. Puedes hacer que cualquier sesión sea privada.",
-    "btnClaim": "Reclama Tu Acceso",
-    "privacyNote": "Todo lo que compartes se reescribe de forma anónima. Nunca aparecen nombres reales, ubicaciones ni detalles de identificación públicamente.",
-    "successTitle": "Estás dentro.",
-    "btnStart": "Comienza Tu Primera Sesión",
-    "errorTitle": "No Se Pudo Canjear",
-    "errorDefault": "Algo salió mal."
   }
 }

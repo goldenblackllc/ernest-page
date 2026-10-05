@@ -768,28 +768,6 @@
     "subtitle": "Posts you've shown love to.",
     "empty": "No liked posts yet. Tap the heart on any post to save it here."
   },
-  "apply": {
-    "title1": "Is something bothering you?",
-    "title2": "You're lucky.",
-    "desc1": "There's nothing wrong with you. Feelings are your superpower. The worse you feel, the luckier you are. You're special. Discover what your feelings are telling you.",
-    "desc2": "We're new and we need your perspective. Not a survey. Not a raffle. You finish, you get $20.",
-    "venmoPlaceholder": "@username",
-    "cashappPlaceholder": "$cashtag",
-    "errorEmpty": "Enter your handle so we know where to send $20.",
-    "errorGeneral": "Something went wrong. Try refreshing.",
-    "errorActivate": "Something went wrong.",
-    "btnIn": "I'm in",
-    "anonNote": "Everything is anonymous. No real names ever appear.",
-    "loginTitle": "Enter your phone number",
-    "loginSub": "We'll text you a code. Takes 10 seconds.",
-    "back": "← Back",
-    "activatingTitle": "Setting up your account...",
-    "activatingSub": "This takes a few seconds.",
-    "doneTitle": "You're in.",
-    "doneSub1": "Be honest. Say when you disagree.",
-    "doneSub2": "That's where it gets interesting.",
-    "btnGo": "Let's go"
-  },
   "post": {
     "notFound": "Post not found",
     "notFoundDesc": "This post may be private or no longer exists.",
@@ -799,24 +777,5 @@
     "tapToListen": "Tap to listen",
     "theResponse": "The Response",
     "tryEarnestPage": "Try Earnest Page →"
-  },
-  "beta": {
-    "title": "You've been invited.",
-    "subtitle": "30 days of unlimited access. No credit card. No catch. Just use it.",
-    "loginPrompt": "Log in to claim your access",
-    "point1Amount": "30 days",
-    "point1Text": " of unlimited sessions",
-    "point2Text1": "Talk to your ",
-    "point2Highlight": "Ideal Self",
-    "point2Text2": " — the AI builds your character from the conversation",
-    "point3Text1": "Your conversations become ",
-    "point3Highlight": "anonymous letters",
-    "point3Text2": " on the public feed — names changed, details scrubbed. You can set any session to private.",
-    "btnClaim": "Claim Your Access",
-    "privacyNote": "Everything you share is rewritten anonymously. No real names, no locations, no identifying details ever appear publicly.",
-    "successTitle": "You're in.",
-    "btnStart": "Start Your First Session",
-    "errorTitle": "Couldn't Redeem",
-    "errorDefault": "Something went wrong."
   }
 }

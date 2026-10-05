@@ -768,28 +768,6 @@
     "subtitle": "Beiträge, denen du Liebe gezeigt hast.",
     "empty": "Noch keine gespeicherten Beiträge. Tippe auf das Herz bei einem Beitrag, um ihn hier zu speichern."
   },
-  "apply": {
-    "title1": "Beschäftigt dich etwas?",
-    "title2": "Du hast Glück.",
-    "desc1": "Mit dir ist alles in Ordnung. Gefühle sind deine Superkraft. Je schlechter du dich fühlst, desto mehr Glück hast du. Du bist besonders. Entdecke, was deine Gefühle dir sagen.",
-    "desc2": "Wir sind neu und brauchen deine Perspektive. Keine Umfrage. Keine Verlosung. Du bist fertig, du bekommst 20 $.",
-    "venmoPlaceholder": "@benutzername",
-    "cashappPlaceholder": "$cashtag",
-    "errorEmpty": "Gib deinen Namen ein, damit wir wissen, wohin wir 20 $ schicken sollen.",
-    "errorGeneral": "Etwas ist schiefgelaufen. Versuche, die Seite zu aktualisieren.",
-    "errorActivate": "Etwas ist schiefgelaufen.",
-    "btnIn": "Ich bin dabei",
-    "anonNote": "Alles ist anonym. Echte Namen erscheinen nie.",
-    "loginTitle": "Gib deine Telefonnummer ein",
-    "loginSub": "Wir senden dir einen Code. Dauert 10 Sekunden.",
-    "back": "← Zurück",
-    "activatingTitle": "Richte deinen Account ein...",
-    "activatingSub": "Das dauert ein paar Sekunden.",
-    "doneTitle": "Du bist drin.",
-    "doneSub1": "Sei ehrlich. Sag, wenn du nicht zustimmst.",
-    "doneSub2": "Da wird es interessant.",
-    "btnGo": "Los geht's"
-  },
   "post": {
     "notFound": "Beitrag nicht gefunden",
     "notFoundDesc": "Dieser Beitrag ist möglicherweise privat oder existiert nicht mehr.",
@@ -799,24 +777,5 @@
     "tapToListen": "Tippe, um zu hören",
     "theResponse": "Die Antwort",
     "tryEarnestPage": "Earnest Page ausprobieren →"
-  },
-  "beta": {
-    "title": "Du wurdest eingeladen.",
-    "subtitle": "30 Tage unbegrenzter Zugang. Keine Kreditkarte. Kein Haken. Nutze es einfach.",
-    "loginPrompt": "Melde dich an, um deinen Zugang zu beanspruchen",
-    "point1Amount": "30 Tage",
-    "point1Text": " unbegrenzte Sitzungen",
-    "point2Text1": "Sprich mit deinem ",
-    "point2Highlight": "idealen Selbst",
-    "point2Text2": " — die KI baut deinen Charakter aus dem Gespräch auf",
-    "point3Text1": "Deine Gespräche werden zu ",
-    "point3Highlight": "anonymen Briefen",
-    "point3Text2": " im öffentlichen Feed — Namen geändert, Details entfernt. Du kannst jede Sitzung auf privat setzen.",
-    "btnClaim": "Deinen Zugang beanspruchen",
-    "privacyNote": "Alles, was du teilst, wird anonym umgeschrieben. Keine echten Namen, keine Orte, keine identifizierenden Details erscheinen jemals öffentlich.",
-    "successTitle": "Du bist drin.",
-    "btnStart": "Starte deine erste Sitzung",
-    "errorTitle": "Einlösen nicht möglich",
-    "errorDefault": "Etwas ist schiefgelaufen."
   }
 }
