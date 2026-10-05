@@ -145,35 +145,6 @@
       "submitButton": "Construir Meu Eu Ideal"
     }
   },
-  "vision": {
-    "errorLogin": "Você precisa estar logado para publicar.",
-    "errorTitle": "Por favor, insira um título.",
-    "errorPrefix": "Erro: ",
-    "changeImage": "Alterar Imagem",
-    "uploadInspiration": "Enviar Inspiração (Opcional)",
-    "heading": "O Que Você Quer?",
-    "subtext": "\"A distância entre onde você está e o que você quer é determinada pela sua frequência. Defina o alvo. Gere a frequência.\"",
-    "titleLabel": "TÍTULO",
-    "titlePlaceholder": "ex., Um carro novo, $10k/mês, um relacionamento saudável...",
-    "descLabel": "DESCRIÇÃO",
-    "descPlaceholder": "Descreva os detalhes do que você quer...",
-    "streamHeading": "O Fluxo",
-    "publish": "PUBLICAR",
-    "streamInput": {
-      "placeholder": "Digite um sentimento, pensamento ou ação...",
-      "feeling": "+ SENTIMENTO",
-      "thought": "+ PENSAMENTO",
-      "action": "+ AÇÃO"
-    },
-    "streamList": {
-      "selectTopFeelings": "Selecione seus 3 principais sentimentos.",
-      "empty": "O fluxo está vazio",
-      "ariaUnselect": "Desselecionar sentimento",
-      "ariaSelect": "Selecionar sentimento",
-      "ariaDelete": "Excluir item"
-    },
-    "visionAlt": "Visão"
-  },
   "mirrorChat": {
     "consultingMirror": "Consultando O Espelho",
     "connectionSecured": "Conexão segura.",
@@ -202,12 +173,6 @@
     "sessionRoutingSettings": "Configurações de roteamento de sessão",
     "removePhoto": "Remover foto",
     "send": "Enviar"
-  },
-  "tollbooth": {
-    "secureEnrollment": "Começar",
-    "heading": "Exija uma vida melhor.",
-    "body": "Earnest Page não é apenas mais um aplicativo que você esquece. É um compromisso intencional para alguém que se recusa a se conformar.",
-    "selectPlan": "Cadastre-se para começar."
   },
   "triagePanel": {
     "buildingCharacter": "Construindo seu personagem...",
@@ -303,36 +268,6 @@
       "liked": "Curtidas"
     }
   },
-  "identityModal": {
-    "title": "Defina Sua Identidade",
-    "subtitle": "Quem é você? Como você quer se apresentar ao mundo agora?",
-    "placeholder": "Eu sou uma pessoa que...",
-    "cancel": "Cancelar",
-    "updating": "Atualizando...",
-    "updateBtn": "ATUALIZAR DEFINIÇÃO",
-    "errorUpdate": "Falha ao atualizar. Por favor, tente novamente."
-  },
-  "identityAnchor": {
-    "loading": "Carregando Realidade...",
-    "undefined": "IDENTIDADE INDEFINIDA.",
-    "defineReality": "DEFINIR REALIDADE",
-    "placeholder": "EU SOU...",
-    "committing": "COMPROMETENDO...",
-    "commitBtn": "COMPROMETER NOVA IDENTIDADE",
-    "errorUpdate": "Falha ao atualizar a identidade."
-  },
-  "dossier": {
-    "title": "Dossiê",
-    "close": "Fechar",
-    "sessionsCount": "{count} sessões",
-    "lastUpdated": "Última atualização {date}",
-    "beliefPatterns": "Padrões de Crença",
-    "empty": "Seu dossiê será construído com o tempo à medida que você usar o aplicativo."
-  },
-  "characterReview": {
-    "letterFrom": "Uma Carta de {name}",
-    "close": "Fechar"
-  },
   "securityVault": {
     "title": "Segurança e Roteamento",
     "statusLocked": "Status: Bloqueado.",
@@ -368,37 +303,6 @@
     "deleteForever": "Excluir Para Sempre",
     "vaultSecured": "Cofre Protegido"
   },
-  "contactFirewall": {
-    "protocolTitle": "Protocolo de Isolamento de Rede",
-    "title": "O Firewall de Contato",
-    "desc": "Sua execução requer isolamento total. Bloqueie ameaças específicas ou faça upload de toda a sua lista de contatos para estabelecer um ponto cego criptográfico permanente.",
-    "trustDesc": "Não armazenamos seus contatos. Tudo é criptografado localmente neste dispositivo antes de chegar aos nossos servidores. Você é matematicamente invisível para sua órbita imediata.",
-    "precisionTargeting": "Alvo de Precisão",
-    "bulkIsolation": "Isolamento em Massa",
-    "precisionTitle": "Identificar Ameaças Específicas",
-    "precisionDesc": "Insira os números de telefone específicos de indivíduos cuja presença comprometeria sua honestidade na plataforma.",
-    "phoneNumber": "Número de Telefone",
-    "addAnotherTarget": "Adicionar outro alvo",
-    "lockPerimeter": "Bloquear Perímetro",
-    "bulkTitle": "Estabelecer um Ponto Cego Total",
-    "bulkDesc": "Faça upload da exportação bruta dos contatos do seu dispositivo (.vcf ou .csv). A criptografia ocorre inteiramente no seu navegador; o arquivo nunca toca nossos servidores.",
-    "exportApple": "Como exportar da Apple",
-    "exportGoogle": "Como exportar do Google",
-    "dropToAnalyze": "Solte para analisar",
-    "dragAndDrop": "Arraste e solte seu arquivo de contatos aqui",
-    "fileTypes": ".vcf ou .csv — processado localmente, nunca enviado",
-    "selectFile": "Selecionar arquivo .vcf ou .csv",
-    "skipForNow": "Pular por agora. Eu aceito o risco de exposição.",
-    "hashing": "Criptografando",
-    "identities": "identidades...",
-    "hashingDesc": "SHA-256 · Apenas no lado do cliente · Zero transmissão de dados brutos",
-    "firewallActive": "Firewall Ativo.",
-    "identitiesSecured": "{count} identidades protegidas. Seu perímetro está bloqueado.",
-    "identitySecured": "{count} identidade protegida. Seu perímetro está bloqueado.",
-    "enterCommandCenter": "Entrar no Centro de Comando ➡️",
-    "tryAgain": "Tentar Novamente",
-    "skipShort": "Pular por agora"
-  },
   "supportChat": {
     "title": "Suporte",
     "placeholder": "Faça uma pergunta...",
@@ -429,12 +333,6 @@
     "remove": "Deixar de seguir",
     "authorsFollowed": "{count} {count, plural, =1 {autor seguido} other {autores seguidos}}"
   },
-  "lockedScreen": {
-    "title": "Missão Atual",
-    "description": "\"O único caminho é através. Reporte quando esta ação estiver completa.\"",
-    "filingReport": "Registrando Relatório...",
-    "reportCompletion": "REPORTAR CONCLUSÃO"
-  },
   "followAuthorModal": {
     "title": "Seguir Autor",
     "description": "Atribua um nome privado a este autor. Somente você verá este nome ao lado das publicações futuras dele no seu feed.",
@@ -443,17 +341,6 @@
     "errorSave": "Falha ao salvar o apelido.",
     "cancel": "Cancelar",
     "saveAlias": "Salvar Apelido"
-  },
-  "controlDeck": {
-    "identity": "Identidade",
-    "takeAction": "Agir",
-    "iWant": "Eu Quero"
-  },
-  "press": {
-    "title": "OS DADOS ROLAM",
-    "subtitle": "Selecione uma ação. As outras serão descartadas.",
-    "excitementIndex": "Índice de Empolgação: {score}/10",
-    "initialize": "INICIALIZAR"
   },
   "apiErrors": {
     "unauthorized": "Acesso não autorizado.",
@@ -464,14 +351,6 @@
     "unexpected": "Ocorreu um erro inesperado.",
     "rantRequired": "O desabafo é obrigatório.",
     "onboardingTimeout": "O algoritmo está demorando mais do que o esperado. Por favor, tente novamente."
-  },
-  "locale": {
-    "en": "English",
-    "es": "Español",
-    "pt": "Português",
-    "fr": "Français",
-    "switchLanguage": "Idioma",
-    "de": "Deutsch"
   },
   "terms": {
     "title": "Termos de Serviço",
@@ -772,7 +651,6 @@
       "p1": "Violações desta política podem resultar em: remoção de conteúdo, suspensão temporária, encerramento permanente da conta ou denúncia às autoridades quando legalmente exigido (ex., ameaças credíveis de violência ou exploração infantil)."
     }
   },
-  "legalDisclaimer": "Este documento legal foi traduzido para sua conveniência. Em caso de discrepâncias, a versão em inglês prevalece.",
   "pwa": {
     "installBanner": {
       "message": "Adicione Earnest Page à sua tela inicial para uma melhor experiência.",
@@ -786,23 +664,6 @@
       "release": "Solte para atualizar",
       "refreshing": "Atualizando…"
     }
-  },
-  "intake": {
-    "header": "Conhecendo você",
-    "ofFive": "de 5",
-    "introHeading": "Antes de começarmos...",
-    "introSubtext": "Você é único e nós não damos feedback genérico. Precisamos saber um pouco sobre quem você é para que tudo seja adaptado a você.",
-    "inputPlaceholder": "Digite sua resposta...",
-    "compiling": "Preparando sua sessão...",
-    "compilingSub": "Isso leva alguns minutos. Estamos construindo algo específico para você.",
-    "readyHeading": "Tudo pronto.",
-    "readySub": "Construímos alguém com base na pessoa que você descreveu — seu eu ideal. Esta é sua primeira sessão gratuita. Fale abertamente.",
-    "startSession": "Começar Sua Primeira Sessão",
-    "questionTitle1": "Sua Visão",
-    "questionTitle2": "Pessoas na Sua Vida",
-    "questionTitle3": "O Que Te Ilumina",
-    "questionTitle4": "Quando Você Nasceu",
-    "questionTitle5": "Traços Físicos"
   },
   "voiceBrowser": {
     "title": "Minha Voz",
@@ -838,19 +699,6 @@
     "errorVerifyFailed": "Código inválido. Tente novamente.",
     "selectCountryCode": "Selecione o código do país",
     "searchCountry": "Pesquisar país..."
-  },
-  "header": {
-    "title": "The Daily Truth",
-    "volume": "Vol. I",
-    "price": "Preço: Sua Atenção"
-  },
-  "guestChat": {
-    "characterName": "Earnest",
-    "characterInitial": "E",
-    "placeholder": "O que está na sua mente?",
-    "errorGeneric": "Algo deu errado. Tente novamente.",
-    "retry": "Tentar novamente",
-    "sendMessage": "Enviar mensagem"
   },
   "mylife": {
     "wants": {
@@ -907,71 +755,6 @@
       "people": "Pessoas",
       "dream": "Sonho"
     }
-  },
-  "shots": {
-    "navBrand": "Earnest Page",
-    "navSession": "/ Sessões de Clareza",
-    "navStart": "$20 — Comece Agora",
-    "heroSubtext": "Sem conta. Sem compromisso. Apenas uma conversa.",
-    "heroTitle1": "Você conhece aquela coisa",
-    "heroTitle2": "que você continua pensando",
-    "heroTitle3": "às 2 da manhã?",
-    "heroDesc": "Fale com alguém que não vai te julgar, não vai esquecer o que você disse dez minutos atrás e não vai te cobrar $200.",
-    "heroFree": "Grátis. Comece agora mesmo.",
-    "startSession": "Iniciar uma Sessão",
-    "learnMore": "Saiba Mais",
-    "problemLabel": "Parece Familiar?",
-    "problemTitle1": "Escolha aquela que",
-    "problemTitle2": "não te deixa em paz.",
-    "stuck": "Estou preso e não sei por quê",
-    "stuckSub": "Paralisia na carreira, transições de vida, sentir-se estagnado",
-    "secret": "Não posso dizer isso em voz alta para ninguém",
-    "secretSub": "A coisa que você carrega sozinho",
-    "pattern": "Continuo cometendo o mesmo erro",
-    "patternSub": "Padrões que você pode ver, mas não pode parar",
-    "gap": "Sei o que devo fazer, mas não consigo",
-    "gapSub": "A lacuna entre intenção e ação",
-    "mask": "Todos acham que estou bem",
-    "maskSub": "A máscara de alto funcionamento",
-    "diffLabel": "A Diferença",
-    "diffTitle1": "Isso não é um chatbot.",
-    "diffTitle2": "Isso não é terapia.",
-    "diffBody1": "Chatbots validam você. Terapeutas analisam você. Nenhum deles sentará na sua frente, olhará para a bagunça da sua vida e te dirá aquilo que você já sabe, mas não conseguiu dizer em voz alta.",
-    "diffBody2": "Esta é uma conversa com alguém que vê o padrão que você não consegue ver de dentro.",
-    "diffBody3": "Você escolhe alguém que admira — um arquétipo construído a partir de psicologia real, filosofia real e experiência de vida real. Eles não te dizem o que fazer. Eles te ajudam a ver com clareza suficiente para saber por si mesmo.",
-    "toggleShow": "Veja como isso se compara",
-    "toggleHide": "Ocultar comparação",
-    "compCost": "Custo",
-    "compAvailable": "Disponibilidade",
-    "compCommitment": "Compromisso",
-    "compRemembers": "Lembra de você",
-    "compChallenges": "Desafia você",
-    "compTherapy": "Terapia Tradicional",
-    "compAi": "Chatbots de IA",
-    "compUs": "Sessão de Clareza",
-    "stepsLabel": "Como Funciona",
-    "stepsTitle1": "Três passos. Vinte dólares.",
-    "stepsTitle2": "Zero conversa fiada.",
-    "step1Title": "Escolha seu ponto de partida",
-    "step1Text": "Escolha o que está na sua mente. Sem formulários de admissão. Sem salas de espera. Sem conversa fiada.",
-    "step2Title": "Tenha a conversa",
-    "step2Text": "Você falará com alguém que não lhe dá a resposta fácil. Eles sentam na bagunça com você até que você possa vê-la claramente.",
-    "step3Title": "Saia com clareza",
-    "step3Text": "Não é uma prescrição. Não é uma lista de tarefas. Uma mudança em como você vê o problema — o que muda tudo.",
-    "trustTitle": "O que você diz fica aqui.",
-    "trustDesc": "Nenhuma conta necessária. Sem e-mail. Nenhum dado vendido. Sua conversa existe para você, durante sua sessão e em nenhum outro lugar. Quando termina, termina.",
-    "trustSub": "Desenvolvido pelo criador do Earnest Page — uma plataforma onde a privacidade é a base, não um recurso.",
-    "ctaLabel": "Completamente Grátis",
-    "ctaTitle1": "Uma conversa.",
-    "ctaTitle2": "Sem amarras.",
-    "ctaDesc": "Até 5 sessões por dia. Sem cartão de crédito. Sem assinatura. Sem pegadinhas. Apenas você e seu Eu Ideal.",
-    "ctaBtn": "Começar Grátis",
-    "ctaNote": "Nenhuma conta necessária. Nenhum dado armazenado após sua sessão.",
-    "closeTitle1": "A coisa que você continua carregando",
-    "closeTitle2": "não precisa permanecer invisível.",
-    "closeDesc": "Uma conversa. Completamente grátis. Ninguém precisa saber.",
-    "footerCopyright": "© {year} Earnest Page. Todos os direitos reservados.",
-    "footerDisclaimer": "As Sessões de Clareza não substituem a terapia licenciada ou os cuidados psiquiátricos. Se você estiver em crise, entre em contato com o CVV — Centro de Valorização da Vida (ligue 188)."
   },
   "myPosts": {
     "title": "Minhas Publicações",

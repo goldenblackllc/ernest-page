@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /Users/davidjohnson/Development/earnest-page
+cd "$(dirname "$0")"
 
 SYMBOLS=(
 "EcosystemAd"

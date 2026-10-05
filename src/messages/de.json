@@ -145,52 +145,6 @@
       "submitButton": "Mein ideales Selbst erstellen"
     }
   },
-  "intake": {
-    "header": "Dich kennenlernen",
-    "ofFive": "von 5",
-    "introHeading": "Bevor wir beginnen...",
-    "introSubtext": "Du bist einzigartig und wir geben kein generisches Feedback. Wir müssen ein wenig darüber wissen, wer du bist, damit alles auf dich zugeschnitten ist.",
-    "inputPlaceholder": "Tippe deine Antwort...",
-    "compiling": "Bereite deine Sitzung vor...",
-    "compilingSub": "Dies dauert ein paar Minuten. Wir bauen etwas Spezielles für dich auf.",
-    "readyHeading": "Du bist startklar.",
-    "readySub": "Wir haben jemanden basierend auf der Person aufgebaut, die du beschrieben hast — dein ideales Selbst. Dies ist deine kostenlose erste Sitzung. Sprich offen.",
-    "startSession": "Starte deine erste Sitzung",
-    "questionTitle1": "Deine Vision",
-    "questionTitle2": "Menschen in deinem Leben",
-    "questionTitle3": "Was dich begeistert",
-    "questionTitle4": "Wann du geboren wurdest",
-    "questionTitle5": "Körperliche Merkmale"
-  },
-  "vision": {
-    "errorLogin": "Du musst angemeldet sein, um zu veröffentlichen.",
-    "errorTitle": "Bitte gib einen Titel ein.",
-    "errorPrefix": "Fehler: ",
-    "changeImage": "Bild ändern",
-    "uploadInspiration": "Inspiration hochladen (Optional)",
-    "heading": "Was willst du?",
-    "subtext": "\"Die Distanz zwischen dem, wo du bist, und dem, was du willst, wird durch deine Frequenz bestimmt. Definiere das Ziel. Erzeuge die Frequenz.\"",
-    "titleLabel": "TITEL",
-    "titlePlaceholder": "z.B. ein neues Auto, 10k/Monat, eine gesunde Beziehung...",
-    "descLabel": "BESCHREIBUNG",
-    "descPlaceholder": "Beschreibe die Details dessen, was du willst...",
-    "streamHeading": "Der Stream",
-    "publish": "VERÖFFENTLICHEN",
-    "streamInput": {
-      "placeholder": "Tippe ein Gefühl, einen Gedanken oder eine Handlung...",
-      "feeling": "+ GEFÜHL",
-      "thought": "+ GEDANKE",
-      "action": "+ HANDLUNG"
-    },
-    "streamList": {
-      "selectTopFeelings": "Wähle deine Top 3 Gefühle.",
-      "empty": "Der Stream ist leer",
-      "ariaUnselect": "Gefühl abwählen",
-      "ariaSelect": "Gefühl auswählen",
-      "ariaDelete": "Element löschen"
-    },
-    "visionAlt": "Vision"
-  },
   "mirrorChat": {
     "consultingMirror": "Den Spiegel konsultieren",
     "connectionSecured": "Verbindung gesichert.",
@@ -219,12 +173,6 @@
     "sessionRoutingSettings": "Sitzungs-Routing-Einstellungen",
     "removePhoto": "Foto entfernen",
     "send": "Senden"
-  },
-  "tollbooth": {
-    "secureEnrollment": "Loslegen",
-    "heading": "Fordere ein besseres Leben.",
-    "body": "Earnest Page ist nicht eine weitere App, die du vergisst. Es ist eine bewusste Verpflichtung für jemanden, der sich weigert, Kompromisse einzugehen.",
-    "selectPlan": "Registriere dich, um zu beginnen."
   },
   "triagePanel": {
     "buildingCharacter": "Deinen Charakter erstellen...",
@@ -320,36 +268,6 @@
       "liked": "Gefällt mir"
     }
   },
-  "identityModal": {
-    "title": "Definiere deine Identität",
-    "subtitle": "Wer bist du? Wie willst du jetzt in der Welt auftreten?",
-    "placeholder": "Ich bin eine Person, die...",
-    "cancel": "Abbrechen",
-    "updating": "Wird aktualisiert...",
-    "updateBtn": "DEFINITION AKTUALISIEREN",
-    "errorUpdate": "Fehler beim Aktualisieren. Bitte versuche es erneut."
-  },
-  "identityAnchor": {
-    "loading": "Realität laden...",
-    "undefined": "IDENTITÄT UNDEFINIERT.",
-    "defineReality": "REALITÄT DEFINIEREN",
-    "placeholder": "ICH BIN...",
-    "committing": "WIRD FESTGELEGT...",
-    "commitBtn": "NEUE IDENTITÄT FESTLEGEN",
-    "errorUpdate": "Fehler beim Aktualisieren der Identität."
-  },
-  "dossier": {
-    "title": "Dossier",
-    "close": "Schließen",
-    "sessionsCount": "{count} Sitzungen",
-    "lastUpdated": "Zuletzt aktualisiert {date}",
-    "beliefPatterns": "Glaubensmuster",
-    "empty": "Dein Dossier baut sich mit der Zeit auf, wenn du die App nutzt."
-  },
-  "characterReview": {
-    "letterFrom": "Ein Brief von {name}",
-    "close": "Schließen"
-  },
   "securityVault": {
     "title": "Sicherheit & Routing",
     "statusLocked": "Status: Gesperrt.",
@@ -385,37 +303,6 @@
     "deleteForever": "Für immer löschen",
     "vaultSecured": "Tresor gesichert"
   },
-  "contactFirewall": {
-    "protocolTitle": "Netzwerkisolationsprotokoll",
-    "title": "Die Kontakt-Firewall",
-    "desc": "Deine Ausführung erfordert absolute Isolation. Blockiere bestimmte Bedrohungen oder lade dein gesamtes Kontaktbuch hoch, um einen dauerhaften, kryptografischen blinden Fleck zu schaffen.",
-    "trustDesc": "Wir speichern deine Kontakte nicht. Alles wird lokal auf diesem Gerät gehasht, bevor es unsere Server erreicht. Du bist für dein direktes Umfeld mathematisch unsichtbar.",
-    "precisionTargeting": "Präzises Targeting",
-    "bulkIsolation": "Massen-Isolation",
-    "precisionTitle": "Spezifische Bedrohungen identifizieren",
-    "precisionDesc": "Gib die spezifischen Telefonnummern von Personen ein, deren Präsenz deine Ehrlichkeit auf der Plattform gefährden würde.",
-    "phoneNumber": "Telefonnummer",
-    "addAnotherTarget": "Ein weiteres Ziel hinzufügen",
-    "lockPerimeter": "Perimeter sperren",
-    "bulkTitle": "Einen totalen blinden Fleck einrichten",
-    "bulkDesc": "Lade den rohen Kontaktexport deines Geräts hoch (.vcf oder .csv). Das Hashing findet vollständig in deinem Browser statt; die Datei berührt unsere Server nie.",
-    "exportApple": "Wie man aus Apple exportiert",
-    "exportGoogle": "Wie man aus Google exportiert",
-    "dropToAnalyze": "Zum Analysieren ablegen",
-    "dragAndDrop": "Ziehe deine Kontaktdatei hierher",
-    "fileTypes": ".vcf oder .csv — lokal verarbeitet, nie hochgeladen",
-    "selectFile": ".vcf oder .csv Datei auswählen",
-    "skipForNow": "Fürs Erste überspringen. Ich akzeptiere das Risiko der Entblößung.",
-    "hashing": "Hashing",
-    "identities": "Identitäten...",
-    "hashingDesc": "SHA-256 · Nur clientseitig · Keine Übertragung von Rohdaten",
-    "firewallActive": "Firewall aktiv.",
-    "identitiesSecured": "{count} Identitäten gesichert. Dein Perimeter ist gesperrt.",
-    "identitySecured": "{count} Identität gesichert. Dein Perimeter ist gesperrt.",
-    "enterCommandCenter": "Betritt das Kommandozentrum ➡️",
-    "tryAgain": "Erneut versuchen",
-    "skipShort": "Fürs Erste überspringen"
-  },
   "supportChat": {
     "title": "Support",
     "placeholder": "Stelle eine Frage...",
@@ -446,12 +333,6 @@
     "remove": "Entfolgen",
     "authorsFollowed": "{count} {count, plural, =1 {Autor} other {Autoren}} gefolgt"
   },
-  "lockedScreen": {
-    "title": "Aktuelle Aufgabe",
-    "description": "\"Der einzige Weg hinaus ist hindurch. Melde dich, wenn diese Aktion abgeschlossen ist.\"",
-    "filingReport": "Bericht einreichen...",
-    "reportCompletion": "ABSCHLUSS MELDEN"
-  },
   "followAuthorModal": {
     "title": "Autor folgen",
     "description": "Weise diesem Autor einen privaten Namen zu. Nur du wirst diesen Namen neben seinen zukünftigen Beiträgen in deinem Feed sehen.",
@@ -460,17 +341,6 @@
     "errorSave": "Fehler beim Speichern des Alias.",
     "cancel": "Abbrechen",
     "saveAlias": "Alias speichern"
-  },
-  "controlDeck": {
-    "identity": "Identität",
-    "takeAction": "Handeln",
-    "iWant": "Ich will"
-  },
-  "press": {
-    "title": "DIE PRESSE LÄUFT",
-    "subtitle": "Wähle eine Aktion aus. Die anderen werden verworfen.",
-    "excitementIndex": "Begeisterungsindex: {score}/10",
-    "initialize": "INITIALISIEREN"
   },
   "apiErrors": {
     "unauthorized": "Unbefugter Zugriff.",
@@ -481,14 +351,6 @@
     "unexpected": "Ein unerwarteter Fehler ist aufgetreten.",
     "rantRequired": "Flaschengeist-Eingabe ist erforderlich.",
     "onboardingTimeout": "Der Algorithmus benötigt länger als erwartet. Bitte versuche es erneut."
-  },
-  "locale": {
-    "en": "Englisch",
-    "es": "Spanisch",
-    "pt": "Portugiesisch",
-    "fr": "Französisch",
-    "de": "Deutsch",
-    "switchLanguage": "Sprache"
   },
   "terms": {
     "title": "Nutzungsbedingungen",
@@ -789,7 +651,6 @@
       "p1": "Verstöße gegen diese Richtlinie können zu Folgendem führen: Entfernung von Inhalten, vorübergehende Sperrung, dauerhafte Kontokündigung oder Meldung an Strafverfolgungsbehörden, sofern dies gesetzlich vorgeschrieben ist (z.B. glaubhafte Androhung von Gewalt oder sexuelle Ausbeutung von Kindern)."
     }
   },
-  "legalDisclaimer": "Dieses rechtliche Dokument wurde für deine Bequemlichkeit übersetzt. Im Falle von Abweichungen ist die englische Version maßgeblich.",
   "pwa": {
     "installBanner": {
       "message": "Füge Earnest Page deinem Startbildschirm hinzu für ein besseres Erlebnis.",
@@ -838,19 +699,6 @@
     "errorVerifyFailed": "Ungültiger Code. Bitte versuche es erneut.",
     "selectCountryCode": "Ländercode auswählen",
     "searchCountry": "Land suchen..."
-  },
-  "header": {
-    "title": "The Daily Truth",
-    "volume": "Vol. I",
-    "price": "Preis: Deine Aufmerksamkeit"
-  },
-  "guestChat": {
-    "characterName": "Earnest",
-    "characterInitial": "E",
-    "placeholder": "Was beschäftigt dich?",
-    "errorGeneric": "Etwas ist schiefgelaufen. Versuche es erneut.",
-    "retry": "Erneut versuchen",
-    "sendMessage": "Nachricht senden"
   },
   "mylife": {
     "wants": {
@@ -907,71 +755,6 @@
       "people": "Leute",
       "dream": "Traum"
     }
-  },
-  "shots": {
-    "navBrand": "Earnest Page",
-    "navSession": "/ Klarheits-Sitzungen",
-    "navStart": "20 $ — Jetzt starten",
-    "heroSubtext": "Kein Account. Keine Verpflichtung. Nur ein Gespräch.",
-    "heroTitle1": "Du kennst das,",
-    "heroTitle2": "woran du um 2 Uhr nachts",
-    "heroTitle3": "immer wieder denkst?",
-    "heroDesc": "Sprich mit jemandem, der nicht urteilt, der nicht vergisst, was du vor zehn Minuten gesagt hast, und dir keine 200 $ berechnet.",
-    "heroFree": "Kostenlos. Starte jetzt sofort.",
-    "startSession": "Starte eine Sitzung",
-    "learnMore": "Mehr erfahren",
-    "problemLabel": "Kommt dir das bekannt vor?",
-    "problemTitle1": "Wähle das aus,",
-    "problemTitle2": "was dich nicht loslässt.",
-    "stuck": "Ich stecke fest und weiß nicht warum",
-    "stuckSub": "Karrierestillstand, Lebensübergänge, sich eingefroren fühlen",
-    "secret": "Ich kann das niemandem laut sagen",
-    "secretSub": "Die Sache, die du alleine trägst",
-    "pattern": "Ich mache immer wieder denselben Fehler",
-    "patternSub": "Muster, die du siehst, aber nicht stoppen kannst",
-    "gap": "Ich weiß, was ich tun sollte, aber ich kann es nicht tun",
-    "gapSub": "Die Lücke zwischen Absicht und Handlung",
-    "mask": "Jeder denkt, es geht mir gut",
-    "maskSub": "Die hochfunktionale Maske",
-    "diffLabel": "Der Unterschied",
-    "diffTitle1": "Das ist kein Chatbot.",
-    "diffTitle2": "Das ist keine Therapie.",
-    "diffBody1": "Chatbots bestätigen dich. Therapeuten analysieren dich. Keiner von beiden wird vor dir sitzen, das Chaos deines Lebens betrachten und dir die Sache sagen, die du bereits weißt, aber noch nicht laut aussprechen konntest.",
-    "diffBody2": "Dies ist ein Gespräch mit jemandem, der das Muster sieht, das du von innen nicht sehen kannst.",
-    "diffBody3": "Du wählst jemanden, den du bewunderst — einen Archetyp, der aus echter Psychologie, echter Philosophie und echten gelebten Erfahrungen aufgebaut ist. Sie sagen dir nicht, was du tun sollst. Sie helfen dir, klar genug zu sehen, um es für dich selbst zu wissen.",
-    "toggleShow": "Sieh dir den Vergleich an",
-    "toggleHide": "Vergleich ausblenden",
-    "compCost": "Kosten",
-    "compAvailable": "Verfügbarkeit",
-    "compCommitment": "Verpflichtung",
-    "compRemembers": "Erinnert sich an dich",
-    "compChallenges": "Fordert dich heraus",
-    "compTherapy": "Traditionelle Therapie",
-    "compAi": "KI-Chatbots",
-    "compUs": "Klarheits-Sitzung",
-    "stepsLabel": "Wie es funktioniert",
-    "stepsTitle1": "Drei Schritte. Zwanzig Dollar.",
-    "stepsTitle2": "Kein Smalltalk.",
-    "step1Title": "Wähle deinen Einstiegspunkt",
-    "step1Text": "Wähle das, was dich beschäftigt. Keine Aufnahmeformulare. Keine Warteräume. Kein Smalltalk.",
-    "step2Title": "Führe das Gespräch",
-    "step2Text": "Du sprichst mit jemandem, der dir nicht die einfache Antwort gibt. Er sitzt mit dir im Chaos, bis du es klar sehen kannst.",
-    "step3Title": "Gehe mit Klarheit",
-    "step3Text": "Kein Rezept. Keine To-Do-Liste. Eine Verschiebung deiner Sicht auf das Problem — was alles verändert.",
-    "trustTitle": "Was du sagst, bleibt hier.",
-    "trustDesc": "Kein Account erforderlich. Keine E-Mail. Keine Daten werden verkauft. Dein Gespräch existiert für dich, während deiner Sitzung, und nirgendwo sonst. Wenn es endet, endet es.",
-    "trustSub": "Gebaut vom Macher von Earnest Page — einer Plattform, auf der Datenschutz das Fundament ist, nicht das Feature.",
-    "ctaLabel": "Völlig kostenlos",
-    "ctaTitle1": "Ein Gespräch.",
-    "ctaTitle2": "Ohne Bedingungen.",
-    "ctaDesc": "Bis zu 5 Sitzungen pro Tag. Keine Kreditkarte. Kein Abo. Kein Haken. Nur du und dein ideales Selbst.",
-    "ctaBtn": "Kostenlos starten",
-    "ctaNote": "Kein Account erforderlich. Nach deiner Sitzung werden keine Daten gespeichert.",
-    "closeTitle1": "Die Sache, die du mit dir trägst,",
-    "closeTitle2": "muss nicht unsichtbar bleiben.",
-    "closeDesc": "Ein Gespräch. Völlig kostenlos. Niemand muss es wissen.",
-    "footerCopyright": "© {year} Earnest Page. Alle Rechte vorbehalten.",
-    "footerDisclaimer": "Klarheits-Sitzungen sind kein Ersatz für eine lizenzierte Therapie oder psychiatrische Betreuung. Wenn du in einer Krise steckst, kontaktiere bitte die 988 Suicide & Crisis Lifeline."
   },
   "myPosts": {
     "title": "Meine Beiträge",

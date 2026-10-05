@@ -201,52 +201,6 @@
       "dream": "Dream"
     }
   },
-  "intake": {
-    "header": "Getting to know you",
-    "ofFive": "of 5",
-    "introHeading": "Before we begin...",
-    "introSubtext": "You are unique and we don't give generic feedback. We need to know a little about who you are so everything is tailored to you.",
-    "inputPlaceholder": "Type your answer...",
-    "compiling": "Preparing your session...",
-    "compilingSub": "This takes a few minutes. We're building something specific to you.",
-    "readyHeading": "You're all set.",
-    "readySub": "We've built someone based on the person you described — your ideal self. This is your free first session. Speak openly.",
-    "startSession": "Start Your First Session",
-    "questionTitle1": "Your Vision",
-    "questionTitle2": "People in Your Life",
-    "questionTitle3": "What Lights You Up",
-    "questionTitle4": "When You Were Born",
-    "questionTitle5": "Physical Traits"
-  },
-  "vision": {
-    "visionAlt": "Vision",
-    "errorLogin": "You must be logged in to publish.",
-    "errorTitle": "Please enter a title.",
-    "errorPrefix": "Error: ",
-    "changeImage": "Change Image",
-    "uploadInspiration": "Upload Inspiration (Optional)",
-    "heading": "What Do You Want?",
-    "subtext": "\"The distance between where you are and what you want is determined by your frequency. Define the target. Generate the frequency.\"",
-    "titleLabel": "TITLE",
-    "titlePlaceholder": "e.g., A new car, $10k/month, a healthy relationship...",
-    "descLabel": "DESCRIPTION",
-    "descPlaceholder": "Describe the details of what you want...",
-    "streamHeading": "The Stream",
-    "publish": "PUBLISH",
-    "streamInput": {
-      "placeholder": "Type a feeling, thought, or action...",
-      "feeling": "+ FEELING",
-      "thought": "+ THOUGHT",
-      "action": "+ ACTION"
-    },
-    "streamList": {
-      "selectTopFeelings": "Select your top 3 feelings.",
-      "empty": "The stream is empty",
-      "ariaUnselect": "Unselect feeling",
-      "ariaSelect": "Select feeling",
-      "ariaDelete": "Delete item"
-    }
-  },
   "mirrorChat": {
     "consultingMirror": "Consulting The Mirror",
     "connectionSecured": "Connection secured.",
@@ -275,12 +229,6 @@
     "sessionRoutingSettings": "Session routing settings",
     "removePhoto": "Remove photo",
     "send": "Send"
-  },
-  "tollbooth": {
-    "secureEnrollment": "Get Started",
-    "heading": "Demand a Better Life.",
-    "body": "Earnest Page is not another app you forget about. It is an intentional commitment for someone who refuses to compromise.",
-    "selectPlan": "Sign up to begin."
   },
   "triagePanel": {
     "buildingCharacter": "Building your character...",
@@ -376,36 +324,6 @@
       "liked": "Liked"
     }
   },
-  "identityModal": {
-    "title": "Define Your Identity",
-    "subtitle": "Who are you? How do you want to show up in the world right now?",
-    "placeholder": "I am a person who...",
-    "cancel": "Cancel",
-    "updating": "Updating...",
-    "updateBtn": "UPDATE DEFINITION",
-    "errorUpdate": "Failed to update. Please try again."
-  },
-  "identityAnchor": {
-    "loading": "Loading Reality...",
-    "undefined": "IDENTITY UNDEFINED.",
-    "defineReality": "DEFINE REALITY",
-    "placeholder": "I AM...",
-    "committing": "COMMITTING...",
-    "commitBtn": "COMMIT NEW IDENTITY",
-    "errorUpdate": "Failed to update identity."
-  },
-  "dossier": {
-    "title": "Dossier",
-    "close": "Close",
-    "sessionsCount": "{count} sessions",
-    "lastUpdated": "Last updated {date}",
-    "beliefPatterns": "Belief Patterns",
-    "empty": "Your dossier will build over time as you use the app."
-  },
-  "characterReview": {
-    "letterFrom": "A Letter from {name}",
-    "close": "Close"
-  },
   "securityVault": {
     "title": "Security & Routing",
     "statusLocked": "Status: Locked.",
@@ -441,37 +359,6 @@
     "deleteForever": "Delete Forever",
     "vaultSecured": "Vault Secured"
   },
-  "contactFirewall": {
-    "protocolTitle": "Network Isolation Protocol",
-    "title": "The Contact Firewall",
-    "desc": "Your execution requires total isolation. Block specific threats or upload your entire contact book to establish a permanent, cryptographic blind spot.",
-    "trustDesc": "We do not store your contacts. Everything is hashed locally on this device before it ever reaches our servers. You are mathematically invisible to your immediate orbit.",
-    "precisionTargeting": "Precision Targeting",
-    "bulkIsolation": "Bulk Isolation",
-    "precisionTitle": "Identify Specific Threats",
-    "precisionDesc": "Enter the specific phone numbers of individuals whose presence would compromise your honesty on the platform.",
-    "phoneNumber": "Phone Number",
-    "addAnotherTarget": "Add another target",
-    "lockPerimeter": "Lock Perimeter",
-    "bulkTitle": "Establish a Total Blind Spot",
-    "bulkDesc": "Upload your device's raw contact export (.vcf or .csv). Hashing occurs entirely within your browser; the file never touches our servers.",
-    "exportApple": "How to export from Apple",
-    "exportGoogle": "How to export from Google",
-    "dropToAnalyze": "Drop to analyze",
-    "dragAndDrop": "Drag and drop your contact file here",
-    "fileTypes": ".vcf or .csv — processed locally, never uploaded",
-    "selectFile": "Select .vcf or .csv File",
-    "skipForNow": "Skip for now. I accept the risk of exposure.",
-    "hashing": "Hashing",
-    "identities": "identities...",
-    "hashingDesc": "SHA-256 · Client-side only · Zero transmission of raw data",
-    "firewallActive": "Firewall Active.",
-    "identitiesSecured": "{count} identities secured. Your perimeter is locked.",
-    "identitySecured": "{count} identity secured. Your perimeter is locked.",
-    "enterCommandCenter": "Enter the Command Center ➡️",
-    "tryAgain": "Try Again",
-    "skipShort": "Skip for now"
-  },
   "supportChat": {
     "title": "Support",
     "placeholder": "Ask a question...",
@@ -502,12 +389,6 @@
     "remove": "Unfollow",
     "authorsFollowed": "{count} {count, plural, =1 {author} other {authors}} followed"
   },
-  "lockedScreen": {
-    "title": "Current Assignment",
-    "description": "\"The only way out is through. Report back when this action is complete.\"",
-    "filingReport": "Filing Report...",
-    "reportCompletion": "REPORT COMPLETION"
-  },
   "followAuthorModal": {
     "title": "Follow Author",
     "description": "Assign a private name to this author. Only you will see this name next to their future posts in your feed.",
@@ -516,17 +397,6 @@
     "errorSave": "Failed to save alias.",
     "cancel": "Cancel",
     "saveAlias": "Save Alias"
-  },
-  "controlDeck": {
-    "identity": "Identity",
-    "takeAction": "Take Action",
-    "iWant": "I Want"
-  },
-  "press": {
-    "title": "THE PRESS ROLLS",
-    "subtitle": "Select one action. The others will be discarded.",
-    "excitementIndex": "Excitement Index: {score}/10",
-    "initialize": "INITIALIZE"
   },
   "apiErrors": {
     "unauthorized": "Unauthorized access.",
@@ -537,14 +407,6 @@
     "unexpected": "An unexpected error occurred.",
     "rantRequired": "Rant is required.",
     "onboardingTimeout": "The algorithm is taking longer than expected. Please try again."
-  },
-  "locale": {
-    "en": "English",
-    "es": "Español",
-    "pt": "Português",
-    "fr": "Français",
-    "de": "Deutsch",
-    "switchLanguage": "Language"
   },
   "terms": {
     "title": "Terms of Service",
@@ -845,7 +707,6 @@
       "p1": "Violations of this policy may result in: content removal, temporary suspension, permanent account termination, or reporting to law enforcement when legally required (e.g., credible threats of violence or child exploitation)."
     }
   },
-  "legalDisclaimer": "This legal document is translated for your convenience. In case of any discrepancies, the English version prevails.",
   "pwa": {
     "installBanner": {
       "message": "Add Earnest Page to your home screen for a better experience.",
@@ -894,84 +755,6 @@
     "errorVerifyFailed": "Invalid code. Please try again.",
     "selectCountryCode": "Select country code",
     "searchCountry": "Search country..."
-  },
-  "header": {
-    "title": "The Daily Truth",
-    "volume": "Vol. I",
-    "price": "Price: Your Attention"
-  },
-  "guestChat": {
-    "characterName": "Earnest",
-    "characterInitial": "E",
-    "placeholder": "What's on your mind?",
-    "errorGeneric": "Something went wrong. Try again.",
-    "retry": "Retry",
-    "sendMessage": "Send message"
-  },
-  "shots": {
-    "navBrand": "Earnest Page",
-    "navSession": "/ Clarity Sessions",
-    "navStart": "$20 — Start Now",
-    "heroSubtext": "No account. No commitment. Just a conversation.",
-    "heroTitle1": "You know that thing",
-    "heroTitle2": "you keep thinking about",
-    "heroTitle3": "at 2am?",
-    "heroDesc": "Talk to someone who won't judge, won't forget what you said ten minutes ago, and won't charge you $200.",
-    "heroFree": "Free. Start right now.",
-    "startSession": "Start a Session",
-    "learnMore": "Learn More",
-    "problemLabel": "Sound Familiar?",
-    "problemTitle1": "Pick the one that",
-    "problemTitle2": "won't leave you alone.",
-    "stuck": "I'm stuck and I don't know why",
-    "stuckSub": "Career paralysis, life transitions, feeling frozen",
-    "secret": "I can't say this out loud to anyone",
-    "secretSub": "The thing you carry alone",
-    "pattern": "I keep making the same mistake",
-    "patternSub": "Patterns you can see but can't stop",
-    "gap": "I know what I should do but I can't do it",
-    "gapSub": "The gap between intention and action",
-    "mask": "Everyone thinks I'm fine",
-    "maskSub": "The high-functioning mask",
-    "diffLabel": "The Difference",
-    "diffTitle1": "This is not a chatbot.",
-    "diffTitle2": "This is not therapy.",
-    "diffBody1": "Chatbots validate you. Therapists analyze you. Neither of them will sit in front of you, look at the mess of your life, and tell you the thing you already know but haven't been able to say out loud.",
-    "diffBody2": "This is a conversation with someone who sees the pattern you can't see from the inside.",
-    "diffBody3": "You choose someone you admire — an archetype built from real psychology, real philosophy, and real lived experience. They don't tell you what to do. They help you see clearly enough to know for yourself.",
-    "toggleShow": "See how this compares",
-    "toggleHide": "Hide comparison",
-    "compCost": "Cost",
-    "compAvailable": "Available",
-    "compCommitment": "Commitment",
-    "compRemembers": "Remembers you",
-    "compChallenges": "Challenges you",
-    "compTherapy": "Traditional Therapy",
-    "compAi": "AI Chatbots",
-    "compUs": "Clarity Session",
-    "stepsLabel": "How It Works",
-    "stepsTitle1": "Three steps. Twenty dollars.",
-    "stepsTitle2": "Zero small talk.",
-    "step1Title": "Choose your entry point",
-    "step1Text": "Pick the thing that's on your mind. No intake forms. No waiting rooms. No small talk.",
-    "step2Title": "Have the conversation",
-    "step2Text": "You'll speak with someone who doesn't give you the easy answer. They sit in the mess with you until you can see it clearly.",
-    "step3Title": "Walk away with clarity",
-    "step3Text": "Not a prescription. Not a to-do list. A shift in how you see the problem — which changes everything.",
-    "trustTitle": "What you say stays here.",
-    "trustDesc": "No account required. No email. No data sold. Your conversation exists for you, during your session, and nowhere else. When it ends, it ends.",
-    "trustSub": "Built by the maker of Earnest Page — a platform where privacy is the foundation, not the feature.",
-    "ctaLabel": "Completely Free",
-    "ctaTitle1": "One conversation.",
-    "ctaTitle2": "No strings attached.",
-    "ctaDesc": "Up to 5 sessions a day. No credit card. No subscription. No catch. Just you and your Ideal Self.",
-    "ctaBtn": "Start Free",
-    "ctaNote": "No account required. No data stored after your session.",
-    "closeTitle1": "The thing you keep carrying",
-    "closeTitle2": "doesn't have to stay invisible.",
-    "closeDesc": "One conversation. Completely free. No one has to know.",
-    "footerCopyright": "© {year} Earnest Page. All rights reserved.",
-    "footerDisclaimer": "Clarity Sessions are not a substitute for licensed therapy or psychiatric care. If you are in crisis, please contact the 988 Suicide & Crisis Lifeline."
   },
   "myPosts": {
     "title": "My Posts",
