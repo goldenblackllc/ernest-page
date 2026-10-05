@@ -33,6 +33,8 @@ export interface ProcessPostInput {
     characterVoiceId?: string;
     /** User's gender (for voice selection) */
     gender: string;
+    /** Use the character voice for both roles (monologue mode — e.g. daily digest) */
+    singleVoice?: boolean;
     /** Log prefix for console output */
     logPrefix?: string;
     /** User's preferred locale / language code (e.g. 'en', 'es') */
@@ -87,6 +89,7 @@ export async function processPostContent(
         demographicHint,
         characterVoiceId,
         gender,
+        singleVoice,
         logPrefix = 'ProcessPost',
         preCondensed,
     } = opts;
@@ -134,11 +137,14 @@ export async function processPostContent(
     const audioFields: Record<string, any> = {};
     const ttsPromise = (characterVoiceId && messages.length > 0)
         ? (async () => {
+            // Monologue mode (e.g. daily digest): character voice for both roles
             const voiceLanguage = opts.locale || language || 'en';
-            const voices = await resolveConversationVoices(characterVoiceId, voiceLanguage);
+            const voices = singleVoice
+                ? { questionerVoiceId: characterVoiceId, characterVoiceId }
+                : await resolveConversationVoices(characterVoiceId, voiceLanguage);
 
             if (voices) {
-                console.log(`[${logPrefix}] Generating dual-voice audio...`);
+                console.log(`[${logPrefix}] Generating ${singleVoice ? 'single' : 'dual'}-voice audio...`);
                 const audioResult = await generateConversationAudio(
                     messages,
                     voices.questionerVoiceId,

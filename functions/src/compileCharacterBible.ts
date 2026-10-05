@@ -1,4 +1,5 @@
 import { onRequest } from 'firebase-functions/v2/https';
+import { getFunctions } from 'firebase-admin/functions';
 import { z } from 'zod';
 import { db } from './lib/firebase/admin.js';
 import { generateWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.js';
@@ -328,9 +329,10 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
     return { success: true, ideal: idealSections };
 }
 
-// ─── HTTP Cloud Function — for manual triggers and onboarding ───
+// ─── HTTP Cloud Function — onboarding (called by the Vercel onboarding route) ───
+// Queues a buildCharacter task (bible compile + avatar) and returns right away.
 export const compileCharacterBible = onRequest(
-    { timeoutSeconds: 540, memory: '1GiB' },
+    { timeoutSeconds: 60, memory: '256MiB' },
     async (req, res) => {
         // Verify internal auth
         const internalKey = req.headers['x-internal-key'] as string;
@@ -347,23 +349,13 @@ export const compileCharacterBible = onRequest(
         }
 
         try {
-            const result = await compileCharacterBibleForUser(uid);
-            if (result.success) {
-                res.json(result);
-            } else {
-                res.status(400).json(result);
-            }
+            await getFunctions()
+                .taskQueue('locations/us-central1/functions/buildCharacter')
+                .enqueue({ uid, reason: 'onboarding' });
+            res.status(202).json({ queued: true });
         } catch (error: any) {
-            console.error('[BibleCompile] Error:', error.message);
-            if (error.name === 'AbortError' || (error.message || '').toLowerCase().includes('timeout')) {
-                res.status(504).json({
-                    success: false,
-                    errorType: 'TIMEOUT',
-                    message: 'Bible compilation timed out. Will retry automatically.',
-                });
-            } else {
-                res.status(500).json({ error: error.message || 'Unexpected error' });
-            }
+            console.error('[BibleCompile] Failed to enqueue build:', error.message);
+            res.status(500).json({ error: error.message || 'Unexpected error' });
         }
     }
 );
