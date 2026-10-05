@@ -27,11 +27,11 @@ const hkGrotesk = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Earnest Page — Your Character Editor for Reality",
+    default: "Earnest Page — Talk to your ideal self. It won't just agree.",
     template: "%s | Earnest Page",
   },
   description:
-    "Stop reacting. Start commanding. Earnest Page is a social app that helps you build your real-life character bible — track beliefs, shift patterns, and level up who you are.",
+    "Earnest Page builds the version of you who already has the life you want. When something's bothering you, talk it through privately — instead of telling you you're right, they find the belief behind the feeling and help you decide what to do next.",
   metadataBase: new URL("https://earnestpage.com"),
   alternates: {
     canonical: "/",
@@ -45,9 +45,9 @@ export const metadata: Metadata = {
     "personal growth social media",
   ],
   openGraph: {
-    title: "Earnest Page — Your Character Editor for Reality",
+    title: "Earnest Page — Talk to your ideal self. It won't just agree.",
     description:
-      "Stop reacting. Start commanding. Build your real-life character bible.",
+      "Talk privately with the version of you who already has the life you want — and who won't just agree.",
     url: "https://earnestpage.com",
     siteName: "Earnest Page",
     type: "website",
@@ -57,15 +57,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Earnest Page — Your Character Editor for Reality",
+        alt: "Earnest Page — Talk to your ideal self. It won't just agree.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Earnest Page — Your Character Editor for Reality",
+    title: "Earnest Page — Talk to your ideal self. It won't just agree.",
     description:
-      "Stop reacting. Start commanding. Build your real-life character bible.",
+      "Talk privately with the version of you who already has the life you want — and who won't just agree.",
     images: ["/og-image.png"],
   },
   manifest: "/site.webmanifest",
