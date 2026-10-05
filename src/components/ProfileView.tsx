@@ -6,15 +6,21 @@ import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile, Bible } from "@/types/character";
 import { db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Pencil, FileText, Loader2, Shield, Volume2, Check } from "lucide-react";
+import { User, ChevronDown, Pencil, FileText, Loader2, Shield, Volume2, Check, Heart } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
 
 import { VoiceBrowser } from "./VoiceBrowser";
 
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
+import { PostList } from "./PostList";
 
 import { useTranslations, useFormatter } from "next-intl";
+
+const PROFILE_TABS = ["about", "posts", "liked"] as const;
+type ProfileTab = (typeof PROFILE_TABS)[number];
 
 export function ProfileView() {
     const { user } = useAuth();
@@ -32,6 +38,17 @@ export function ProfileView() {
 
 
     const t = useTranslations('profile');
+    const tPosts = useTranslations('myPosts');
+    const tLiked = useTranslations('saved');
+
+    // Active tab lives in the URL (?tab=posts|liked) so it's linkable and survives refresh
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const tabParam = searchParams.get('tab');
+    const activeTab: ProfileTab = PROFILE_TABS.includes(tabParam as ProfileTab) ? (tabParam as ProfileTab) : 'about';
+    const selectTab = (tab: ProfileTab) => {
+        router.replace(tab === 'about' ? '/profile' : { pathname: '/profile', query: { tab } }, { scroll: false });
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -100,15 +117,53 @@ export function ProfileView() {
                     </div>
                 </div>
 
+                {/* ── TABS ── */}
+                <div role="tablist" className="flex border-b border-white/10 px-4 -mt-2">
+                    {PROFILE_TABS.map((tab) => (
+                        <button
+                            key={tab}
+                            role="tab"
+                            aria-selected={activeTab === tab}
+                            onClick={() => selectTab(tab)}
+                            className={cn(
+                                "flex-1 min-h-[44px] text-sm font-semibold border-b-2 -mb-px transition-colors duration-150",
+                                activeTab === tab
+                                    ? "text-white border-white"
+                                    : "text-zinc-500 border-transparent hover:text-zinc-300"
+                            )}
+                        >
+                            {t(`tabs.${tab}`)}
+                        </button>
+                    ))}
+                </div>
+
+                {activeTab === 'posts' && (
+                    <PostList
+                        endpoint="/api/posts/mine"
+                        emptyText={tPosts('empty')}
+                        endText={tPosts('end')}
+                    />
+                )}
+
+                {activeTab === 'liked' && (
+                    <PostList
+                        endpoint="/api/posts/saved"
+                        emptyText={tLiked('empty')}
+                        emptyIcon={<Heart className="w-8 h-8 text-zinc-700 mx-auto mb-3" />}
+                    />
+                )}
+
                 {/* ── MY VOICE ── */}
+                {activeTab === 'about' && (
                 <VoiceBrowser
                     currentVoiceId={profile?.voice?.id}
                     currentVoiceName={profile?.voice?.name}
                 />
+                )}
 
                         
                 {/* ── COMPILED CHARACTER BIBLE (Accordion Vault) ── */}
-                {displaySections && displaySections.length > 0 && (
+                {activeTab === 'about' && displaySections && displaySections.length > 0 && (
                     <div className="space-y-2 px-4">
                         {displaySections.map((section, i) => {
                             const isOpen = expandedSection === i;

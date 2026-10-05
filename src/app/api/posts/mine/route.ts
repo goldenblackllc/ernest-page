@@ -1,5 +1,6 @@
 import { db } from "@/lib/firebase/admin";
 import { getAuth } from "firebase-admin/auth";
+import { serializePostsForViewer } from "@/lib/posts/serializePosts";
 
 export const maxDuration = 15;
 
@@ -23,6 +24,7 @@ export async function GET(req: Request) {
 
         const url = new URL(req.url);
         const cursor = url.searchParams.get("cursor");
+        const locale = url.searchParams.get("locale") || "en";
         const limit = Math.min(parseInt(url.searchParams.get("limit") || String(PAGE_SIZE)), 50);
 
         const postsRef = db.collection("posts");
@@ -38,20 +40,11 @@ export async function GET(req: Request) {
 
             const snap = await query.limit(limit).get();
 
-            const posts = snap.docs.map(doc => {
-                const data = doc.data();
-                const clean: any = { id: doc.id, ...data };
-
-                // Convert timestamps
-                if (clean.created_at && clean.created_at._seconds !== undefined) {
-                    clean.created_at = {
-                        _seconds: clean.created_at._seconds,
-                        _nanoseconds: clean.created_at._nanoseconds || 0,
-                    };
-                }
-
-                return clean;
-            });
+            const posts = await serializePostsForViewer(
+                snap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                uid,
+                locale,
+            );
 
             let nextCursor: string | null = null;
             if (posts.length === limit) {
@@ -69,17 +62,11 @@ export async function GET(req: Request) {
             // Fallback without ordering
             console.warn("My posts index missing, fallback:", indexErr);
             const snap = await postsRef.where("authorId", "==", uid).get();
-            const posts = snap.docs.map(doc => {
-                const data = doc.data();
-                const clean: any = { id: doc.id, ...data };
-                if (clean.created_at && clean.created_at._seconds !== undefined) {
-                    clean.created_at = {
-                        _seconds: clean.created_at._seconds,
-                        _nanoseconds: clean.created_at._nanoseconds || 0,
-                    };
-                }
-                return clean;
-            });
+            const posts = await serializePostsForViewer(
+                snap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                uid,
+                locale,
+            );
             // Manual sort
             posts.sort((a: any, b: any) => {
                 const aT = a.created_at?._seconds || 0;

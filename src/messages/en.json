@@ -462,7 +462,12 @@
     "saving": "Saving...",
     "avatarUpdated": "Avatar updated",
     "done": "Done",
-    "regeneratingAvatar": "Regenerating your avatar..."
+    "regeneratingAvatar": "Regenerating your avatar...",
+    "tabs": {
+      "about": "About",
+      "posts": "Posts",
+      "liked": "Liked"
+    }
   },
   "identityModal": {
     "title": "Define Your Identity",

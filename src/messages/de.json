@@ -406,7 +406,12 @@
     "avatarUpdated": "Avatar aktualisiert",
     "done": "Fertig",
     "regeneratingAvatar": "Dein Avatar wird neu generiert...",
-    "avatarAlt": "Avatar"
+    "avatarAlt": "Avatar",
+    "tabs": {
+      "about": "Über mich",
+      "posts": "Beiträge",
+      "liked": "Gefällt mir"
+    }
   },
   "identityModal": {
     "title": "Definiere deine Identität",

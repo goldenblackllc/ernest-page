@@ -1,6 +1,19 @@
 import { db } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
+import { Timestamp } from 'firebase-admin/firestore';
+import { serializePostsForViewer } from '@/lib/posts/serializePosts';
 
+export const maxDuration = 15;
+
+const PAGE_SIZE = 15;
+
+/**
+ * Liked posts — reads the viewer's private users/{uid}/liked_posts subcollection
+ * (newest like first) and resolves each entry to its post.
+ *
+ * Posts that were deleted or have since been made private by another author are skipped.
+ * Pagination cursor is the ISO liked_at of the last like in the page.
+ */
 export async function GET(req: Request) {
     try {
         const authHeader = req.headers.get('Authorization');
@@ -17,38 +30,48 @@ export async function GET(req: Request) {
             return Response.json({ error: 'Invalid token' }, { status: 401 });
         }
 
-        // Get user's liked post IDs from subcollection
-        const likedSnap = await db.collection('users').doc(uid)
+        const url = new URL(req.url);
+        const cursor = url.searchParams.get('cursor');
+        const locale = url.searchParams.get('locale') || 'en';
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || String(PAGE_SIZE)), 30);
+
+        let likedQuery = db.collection('users').doc(uid)
             .collection('liked_posts')
-            .orderBy('liked_at', 'desc')
-            .limit(30)
-            .get();
+            .orderBy('liked_at', 'desc');
+
+        if (cursor) {
+            likedQuery = likedQuery.startAfter(Timestamp.fromDate(new Date(cursor)));
+        }
+
+        const likedSnap = await likedQuery.limit(limit).get();
 
         if (likedSnap.empty) {
-            return Response.json({ posts: [] });
+            return Response.json({ posts: [], nextCursor: null });
         }
 
-        const postIds = likedSnap.docs.map(d => d.id);
-        const posts: any[] = [];
+        const postDocs = await db.getAll(
+            ...likedSnap.docs.map(d => db.collection('posts').doc(d.id))
+        );
 
-        const postsSnap = await db.collection('posts')
-            .where('__name__', 'in', postIds)
-            .get();
+        // getAll preserves input order, so posts stay newest-like-first
+        const visible = postDocs
+            .filter(doc => {
+                if (!doc.exists) return false;
+                const data = doc.data()!;
+                const isOwner = data.authorId === uid || data.uid === uid;
+                return isOwner || data.is_public === true;
+            })
+            .map(doc => ({ id: doc.id, ...doc.data(), isLikedByMe: true }));
 
-        for (const doc of postsSnap.docs) {
-            const data = doc.data();
-            posts.push({
-                id: doc.id,
-                ...data,
-                isLikedByMe: true,
-            });
+        const posts = await serializePostsForViewer(visible, uid, locale);
+
+        let nextCursor: string | null = null;
+        if (likedSnap.docs.length === limit) {
+            const lastLikedAt = likedSnap.docs[likedSnap.docs.length - 1].get('liked_at') as Timestamp | undefined;
+            if (lastLikedAt) nextCursor = lastLikedAt.toDate().toISOString();
         }
 
-        // Sort by the order they appear in liked_posts (newest likes first)
-        const idOrder = new Map(postIds.map((id, i) => [id, i]));
-        posts.sort((a, b) => (idOrder.get(a.id) ?? 99) - (idOrder.get(b.id) ?? 99));
-
-        return Response.json({ posts });
+        return Response.json({ posts, nextCursor });
     } catch (error: any) {
         console.error('[Saved Posts] Error:', error);
         return Response.json({ error: error.message || 'Failed to fetch saved posts' }, { status: 500 });

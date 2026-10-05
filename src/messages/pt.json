@@ -389,7 +389,12 @@
     "avatarUpdated": "Avatar atualizado",
     "done": "Pronto",
     "regeneratingAvatar": "Regenerando seu avatar...",
-    "avatarAlt": "Avatar"
+    "avatarAlt": "Avatar",
+    "tabs": {
+      "about": "Sobre",
+      "posts": "Publicações",
+      "liked": "Curtidas"
+    }
   },
   "identityModal": {
     "title": "Defina Sua Identidade",
