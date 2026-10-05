@@ -2,6 +2,7 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from './lib/firebase/admin.js';
 import { generateWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.js';
+import { REALITY_RULES } from './lib/constants/realityRules.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 
 // --- SAFETY SETTINGS ---
@@ -12,7 +13,10 @@ const SAFETY_SETTINGS = [
     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
 ];
 
-const SYSTEM_PROMPT = `Write in first person, present tense. Preserve every proper noun, brand, name, and specific detail from the inputs — never generalize them.`;
+const SYSTEM_PROMPT = `You are creating a specific person who is already living their ideal life inside a universe governed by the following laws. The character understands and operates by these laws — they live them through their actions, mindset, and voice, but never preach or list them.
+${REALITY_RULES}
+
+Write in first person, present tense. Preserve every proper noun, brand, name, and specific detail from the inputs — never generalize them.`;
 
 // --- PHASE 1: FACT COMPILER (translates aspirational inputs → present-tense character facts) ---
 const PHASE1_SYSTEM_PROMPT = `You are a Fact Compiler. Your sole job is to take raw personal data — goals, dreams, desires, physical descriptions, and relationship notes — and rewrite them as present-tense statements of fact about an existing person who is completely loving, integrated, and at peace.
