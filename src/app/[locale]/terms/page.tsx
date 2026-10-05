@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Link } from '@/i18n/navigation';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 export const metadata: Metadata = {
     title: 'Terms of Service — Earnest Page',
@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default async function TermsPage() {
     const t = await getTranslations('terms');
     const common = await getTranslations();
+    const locale = await getLocale();
 
     return (
         <main className="min-h-screen bg-black text-white">
@@ -34,9 +35,11 @@ export default async function TermsPage() {
                     {t('lastUpdated')}
                 </p>
 
-                <div className="mb-12 p-4 border border-zinc-800 bg-zinc-900/50 rounded-lg text-xs text-zinc-400">
-                    {common('legalDisclaimer')}
-                </div>
+                {locale !== 'en' && (
+                    <div className="mb-12 p-4 border border-zinc-800 bg-zinc-900/50 rounded-lg text-xs text-zinc-400">
+                        {common('legalDisclaimer')}
+                    </div>
+                )}
 
                 <div className="space-y-10 text-sm text-zinc-400 leading-relaxed">
                     {/* 1 */}
