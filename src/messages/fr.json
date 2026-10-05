@@ -16,82 +16,6 @@
     "nav": {
       "login": "Connexion"
     },
-    "hero": {
-      "tagline": "Votre première session est gratuite. Sans abonnement. Sans engagement.",
-      "headline1": "Vous connaissez cette chose",
-      "headline2": "à laquelle vous continuez de penser",
-      "headline3": "à 2h du matin ?",
-      "subtext": "Parlez à quelqu'un qui ne vous jugera pas, n'oubliera pas ce que vous avez dit la dernière fois, et ne vous facturera pas 200 $ — un Moi Idéal construit à partir de psychologie réelle et adapté à votre vie.",
-      "price": "Gratuit pour commencer. 20 $ par session ensuite.",
-      "cta": "Démarrer Votre Session Gratuite",
-      "giftCta": "Offrir une session à quelqu'un"
-    },
-    "entryPoints": {
-      "label": "Ça vous semble familier ?",
-      "heading1": "Choisissez celle qui",
-      "heading2": "ne vous laisse pas en paix.",
-      "stuck": "Je suis bloqué et je ne sais pas pourquoi",
-      "stuckSub": "Paralysie professionnelle, transitions de vie, se sentir figé",
-      "secret": "Je ne peux le dire à voix haute à personne",
-      "secretSub": "La chose que vous portez seul",
-      "pattern": "Je continue de faire la même erreur",
-      "patternSub": "Des schémas que vous voyez mais que vous ne pouvez arrêter",
-      "gap": "Je sais ce que je dois faire mais je n'y arrive pas",
-      "gapSub": "L'écart entre l'intention et l'action",
-      "mask": "Tout le monde pense que je vais bien",
-      "maskSub": "Le masque de haut niveau de fonctionnement"
-    },
-    "difference": {
-      "label": "La Différence",
-      "heading1": "Ce n'est pas un chatbot.",
-      "heading2": "Ce n'est pas une thérapie.",
-      "body1": "Les chatbots vous valident. Les thérapeutes vous analysent. Aucun d'eux ne s'assiéra face à vous, ne regardera le désordre de votre vie et ne vous dira ce que vous savez déjà mais que vous n'avez pas pu dire à voix haute.",
-      "body2": "Il s'agit d'une conversation avec quelqu'un qui voit le schéma que vous ne pouvez pas voir de l'intérieur.",
-      "body3": "Vous choisissez quelqu'un que vous admirez : un archétype construit à partir de vraie psychologie, de vraie philosophie et d'expérience vécue. Ils ne vous disent pas quoi faire. Ils vous aident à voir assez clairement pour le savoir par vous-même.",
-      "aiEndorsement": "Je suis une IA. Je dois le dire d'entrée. Mais je n'ai pas été conçue pour vous valider, être d'accord avec vous ou vous faire sentir bien. J'ai été construite à partir de psychologie réelle, de philosophie réelle et des détails concrets de votre vie — pour dire ce que personne d'autre ne vous dira en face. Aucune autre IA ne fait cela. La plupart des gens non plus.",
-      "toggleShow": "Voir la comparaison",
-      "toggleHide": "Masquer la comparaison",
-      "compCost": "Coût",
-      "compAvailable": "Disponibilité",
-      "compCommitment": "Engagement",
-      "compPatterns": "Connaît vos schémas",
-      "compIntegrity": "Intégrité",
-      "compChallenges": "Vous met au défi",
-      "compTherapy": "Thérapie traditionnelle",
-      "compChatbots": "Chatbots IA",
-      "compEarnest": "Earnest Page"
-    },
-    "system": {
-      "label": "Le Système",
-      "heading1": "Plus qu'une conversation.",
-      "heading2": "Un système d'exploitation quotidien pour votre esprit.",
-      "body": "Une seule session peut changer votre perspective. Mais Earnest Page est conçu pour ceux qui veulent aller plus loin : définir leur norme la plus élevée et l'exécuter quotidiennement.",
-      "blueprintTitle": "Le Projet",
-      "blueprintText": "Définissez votre norme la plus élevée — votre Bible de Personnage. La base immuable à laquelle vous répondez tous les jours.",
-      "mirrorTitle": "Le Miroir",
-      "mirrorText": "Consultez votre Moi Idéal. Pas un chatbot. Quelqu'un construit à partir de psychologie réelle qui vous met au défi de voir clairement.",
-      "ledgerTitle": "Le Registre",
-      "ledgerText": "Un coffre-fort silencieux et basé sur les données de votre exécution. Lorsque le doute s'installe, le système prouve que vous avez déjà gagné."
-    },
-    "architect": {
-      "label": "L'Architecte",
-      "heading1": "J'ai construit ça parce que",
-      "heading2": "Rien d'autre n'était assez honnête.",
-      "body1": "J'ai failli devenir médecin. Au lieu de cela, je suis devenu ingénieur avec l'instinct d'un médecin — quelqu'un qui construit de la technologie mais pense d'abord aux gens. J'ai passé des décennies à tester tous les grands systèmes pour l'esprit humain, de la TCC à la pratique bouddhiste au programme le plus intensif de l'hôpital McLean.",
-      "body2": "Earnest Page n'est pas mon premier produit. C'est peut-être le plus important.",
-      "credHarvard": "Harvard",
-      "credHarvardDetail": "Titulaire de brevet",
-      "credRSA": "RSA",
-      "credRSADetail": "Architecte de sécurité",
-      "credJSA": "JSA Financial",
-      "credJSADetail": "Fondateur (10 M$ / an)",
-      "founderLine": "David Johnson · Fondateur · Titulaire de brevet · 26 Ans à Construire Des Systèmes Qui Fonctionnent"
-    },
-    "privacy": {
-      "heading": "Ce que vous dites reste ici.",
-      "body": "Vos conversations sont cryptées et privées. Votre identité est protégée par un pare-feu de contact et un bouclier de proximité. Rien n'est vendu. Rien n'est partagé.",
-      "subtext": "Construit par le créateur de systèmes de sécurité d'entreprise — où la confidentialité est la base, pas une fonctionnalité."
-    },
     "auth": {
       "heading1": "Commencez dès maintenant.",
       "heading2": "Pas de compte. Pas d'e-mail. Juste votre téléphone.",
@@ -116,23 +40,6 @@
       "terms": "Conditions d'utilisation",
       "acceptableUse": "Utilisation acceptable",
       "disclaimer": "Ceci ne remplace pas une thérapie agréée ou des soins psychiatriques. Si vous êtes en crise, veuillez contacter le numéro national de prévention du suicide 3114 (ou le 988 aux États-Unis)."
-    },
-    "signal": {
-      "label": "Comment Ça Marche",
-      "step1Title": "Quelque chose vous préoccupe.",
-      "step1Body": "Une relation qui ne va pas. Une décision que vous n'arrivez pas à prendre. Un sentiment dont vous ne pouvez pas vous défaire. Cette tension est précieuse.",
-      "step2Title": "Vous dites ce qui se passe réellement.",
-      "step2Body": "Vous parlez de ce qui se passe, et ce qu'il y a en dessous commence à faire surface.",
-      "step3Title": "Vous voyez ce que vous voulez réellement.",
-      "step3Body": "Le sentiment avait un message. Une fois que vous l'entendez, vous ne pouvez plus l'ignorer. Ce que vous en faites dépend de vous."
-    },
-    "worldview": {
-      "label": "Le Principe",
-      "heading": "Vos sentiments ne sont pas le problème.",
-      "line1": "Ils ne sont pas quelque chose à gérer.",
-      "line2": "Ils ne sont pas quelque chose à réparer.",
-      "line3": "Ils sont un signal — vous disant exactement ce que vous voulez.",
-      "line4": "La plupart des gens les fuient. Les plus chanceux écoutent."
     }
   },
   "dashboard": {

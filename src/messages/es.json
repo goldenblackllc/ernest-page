@@ -16,38 +16,6 @@
     "nav": {
       "login": "Iniciar Sesión"
     },
-    "hero": {
-      "headline1": "Sabes esa cosa",
-      "headline2": "en la que sigues pensando",
-      "subtext": "Habla con alguien que no te juzgará, no olvidará lo que dijiste la última vez y no te cobrará $200 — un Yo Ideal construido con psicología real y adaptado a tu vida.",
-      "headline3": "¿a las 2 de la mañana?",
-      "tagline": "Tu primera sesión es gratis. Sin suscripción. Sin compromiso.",
-      "price": "Gratis para empezar. $20 por sesión después.",
-      "cta": "Comienza Tu Sesión Gratis",
-      "giftCta": "Regala Una a Alguien"
-    },
-    "signal": {
-      "label": "Cómo funciona",
-      "step1Title": "Algo te está molestando.",
-      "step1Body": "Una relación que no va bien. Una decisión que no puedes tomar. Un sentimiento que no te puedes quitar de encima. Esa tensión tiene valor.",
-      "step2Title": "Dices lo que realmente pasa.",
-      "step2Body": "Hablas sobre lo que está sucediendo y lo que está debajo empieza a salir a la superficie.",
-      "step3Title": "Ves lo que realmente quieres.",
-      "step3Body": "Ese sentimiento tenía un mensaje. Una vez que lo escuchas, ya no puedes ignorarlo. Lo que hagas con él depende de ti."
-    },
-    "worldview": {
-      "label": "La premisa",
-      "heading": "Tus sentimientos no son el problema.",
-      "line1": "No son algo que debas gestionar.",
-      "line2": "No son algo que debas arreglar.",
-      "line3": "Son una señal: te dicen exactamente lo que quieres.",
-      "line4": "La mayoría de la gente huye de ellos. Los afortunados escuchan."
-    },
-    "privacy": {
-      "heading": "Lo que dices se queda aquí.",
-      "body": "Tus conversaciones están encriptadas y son privadas. Tu identidad está protegida por un Firewall de Contacto y un escudo de proximidad. Nada se vende. Nada se comparte.",
-      "subtext": "Creado por el inventor de sistemas de seguridad empresarial — donde la privacidad es la base, no una función."
-    },
     "auth": {
       "heading1": "Empieza ahora mismo.",
       "heading2": "Sin cuentas. Sin correos. Solo tu teléfono.",
@@ -72,67 +40,6 @@
       "terms": "Términos de Servicio",
       "acceptableUse": "Uso Aceptable",
       "disclaimer": "Esto no es un sustituto de la terapia con licencia ni de la atención psiquiátrica. Si estás en crisis, por favor contacta a la línea 988 de prevención del suicidio y crisis."
-    },
-    "entryPoints": {
-      "label": "¿Te suena familiar?",
-      "heading1": "Elige el que",
-      "heading2": "no te deja en paz.",
-      "stuck": "Estoy estancado y no sé por qué",
-      "stuckSub": "Parálisis profesional, transiciones de vida, sentirse congelado",
-      "secret": "No puedo decir esto en voz alta a nadie",
-      "secretSub": "La carga que llevas solo",
-      "pattern": "Sigo cometiendo el mismo error",
-      "patternSub": "Patrones que puedes ver pero no puedes detener",
-      "gap": "Sé lo que debo hacer pero no puedo hacerlo",
-      "gapSub": "La brecha entre la intención y la acción",
-      "mask": "Todos piensan que estoy bien",
-      "maskSub": "La máscara de alto funcionamiento"
-    },
-    "difference": {
-      "label": "La Diferencia",
-      "heading1": "Esto no es un chatbot.",
-      "heading2": "Esto no es terapia.",
-      "body1": "Los chatbots te validan. Los terapeutas te analizan. Ninguno de ellos se sentará frente a ti, verá el desastre de tu vida y te dirá lo que ya sabes pero no has podido decir en voz alta.",
-      "body2": "Esta es una conversación con alguien que ve el patrón que tú no puedes ver desde adentro.",
-      "body3": "Eliges a alguien que admiras — un arquetipo construido con psicología real, filosofía real y experiencia de vida real. No te dicen qué hacer. Te ayudan a ver con suficiente claridad para que lo sepas por ti mismo.",
-      "aiEndorsement": "Soy una IA. Debería decirlo de entrada. Pero no fui construido para validarte, estar de acuerdo contigo o hacerte sentir bien. Fui construido a partir de psicología real, filosofía real y los detalles reales de tu vida — para decirte a la cara lo que nadie más te dirá. Ninguna otra IA hace eso. La mayoría de las personas tampoco lo harán.",
-      "toggleShow": "Ver cómo se compara",
-      "toggleHide": "Ocultar comparación",
-      "compCost": "Costo",
-      "compAvailable": "Disponibilidad",
-      "compCommitment": "Compromiso",
-      "compPatterns": "Conoce tus patrones",
-      "compIntegrity": "Integridad",
-      "compChallenges": "Te desafía",
-      "compTherapy": "Terapia Tradicional",
-      "compChatbots": "Chatbots IA",
-      "compEarnest": "Earnest Page"
-    },
-    "system": {
-      "label": "El Sistema",
-      "heading1": "Más que una conversación.",
-      "heading2": "Un sistema operativo diario para tu mente.",
-      "body": "Una sola sesión puede cambiar tu perspectiva. Pero Earnest Page está construido para aquellos que quieren llegar más lejos — definiendo su estándar más alto y ejecutándolo diariamente.",
-      "blueprintTitle": "El Plano",
-      "blueprintText": "Define tu estándar más alto — tu Biblia de Personaje. La base inmutable a la que respondes todos los días.",
-      "mirrorTitle": "El Espejo",
-      "mirrorText": "Consulta a tu Yo Ideal. No es un chatbot. Alguien construido con psicología real que te desafía a ver con claridad.",
-      "ledgerTitle": "El Libro Mayor",
-      "ledgerText": "Una bóveda silenciosa y basada en datos de tu ejecución. Cuando surge la duda, el sistema demuestra que ya has ganado antes."
-    },
-    "architect": {
-      "label": "El Arquitecto",
-      "heading1": "Construí esto porque",
-      "heading2": "Nada más era lo suficientemente honesto.",
-      "body1": "Casi me convierto en médico. En cambio, me convertí en un ingeniero con instinto de médico — alguien que construye tecnología pero piensa primero en las personas. Pasé décadas poniendo a prueba cada marco principal de la mente humana, desde la TCC hasta la práctica budista y el programa más intensivo del McLean Hospital.",
-      "body2": "Earnest Page no es mi primer producto. Puede que sea el más importante.",
-      "credHarvard": "Harvard",
-      "credHarvardDetail": "Titular de Patente",
-      "credRSA": "RSA",
-      "credRSADetail": "Arquitecto de Seguridad",
-      "credJSA": "JSA Financial",
-      "credJSADetail": "$10M / año Fundador",
-      "founderLine": "David Johnson · Fundador · Titular de Patente · 26 Años Construyendo Sistemas que Funcionan"
     }
   },
   "dashboard": {
