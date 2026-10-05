@@ -1,9 +1,8 @@
 import { db } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { waitUntil } from "@vercel/functions";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const DOSSIER_TEMPLATE = `DOSSIER — {TITLE}
 Updated: {DATE} | Sessions: 0
@@ -55,53 +54,23 @@ export async function POST(req: Request) {
             await db.collection("users").doc(uid).set(updates, { merge: true });
         }
 
-        // Kick off bible + avatar generation in the background
-        const origin = new URL(req.url).origin;
-        waitUntil((async () => {
-            try {
-                console.log(`[Onboarding] Background: Starting bible compilation for ${uid}`);
-                const compileUrl = process.env.COMPILE_FUNCTION_URL || `https://us-central1-earnest-page.cloudfunctions.net/compileCharacterBible`;
-                const compileRes = await fetch(compileUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-internal-key': process.env.CRON_SECRET || '',
-                    },
-                    body: JSON.stringify({ uid }),
-                    signal: AbortSignal.timeout(540_000),
-                });
-
-                if (!compileRes.ok) {
-                    console.error(`[Onboarding] Background: Bible compile failed with status ${compileRes.status}`);
-                    await db.collection("users").doc(uid).set({
-                        bible: { status: 'failed', fail_reason: 'compile_error' }
-                    }, { merge: true });
-                    return;
-                }
-
-                // Mark bible as ready
-                await db.collection("users").doc(uid).set({
-                    bible: { status: 'ready', last_commit: FieldValue.serverTimestamp() }
-                }, { merge: true });
-
-                // Fire avatar generation independently
-                fetch(`${origin}/api/character/avatar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-internal-key': process.env.CRON_SECRET || '',
-                    },
-                    body: JSON.stringify({ uid }),
-                }).catch(err => console.error(`[Onboarding] Avatar trigger failed (non-fatal):`, err.message));
-
-                console.log(`[Onboarding] Background: Complete for ${uid}`);
-            } catch (err: any) {
-                console.error(`[Onboarding] Background generation error for ${uid}:`, err.message);
-                await db.collection("users").doc(uid).set({
-                    bible: { status: 'failed', fail_reason: err.message }
-                }, { merge: true });
-            }
-        })());
+        // Queue bible compile + avatar generation on Cloud Functions (returns immediately)
+        const compileUrl = process.env.COMPILE_FUNCTION_URL || `https://us-central1-earnest-page.cloudfunctions.net/compileCharacterBible`;
+        const compileRes = await fetch(compileUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-internal-key': process.env.CRON_SECRET || '',
+            },
+            body: JSON.stringify({ uid }),
+            signal: AbortSignal.timeout(30_000),
+        });
+        if (!compileRes.ok) {
+            console.error(`[Onboarding] Failed to queue bible build for ${uid}: ${compileRes.status}`);
+            await db.collection("users").doc(uid).set({
+                bible: { status: 'failed', fail_reason: 'compile_error' }
+            }, { merge: true });
+        }
 
         // Return immediately — client proceeds to dashboard
         return Response.json({ success: true });

@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { Firestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore as getFirestoreFallback } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -30,5 +31,6 @@ try {
 
 const auth = getAuth(app);
 const storage = getStorage(app);
+const functions = getFunctions(app, "us-central1");
 
-export { app, db, auth, storage };
+export { app, db, auth, storage, functions };

@@ -4,7 +4,8 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile, Bible } from "@/types/character";
-import { db } from "@/lib/firebase/config";
+import { db, functions } from "@/lib/firebase/config";
+import { httpsCallable } from "firebase/functions";
 import { cn } from "@/lib/utils";
 import { User, ChevronDown, Pencil, FileText, Loader2, Shield, Volume2, Check, Heart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -308,16 +309,10 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
                 bible_dirty_since: serverTimestamp(),
             }, { merge: true });
 
-            // Fire avatar regeneration in the background
-            const idToken = await user.getIdToken();
-            fetch('/api/character/avatar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({ uid: user.uid }),
-            }).catch(err => console.error('[Avatar] Regeneration error:', err));
+            // Queue avatar regeneration on Cloud Functions; the profile
+            // subscription picks up the new avatar when it's ready
+            httpsCallable(functions, 'requestAvatar')()
+                .catch(err => console.error('[Avatar] Regeneration error:', err));
 
             // Transition to waiting state
             savedAvatarUrl.current = avatarUrl;
