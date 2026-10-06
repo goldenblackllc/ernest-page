@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { CharacterBible, CharacterIdentity } from "@/types/character";
 import { Square, RefreshCcw, Target, Globe, Lock, Flame, Loader2, AlertTriangle, ArrowUp, X, Volume2, VolumeX, Play, Pause, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -610,15 +609,6 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         });
     };
 
-    // ═══ TTS — Speak text directly ═══
-    const speakText = async (text: string) => {
-        if (!voiceId) return;
-        setIsLoadingTTS(true);
-        const blob = await fetchTTSAudio(text);
-        setIsLoadingTTS(false);
-        if (blob) await playAudioBlob(blob);
-    };
-
     // Always generate TTS when a new assistant message arrives (if voiceId exists).
     // Audio is always fetched and cached — autoSpeak only controls whether it auto-plays.
     useEffect(() => {
@@ -1132,6 +1122,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                                                 </div>
                                                 {(['public', 'private', 'burn'] as SessionRouting[]).map(option => (
                                                     <button
+                                                        key={option}
                                                         onClick={() => { 
                                                             setSessionRouting(option); 
                                                             hasManuallySetRouting.current = true; 

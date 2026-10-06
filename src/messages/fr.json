@@ -342,16 +342,6 @@
     "cancel": "Annuler",
     "saveAlias": "Enregistrer l'Alias"
   },
-  "apiErrors": {
-    "unauthorized": "Accès non autorisé.",
-    "missingSession": "ID de session manquant.",
-    "userNotFound": "Utilisateur non trouvé.",
-    "noActiveSub": "Limite quotidienne de sessions atteinte. Revenez demain.",
-    "mirrorTimeout": "L'algorithme prend plus de temps que prévu. Veuillez réessayer.",
-    "unexpected": "Une erreur inattendue s'est produite.",
-    "rantRequired": "Le défoulement est obligatoire.",
-    "onboardingTimeout": "L'algorithme prend plus de temps que prévu. Veuillez réessayer."
-  },
   "terms": {
     "title": "Conditions d'Utilisation",
     "subtitle": "Conditions d'Utilisation pour la plateforme Earnest Page.",

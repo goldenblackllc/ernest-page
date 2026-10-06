@@ -622,7 +622,7 @@ export function Ledger() {
                 />
             )}
 
-            {entries.map((entry, index) => (
+            {entries.map((entry) => (
                 <React.Fragment key={entry.id}>
                     <FeedPostCard
                         post={entry as any}

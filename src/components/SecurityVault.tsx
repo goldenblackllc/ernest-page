@@ -15,7 +15,7 @@ interface SecurityVaultProps {
 }
 
 // ─── Component ─────────────────────────────────────────────────────
-export function SecurityVault({ isOpen, onClose, profile }: SecurityVaultProps) {
+export function SecurityVault({ isOpen, onClose }: SecurityVaultProps) {
     const { user } = useAuth();
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState(false);

@@ -398,16 +398,6 @@
     "cancel": "Cancel",
     "saveAlias": "Save Alias"
   },
-  "apiErrors": {
-    "unauthorized": "Unauthorized access.",
-    "missingSession": "Missing session ID.",
-    "userNotFound": "User not found.",
-    "noActiveSub": "Daily session limit reached. Come back tomorrow.",
-    "mirrorTimeout": "The algorithm is currently taking longer than expected. Please try submitting again.",
-    "unexpected": "An unexpected error occurred.",
-    "rantRequired": "Rant is required.",
-    "onboardingTimeout": "The algorithm is taking longer than expected. Please try again."
-  },
   "terms": {
     "title": "Terms of Service",
     "subtitle": "Terms of Service for the Earnest Page platform.",

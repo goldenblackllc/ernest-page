@@ -97,7 +97,24 @@ interface FeedPostProps {
     digestMode?: boolean;
 }
 
-export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelete, onAudioPlayingChange, digestMode }: FeedPostProps) {
+/** True when the post has playable audio (unified, or legacy letter + response). */
+function postHasAudio(post: FeedPostProps['post']): boolean {
+    const hasCondensedTranscript = Boolean(post.public_post?.condensed_transcript?.length);
+    // For condensed transcript posts, use the conversation audio (audio_url) not the short Q&A clip
+    const unifiedAudioUrl = hasCondensedTranscript
+        ? (post.audio_url || post.short_audio_url)
+        : (post.short_audio_url || post.audio_url);
+    return Boolean(unifiedAudioUrl) || Boolean(post.letter_audio_url && post.response_audio_url);
+}
+
+export function FeedPostCard(props: FeedPostProps) {
+    // Posts without audio are still processing — don't render. Checked here, not in
+    // the card body, so the body's hooks run in the same order on every render.
+    if (!postHasAudio(props.post)) return null;
+    return <FeedPostCardBody {...props} />;
+}
+
+function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, onAudioPlayingChange, digestMode }: FeedPostProps) {
     // Helper: convert created_at (Timestamp | plain object | null) to Date
     const createdAtDate = (() => {
         if (!post.created_at) return null;
@@ -118,7 +135,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
     const [regenToast, setRegenToast] = useState<string | null>(null);
-    const [regenStyleOpen, setRegenStyleOpen] = useState(false);
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
     const [videoToast, setVideoToast] = useState<string | null>(null);
 
@@ -129,7 +145,7 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const locale = useLocale();
 
     // ═══ GLOBAL MUTE STATE ═══
-    const { isMuted, toggleMute, pauseAll, isAutoPlaySuppressed } = useAudioMute();
+    const { isMuted, toggleMute, pauseAll } = useAudioMute();
 
     // ═══ AUDIO PLAYBACK STATE ═══
     // audioRef holds either an HTMLAudioElement (legacy format) or a WebAudioPlayer (unified format)
@@ -150,10 +166,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     const [isAudioLoading, setIsAudioLoading] = useState(false);
 
 
-    // Stable refs — prevent IntersectionObserver re-creation on every state change
-    const isPlayingRef = useRef(false);
-    const toggleAudioRef = useRef<() => void>(() => {});
-    const isAutoPlaySuppressedRef = useRef(false);
     const hasCompletedRef = useRef(false);
 
     const hasCondensedTranscript = Boolean(post.public_post?.condensed_transcript?.length);
@@ -163,9 +175,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
         : (post.short_audio_url || post.audio_url);
     const legacyHasAudio = Boolean(post.letter_audio_url && post.response_audio_url);
     const hasAudio = Boolean(unifiedAudioUrl) || legacyHasAudio;
-
-    // Posts without audio are still processing — don't render
-    if (!hasAudio) return null;
 
     const heroUrl = post.thumbnail_url || post.user_photo_url || post.public_post?.imagen_url || post.imagen_url;
 
@@ -225,7 +234,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
     // Share handler — author gets unlisted /s/:token link, others get /post/:id
     const [shareToast, setShareToast] = useState(false);
     const shareTokenRef = useRef<string | null>(post.shareToken || null);
-    const [isGeneratingShare, setIsGeneratingShare] = useState(false);
     const handleShare = useCallback(async () => {
         const postAuthor = post.authorId || post.uid;
         const isOwner = user?.uid === postAuthor;
@@ -237,7 +245,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
             if (shareTokenRef.current) {
                 url = `${window.location.origin}/s/${shareTokenRef.current}`;
             } else {
-                setIsGeneratingShare(true);
                 try {
                     const idToken = await user!.getIdToken();
                     const res = await fetch('/api/share', {
@@ -255,8 +262,6 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                 } catch {
                     // Fallback to regular post link
                     url = `${window.location.origin}/post/${post.id}`;
-                } finally {
-                    setIsGeneratingShare(false);
                 }
             }
         } else {

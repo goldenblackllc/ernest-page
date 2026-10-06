@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { PillBar, MyLifeSection } from "../PillBar";
+import { PillBar } from "../PillBar";
 
 describe("PillBar", () => {
   it("renders all four pill buttons with correct labels", () => {

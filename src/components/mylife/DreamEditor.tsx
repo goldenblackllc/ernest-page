@@ -13,11 +13,6 @@ export interface DreamEditorProps {
     className?: string;
 }
 
-const DEFINING_WORD_PLACEHOLDERS = [
-    'e.g. Gentleman',
-    'e.g. Approachable',
-    'e.g. Successful',
-] as const;
 
 /**
  * DreamEditor provides an interface for editing "My Dream":

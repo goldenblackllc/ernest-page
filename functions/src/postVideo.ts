@@ -252,7 +252,7 @@ export async function buildVideo(post: FirebaseFirestore.DocumentData): Promise<
 
         // ── ASS subtitles + fontconfig (no system fontconfig in the container) ──
         const assPath = join(workDir, 'subtitles.ass');
-        await fs.writeFile(assPath, generateAssSubtitles(subtitles, totalDuration, ''), 'utf-8');
+        await fs.writeFile(assPath, generateAssSubtitles(subtitles), 'utf-8');
         const fontconfigPath = join(workDir, 'fonts.conf');
         await fs.writeFile(fontconfigPath, `<?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">

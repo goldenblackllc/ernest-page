@@ -148,19 +148,3 @@ export interface CharacterProfile {
     };
 }
 
-// --- Legacy type aliases for backward compatibility during migration ---
-// TODO: Remove these once all imports are updated
-export type CharacterIdentity = any;
-export type CharacterBible = any;
-export type UnifiedProfile = any;
-
-export interface Directive {
-    id?: string;
-    uid: string;
-    title: string;
-    status: 'active' | 'completed' | 'pending';
-    type: 'PROTOCOL' | 'QUEST' | 'SIGNAL';
-    createdAt: any;
-    source?: string;
-    expiresAt?: any;
-}

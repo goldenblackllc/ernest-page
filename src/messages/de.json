@@ -342,16 +342,6 @@
     "cancel": "Abbrechen",
     "saveAlias": "Alias speichern"
   },
-  "apiErrors": {
-    "unauthorized": "Unbefugter Zugriff.",
-    "missingSession": "Fehlende Sitzungs-ID.",
-    "userNotFound": "Benutzer nicht gefunden.",
-    "noActiveSub": "Tägliches Sitzungslimit erreicht. Komm morgen wieder.",
-    "mirrorTimeout": "Der Algorithmus benötigt derzeit länger als erwartet. Bitte versuche erneut, abzusenden.",
-    "unexpected": "Ein unerwarteter Fehler ist aufgetreten.",
-    "rantRequired": "Flaschengeist-Eingabe ist erforderlich.",
-    "onboardingTimeout": "Der Algorithmus benötigt länger als erwartet. Bitte versuche es erneut."
-  },
   "terms": {
     "title": "Nutzungsbedingungen",
     "subtitle": "Nutzungsbedingungen für die Earnest Page Plattform.",

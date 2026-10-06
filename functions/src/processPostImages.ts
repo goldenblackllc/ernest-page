@@ -402,7 +402,6 @@ async function processPostBatchResults(
         const postData = postDoc.data()!;
         const imagePrompts: string[] = postData.image_prompts || [];
         const existingImages: string[] = postData.message_images || [];
-        const uid: string = postData.uid || postData.authorId;
         const visibility: string = postData.visibility || 'private';
 
         // Start with existing images (gap-filling)
@@ -410,10 +409,6 @@ async function processPostBatchResults(
         for (let i = 0; i < Math.min(existingImages.length, imagePrompts.length); i++) {
             urls[i] = existingImages[i] || '';
         }
-
-        // Load reference image for potential retries
-        const referenceImage = await loadUserReferenceImage(uid);
-        const referenceImages = referenceImage ? [referenceImage] : undefined;
 
         // Process each batch result in parallel for speed
         const imageProcessingResults = await Promise.allSettled(

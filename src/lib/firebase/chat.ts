@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, onSnapshot, deleteDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { doc, setDoc, onSnapshot, deleteDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "./config";
 import { ActiveChat } from "@/types/chat";
 

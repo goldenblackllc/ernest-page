@@ -1,4 +1,4 @@
-import { db, storage } from '../firebase/admin.js';
+import { storage } from '../firebase/admin.js';
 
 /**
  * Generate TTS audio for a Dear Earnest post using ElevenLabs.
@@ -260,70 +260,6 @@ async function uploadAudio(buffer: Buffer, path: string): Promise<string> {
     try { await file.makePublic(); } catch { /* UBLA enabled */ }
 
     return `https://storage.googleapis.com/${bucket.name}/${path}`;
-}
-
-/**
- * Generate TTS audio for a complete Dear Earnest post.
- *
- * Combines letter + response into a single ElevenLabs call so the voice
- * maintains natural prosody across both sections (no choppy seam).
- *
- * @param letterText  The anonymous letter text
- * @param verdict  Optional verdict/hook text to prepend (read aloud first)
- * @param responseText  The Ideal Self's response text
- * @param voiceId  ElevenLabs voice ID (from character bible)
- * @param postId  Post document ID (used for storage path)
- * @returns Object with combined audio URL, letter word ratio, and word timestamps, or null if generation fails
- */
-export async function generatePostAudio(
-    letterText: string,
-    responseText: string,
-    voiceId: string,
-    postId: string,
-    verdict?: string,
-): Promise<{ audioUrl: string; letterWordRatio: number; wordTimestamps: WordTimestamp[] } | null> {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) {
-        console.error('[PostTTS] ELEVENLABS_API_KEY not configured');
-        return null;
-    }
-
-    if (!voiceId || voiceId.length < 10) {
-        console.log('[PostTTS] No valid voice ID — skipping audio generation');
-        return null;
-    }
-
-    try {
-        // Combine letter + response into a single text for one continuous TTS pass.
-        // The em-dash sign-offs (— Pseudonym / — Earnest Page) create natural prosodic
-        // pauses between the two sections.
-        const cleanLetter = cleanTextForTTS(letterText);
-        const cleanResponse = responseText ? cleanTextForTTS(responseText) : '';
-        const combinedText = [cleanLetter, cleanResponse]
-            .filter(Boolean)
-            .join(' ... ');
-
-        // Calculate letter word ratio for phase boundary estimation during playback.
-        const letterWords = wordCount(cleanLetter);
-        const totalWords = letterWords + (cleanResponse ? wordCount(cleanResponse) : 0);
-        const letterWordRatio = totalWords > 0 ? letterWords / totalWords : 1;
-
-        const audioResult = await generateTTSAudio(combinedText, voiceId, apiKey);
-
-        if (!audioResult) {
-            console.error('[PostTTS] Failed to generate combined audio track');
-            return null;
-        }
-
-        // Upload single combined file
-        const audioUrl = await uploadAudio(audioResult.buffer, `post-audio/${postId}_${Date.now()}.mp3`);
-
-        console.log(`[PostTTS] Audio generated for post ${postId} (letter ratio: ${letterWordRatio.toFixed(2)}, words: ${audioResult.wordTimestamps.length})`);
-        return { audioUrl, letterWordRatio, wordTimestamps: audioResult.wordTimestamps };
-    } catch (err) {
-        console.error('[PostTTS] Audio generation failed:', err);
-        return null;
-    }
 }
 
 /**

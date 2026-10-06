@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Link } from '@/i18n/navigation';
 
 /**
  * Minimal cookie consent banner for EU/UK visitors.
@@ -37,12 +38,12 @@ export function CookieConsent() {
                         <p className="text-sm text-zinc-300 leading-relaxed">
                             We use essential cookies for authentication and security. No tracking, no ads.
                         </p>
-                        <a
+                        <Link
                             href="/privacy"
                             className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors mt-1 inline-block"
                         >
                             Read our Privacy Policy →
-                        </a>
+                        </Link>
                     </div>
                     <button
                         onClick={handleAccept}

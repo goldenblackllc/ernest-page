@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';

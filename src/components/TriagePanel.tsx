@@ -24,8 +24,6 @@ import { LovesEditor } from "./mylife/LovesEditor";
 import { PeopleEditor } from "./mylife/PeopleEditor";
 import { DreamEditor } from "./mylife/DreamEditor";
 
-const MAX_SESSIONS_PER_DAY = 5;
-
 
 
 export function TriagePanel() {

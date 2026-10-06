@@ -130,7 +130,7 @@ export function PublicFeed() {
 
             {!hasMore && posts.length > 0 && (
                 <div className="text-center py-8">
-                    <p className="text-xs text-zinc-600">You're all caught up.</p>
+                    <p className="text-xs text-zinc-600">You&apos;re all caught up.</p>
                 </div>
             )}
         </section>

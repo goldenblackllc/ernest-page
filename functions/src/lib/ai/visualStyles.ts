@@ -135,31 +135,3 @@ export const VISUAL_STYLES: VisualStyle[] = [
     },
 ];
 
-/**
- * The photographer catalog formatted for AI prompt injection.
- * Lists all photographers so the AI can pick the best match.
- */
-export const PHOTOGRAPHER_CATALOG = VISUAL_STYLES.map(s =>
-    `- "${s.id}" (${s.name}): ${s.bestFor}`
-).join('\n');
-
-/**
- * Look up a visual style by its ID (fuzzy).
- * Tries exact id → case-insensitive id → name match → partial match.
- */
-export function getVisualStyle(id: string): VisualStyle | undefined {
-    if (!id) return undefined;
-    const lower = id.toLowerCase().trim();
-    const exact = VISUAL_STYLES.find(s => s.id === lower);
-    if (exact) return exact;
-    const byId = VISUAL_STYLES.find(s => s.id.toLowerCase() === lower);
-    if (byId) return byId;
-    const byName = VISUAL_STYLES.find(s => s.name.toLowerCase() === lower);
-    if (byName) return byName;
-    const partial = VISUAL_STYLES.find(s =>
-        s.name.toLowerCase().includes(lower) || lower.includes(s.id)
-    );
-    if (partial) return partial;
-    console.warn(`[VisualStyles] Could not match style "${id}" — no fallback applied`);
-    return undefined;
-}

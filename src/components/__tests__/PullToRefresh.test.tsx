@@ -10,7 +10,7 @@ vi.mock('next-intl', () => ({
 // Mock framer-motion to render plain divs
 vi.mock('framer-motion', () => ({
     motion: {
-        div: React.forwardRef(({ children, animate, transition, className, ...props }: any, ref: any) => {
+        div: React.forwardRef(function MotionDiv({ children, animate, transition, className, ...props }: any, ref: any) {
             const style = animate?.height !== undefined ? { height: animate.height } : {};
             return React.createElement('div', { ref, className, style, ...props }, children);
         }),

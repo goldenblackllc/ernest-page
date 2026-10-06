@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile, Bible } from "@/types/character";
 import { db, functions } from "@/lib/firebase/config";
 import { httpsCallable } from "firebase/functions";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Pencil, FileText, Loader2, Shield, Volume2, Check, Heart } from "lucide-react";
+import { User, ChevronDown, Heart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
@@ -34,8 +34,6 @@ export function ProfileView() {
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
     const [expandedNestedSection, setExpandedNestedSection] = useState<number | null>(null);
 
-    // Dev-only: show bible inputs panel on localhost
-    const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 
     const t = useTranslations('profile');
@@ -418,26 +416,3 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
 
 // ——— Voice Browser Component ———
 // Imported from shared component: @/components/VoiceBrowser
-
-// ——— Dev-only: Bible Input Section ———
-function DevInputSection({ title, content, multiline, children }: { title: string; content?: string; multiline?: boolean; children?: React.ReactNode }) {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-lg overflow-hidden">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-3 text-left hover:bg-zinc-900 transition-colors"
-            >
-                <h4 className="text-xs font-bold text-zinc-400">{title}</h4>
-                <ChevronDown className={cn("w-4 h-4 text-zinc-600 transition-transform duration-200", isOpen && "rotate-180 text-amber-500")} />
-            </button>
-            {isOpen && (
-                <div className="p-3 border-t border-zinc-800/50 bg-black/20">
-                    {children || (
-                        <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">{content}</pre>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}

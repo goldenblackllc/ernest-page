@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { COUNTRY_CODES, type CountryCode } from '@/lib/constants/countryCodes';
+import { COUNTRY_CODES } from '@/lib/constants/countryCodes';
 import { useTranslations } from 'next-intl';
 
 interface CountryCodeSelectProps {

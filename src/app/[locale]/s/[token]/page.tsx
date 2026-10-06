@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Play, Pause, Heart, MessageCircle, Share2 } from "lucide-react";
+import { Link } from '@/i18n/navigation';
+import { Play, Heart, MessageCircle, Share2 } from "lucide-react";
 import { use } from "react";
 import { getPostText } from '@functions/lib/getPostText';
 import { useTranslations } from 'next-intl';
@@ -145,9 +146,9 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                 <div className="text-center px-8">
                     <h1 className="text-xl font-bold text-white mb-2">{t('notFound')}</h1>
                     <p className="text-zinc-500 text-sm mb-6">{t('sharedNotFoundDesc')}</p>
-                    <a href="/" className="text-sm text-white underline underline-offset-4 hover:text-zinc-300">
+                    <Link href="/" className="text-sm text-white underline underline-offset-4 hover:text-zinc-300">
                         Visit Earnest Page
-                    </a>
+                    </Link>
                 </div>
             </div>
         );
@@ -347,12 +348,12 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
 
                         {/* CTA */}
                         <div className="px-4 py-3 border-t border-white/5 text-center">
-                            <a
+                            <Link
                                 href="/"
                                 className="text-sm text-white font-medium hover:underline underline-offset-4"
                             >
                                 Try Earnest Page →
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 ) : (
@@ -370,9 +371,9 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                             <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">{publicResponse}</div>
                         </div>
                         <div className="mt-6 text-center border-t border-white/10 pt-4">
-                            <a href="/" className="text-sm text-white font-medium hover:underline underline-offset-4">
+                            <Link href="/" className="text-sm text-white font-medium hover:underline underline-offset-4">
                                 Try Earnest Page →
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 )}

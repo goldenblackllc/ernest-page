@@ -45,69 +45,6 @@ const inputClass = "w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4
 const selectClass = "w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-3 py-2.5 text-sm text-white focus:border-white/40 focus:ring-1 focus:ring-white/30 [color-scheme:dark] appearance-none";
 const labelClass = "text-xs text-zinc-400 font-semibold mb-1 block";
 
-export function PillSelect({ label, options, value, onChange }: {
-    label: string;
-    options: string[];
-    value: string;
-    onChange: (v: string) => void;
-}) {
-    return (
-        <div>
-            <label className={labelClass}>{label}</label>
-            <div className="flex flex-wrap gap-2">
-                {options.map(opt => (
-                    <button
-                        key={opt}
-                        type="button"
-                        onClick={() => onChange(value === opt ? '' : opt)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
-                            ${value === opt
-                                ? 'bg-white text-black'
-                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
-                    >
-                        {opt}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-export function PillMultiSelect({ label, options, values, onChange }: {
-    label: string;
-    options: string[];
-    values: string[];
-    onChange: (v: string[]) => void;
-}) {
-    const toggle = (opt: string) => {
-        if (values.includes(opt)) {
-            onChange(values.filter(v => v !== opt));
-        } else {
-            onChange([...values, opt]);
-        }
-    };
-    return (
-        <div>
-            <label className={labelClass}>{label}</label>
-            <div className="flex flex-wrap gap-2">
-                {options.map(opt => (
-                    <button
-                        key={opt}
-                        type="button"
-                        onClick={() => toggle(opt)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
-                            ${values.includes(opt)
-                                ? 'bg-white text-black'
-                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
-                    >
-                        {opt}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-}
-
 export function IdentityForm({
     initialValues = {},
     onSubmit,
@@ -154,7 +91,7 @@ export function IdentityForm({
     };
 
     // Shared action button for all steps
-    const ActionButton = () => (
+    const actionButton = (
         <div className="mt-auto pt-4 shrink-0">
             <button
                 onClick={isLastVisibleStep ? handleSubmit : goNext}
@@ -211,7 +148,7 @@ export function IdentityForm({
                             autoFocus
                             className={`${inputClass} flex-1 min-h-0 resize-none leading-relaxed`}
                         />
-                        <ActionButton />
+                        {actionButton}
                     </div>
                 )}
 
@@ -312,7 +249,7 @@ export function IdentityForm({
                             </div>
                         </div>
 
-                        <ActionButton />
+                        {actionButton}
                     </div>
                 )}
 

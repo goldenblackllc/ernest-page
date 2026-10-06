@@ -88,7 +88,6 @@ export async function processPostContent(
         compiledBible,
         demographicHint,
         characterVoiceId,
-        gender,
         singleVoice,
         logPrefix = 'ProcessPost',
         preCondensed,

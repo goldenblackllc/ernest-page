@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -39,12 +40,12 @@ function SSOCallbackInner() {
         <div className="w-full max-w-sm text-center">
           <h1 className="text-2xl font-bold mb-4">Sign-In Error</h1>
           <p className="text-zinc-400 text-sm mb-8">{error}</p>
-          <a
+          <Link
             href="/"
             className="inline-block bg-white text-black px-8 py-3 rounded-full text-sm font-bold hover:bg-zinc-200 transition-colors"
           >
             Go to Login
-          </a>
+          </Link>
         </div>
       </main>
     );

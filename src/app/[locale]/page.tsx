@@ -12,11 +12,9 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { SupportChat } from "@/components/SupportChat";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { PullToRefresh } from "@/components/PullToRefresh";
-import { useTranslations } from "next-intl";
 
 export default function Home() {
     const { user, loading } = useAuth();
-    const t = useTranslations();
     const { trackEvent } = useTrackEvent();
 
     // Defer localStorage-based auth hint until after hydration to prevent

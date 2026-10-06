@@ -32,7 +32,6 @@ export async function DELETE(req: Request) {
                 .get();
 
             if (!postsSnap.empty) {
-                const batch = db.batch();
                 let count = 0;
                 const batches: FirebaseFirestore.WriteBatch[] = [];
                 let currentBatch = db.batch();

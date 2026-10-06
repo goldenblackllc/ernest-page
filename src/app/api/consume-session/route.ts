@@ -1,4 +1,4 @@
-import { db, FieldValue } from '@/lib/firebase/admin';
+import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 
 const MAX_SESSIONS_PER_DAY = 5;

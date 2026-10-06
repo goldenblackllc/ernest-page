@@ -19,15 +19,6 @@ export async function verifyAuth(req: Request): Promise<string | null> {
 }
 
 /**
- * Verifies internal server-to-server calls using CRON_SECRET.
- * Used by compile, avatar, dossier routes which are only called from other API routes.
- */
-export function verifyInternalAuth(req: Request): boolean {
-    const key = req.headers.get('x-internal-key');
-    return !!process.env.CRON_SECRET && key === process.env.CRON_SECRET;
-}
-
-/**
  * Returns an Unauthorized JSON response.
  */
 export function unauthorizedResponse() {

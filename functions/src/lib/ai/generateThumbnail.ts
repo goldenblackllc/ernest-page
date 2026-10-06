@@ -12,7 +12,6 @@
 
 import { generateImage } from './generateImage.js';
 import { loadUserReferenceImage } from './loadUserReferenceImage.js';
-import { uploadImageBuffer } from './generatePostImage.js';
 
 interface GenerateThumbnailOptions {
     /** Condensed transcript messages */

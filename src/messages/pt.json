@@ -342,16 +342,6 @@
     "cancel": "Cancelar",
     "saveAlias": "Salvar Apelido"
   },
-  "apiErrors": {
-    "unauthorized": "Acesso não autorizado.",
-    "missingSession": "ID de sessão ausente.",
-    "userNotFound": "Usuário não encontrado.",
-    "noActiveSub": "Limite diário de sessões alcançado. Volte amanhã.",
-    "mirrorTimeout": "O algoritmo está demorando mais do que o esperado. Por favor, tente enviar novamente.",
-    "unexpected": "Ocorreu um erro inesperado.",
-    "rantRequired": "O desabafo é obrigatório.",
-    "onboardingTimeout": "O algoritmo está demorando mais do que o esperado. Por favor, tente novamente."
-  },
   "terms": {
     "title": "Termos de Serviço",
     "subtitle": "Termos de Serviço para a plataforma Earnest Page.",

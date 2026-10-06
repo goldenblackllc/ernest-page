@@ -107,7 +107,7 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
                             </span>
                         </div>
                         <button
-                            onClick={() => { standalone ? setInternalOpen(false) : onClose?.(); }}
+                            onClick={() => { if (standalone) setInternalOpen(false); else onClose?.(); }}
                             className="text-zinc-600 hover:text-white transition-colors"
                         >
                             <X className="w-4 h-4" />

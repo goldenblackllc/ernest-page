@@ -28,11 +28,6 @@ export const CondensedTranscriptSchema = z.object({
 
 export type CondensedTranscript = z.infer<typeof CondensedTranscriptSchema>;
 
-export interface CondensedMessage {
-    role: 'user' | 'ideal_self';
-    text: string;
-}
-
 // ─── Prompt ──────────────────────────────────────────────────────────────────
 
 const CONDENSED_TRANSCRIPT_PROMPT = `You are an editor. You're given a raw chat transcript between a person and their Ideal Self (an AI advisor). The transcript is often messy — stream of consciousness, repetition, circling, tangents.

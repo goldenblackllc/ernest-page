@@ -6,7 +6,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell, Shield, LogOut, Users, HelpCircle, Mail } from "lucide-react";
+import { Bell, Shield, LogOut, Users, HelpCircle } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";

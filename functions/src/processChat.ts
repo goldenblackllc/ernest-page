@@ -1,7 +1,7 @@
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { db } from './lib/firebase/admin.js';
 import { z } from 'zod';
-import { generateWithFallback, generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK, SONNET_MODEL } from './lib/ai/models.js';
+import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from './lib/ai/models.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/security/serverHash.js';

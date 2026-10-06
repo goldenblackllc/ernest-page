@@ -54,8 +54,7 @@ export async function POST(req: Request) {
         });
 
         // 4. Generate AI comment in the background (fire-and-forget)
-        const origin = new URL(req.url).origin;
-        generateAIComment(uid, origin).catch(err =>
+        generateAIComment(uid).catch(err =>
             console.error('[Comment] AI comment generation error:', err)
         );
 
@@ -70,7 +69,7 @@ export async function POST(req: Request) {
     }
 }
 
-async function generateAIComment(commenterUid: string, origin: string) {
+async function generateAIComment(commenterUid: string) {
     // 1. Fetch the commenter's character bible
     const userDoc = await db.collection('users').doc(commenterUid).get();
     if (!userDoc.exists) return;
@@ -107,7 +106,7 @@ async function generateAIComment(commenterUid: string, origin: string) {
     // Pick a random one
     const targetDoc = candidatePosts[Math.floor(Math.random() * candidatePosts.length)];
     const targetData = targetDoc.data();
-    const { letter: targetLetter, response: targetResponse } = getPostText(targetData);
+    const { letter: targetLetter } = getPostText(targetData);
 
     if (!targetLetter) return;
 

@@ -189,18 +189,14 @@ function formatAssTime(seconds: number): string {
  * Generate ASS (Advanced SubStation Alpha) subtitle file content.
  * 
  * Uses ffmpeg's `ass` filter (confirmed available) instead of `drawtext`
- * (which is NOT available in the ffmpeg-static Linux binary on Vercel).
+ * (which is NOT available in the ffmpeg-static Linux binary).
  *
  * @param entries Subtitle entries from generateSubtitles()
- * @param totalDuration Total video duration in seconds
  * @returns ASS file content as a string
  */
 export function generateAssSubtitles(
     entries: SubtitleEntry[],
-    totalDuration: number,
-    title: string,
 ): string {
-    const totalEnd = formatAssTime(totalDuration);
 
     // ASS uses PlayResX/PlayResY for layout coordinates — match 1920×1080 video
     // Alignment codes: 2=bottom-center
