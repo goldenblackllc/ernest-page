@@ -111,7 +111,7 @@ export function ProfileView() {
                             </p>
                             {bible?.last_updated && (
                                 <p className="text-[10px] text-zinc-400 mt-0.5">
-                                    {t('lastUpdated', { date: format.dateTime(new Date(bible.last_updated), { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) })}
+                                    {t('lastUpdated', { date: format.dateTime(new Date(bible.last_updated), { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }) })}
                                 </p>
                             )}
                         </div>
