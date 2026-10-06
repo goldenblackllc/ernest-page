@@ -18,7 +18,9 @@ export async function getMostRecentActiveChat(uid: string): Promise<ActiveChat |
         const isExpired = chatData.updatedAt && (Date.now() - chatData.updatedAt > timeoutMs);
 
         if (!chatData.isClosed && !isExpired) {
-            return chatData;
+            // The document ID is the session ID. The `id` field is only written once a
+            // reply is generated, so a session created client-side may not have it yet.
+            return { ...chatData, id: chatDoc.id };
         }
     }
     return null;
