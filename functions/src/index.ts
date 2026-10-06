@@ -8,3 +8,4 @@ export { buildCharacter, recompileBibles } from './characterBuild.js';
 export { generateAvatar, requestAvatar, retryAvatars } from './avatar.js';
 export { dailyDigest, dailyDigestUser } from './dailyDigest.js';
 export { dailyReport } from './dailyReport.js';
+export { renderPostVideo } from './postVideo.js';

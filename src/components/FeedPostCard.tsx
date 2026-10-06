@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { getCountryFlag } from "@/lib/regionFlag";
 import { formatDistanceToNow } from "date-fns";
 import { Timestamp, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { db, functions } from "@/lib/firebase/config";
+import { httpsCallable } from "firebase/functions";
 import { useAuth } from "@/lib/auth/AuthContext";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -1484,11 +1485,13 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                     setIsGeneratingVideo(true);
                                     setVideoToast(null);
                                     try {
-                                        const idToken = await user.getIdToken();
-                                        const res = await fetch(`/api/posts/${post.id}/video?refresh=1`, {
-                                            headers: { Authorization: `Bearer ${idToken}` },
-                                        });
-                                        if (!res.ok) throw new Error('Failed to generate video');
+                                        // Rendering runs on Cloud Functions and can take a few minutes
+                                        const renderVideo = httpsCallable<{ postId: string; refresh: boolean }, { url: string }>(
+                                            functions, 'renderPostVideo', { timeout: 540_000 },
+                                        );
+                                        const { data } = await renderVideo({ postId: post.id, refresh: true });
+                                        const res = await fetch(data.url);
+                                        if (!res.ok) throw new Error('Failed to download video');
 
                                         const blob = await res.blob();
                                         const blobUrl = URL.createObjectURL(blob);
