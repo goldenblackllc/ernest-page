@@ -78,6 +78,7 @@ export const dailyDigestUser = onTaskDispatched<DigestTask>(
         retryConfig: {
             maxAttempts: 3,          // first run + 2 retries
             minBackoffSeconds: 7200, // retries two hours apart
+            maxBackoffSeconds: 7200,
             maxDoublings: 0,
         },
         rateLimits: {
