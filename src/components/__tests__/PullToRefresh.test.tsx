@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { render, fireEvent, screen } from '@testing-library/react';
 import React from 'react';
 
@@ -26,7 +26,7 @@ vi.mock('lucide-react', () => ({
 import { PullToRefresh } from '@/components/PullToRefresh';
 
 describe('PullToRefresh', () => {
-    let onRefresh: ReturnType<typeof vi.fn>;
+    let onRefresh: Mock<() => Promise<void>>;
 
     beforeEach(() => {
         onRefresh = vi.fn().mockResolvedValue(undefined);

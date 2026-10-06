@@ -20,15 +20,12 @@ describe("PillBar", () => {
     const lovesBtn = screen.getByRole("button", { name: "Loves" });
 
     expect(wantsBtn).toHaveAttribute("aria-pressed", "true");
-    expect(wantsBtn.className).toContain("bg-amber-500/20");
-    expect(wantsBtn.className).toContain("text-amber-400");
-    expect(wantsBtn.className).toContain("border-amber-500/40");
-    expect(wantsBtn.className).toContain("shadow-[0_0_12px_rgba(245,158,11,0.15)]");
+    expect(wantsBtn.className).toContain("bg-amber-400");
+    expect(wantsBtn.className).toContain("font-bold");
 
     expect(lovesBtn).toHaveAttribute("aria-pressed", "false");
-    expect(lovesBtn.className).toContain("bg-zinc-800/80");
-    expect(lovesBtn.className).toContain("text-zinc-400");
-    expect(lovesBtn.className).toContain("border-zinc-700/50");
+    expect(lovesBtn.className).toContain("bg-amber-500/80");
+    expect(lovesBtn.className).not.toContain("font-bold");
   });
 
   it("calls onSelect with section name when inactive pill is clicked", () => {
