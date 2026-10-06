@@ -17,7 +17,6 @@ SYMBOLS=(
 "storage"
 "FieldValue"
 "loadUserReferenceImage"
-"buildExtractionPrompt"
 "buildSessionLogPrompt"
 "WordTimestamp"
 "generatePostAudio"

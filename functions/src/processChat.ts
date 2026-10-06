@@ -6,7 +6,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/security/serverHash.js';
 import { geohashForLocation } from 'geofire-common';
-import { buildExtractionPrompt } from './lib/ai/extractionPrompt.js';
+import { buildDossierPrompt, buildDossierCondensePrompt, DOSSIER_WORD_LIMIT } from './lib/ai/dossierPrompt.js';
 import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
 import { matchSponsor } from './lib/config/ecosystem.js';
 import { generateCondensedTranscript } from './lib/ai/condensedTranscript.js';
@@ -14,7 +14,6 @@ import { generateCondensedTranscript } from './lib/ai/condensedTranscript.js';
 import { processPostContent } from './lib/ai/processPostContent.js';
 import { VISUAL_STYLES } from './lib/ai/visualStyles.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
-import { compileCharacterBibleForUser } from './compileCharacterBible.js';
 import nodemailer from 'nodemailer';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
@@ -104,29 +103,26 @@ export const processChat = onDocumentUpdated(
         const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
         const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
         
-        const currentProfile = userData?.unified_profile || {};
         const sessionCount = (userData?.session_count || identity?.session_count || 0) + 1;
+        const today = new Date().toISOString().split('T')[0];
 
-        // ─── DISABLED: Profile extraction (people, interests, wardrobe), wants consolidation, manifesto re-derivation, and bible recompile ───
-        // These systems were overwriting user-owned data in unified_profile (people, interests, etc.)
-        // and re-deriving identity.title/source_code.archetype from dream_rant every session.
-        // User data is now owned by the My Life drawers. Bible recompile is handled by the dirty-flag cron.
-        // KEPT: Dossier update (AI-maintained case notes about the user's life)
-        const extractionPrompt = buildExtractionPrompt(currentProfile, userData?.dossier || identity?.dossier || '', transcript);
+        // Sessions only update the dossier, recaps, and session count. People, interests, and the
+        // Character Bible are owned by the user via the My Life drawers and are never touched here.
+        const dossierPrompt = buildDossierPrompt(userData?.dossier || identity?.dossier || '', transcript, today);
         const sessionLogPrompt = buildSessionLogPrompt(transcript);
 
         try {
             console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + log)...`);
             const [condensedResult, dossierResult, recapResult] = await Promise.all([
                 generateCondensedTranscript(transcript),
-                // Dossier rewrite — Opus (only output we use from extraction)
+                // Dossier rewrite — Opus
                 generateWithFallback({
                     primaryModelId: OPUS_MODEL,
                     fallbackModelId: OPUS_FALLBACK,
                     schema: z.object({
-                        rewritten_dossier: z.string().optional().describe('Complete rewritten dossier with all seven sections (under 1500 words). Null if no changes.'),
+                        rewritten_dossier: z.string().describe(`Complete rewritten dossier with all eight sections (under ${DOSSIER_WORD_LIMIT} words), no header line.`),
                     }),
-                    prompt: extractionPrompt,
+                    prompt: dossierPrompt,
                 }),
                 // Session Log Entry — Opus
                 generateWithFallback({
@@ -156,11 +152,33 @@ export const processChat = onDocumentUpdated(
             // Write session metadata + dossier — do NOT touch unified_profile, wants_for_bible, or source_code
             const dossierPromise = (userData && recap) ? (async () => {
                 const existingRecaps = userData?.session_recaps || [];
-                const newRecap = { date: new Date().toISOString().split('T')[0], recap: recap.session_recap };
+                const newRecap = { date: today, recap: recap.session_recap };
                 const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
 
+                let dossierBody: string | undefined = dossierExtracted?.rewritten_dossier?.trim();
+
+                // The model doesn't reliably respect the word limit, so condense in a second pass when over.
+                const wordCount = dossierBody ? dossierBody.split(/\s+/).length : 0;
+                if (dossierBody && wordCount > DOSSIER_WORD_LIMIT) {
+                    try {
+                        const condensed = await generateWithFallback({
+                            primaryModelId: OPUS_MODEL,
+                            fallbackModelId: OPUS_FALLBACK,
+                            schema: z.object({
+                                condensed_dossier: z.string().describe(`Condensed dossier with all eight sections (under ${DOSSIER_WORD_LIMIT} words), no header line.`),
+                            }),
+                            prompt: buildDossierCondensePrompt(dossierBody, wordCount, today),
+                        });
+                        const condensedBody = (condensed.object as any)?.condensed_dossier?.trim();
+                        if (condensedBody) dossierBody = condensedBody;
+                        console.log(`[ProcessChat] Dossier condensed from ${wordCount} to ${condensedBody?.split(/\s+/).length ?? wordCount} words`);
+                    } catch (condenseError: any) {
+                        console.error(`[ProcessChat] Dossier condense failed — saving uncondensed (${wordCount} words):`, condenseError?.message);
+                    }
+                }
+
                 await userDoc.ref.set({
-                    ...(dossierExtracted?.rewritten_dossier ? { dossier: dossierExtracted.rewritten_dossier } : {}),
+                    ...(dossierBody ? { dossier: `DOSSIER\nUpdated: ${today} | Sessions: ${sessionCount}\n\n${dossierBody}` } : {}),
                     dossier_updated_at: FieldValue.serverTimestamp(),
                     session_count: sessionCount,
                     session_recaps: updatedRecaps,

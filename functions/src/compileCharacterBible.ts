@@ -96,7 +96,7 @@ People:
 
 Things They Love: {THINGS_I_LOVE}`;
 
-// ─── Core compile logic — called by processChat directly and via HTTP ───
+// ─── Core compile logic — called via HTTP ───
 export async function compileCharacterBibleForUser(uid: string): Promise<{ success: boolean; ideal?: any[]; error?: string }> {
     const userDocRef = db.collection('users').doc(uid);
     const userDoc = await userDocRef.get();

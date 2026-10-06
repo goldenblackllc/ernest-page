@@ -242,7 +242,6 @@ npm run dev   # starts Next.js dev server on http://localhost:3000
 | `/api/onboarding/process` | POST | Process onboarding intake into identity |
 | `/api/character/compile` | POST | Compile character bible from source identity |
 | `/api/character/avatar` | POST | Generate character avatar |
-| `/api/dossier/update` | POST | Update user dossier |
 | `/api/posts/feed` | GET | Fetch chronological feed |
 | `/api/posts/mine` | GET | Fetch user's own posts |
 | `/api/posts/saved` | GET | Fetch user's liked/saved posts |

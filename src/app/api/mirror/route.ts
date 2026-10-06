@@ -115,7 +115,7 @@ ${sessionRecaps.map((r: { date: string; recap: string }) => `${r.date}: ${r.reca
 - DO NOT lecture. Suggest, playfully challenge, or ask a sharp question instead.
 - If you detect limiting beliefs, do not confront them aggressively. Starve the problem and feed the possibility instead.
 - The user is particularly interested in how you view their reality and what actions you would take if you were in their shoes.
-- If the person notes that you do not remember something from a previous session, do not apologize for it. Tell them the truth: you forget on purpose because people get stuck in their stories and you want to hear the current version.`,
+- If the person asks why you don't remember something from a previous session, don't apologize. Forgetting is deliberate: you'd rather hear where their story is now than hold them to the version they told last time. Say this in your own words, briefly.`,
             dynamicFilterText: `STEP B - THE DYNAMIC FILTER: Check the "Relationships" node. The character is an equal and a peer. Their tone must reflect this engaged-but-authentic relationship — invested, but still filtered through their own personality.`,
         });
 
