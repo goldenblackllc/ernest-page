@@ -11,9 +11,19 @@ import { updateCharacterProfile } from "@/lib/firebase/character";
 import { Message } from "@ai-sdk/react";
 import { DEFAULT_TONE } from "@/lib/ai/engagementTones";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { functions } from "@/lib/firebase/config";
+import { httpsCallable } from "firebase/functions";
 import { useTranslations, useLocale } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
 import { cacheTTSBlob, getCachedTTSBlob, clearTTSCache } from "@/lib/ttsCache";
+
+// Mirror Chat runs on Cloud Functions; the reply is written to Firestore and
+// rendered from the active-chat subscription. High-effort replies can take minutes.
+const mirrorReply = httpsCallable(functions, 'mirrorReply', { timeout: 540_000 });
+const mirrorPlan = httpsCallable<
+    { messages: unknown[]; localTime: string; locale: string },
+    { success: boolean; directives: string[] }
+>(functions, 'mirrorPlan', { timeout: 300_000 });
 
 type SessionRouting = 'public' | 'private' | 'burn';
 
@@ -196,19 +206,10 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
             setIsLoading(true);
 
             try {
-                const idToken = await authUser?.getIdToken();
-                await fetch('/api/mirror', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                    },
-                    body: JSON.stringify({
-                        sessionId,
-                        sessionTone,
-                        localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-                        messages: newMessages,
-                    }),
+                await mirrorReply({
+                    sessionId,
+                    localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+                    messages: newMessages,
                 });
             } catch (err) {
                 console.error('Failed to auto-submit signal context:', err);
@@ -426,20 +427,11 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         }
 
         try {
-            const idToken = await authUser?.getIdToken();
-            await fetch('/api/mirror', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                },
-                body: JSON.stringify({
-                    sessionId,
-                    sessionTone,
-                    localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-                    messages: newMessages,
-                    locale
-                })
+            await mirrorReply({
+                sessionId,
+                localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+                messages: newMessages,
+                locale,
             });
         } catch (err) {
             console.error("Failed to send message to mirror:", err);
@@ -462,20 +454,11 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
 
         setIsLoading(true);
         try {
-            const idToken = await authUser?.getIdToken();
-            await fetch('/api/mirror', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                },
-                body: JSON.stringify({
-                    sessionId,
-                    sessionTone,
-                    localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-                    messages: messages,
-                    locale
-                })
+            await mirrorReply({
+                sessionId,
+                localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+                messages: messages,
+                locale,
             });
         } catch (err) {
             console.error("Failed to reload mirror:", err);
@@ -794,20 +777,11 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         setPlanConfirmation(null);
 
         try {
-            const idToken = await authUser?.getIdToken();
-            const res = await fetch('/api/mirror/plan', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                },
-                body: JSON.stringify({
-                            messages,
-                            localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-                            locale
-                        })
+            const { data } = await mirrorPlan({
+                messages,
+                localTime: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+                locale,
             });
-            const data = await res.json();
             if (data.success && data.directives?.length > 0) {
                 const planMessage = `Here's your plan — ${data.directives.length} directive${data.directives.length !== 1 ? 's' : ''} set:\n\n${data.directives.map((d: string, i: number) => `${i + 1}. ${d}`).join('\n')}\n\nThese are now saved to your directives. Go make it happen.`;
                 setMessages(prev => [...prev, { id: `plan-${Date.now()}`, role: 'assistant' as const, content: planMessage }]);
