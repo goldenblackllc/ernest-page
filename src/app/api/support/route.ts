@@ -1,4 +1,4 @@
-import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@/lib/ai/models';
+import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@functions/lib/ai/models';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { verifyAuth } from '@/lib/auth/serverAuth';
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, Heart, MessageCircle, Share2 } from "lucide-react";
 import { use } from "react";
-import { getPostText } from '@/lib/getPostText';
+import { getPostText } from '@functions/lib/getPostText';
 import { useTranslations } from 'next-intl';
 
 /**

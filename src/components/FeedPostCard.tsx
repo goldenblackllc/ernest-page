@@ -15,7 +15,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
-import { getPostText } from '@/lib/getPostText';
+import { getPostText } from '@functions/lib/getPostText';
 
 
 interface ConversationMessage {
@@ -1591,24 +1591,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         setIsRegeneratingImage(true);
                                         setRegenToast(null);
                                         try {
-                                            const idToken = await user.getIdToken();
-                                            const res = await fetch('/api/admin/regenerate-post', {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Content-Type': 'application/json',
-                                                    'Authorization': `Bearer ${idToken}`,
-                                                },
-                                                body: JSON.stringify({ postId: post.id }),
-                                            });
-                                            if (res.ok) {
-                                                setRegenToast('✓ Regenerated');
-                                                setTimeout(() => window.location.reload(), 1500);
-                                            } else {
-                                                const err = await res.json();
-                                                setRegenToast(err.error || 'Failed');
-                                            }
-                                        } catch (err) {
-                                            setRegenToast('Failed');
+                                            await httpsCallable(functions, 'regeneratePost', { timeout: 540_000 })({ postId: post.id });
+                                            setRegenToast('✓ Regenerated');
+                                            setTimeout(() => window.location.reload(), 1500);
+                                        } catch (err: any) {
+                                            setRegenToast(err?.message || 'Failed');
                                         } finally {
                                             setIsRegeneratingImage(false);
                                             setTimeout(() => setRegenToast(null), 3000);
@@ -2406,24 +2393,11 @@ export function FeedPostCard({ post, followingMap, onFollowClick, onRequestDelet
                                         setIsRegeneratingImage(true);
                                         setRegenToast(null);
                                         try {
-                                            const idToken = await user.getIdToken();
-                                            const res = await fetch('/api/admin/regenerate-post', {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Content-Type': 'application/json',
-                                                    'Authorization': `Bearer ${idToken}`,
-                                                },
-                                                body: JSON.stringify({ postId: post.id }),
-                                            });
-                                            if (res.ok) {
-                                                setRegenToast('✓ Regenerated');
-                                                setTimeout(() => window.location.reload(), 1500);
-                                            } else {
-                                                const err = await res.json();
-                                                setRegenToast(err.error || 'Failed');
-                                            }
-                                        } catch (err) {
-                                            setRegenToast('Failed');
+                                            await httpsCallable(functions, 'regeneratePost', { timeout: 540_000 })({ postId: post.id });
+                                            setRegenToast('✓ Regenerated');
+                                            setTimeout(() => window.location.reload(), 1500);
+                                        } catch (err: any) {
+                                            setRegenToast(err?.message || 'Failed');
                                         } finally {
                                             setIsRegeneratingImage(false);
                                             setTimeout(() => setRegenToast(null), 3000);

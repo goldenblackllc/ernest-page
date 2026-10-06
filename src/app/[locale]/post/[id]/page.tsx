@@ -5,7 +5,7 @@ import { Play, Pause, Heart, MessageCircle, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { use } from "react";
-import { getPostText } from '@/lib/getPostText';
+import { getPostText } from '@functions/lib/getPostText';
 import { useTranslations } from 'next-intl';
 
 export default function PostPage({ params }: { params: Promise<{ locale: string; id: string }> }) {

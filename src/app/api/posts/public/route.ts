@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase/admin";
-import { getPostText } from '@/lib/getPostText';
+import { getPostText } from '@functions/lib/getPostText';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

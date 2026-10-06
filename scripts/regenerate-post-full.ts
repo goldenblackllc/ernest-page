@@ -87,7 +87,7 @@ async function main() {
     // ═══════════════════════════════════════════════════════════════════
     console.log(`\n🔄 Step 1: Regenerating transcript, prompts, audio, thumbnail...\n`);
 
-    const { processPostContent } = await import('../src/lib/ai/processPostContent');
+    const { processPostContent } = await import('../functions/src/lib/ai/processPostContent');
 
     const pipelineResult = await processPostContent({
         transcript,

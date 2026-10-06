@@ -1,8 +1,8 @@
 import { db } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
-import { generateTextWithFallback, OPUS_MODEL } from '@/lib/ai/models';
+import { generateTextWithFallback, OPUS_MODEL } from '@functions/lib/ai/models';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getPostText } from '@/lib/getPostText';
+import { getPostText } from '@functions/lib/getPostText';
 
 export const maxDuration = 60;
 
