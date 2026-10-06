@@ -263,22 +263,26 @@ export async function buildVideo(post: FirebaseFirestore.DocumentData): Promise<
         await fs.mkdir(join(workDir, 'fc-cache'), { recursive: true });
 
         // ── ffmpeg ──
-        // Each image is a looping input joined with the concat FILTER, which
-        // guarantees a proper frame stream with correct PTS per image.
-        const inputs: string[] = ['-y'];
-        for (const timing of imageTimings) {
-            inputs.push('-loop', '1', '-framerate', '2', '-t', timing.duration.toFixed(3), '-i', timing.path);
-        }
-        inputs.push('-i', combinedAudioPath);
-        const audioInputIdx = imageTimings.length;
-        const concatInputs = imageTimings.map((_, i) => `[${i}:v]`).join('');
-        const filterComplex = `${concatInputs}concat=n=${imageTimings.length}:v=1:a=0[vid];[vid]ass=${assPath}:fontsdir=${FONTS_DIR}[vout]`;
+        // Images go in through the concat DEMUXER (one input, read one image at a
+        // time). Looping each image as its own input made ffmpeg buffer frames
+        // for every upcoming image and ran out of memory on long posts.
+        // The last image is listed twice so its duration is honored.
+        const concatListPath = join(workDir, 'images.txt');
+        const lastFrame = imageTimings[imageTimings.length - 1].path;
+        await fs.writeFile(concatListPath, [
+            'ffconcat version 1.0',
+            ...imageTimings.flatMap(t => [`file '${t.path}'`, `duration ${t.duration.toFixed(3)}`]),
+            `file '${lastFrame}'`,
+        ].join('\n') + '\n');
+        const filterComplex = `[0:v]fps=15,format=yuv420p,ass=${assPath}:fontsdir=${FONTS_DIR}[vout]`;
 
         const ffmpegResult = spawnSync(ffmpegPath, [
-            ...inputs,
+            '-y',
+            '-f', 'concat', '-safe', '0', '-i', concatListPath,
+            '-i', combinedAudioPath,
             '-filter_complex', filterComplex,
             '-map', '[vout]',
-            '-map', `${audioInputIdx}:a`,
+            '-map', '1:a',
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-crf', '23',
