@@ -92,10 +92,3 @@ export function rateLimitResponse(resetMs: number) {
         }
     );
 }
-
-// Pre-configured rate limits for specific routes
-export const RATE_LIMITS = {
-    mirror: { maxRequests: 10, windowMs: 60_000 },       // 10 per minute
-    compile: { maxRequests: 3, windowMs: 3_600_000 },     // 3 per hour
-    avatar: { maxRequests: 3, windowMs: 3_600_000 },      // 3 per hour
-} as const;

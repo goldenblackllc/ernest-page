@@ -4,7 +4,7 @@ import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { generateWithFallback, OPUS_MODEL } from '@/lib/ai/models';
 import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
-import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { getPostText } from '@/lib/getPostText';
 
 export const maxDuration = 60;

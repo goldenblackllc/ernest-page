@@ -1,5 +1,5 @@
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export const maxDuration = 120;
 

@@ -21,7 +21,7 @@ The AI does not improvise a worldview. It operates within a strict set of 16 "Un
 
 **Master Belief System:** A curated library of 20 belief pairs (negative/positive) used for belief pattern tracking. Categories: Identity ("I am powerless" → "I am in complete control") and Reality ("Life is hard" → "I really enjoy being alive"). These map to the user's emotional patterns and are referenced in dossier updates.
 
-The Reality Rules and beliefs live in `src/lib/constants/realityRules.ts` and `src/lib/constants/beliefs.ts`.
+The Reality Rules live in `functions/src/lib/constants/realityRules.ts` (the Mirror and bible compile both run on Cloud Functions).
 
 ## 3. Visual Aesthetic (Strict Adherence)
 **North Star:** "Premium Native Mobile Social."
@@ -294,7 +294,7 @@ npm run dev   # starts Next.js dev server on http://localhost:3000
 | `src/components/FeedAdCard.tsx` | Native ecosystem partner ad card |
 | `src/lib/ai/models.ts` | AI model definitions and fallback logic |
 | `src/lib/ai/engagementTones.ts` | Chat mode definitions (Unfiltered, Strategic Advisor, etc.) |
-| `src/lib/constants/realityRules.ts` | The 16 Universal Laws of Reality (philosophical engine) |
+| `functions/src/lib/constants/realityRules.ts` | The Universal Laws of Reality (philosophical engine) |
 | `src/lib/constants/beliefs.ts` | Master belief pairs for pattern tracking |
 | `src/lib/feedCache.ts` | Module-level in-memory feed cache |
 | `src/lib/rateLimit.ts` | In-memory rate limiter |
