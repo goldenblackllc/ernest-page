@@ -44,3 +44,7 @@ next-env.d.ts
 functions/lib/
 functions/node_modules/
 functions/firebase-debug.log
+
+# local dev server artifacts
+.next.pid
+.next.log
