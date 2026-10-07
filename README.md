@@ -1,41 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Earnest Page
 
-## Project Documentation
-*   **[Core Vision & Manifesto](./MANIFESTO.md)**: The primary source of truth for the project's philosophy, goals, and architecture.
-*   **[Design System](./DESIGN_SYSTEM.md)**: UI/UX standards, color palettes, and component guidelines (Cinematic Dark Mode).
+Talk to your ideal self. People have conversations with an AI character built from their own Character Bible, and finished conversations become anonymous "Dear Earnest" posts in a social feed.
 
+- **[MANIFESTO.md](MANIFESTO.md)**: vision, philosophy, voice and design rules.
+- **[CLAUDE.md](CLAUDE.md)**: architecture, conventions and commands, written for agents but useful for anyone working on the code.
 
-## Getting Started
+## Layout
 
-First, run the development server:
+- `src/`: the Next.js 16 website, hosted on Vercel.
+- `functions/`: Firebase Cloud Functions, which do all the slow and background work (Mirror chat replies, post generation, images, audio, video).
+- `firestore.rules`, `firestore.indexes.json`: Firestore configuration.
+- `scripts/`: one-off maintenance and diagnostic scripts, run with `npx tsx` or `node`.
+
+## Getting started
 
 ```bash
+npm install
+npm install --prefix functions
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The website needs `.env.local` (Firebase client config, `FIREBASE_SERVICE_ACCOUNT_KEY`, Twilio, Turnstile, ElevenLabs and AI provider keys). Cloud Functions read their secrets from `functions/.env`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run typecheck
+npm test
+npm run lint
+npm run build --prefix functions
+```
 
-## Learn More
+## Deploying
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Website:** hosted on Vercel (`vercel.json`).
+- **Cloud Functions:** `firebase deploy --only functions:<name>`. Check `git status functions/` first.
+- **Firestore:** `firebase deploy --only firestore:rules,firestore:indexes`.

@@ -10,7 +10,7 @@ description: design system and brand voice rules for all UI work
 ### Visual Rules (Tailwind CSS v4)
 *   **Layout:** Mobile-first, single-column feeds. Edge-to-edge content where possible.
 *   **Typography:**
-    *   **Headings:** Sans-serif, bold, tight tracking (Inter or System UI). No monospace/terminal fonts for headers.
+    *   **Headings:** HK Grotesk (sans-serif), bold, tight tracking. No monospace/terminal fonts for headers.
     *   **Body:** High legibility, standard leading (relaxed).
     *   **Sizing:** 16px base size. Avoid tiny "dashboard" text.
 *   **Colors & Surfaces:**
