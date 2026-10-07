@@ -8,13 +8,17 @@
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db } from './lib/firebase/admin.js';
+import { REGION } from './lib/config/region.js';
 import { processPostContent } from './lib/ai/processPostContent.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
-import { generateImagesForPost } from './generatePostImages.js';
+import { generateMessageImages } from './lib/ai/generatePostImage.js';
+import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
+import { getPostAuthorId, savePostImages } from './lib/posts.js';
+import { getCompiledBible } from './lib/bible.js';
 
 export const regeneratePost = onCall<{ postId: string }>(
     {
-        region: 'us-central1',
+        region: REGION,
         timeoutSeconds: 540,
         memory: '1GiB',
     },
@@ -54,7 +58,7 @@ export const regeneratePost = onCall<{ postId: string }>(
             transcript,
             uid,
             postId,
-            compiledBible: userData.bible?.sections || userData.character_bible?.compiled_output?.ideal || [],
+            compiledBible: getCompiledBible(userData),
             demographicHint,
             characterVoiceId: userData.voice?.id || userData.character_bible?.voice_id,
             gender,
@@ -108,3 +112,42 @@ export const regeneratePost = onCall<{ postId: string }>(
         };
     }
 );
+
+/**
+ * Generate any missing per-message images for a post and publish it once every
+ * image and the audio exist. Throws if no image could be generated.
+ */
+async function generateImagesForPost(postId: string): Promise<{ count: number; urls: string[] }> {
+    const postDoc = await db.collection('posts').doc(postId).get();
+    const postData = postDoc.data();
+    if (!postData) throw new HttpsError('not-found', 'Post not found');
+
+    const imagePrompts = postData.image_prompts;
+    if (!imagePrompts || !Array.isArray(imagePrompts) || imagePrompts.length === 0) {
+        throw new HttpsError('failed-precondition', 'Post has no image prompts');
+    }
+
+    console.log(`[GenImages] Generating images for post ${postId}`);
+    const uid = getPostAuthorId(postData);
+    const referenceImage = await loadUserReferenceImage(uid);
+    const referenceImages = referenceImage ? [referenceImage] : undefined;
+
+    const urls = await generateMessageImages({
+        prompts: imagePrompts,
+        uid,
+        filePrefix: postId,
+        referenceImages,
+        existingUrls: postData.message_images,
+    });
+
+    const firstImage = urls.find(Boolean) || null;
+    if (!firstImage) {
+        console.error(`[GenImages] Failed to generate any images for post ${postId}`);
+        throw new HttpsError('internal', 'Failed to generate images');
+    }
+
+    // Only publishes when every image succeeded AND audio exists
+    const { filledCount, complete, published } = await savePostImages(postId, postData, urls);
+    console.log(`[GenImages] Updated post ${postId}: ${filledCount}/${imagePrompts.length} images, audio: ${!!postData.audio_url}, complete: ${complete}, published: ${published}`);
+    return { count: filledCount, urls };
+}

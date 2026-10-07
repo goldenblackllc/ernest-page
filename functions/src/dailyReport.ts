@@ -3,16 +3,15 @@
  */
 
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import nodemailer from 'nodemailer';
 import { db } from './lib/firebase/admin.js';
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'breadstand@gmail.com';
+import { REGION } from './lib/config/region.js';
+import { sendAdminEmail } from './lib/email/adminEmail.js';
 
 export const dailyReport = onSchedule(
     {
         schedule: '0 8 * * *',
         timeZone: 'UTC',
-        region: 'us-central1',
+        region: REGION,
         timeoutSeconds: 300,
         memory: '512MiB',
     },
@@ -92,24 +91,13 @@ export const dailyReport = onSchedule(
 </div>`;
 
         // ── Send Email via Gmail ──────────────────────────────────
-        if (!process.env.GMAIL_APP_PASSWORD) {
+        const sent = await sendAdminEmail(`Daily Report -- ${funnelLogins} logins, ${newSignups} new`, htmlReport);
+        if (!sent) {
             console.warn('[Daily Report] GMAIL_APP_PASSWORD not set. Logging report instead.', {
                 totalUsers, newSignups, postsCreated, landingViews, funnelLogins,
             });
             return;
         }
-
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
-        });
-
-        await transporter.sendMail({
-            from: `Earnest Page <${ADMIN_EMAIL}>`,
-            to: ADMIN_EMAIL,
-            subject: `Daily Report -- ${funnelLogins} logins, ${newSignups} new`,
-            html: htmlReport,
-        });
 
         console.log('[Daily Report] Sent successfully.');
     }

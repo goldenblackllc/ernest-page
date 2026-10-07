@@ -14,11 +14,11 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getFunctions } from 'firebase-admin/functions';
 import sharp from 'sharp';
 import { db, storage, FieldValue } from './lib/firebase/admin.js';
+import { REGION } from './lib/config/region.js';
 import { generateImage } from './lib/ai/generateImage.js';
 import { validateGeneratedImage } from './lib/ai/validateImage.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 
-const REGION = 'us-central1';
 const MAX_AVATAR_ATTEMPTS = 3;
 const AVATAR_RETRY_DELAY_MS = 2000;
 
@@ -253,10 +253,10 @@ export const retryAvatars = onSchedule(
                 await enqueueAvatar(doc.id);
                 enqueued++;
             } catch (err: any) {
-                console.error(`[retryAvatars] Failed to enqueue ${doc.id}:`, err.message);
+                console.error(`[RetryAvatars] Failed to enqueue ${doc.id}:`, err.message);
             }
         }
 
-        console.log(`[retryAvatars] Enqueued ${enqueued} of ${snap.size} failed/pending avatars`);
+        console.log(`[RetryAvatars] Enqueued ${enqueued} of ${snap.size} failed/pending avatars`);
     }
 );

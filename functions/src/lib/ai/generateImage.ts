@@ -10,13 +10,15 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
+import { IMAGE_MODEL } from './models.js';
 
-const NANO_BANANA_MODEL = 'gemini-3.1-flash-image';
+export type ImageAspectRatio = '1:1' | '9:16' | '16:9' | '4:3' | '3:4' | '4:5';
+export type ReferenceMode = 'full' | 'face-only';
 
 interface GenerateImageOptions {
     prompt: string;
     /** Aspect ratio — default '16:9' for landscape video feed */
-    aspectRatio?: '1:1' | '9:16' | '16:9' | '4:3' | '3:4' | '4:5';
+    aspectRatio?: ImageAspectRatio;
     /** Label for logs (e.g. 'Cron', 'RegeneratePost') */
     logPrefix?: string;
     /**
@@ -35,7 +37,7 @@ interface GenerateImageOptions {
      *   where the character's current physical state may differ from the
      *   aspirational avatar (transformation arc).
      */
-    referenceMode?: 'full' | 'face-only';
+    referenceMode?: ReferenceMode;
 }
 
 interface GenerateImageResult {
@@ -43,6 +45,52 @@ interface GenerateImageResult {
     buffer: Buffer;
     /** MIME type of the generated image */
     mimeType: string;
+}
+
+const REFERENCE_PREFIX: Record<ReferenceMode, string> = {
+    'face-only': 'Use the reference image ONLY to maintain the character\'s face, hair, and ethnic features. Do NOT copy the body type, weight, build, or physique from the reference image — follow the body description in the text prompt below instead. Keep their facial identity consistent but let the scene dictate their physical state.\n\n',
+    'full': 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n',
+};
+
+// The API doesn't support aspectRatio in generationConfig, so the orientation
+// is requested in the prompt text instead.
+const ASPECT_RATIO_HINT: Record<ImageAspectRatio, string> = {
+    '9:16': ' 9:16 portrait orientation (1080×1920). Do not generate in landscape or square format.',
+    '16:9': ' 16:9 landscape orientation. Do not generate in portrait or square format.',
+    '4:3': ' 4:3 landscape orientation.',
+    '3:4': ' 3:4 portrait orientation.',
+    '4:5': ' 4:5 portrait orientation (1080×1350). Do not generate in landscape or square format.',
+    '1:1': '',
+};
+
+/**
+ * Build the request parts for an image generation call: reference images
+ * first (identity anchors), then the text prompt.
+ *
+ * With reference images, the prompt is prefixed with how to anchor identity:
+ * 'full' anchors on everything (face, build, style); 'face-only' anchors on
+ * face/hair only and lets the text prompt control body type for the
+ * transformation arc (e.g., early beats show the current state).
+ * Shared by generateImage and the Batch API requests (batchImageGeneration.ts).
+ */
+export function buildImageRequestParts(options: {
+    prompt: string;
+    aspectRatio?: ImageAspectRatio;
+    referenceImages?: Buffer[];
+    referenceMode?: ReferenceMode;
+}): any[] {
+    const { prompt, aspectRatio = '16:9', referenceImages = [], referenceMode = 'full' } = options;
+
+    const parts: any[] = referenceImages.map(imgBuffer => ({
+        inlineData: {
+            mimeType: 'image/jpeg',
+            data: imgBuffer.toString('base64'),
+        },
+    }));
+
+    const referencePrefix = referenceImages.length > 0 ? REFERENCE_PREFIX[referenceMode] : '';
+    parts.push({ text: referencePrefix + prompt + (ASPECT_RATIO_HINT[aspectRatio] ?? '') });
+    return parts;
 }
 
 /**
@@ -66,47 +114,13 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
     try {
         const ai = new GoogleGenAI({ apiKey });
 
-        // Build the parts array: reference images first (identity anchors), then text prompt
-        const parts: any[] = [];
-
         if (referenceImages && referenceImages.length > 0) {
-            for (const imgBuffer of referenceImages) {
-                parts.push({
-                    inlineData: {
-                        mimeType: 'image/jpeg',
-                        data: imgBuffer.toString('base64'),
-                    },
-                });
-            }
             console.log(`[${logPrefix}] Including ${referenceImages.length} reference image(s) for character anchoring`);
         }
-
-        // When using reference images, instruct the model on how to anchor identity.
-        // 'full' mode anchors on everything (face, build, style).
-        // 'face-only' mode anchors on face/hair only — lets the text prompt control
-        // body type for transformation arc (e.g., early beats show current state).
-        let referencePrefix = '';
-        if (referenceImages && referenceImages.length > 0) {
-            if (referenceMode === 'face-only') {
-                referencePrefix = 'Use the reference image ONLY to maintain the character\'s face, hair, and ethnic features. Do NOT copy the body type, weight, build, or physique from the reference image — follow the body description in the text prompt below instead. Keep their facial identity consistent but let the scene dictate their physical state.\n\n';
-            } else {
-                referencePrefix = 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n';
-            }
-        }
-
-        // Append aspect ratio instruction to the prompt so the model generates
-        // in the correct orientation (the API doesn't support aspectRatio in generationConfig)
-        const aspectRatioHint = aspectRatio === '9:16' ? ' 9:16 portrait orientation (1080×1920). Do not generate in landscape or square format.'
-            : aspectRatio === '16:9' ? ' 16:9 landscape orientation. Do not generate in portrait or square format.'
-            : aspectRatio === '4:3' ? ' 4:3 landscape orientation.'
-            : aspectRatio === '3:4' ? ' 3:4 portrait orientation.'
-            : aspectRatio === '4:5' ? ' 4:5 portrait orientation (1080×1350). Do not generate in landscape or square format.'
-            : '';
-
-        parts.push({ text: referencePrefix + prompt + aspectRatioHint });
+        const parts = buildImageRequestParts({ prompt, aspectRatio, referenceImages, referenceMode });
 
         const response = await ai.models.generateContent({
-            model: NANO_BANANA_MODEL,
+            model: IMAGE_MODEL,
             contents: [{ role: 'user', parts }],
             config: { responseModalities: ['IMAGE'] },
         });

@@ -1,10 +1,11 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db } from './lib/firebase/admin.js';
+import { REGION } from './lib/config/region.js';
 
 export const sweepExpiredChats = onSchedule(
     {
         schedule: 'every 15 minutes',
-        region: 'us-central1',
+        region: REGION,
         timeoutSeconds: 60,
         memory: '256MiB',
     },
@@ -32,16 +33,14 @@ export const sweepExpiredChats = onSchedule(
                     const isExpired = data.updatedAt && data.updatedAt <= (now - timeoutMs);
                     const isClosed = data.isClosed === true;
                     
-                    // If it's expired and not closed, closing it triggers processChat.
-                    // If it's already closed but not processing, we can re-trigger processChat 
-                    // by updating a field (e.g., forcing an update).
+                    // An expired open chat is closed, which triggers processChat.
+                    // A closed chat that isn't processing (never picked up, or failed
+                    // earlier) gets a _triggerCron timestamp write, which fires
+                    // processChat's onDocumentUpdated trigger again.
                     if (isExpired && !isClosed) {
                         await chatDoc.ref.update({ isClosed: true });
                         count++;
                     } else if (isClosed && !data.processing) {
-                        // It's closed but processChat hasn't picked it up or failed previously and retry window passed.
-                        // We can flip processing to false just to trigger the onDocumentUpdated, 
-                        // or add a dummy update to trigger processChat again.
                         await chatDoc.ref.update({ _triggerCron: Date.now() });
                         count++;
                     }

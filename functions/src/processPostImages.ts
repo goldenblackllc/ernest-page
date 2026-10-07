@@ -20,9 +20,10 @@
  */
 
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import sharp from 'sharp';
 import { db } from './lib/firebase/admin.js';
-import { buildMessageImageBatchRequests, uploadImageBuffer } from './lib/ai/generatePostImage.js';
+import { REGION } from './lib/config/region.js';
+import { buildMessageImageBatchRequests, resizeToPostImage, uploadImageBuffer } from './lib/ai/generatePostImage.js';
+import { getPostAuthorId, savePostImages } from './lib/posts.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
 import { submitImageBatch, pollBatchJob, type ParsedBatchResult } from './lib/ai/batchImageGeneration.js';
 import {
@@ -42,278 +43,285 @@ const MAX_IMAGE_RETRIES = 10;
 /** How long a batch job can stay in RUNNING/PENDING before we treat it as failed (60 min) */
 const BATCH_TIMEOUT_MS = 60 * 60 * 1000;
 
+/** Thumbnail retry cap per post */
+const MAX_THUMBNAIL_RETRIES = 3;
+
 export const processPostImages = onSchedule(
     {
         schedule: 'every 10 minutes',
-        region: 'us-central1',
+        region: REGION,
         timeoutSeconds: 1800,
         memory: '2GiB',
         maxInstances: 1,  // Only one instance at a time — no parallel runs
     },
     async () => {
-        // Track post IDs that already have a batch in flight so Phase B
+        // Phase A: Poll active batch jobs and collect completed results.
+        // Returns the post IDs that already have a batch in flight so Phase B
         // doesn't submit duplicate batches for the same posts.
-        const postsWithActiveBatches = new Set<string>();
+        const postsWithActiveBatches = await pollActiveBatches();
 
-        // ═════════════════════════════════════════════════════════════════════
-        // Phase A: Poll active batch jobs and collect completed results
-        // ═════════════════════════════════════════════════════════════════════
-
-        try {
-            const activeJobs = await getActiveBatchJobs();
-
-            if (activeJobs.length > 0) {
-                console.log(`[Phase2] Polling ${activeJobs.length} active batch job(s)...`);
-
-                let timedOut = 0;
-                let stillRunning = 0;
-                let completed = 0;
-
-                for (const job of activeJobs) {
-                    // Record which posts are covered by this batch before polling,
-                    // so we skip them in Phase B even if the job is still running.
-                    job.post_ids.forEach(id => postsWithActiveBatches.add(id));
-
-                    const prevState = job.state;
-                    await processCompletedBatch(job);
-
-                    // Count outcomes for summary (re-read isn't needed; infer from state)
-                    const ageMs = Date.now() - (job.created_at || 0);
-                    if (ageMs > BATCH_TIMEOUT_MS) {
-                        timedOut++;
-                    } else if (prevState === 'JOB_STATE_RUNNING' || prevState === 'JOB_STATE_PENDING') {
-                        stillRunning++;
-                    } else {
-                        completed++;
-                    }
-                }
-
-                if (timedOut > 0 || completed > 0) {
-                    console.log(`[Phase2] Poll summary: ${stillRunning} still running, ${completed} completed, ${timedOut} timed out`);
-                }
-            }
-        } catch (err: any) {
-            console.error('[Phase2] Error in Phase A (poll):', err.message);
-            // Continue to Phase B even if polling fails
-        }
-
-        // ═════════════════════════════════════════════════════════════════════
         // Phase A.5: Retry failed thumbnails
-        // ═════════════════════════════════════════════════════════════════════
+        await retryMissingThumbnails();
 
-        const MAX_THUMBNAIL_RETRIES = 3;
-
-        try {
-            // Find recent posts missing thumbnails (created in last 48h, not exceeding retry cap)
-            const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
-            const thumbSnap = await db.collection('posts')
-                .where('created_at', '>', cutoff)
-                .orderBy('created_at', 'desc')
-                .limit(50)
-                .get();
-
-            const needsThumbnail = thumbSnap.docs.filter(doc => {
-                const data = doc.data();
-                return !data.thumbnail_url && (data.thumbnail_retries || 0) < MAX_THUMBNAIL_RETRIES;
-            });
-
-            if (needsThumbnail.length > 0) {
-                console.log(`[Phase2] Found ${needsThumbnail.length} post(s) needing thumbnail retry`);
-
-                for (const postDoc of needsThumbnail) {
-                    const postData = postDoc.data();
-                    const retries = postData.thumbnail_retries || 0;
-                    const uid = postData.uid || postData.authorId;
-                    const messages = postData.public_post?.condensed_transcript;
-                    const title = postData.title;
-
-                    if (!messages || messages.length === 0) {
-                        console.warn(`[Phase2] Post ${postDoc.id} has no condensed transcript for thumbnail — skipping`);
-                        await postDoc.ref.update({ thumbnail_retries: retries + 1 });
-                        continue;
-                    }
-
-                    try {
-                        const { generateThumbnail } = await import('./lib/ai/generateThumbnail.js');
-                        const thumbnailUrl = await generateThumbnail({
-                            messages,
-                            title,
-                            uid,
-                            postId: postDoc.id,
-                            logPrefix: 'Phase2-Thumb',
-                        });
-
-                        if (thumbnailUrl) {
-                            await postDoc.ref.update({
-                                thumbnail_url: thumbnailUrl,
-                                thumbnail_retries: retries + 1,
-                            });
-                            console.log(`[Phase2] ✅ Thumbnail retry succeeded for ${postDoc.id}`);
-                        } else {
-                            await postDoc.ref.update({ thumbnail_retries: retries + 1 });
-                            console.warn(`[Phase2] Thumbnail retry ${retries + 1}/${MAX_THUMBNAIL_RETRIES} failed for ${postDoc.id}`);
-                        }
-                    } catch (thumbErr: any) {
-                        await postDoc.ref.update({ thumbnail_retries: retries + 1 });
-                        console.error(`[Phase2] Thumbnail retry error for ${postDoc.id}:`, thumbErr.message);
-                    }
-                }
-            }
-        } catch (err: any) {
-            console.error('[Phase2] Error in thumbnail retry phase:', err.message);
-        }
-
-        // ═════════════════════════════════════════════════════════════════════
         // Phase B: Submit new batch jobs for posts needing images
-        // ═════════════════════════════════════════════════════════════════════
-
-        // Find posts that need image generation
-        const pendingPosts = await db.collection('posts')
-            .where('image_style', '==', 'per-message')
-            .where('images_complete', '==', false)
-            .orderBy('created_at', 'asc')
-            .limit(MAX_POSTS_PER_RUN)
-            .get();
-
-        if (pendingPosts.empty) {
-            console.log('[Phase2] No posts need image generation.');
-            return;
-        }
-
-        console.log(`[Phase2] Found ${pendingPosts.size} post(s) needing images.`);
-
-        // Collect all batch requests across posts
-        const allBatchRequests: any[] = [];
-        const promptMapping: Record<string, { postId: string; index: number }> = {};
-        const postIds: string[] = [];
-        const postsToIncrement: Array<{ ref: FirebaseFirestore.DocumentReference; retryCount: number }> = [];
-
-        for (const postDoc of pendingPosts.docs) {
-            // Skip posts that already have an active batch — avoids duplicate submissions
-            if (postsWithActiveBatches.has(postDoc.id)) {
-                console.log(`[Phase2] Skipping post ${postDoc.id} — already has active batch`);
-                continue;
-            }
-
-            const postData = postDoc.data();
-            const imagePrompts: string[] = postData.image_prompts || [];
-            const existingImages: string[] = postData.message_images || [];
-            const retryCount: number = postData.image_retries || 0;
-            const uid: string = postData.uid || postData.authorId;
-            const visibility: string = postData.visibility || 'private';
-
-            // Skip if no prompts
-            if (imagePrompts.length === 0) {
-                console.warn(`[Phase2] Post ${postDoc.id} has no image_prompts — marking complete`);
-                await postDoc.ref.update({ images_complete: true });
-                continue;
-            }
-
-            const filledCount = existingImages.filter(Boolean).length;
-
-            // ── Max retries exceeded — accept what we have and publish ──
-            if (retryCount >= MAX_IMAGE_RETRIES) {
-                const blankCount = imagePrompts.length - filledCount;
-                console.warn(`[Phase2] Post ${postDoc.id} exceeded ${MAX_IMAGE_RETRIES} retries — accepting ${blankCount} blank image(s)`);
-
-                const validUrls = existingImages.filter(Boolean);
-                const firstImage = validUrls[0] || null;
-                const hasAudio = !!postData.audio_url;
-
-                await postDoc.ref.update({
-                    images_complete: true,
-                    imagen_urls: validUrls,
-                    ...(firstImage && { imagen_url: firstImage }),
-                    // Publish if we have at least 1 image and audio
-                    ...(firstImage && hasAudio && visibility !== 'private' && { is_public: true }),
-                });
-                continue;
-            }
-
-            console.log(`[Phase2] Processing post ${postDoc.id} (${filledCount}/${imagePrompts.length} images, attempt ${retryCount + 1})`);
-
-            try {
-                // Load reference image for character consistency
-                const referenceImage = await loadUserReferenceImage(uid);
-                const referenceImages = referenceImage ? [referenceImage] : undefined;
-
-                // Build batch requests for missing images
-                const { requests, missingIndices } = buildMessageImageBatchRequests({
-                    prompts: imagePrompts,
-                    filePrefix: postDoc.id,
-                    referenceImages,
-                    existingUrls: existingImages,
-                });
-
-                if (requests.length === 0) {
-                    // All images already filled — mark complete
-                    const hasAudio = !!postData.audio_url;
-                    await postDoc.ref.update({
-                        images_complete: true,
-                        imagen_urls: existingImages.filter(Boolean),
-                        imagen_url: existingImages.find(Boolean) || null,
-                        ...(hasAudio && visibility !== 'private' && { is_public: true }),
-                    });
-                    continue;
-                }
-
-                // Add to batch
-                allBatchRequests.push(...requests);
-                postIds.push(postDoc.id);
-                postsToIncrement.push({ ref: postDoc.ref, retryCount });
-
-                // Map each request key back to its post and index
-                for (const idx of missingIndices) {
-                    promptMapping[`${postDoc.id}_msg${idx}`] = { postId: postDoc.id, index: idx };
-                }
-            } catch (err: any) {
-                console.error(`[Phase2] Error building batch for post ${postDoc.id}:`, err.message);
-                await postDoc.ref.update({
-                    image_retries: retryCount + 1,
-                    image_last_error: (err?.message || String(err)).slice(0, 500),
-                    image_last_error_at: Date.now(),
-                });
-            }
-        }
-
-        // Submit the consolidated batch
-        if (allBatchRequests.length > 0) {
-            try {
-                console.log(`[Phase2] Submitting batch of ${allBatchRequests.length} image requests across ${postIds.length} post(s)`);
-                const jobName = await submitImageBatch(allBatchRequests);
-                console.log(`[Phase2] Batch job submitted: ${jobName}`);
-
-                // Track the batch job in Firestore
-                await createBatchRecord({
-                    jobName,
-                    state: 'JOB_STATE_PENDING',
-                    created_at: Date.now(),
-                    updated_at: Date.now(),
-                    post_ids: [...new Set(postIds)],
-                    prompt_mapping: promptMapping,
-                    error: null,
-                });
-
-                // Increment retry counter on all participating posts
-                for (const { ref, retryCount } of postsToIncrement) {
-                    await ref.update({ image_retries: retryCount + 1 });
-                }
-            } catch (err: any) {
-                console.error('[Phase2] Error submitting batch job:', err.message);
-                // Increment retry counters even on batch submission failure
-                for (const { ref, retryCount } of postsToIncrement) {
-                    await ref.update({
-                        image_retries: retryCount + 1,
-                        image_last_error: (err?.message || String(err)).slice(0, 500),
-                        image_last_error_at: Date.now(),
-                    });
-                }
-            }
-        }
+        await submitPendingImageBatches(postsWithActiveBatches);
     }
 );
 
-// ─── Phase A Helpers ─────────────────────────────────────────────────────────
+// ─── Phase A: Poll active batch jobs ─────────────────────────────────────────
+
+async function pollActiveBatches(): Promise<Set<string>> {
+    const postsWithActiveBatches = new Set<string>();
+
+    try {
+        const activeJobs = await getActiveBatchJobs();
+
+        if (activeJobs.length > 0) {
+            console.log(`[Phase2] Polling ${activeJobs.length} active batch job(s)...`);
+
+            let timedOut = 0;
+            let stillRunning = 0;
+            let completed = 0;
+
+            for (const job of activeJobs) {
+                // Record which posts are covered by this batch before polling,
+                // so we skip them in Phase B even if the job is still running.
+                job.post_ids.forEach(id => postsWithActiveBatches.add(id));
+
+                const prevState = job.state;
+                await processCompletedBatch(job);
+
+                // Count outcomes for summary (re-read isn't needed; infer from state)
+                const ageMs = Date.now() - (job.created_at || 0);
+                if (ageMs > BATCH_TIMEOUT_MS) {
+                    timedOut++;
+                } else if (prevState === 'JOB_STATE_RUNNING' || prevState === 'JOB_STATE_PENDING') {
+                    stillRunning++;
+                } else {
+                    completed++;
+                }
+            }
+
+            if (timedOut > 0 || completed > 0) {
+                console.log(`[Phase2] Poll summary: ${stillRunning} still running, ${completed} completed, ${timedOut} timed out`);
+            }
+        }
+    } catch (err: any) {
+        console.error('[Phase2] Error in Phase A (poll):', err.message);
+        // Continue to Phase B even if polling fails
+    }
+
+    return postsWithActiveBatches;
+}
+
+// ─── Phase A.5: Retry failed thumbnails ──────────────────────────────────────
+
+async function retryMissingThumbnails(): Promise<void> {
+    try {
+        // Find recent posts missing thumbnails (created in last 48h, not exceeding retry cap)
+        const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+        const thumbSnap = await db.collection('posts')
+            .where('created_at', '>', cutoff)
+            .orderBy('created_at', 'desc')
+            .limit(50)
+            .get();
+
+        const needsThumbnail = thumbSnap.docs.filter(doc => {
+            const data = doc.data();
+            return !data.thumbnail_url && (data.thumbnail_retries || 0) < MAX_THUMBNAIL_RETRIES;
+        });
+
+        if (needsThumbnail.length > 0) {
+            console.log(`[Phase2] Found ${needsThumbnail.length} post(s) needing thumbnail retry`);
+
+            for (const postDoc of needsThumbnail) {
+                await retryThumbnail(postDoc);
+            }
+        }
+    } catch (err: any) {
+        console.error('[Phase2] Error in thumbnail retry phase:', err.message);
+    }
+}
+
+async function retryThumbnail(postDoc: FirebaseFirestore.QueryDocumentSnapshot): Promise<void> {
+    const postData = postDoc.data();
+    const retries = postData.thumbnail_retries || 0;
+    const uid = getPostAuthorId(postData);
+    const messages = postData.public_post?.condensed_transcript;
+    const title = postData.title;
+
+    if (!messages || messages.length === 0) {
+        console.warn(`[Phase2] Post ${postDoc.id} has no condensed transcript for thumbnail — skipping`);
+        await postDoc.ref.update({ thumbnail_retries: retries + 1 });
+        return;
+    }
+
+    try {
+        const { generateThumbnail } = await import('./lib/ai/generateThumbnail.js');
+        const thumbnailUrl = await generateThumbnail({
+            messages,
+            title,
+            uid,
+            postId: postDoc.id,
+            logPrefix: 'Phase2-Thumb',
+        });
+
+        if (thumbnailUrl) {
+            await postDoc.ref.update({
+                thumbnail_url: thumbnailUrl,
+                thumbnail_retries: retries + 1,
+            });
+            console.log(`[Phase2] ✅ Thumbnail retry succeeded for ${postDoc.id}`);
+        } else {
+            await postDoc.ref.update({ thumbnail_retries: retries + 1 });
+            console.warn(`[Phase2] Thumbnail retry ${retries + 1}/${MAX_THUMBNAIL_RETRIES} failed for ${postDoc.id}`);
+        }
+    } catch (thumbErr: any) {
+        await postDoc.ref.update({ thumbnail_retries: retries + 1 });
+        console.error(`[Phase2] Thumbnail retry error for ${postDoc.id}:`, thumbErr.message);
+    }
+}
+
+// ─── Phase B: Submit new batch jobs ──────────────────────────────────────────
+
+async function submitPendingImageBatches(postsWithActiveBatches: Set<string>): Promise<void> {
+    // Find posts that need image generation
+    const pendingPosts = await db.collection('posts')
+        .where('image_style', '==', 'per-message')
+        .where('images_complete', '==', false)
+        .orderBy('created_at', 'asc')
+        .limit(MAX_POSTS_PER_RUN)
+        .get();
+
+    if (pendingPosts.empty) {
+        console.log('[Phase2] No posts need image generation.');
+        return;
+    }
+
+    console.log(`[Phase2] Found ${pendingPosts.size} post(s) needing images.`);
+
+    // Collect all batch requests across posts
+    const allBatchRequests: any[] = [];
+    const promptMapping: Record<string, { postId: string; index: number }> = {};
+    const postIds: string[] = [];
+    const postsToIncrement: Array<{ ref: FirebaseFirestore.DocumentReference; retryCount: number }> = [];
+
+    for (const postDoc of pendingPosts.docs) {
+        // Skip posts that already have an active batch — avoids duplicate submissions
+        if (postsWithActiveBatches.has(postDoc.id)) {
+            console.log(`[Phase2] Skipping post ${postDoc.id} — already has active batch`);
+            continue;
+        }
+
+        const postData = postDoc.data();
+        const imagePrompts: string[] = postData.image_prompts || [];
+        const existingImages: string[] = postData.message_images || [];
+        const retryCount: number = postData.image_retries || 0;
+        const uid: string = getPostAuthorId(postData);
+
+        // Skip if no prompts
+        if (imagePrompts.length === 0) {
+            console.warn(`[Phase2] Post ${postDoc.id} has no image_prompts — marking complete`);
+            await postDoc.ref.update({ images_complete: true });
+            continue;
+        }
+
+        const filledCount = existingImages.filter(Boolean).length;
+
+        // ── Max retries exceeded — accept what we have and publish ──
+        if (retryCount >= MAX_IMAGE_RETRIES) {
+            const blankCount = imagePrompts.length - filledCount;
+            console.warn(`[Phase2] Post ${postDoc.id} exceeded ${MAX_IMAGE_RETRIES} retries — accepting ${blankCount} blank image(s)`);
+            await savePostImages(postDoc.id, postData, existingImages, { acceptPartial: true });
+            continue;
+        }
+
+        console.log(`[Phase2] Processing post ${postDoc.id} (${filledCount}/${imagePrompts.length} images, attempt ${retryCount + 1})`);
+
+        try {
+            // Load reference image for character consistency
+            const referenceImage = await loadUserReferenceImage(uid);
+            const referenceImages = referenceImage ? [referenceImage] : undefined;
+
+            // Build batch requests for missing images
+            const { requests, missingIndices } = buildMessageImageBatchRequests({
+                prompts: imagePrompts,
+                filePrefix: postDoc.id,
+                referenceImages,
+                existingUrls: existingImages,
+            });
+
+            if (requests.length === 0) {
+                // All images already filled — mark complete
+                await savePostImages(postDoc.id, postData, existingImages, { acceptPartial: true });
+                continue;
+            }
+
+            // Add to batch
+            allBatchRequests.push(...requests);
+            postIds.push(postDoc.id);
+            postsToIncrement.push({ ref: postDoc.ref, retryCount });
+
+            // Map each request key back to its post and index
+            for (const idx of missingIndices) {
+                promptMapping[`${postDoc.id}_msg${idx}`] = { postId: postDoc.id, index: idx };
+            }
+        } catch (err: any) {
+            console.error(`[Phase2] Error building batch for post ${postDoc.id}:`, err.message);
+            await postDoc.ref.update({
+                image_retries: retryCount + 1,
+                image_last_error: (err?.message || String(err)).slice(0, 500),
+                image_last_error_at: Date.now(),
+            });
+        }
+    }
+
+    if (allBatchRequests.length > 0) {
+        await submitBatch(allBatchRequests, postIds, promptMapping, postsToIncrement);
+    }
+}
+
+/** Submit the consolidated batch, track it, and count an attempt on every participating post. */
+async function submitBatch(
+    allBatchRequests: any[],
+    postIds: string[],
+    promptMapping: Record<string, { postId: string; index: number }>,
+    postsToIncrement: Array<{ ref: FirebaseFirestore.DocumentReference; retryCount: number }>,
+): Promise<void> {
+    try {
+        console.log(`[Phase2] Submitting batch of ${allBatchRequests.length} image requests across ${postIds.length} post(s)`);
+        const jobName = await submitImageBatch(allBatchRequests);
+        console.log(`[Phase2] Batch job submitted: ${jobName}`);
+
+        // Track the batch job in Firestore
+        await createBatchRecord({
+            jobName,
+            state: 'JOB_STATE_PENDING',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+            post_ids: [...new Set(postIds)],
+            prompt_mapping: promptMapping,
+            error: null,
+        });
+
+        // Increment retry counter on all participating posts
+        for (const { ref, retryCount } of postsToIncrement) {
+            await ref.update({ image_retries: retryCount + 1 });
+        }
+    } catch (err: any) {
+        console.error('[Phase2] Error submitting batch job:', err.message);
+        // Increment retry counters even on batch submission failure
+        for (const { ref, retryCount } of postsToIncrement) {
+            await ref.update({
+                image_retries: retryCount + 1,
+                image_last_error: (err?.message || String(err)).slice(0, 500),
+                image_last_error_at: Date.now(),
+            });
+        }
+    }
+}
+
+// ─── Phase A helpers ─────────────────────────────────────────────────────────
 
 /**
  * Process a single completed or in-progress batch job.
@@ -402,7 +410,6 @@ async function processPostBatchResults(
         const postData = postDoc.data()!;
         const imagePrompts: string[] = postData.image_prompts || [];
         const existingImages: string[] = postData.message_images || [];
-        const visibility: string = postData.visibility || 'private';
 
         // Start with existing images (gap-filling)
         const urls: string[] = new Array(imagePrompts.length).fill('');
@@ -420,10 +427,7 @@ async function processPostBatchResults(
 
                 try {
                     // Resize to standard dimensions
-                    const resizedBuffer = await sharp(result.buffer)
-                        .resize(1280, 720, { fit: 'cover', position: 'center' })
-                        .jpeg({ quality: 82 })
-                        .toBuffer();
+                    const resizedBuffer = await resizeToPostImage(result.buffer);
 
                     // Upload directly — skip per-image validation to avoid timeout.
                     // Batch API already applies safety filters; validation was the
@@ -444,22 +448,8 @@ async function processPostBatchResults(
             }
         }
 
-        // Update the post
-        const validUrls = urls.filter(Boolean);
-        const firstImage = validUrls[0] || null;
-        const allFilled = validUrls.length >= imagePrompts.length;
-        const hasAudio = !!postData.audio_url;
-        const isComplete = allFilled && hasAudio;
-
-        await postDoc.ref.update({
-            message_images: urls.map(u => u || null),
-            imagen_urls: validUrls,
-            images_complete: allFilled,
-            ...(firstImage && { imagen_url: firstImage }),
-            ...(isComplete && visibility !== 'private' && { is_public: true }),
-        });
-
-        console.log(`[Phase2] Post ${postId}: ${validUrls.length}/${imagePrompts.length} images${allFilled ? ' ✅ complete' : `, ${imagePrompts.length - validUrls.length} remaining`}`);
+        const { filledCount, complete } = await savePostImages(postId, postData, urls);
+        console.log(`[Phase2] Post ${postId}: ${filledCount}/${imagePrompts.length} images${complete ? ' ✅ complete' : `, ${imagePrompts.length - filledCount} remaining`}`);
     } catch (err: any) {
         console.error(`[Phase2] Error updating post ${postId}:`, err.message);
     }

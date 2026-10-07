@@ -13,6 +13,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { db, storage } from './lib/firebase/admin.js';
+import { REGION } from './lib/config/region.js';
 import { generateSubtitles, generateAssSubtitles, buildChunksFromTimestamps } from './lib/video/videoSubtitles.js';
 import { renderFrame } from './lib/video/renderFrame.js';
 import { getPostText } from './lib/getPostText.js';
@@ -58,7 +59,7 @@ function downloadUrl(bucketName: string, path: string, token: string): string {
 
 export const renderPostVideo = onCall<RenderPostVideoRequest>(
     {
-        region: 'us-central1',
+        region: REGION,
         timeoutSeconds: 540,
         memory: '2GiB',
         cpu: 2,
@@ -141,7 +142,7 @@ function getImageUrls(post: FirebaseFirestore.DocumentData): string[] {
 }
 
 /** Render a post's video and return the MP4 bytes. */
-export async function buildVideo(post: FirebaseFirestore.DocumentData): Promise<Buffer> {
+async function buildVideo(post: FirebaseFirestore.DocumentData): Promise<Buffer> {
     const unifiedAudioUrl = post.audio_url;
     const letterAudioUrl = post.letter_audio_url;
     const isPerMessage = post.image_style === 'per-message' && post.message_images?.length;

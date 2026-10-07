@@ -1,7 +1,5 @@
-// Build: 2026-10-05 — background jobs moved from Vercel to Cloud Functions
 export { processChat } from './processChat.js';
 export { sweepExpiredChats } from './sweepExpiredChats.js';
-export { generatePostImages } from './generatePostImages.js';
 export { processPostImages } from './processPostImages.js';
 export { compileCharacterBible } from './compileCharacterBible.js';
 export { buildCharacter, recompileBibles } from './characterBuild.js';
@@ -11,3 +9,4 @@ export { dailyReport } from './dailyReport.js';
 export { renderPostVideo } from './postVideo.js';
 export { mirrorReply, mirrorPlan } from './mirror.js';
 export { regeneratePost } from './regeneratePost.js';
+export { generateAIComment } from './aiComment.js';

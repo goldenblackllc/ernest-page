@@ -1,14 +1,15 @@
 /**
  * Batch image generation using the Gemini Batch API.
  *
- * Uses raw fetch (matching generateImage.ts) rather than the @google/genai SDK
- * to ensure requests route through AI Studio's quota system (API key auth)
- * instead of the Cloud project's quota system.
+ * Uses raw fetch with the API key in the query string (unlike generateImage.ts,
+ * which uses the @google/genai SDK) so requests route through AI Studio's quota
+ * system instead of the Cloud project's quota system.
  *
  * Cost savings: Batch API is billed at 50% of standard generateContent rates.
  */
 
-const MODEL_NAME = 'gemini-3.1-flash-image';
+import { IMAGE_MODEL } from './models.js';
+import { buildImageRequestParts, type ImageAspectRatio, type ReferenceMode } from './generateImage.js';
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -27,59 +28,20 @@ export interface BuildBatchRequestOptions {
     key: string;
     prompt: string;
     referenceImages?: Buffer[];
-    referenceMode?: 'full' | 'face-only';
-    aspectRatio?: string;
+    referenceMode?: ReferenceMode;
+    aspectRatio?: ImageAspectRatio;
 }
 
 /**
- * Builds a single GenerateContentRequest object for batch processing.
- * Replicates the prompt construction logic from generateImage.ts.
+ * Builds a single GenerateContentRequest object for batch processing,
+ * with the same prompt construction as generateImage.ts.
  *
  * @param {BuildBatchRequestOptions} options Request configuration
  * @returns The formatted request object for batch submission
  */
 export function buildBatchRequest(options: BuildBatchRequestOptions): { key: string; request: any } {
-    const { key, prompt, referenceImages = [], referenceMode, aspectRatio = '16:9' } = options;
-
-    let prefixText = '';
-    if (referenceImages.length > 0) {
-        if (referenceMode === 'face-only') {
-            prefixText = 'Use the reference image ONLY to maintain the character\'s face, hair, and ethnic features. Do NOT copy the body type, weight, build, or physique from the reference image — follow the body description in the text prompt below instead. Keep their facial identity consistent but let the scene dictate their physical state.\n\n';
-        } else if (referenceMode === 'full') {
-            prefixText = 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n';
-        }
-    }
-
-    let ratioHint = ' 16:9 landscape orientation. Do not generate in portrait or square format.';
-    switch (aspectRatio) {
-        case '9:16':
-            ratioHint = ' 9:16 portrait orientation (1080×1920). Do not generate in landscape or square format.';
-            break;
-        case '4:3':
-            ratioHint = ' 4:3 landscape orientation.';
-            break;
-        case '3:4':
-            ratioHint = ' 3:4 portrait orientation.';
-            break;
-        case '4:5':
-            ratioHint = ' 4:5 portrait orientation (1080×1350). Do not generate in landscape or square format.';
-            break;
-    }
-
-    const finalPrompt = prefixText + prompt + ratioHint;
-
-    const parts: any[] = [];
-
-    for (const img of referenceImages) {
-        parts.push({
-            inlineData: {
-                data: img.toString('base64'),
-                mimeType: 'image/jpeg',
-            },
-        });
-    }
-
-    parts.push({ text: finalPrompt });
+    const { key, prompt, referenceImages, referenceMode, aspectRatio } = options;
+    const parts = buildImageRequestParts({ prompt, aspectRatio, referenceImages, referenceMode });
 
     return {
         key,
@@ -121,7 +83,7 @@ export async function submitImageBatch(requests: Array<{ key: string; request: a
     }));
 
     const res = await fetch(
-        `${API_BASE}/models/${MODEL_NAME}:batchGenerateContent?key=${apiKey}`,
+        `${API_BASE}/models/${IMAGE_MODEL}:batchGenerateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -238,7 +200,7 @@ function normalizeBatchState(rawState: string, done?: boolean): string {
  * @param batchJob The completed batch job response
  * @returns Array of parsed image results
  */
-export function parseBatchResults(batchJob: any): ParsedBatchResult[] {
+function parseBatchResults(batchJob: any): ParsedBatchResult[] {
     const results: ParsedBatchResult[] = [];
 
     // The actual API nests results at metadata.output.inlinedResponses.inlinedResponses

@@ -10,18 +10,29 @@
 
 import sharp from 'sharp';
 import { z } from 'zod';
-import { storage } from '../firebase/admin.js';
+import { uploadPublicFile } from '../firebase/storage.js';
 import { generateImage } from './generateImage.js';
 import { validateGeneratedImage } from './validateImage.js';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from './models.js';
+import { buildBatchRequest } from './batchImageGeneration.js';
 
 
 // ─── Low-level helpers ───────────────────────────────────────────────────────
 
 /**
+ * Resize a generated image to the standard 1280×720 JPEG used for post images.
+ */
+export function resizeToPostImage(buffer: Buffer): Promise<Buffer> {
+    return sharp(buffer)
+        .resize(1280, 720, { fit: 'cover', position: 'center' })
+        .jpeg({ quality: 82 })
+        .toBuffer();
+}
+
+/**
  * Generate a single image: prompt → Imagen → sharp resize → Buffer.
  */
-export async function generateSingleImage(
+async function generateSingleImage(
     prompt: string,
     fileId: string,
     referenceImages?: Buffer[],
@@ -36,12 +47,7 @@ export async function generateSingleImage(
     });
     if (!result) return null;
 
-    const finalBuffer = await sharp(result.buffer)
-        .resize(1280, 720, { fit: 'cover', position: 'center' })
-        .jpeg({ quality: 82 })
-        .toBuffer();
-
-    return { buffer: finalBuffer, prompt };
+    return { buffer: await resizeToPostImage(result.buffer), prompt };
 }
 
 /**
@@ -49,7 +55,7 @@ export async function generateSingleImage(
  * Returns the public GCS URL on success, or null on failure.
  * Throws quota errors so callers can stop batch processing.
  */
-export async function generateVerdictImage(
+async function generateVerdictImage(
     prompt: string,
     fileId: string,
     referenceImages?: Buffer[],
@@ -88,25 +94,15 @@ export async function generateVerdictImage(
 }
 
 /**
- * Upload a PNG buffer to Cloud Storage and return its public URL.
+ * Upload a JPEG buffer to Cloud Storage and return its public URL.
  */
 export async function uploadImageBuffer(buffer: Buffer, fileId: string): Promise<string> {
-    const bucket = storage.bucket();
-    const ts = Date.now();
-    const fileName = `post-images/${fileId}_imagen_${ts}.jpg`;
-    const file = bucket.file(fileName);
-
-    await file.save(buffer, {
-        metadata: {
-            contentType: 'image/jpeg',
-            cacheControl: 'public, max-age=86400',
-        },
+    const url = await uploadPublicFile(`post-images/${fileId}_imagen_${Date.now()}.jpg`, buffer, {
+        contentType: 'image/jpeg',
+        cacheControl: 'public, max-age=86400',
     });
-
-    try { await file.makePublic(); } catch { /* UBLA enabled */ }
-
     console.log(`[Storyboard] Image uploaded for ${fileId}`);
-    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    return url;
 }
 
 // ─── High-level orchestrator ─────────────────────────────────────────────────
@@ -289,8 +285,6 @@ export async function generateMessageImages(
 }
 
 // ─── Batch API Support ───────────────────────────────────────────────────────
-
-import { buildBatchRequest } from './batchImageGeneration.js';
 
 export interface BuildMessageImageBatchOptions {
     /** Pre-generated prompts (one per message) */

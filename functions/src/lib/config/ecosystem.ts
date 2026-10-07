@@ -11,18 +11,12 @@ export interface SponsorRule {
     link: string;
 }
 
-export const sponsorRules: SponsorRule[] = [
+const sponsorRules: SponsorRule[] = [
     {
         pattern: /coffee|espresso|jura|crema|brew/i,
         name: "Breadstand",
         link: "https://breadstand.us",
     },
-    // Future example:
-    // {
-    //     pattern: /cuckoo\s*clock|black\s*forest|chalet/i,
-    //     name: "Partner Name",
-    //     link: "https://partner.example.com",
-    // },
 ];
 
 /** Given an imagen prompt, return the first matching sponsor or null. */

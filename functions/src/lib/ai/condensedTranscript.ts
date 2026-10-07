@@ -14,7 +14,7 @@ import { z } from 'zod';
 
 // ─── Zod Schema ──────────────────────────────────────────────────────────────
 
-export const CondensedTranscriptSchema = z.object({
+const CondensedTranscriptSchema = z.object({
     is_publishable: z.boolean().describe('Whether this transcript is worth publishing'),
     title: z.string().optional().describe('A punchy first-person hook (3-6 words) — raw, confessional, thumb-stopping'),
     messages: z.array(z.object({

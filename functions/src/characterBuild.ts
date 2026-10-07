@@ -6,17 +6,17 @@
  *                                  was edited 10+ minutes ago (debounces edits)
  *
  * Onboarding enqueues buildCharacter through the compileCharacterBible HTTP
- * function (called by the Vercel onboarding route).
+ * function (called by the website's onboarding API route).
  */
 
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getFunctions } from 'firebase-admin/functions';
 import { db, FieldValue } from './lib/firebase/admin.js';
+import { REGION } from './lib/config/region.js';
 import { compileCharacterBibleForUser } from './compileCharacterBible.js';
 import { generateAvatarForUser } from './avatar.js';
 
-const REGION = 'us-central1';
 const MAX_ATTEMPTS = 3;
 const COOLDOWN_MS = 10 * 60 * 1000;       // wait for edits to settle
 const QUEUED_STALE_MS = 30 * 60 * 1000;   // re-enqueue if a queued build never finished

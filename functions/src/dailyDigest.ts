@@ -15,12 +15,13 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import { getFunctions } from 'firebase-admin/functions';
 import { db } from './lib/firebase/admin.js';
+import { REGION } from './lib/config/region.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 import { processPostContent } from './lib/ai/processPostContent.js';
 import { generateMessageImages } from './lib/ai/generatePostImage.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
+import { getCompiledBible } from './lib/bible.js';
 
-const REGION = 'us-central1';
 
 interface DigestTask {
     uid: string;
@@ -46,7 +47,7 @@ export const dailyDigest = onSchedule(
         let enqueued = 0;
         for (const userDoc of usersSnapshot.docs) {
             const userData = userDoc.data();
-            if (!getCompiledBible(userData)) continue;
+            if (!getDigestBible(userData)) continue;
 
             // Skip users who haven't opened the app recently
             const lastActive = userData?.last_active_date;
@@ -93,8 +94,9 @@ export const dailyDigestUser = onTaskDispatched<DigestTask>(
 
 // ─── Card generation ────────────────────────────────────────────────────────
 
-function getCompiledBible(userData: any): any[] | null {
-    const compiledBible = userData?.bible?.sections || userData?.character_bible?.compiled_output?.ideal;
+/** The user's compiled bible, or null when there is nothing to build a card from. */
+function getDigestBible(userData: FirebaseFirestore.DocumentData | undefined): any[] | null {
+    const compiledBible = getCompiledBible(userData);
     return Array.isArray(compiledBible) && compiledBible.length > 0 ? compiledBible : null;
 }
 
@@ -149,7 +151,7 @@ async function generateDigestCard(uid: string, date: string): Promise<void> {
     const userDoc = await ref.get();
     const userData = userDoc.data();
 
-    const compiledBible = getCompiledBible(userData);
+    const compiledBible = getDigestBible(userData);
     if (!compiledBible) return;
     const subsections = getSubsections(compiledBible);
     if (subsections.length === 0) return;

@@ -12,6 +12,7 @@
 
 import { generateImage } from './generateImage.js';
 import { loadUserReferenceImage } from './loadUserReferenceImage.js';
+import { uploadPublicFile } from '../firebase/storage.js';
 
 interface GenerateThumbnailOptions {
     /** Condensed transcript messages */
@@ -97,22 +98,9 @@ INSTRUCTIONS:
  * Upload a thumbnail buffer to Cloud Storage and return its public URL.
  * Stored separately from per-message images at `post-thumbnails/`.
  */
-async function uploadThumbnailBuffer(buffer: Buffer, postId: string): Promise<string> {
-    // Reuse the existing upload infrastructure from generatePostImage
-    // but with a distinct path prefix for thumbnails
-    const { storage } = await import('../firebase/admin.js');
-    const bucket = storage.bucket();
-    const fileName = `post-thumbnails/${postId}.jpg`;
-    const file = bucket.file(fileName);
-
-    await file.save(buffer, {
-        metadata: {
-            contentType: 'image/jpeg',
-            cacheControl: 'public, max-age=86400',
-        },
+function uploadThumbnailBuffer(buffer: Buffer, postId: string): Promise<string> {
+    return uploadPublicFile(`post-thumbnails/${postId}.jpg`, buffer, {
+        contentType: 'image/jpeg',
+        cacheControl: 'public, max-age=86400',
     });
-
-    try { await file.makePublic(); } catch { /* UBLA enabled */ }
-
-    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }

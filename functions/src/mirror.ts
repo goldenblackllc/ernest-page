@@ -11,10 +11,11 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { randomUUID } from 'crypto';
 import { db } from './lib/firebase/admin.js';
+import { REGION } from './lib/config/region.js';
 import { generateTextWithFallback, MIRROR_MODEL, MIRROR_FALLBACK, MIRROR_EFFORT } from './lib/ai/models.js';
 import { buildMirrorSystemPrompt } from './lib/ai/mirrorPrompt.js';
+import { getCompiledBible } from './lib/bible.js';
 
-const REGION = 'us-central1';
 const MAX_MESSAGE_LENGTH = 5000;
 const GENERATION_TIMEOUT_MS = 120_000;
 
@@ -37,10 +38,6 @@ function checkRateLimit(uid: string) {
     }
     timestamps.push(now);
     recentRequests.set(uid, timestamps);
-}
-
-function getCompiledBible(userData: FirebaseFirestore.DocumentData | undefined): any[] {
-    return userData?.bible?.sections || userData?.character_bible?.compiled_output?.ideal || [];
 }
 
 /** Subscription, credits, a session already consumed today, or free onboarding. */

@@ -1,4 +1,7 @@
-import { storage } from '../firebase/admin.js';
+import { join } from 'path';
+import { existsSync } from 'fs';
+import { spawnSync, execSync } from 'child_process';
+import { uploadPublicFile } from '../firebase/storage.js';
 
 /**
  * Generate TTS audio for a Dear Earnest post using ElevenLabs.
@@ -246,23 +249,6 @@ async function generateTTSAudio(
 }
 
 /**
- * Upload an audio buffer to Firebase Storage and return the public URL.
- */
-async function uploadAudio(buffer: Buffer, path: string): Promise<string> {
-    const bucket = storage.bucket();
-    const file = bucket.file(path);
-
-    await file.save(buffer, {
-        metadata: { contentType: 'audio/mpeg' },
-    });
-
-    // Try to make public; skip silently if Uniform Bucket-Level Access is on
-    try { await file.makePublic(); } catch { /* UBLA enabled */ }
-
-    return `https://storage.googleapis.com/${bucket.name}/${path}`;
-}
-
-/**
  * Fetch a voice's labels (gender, age, accent) from the ElevenLabs API.
  */
 async function getVoiceLabels(
@@ -443,150 +429,12 @@ export async function generateConversationAudio(
     }
 
     try {
-        const audioBuffers: Buffer[] = [];
-        const allTimestamps: WordTimestamp[] = [];
-        const messageBoundaries: MessageBoundary[] = [];
-        let cumulativeOffset = 0;
+        // ffmpeg is shared by silence generation + final re-encode
+        const ffmpegPath = resolveFfmpegPath();
+        const silence = ffmpegPath ? generateSilence(ffmpegPath) : null;
 
-        // ─── Resolve ffmpeg path (shared by silence generation + final re-encode) ───
-        const pathMod = await import('path');
-        const { spawnSync } = await import('child_process');
-        let ffmpegPath: string | null = null;
-        try {
-            const candidate = pathMod.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
-            const { existsSync } = await import('fs');
-            if (existsSync(candidate)) {
-                ffmpegPath = candidate;
-            } else {
-                try {
-                    const { execSync } = await import('child_process');
-                    ffmpegPath = execSync('which ffmpeg', { encoding: 'utf8' }).trim();
-                } catch {
-                    console.warn('[PostTTS] ffmpeg not found — silence gaps and re-encode unavailable');
-                }
-            }
-        } catch (err: any) {
-            console.warn('[PostTTS] Failed to resolve ffmpeg path:', err.message);
-        }
-
-        // Generate a real silent MP3 using ffmpeg (1.2 seconds target)
-        const SILENCE_DURATION_TARGET = 1.2;
-        let silenceBuffer: Buffer | null = null;
-        let actualSilenceDuration = SILENCE_DURATION_TARGET;
-        if (ffmpegPath) {
-            try {
-                const result = spawnSync(ffmpegPath, [
-                    '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono`,
-                    '-t', String(SILENCE_DURATION_TARGET),
-                    '-c:a', 'libmp3lame', '-b:a', '192k',
-                    '-f', 'mp3', 'pipe:1',
-                ], { maxBuffer: 50 * 1024 });
-                if (result.status === 0 && result.stdout.length > 0) {
-                    silenceBuffer = result.stdout as Buffer;
-                    // Calculate actual duration from MP3 bitrate: duration = (bytes * 8) / bitrate
-                    actualSilenceDuration = (silenceBuffer.length * 8) / 192000;
-                    console.log(`[PostTTS] Silence buffer: ${silenceBuffer.length} bytes, actual duration: ${actualSilenceDuration.toFixed(3)}s`);
-                }
-            } catch (err: any) {
-                console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
-            }
-        }
-
-        // ─── PARALLEL-BY-VOICE TTS ───
-        // ElevenLabs rejects concurrent requests on the SAME voice (409).
-        // Solution: group messages by voice, run each voice's messages sequentially,
-        // but process both voice streams in parallel. ~2x faster than fully sequential.
-        const ttsInputs = messages.map((msg, i) => ({
-            index: i,
-            role: msg.role,
-            voiceId: msg.role === 'user' ? questionerVoiceId : characterVoiceId,
-            cleanText: cleanTextForTTS(msg.text),
-        })).filter(m => !!m.cleanText);
-
-        console.log(`[PostTTS] Generating ${ttsInputs.length} TTS clips (parallel-by-voice)...`);
-        const ttsResultMap = new Map<number, Awaited<ReturnType<typeof generateTTSAudio>>>();
-
-        // Group by voice
-        const voiceGroups = new Map<string, typeof ttsInputs>();
-        for (const input of ttsInputs) {
-            const group = voiceGroups.get(input.voiceId) || [];
-            group.push(input);
-            voiceGroups.set(input.voiceId, group);
-        }
-
-        // Process each voice's messages sequentially, but run voices in parallel
-        const voiceStreams = [...voiceGroups.entries()].map(async ([voiceId, inputs]) => {
-            for (const { index, cleanText } of inputs) {
-                // Try up to 2 times (initial + 1 retry on 409)
-                let result: Awaited<ReturnType<typeof generateTTSAudio>> = null;
-                for (let attempt = 0; attempt < 2; attempt++) {
-                    result = await generateTTSAudio(cleanText!, voiceId, apiKey);
-                    if (result) break;
-                    if (attempt === 0) {
-                        console.log(`[PostTTS] Retrying message ${index} after 1s...`);
-                        await new Promise(r => setTimeout(r, 1000));
-                    }
-                }
-                if (result) {
-                    ttsResultMap.set(index, result);
-                }
-            }
-        });
-
-        await Promise.all(voiceStreams);
-        console.log(`[PostTTS] ${ttsResultMap.size}/${ttsInputs.length} TTS calls succeeded`);
-
-        // ─── SEQUENTIAL STITCH: Assemble in order with timestamps ───
-        for (let i = 0; i < messages.length; i++) {
-            const msg = messages[i];
-            const result = ttsResultMap.get(i);
-            if (!result) {
-                console.error(`[PostTTS] No audio for message ${i} (${msg.role}) — skipping`);
-                continue;
-            }
-
-            // Insert silence gap before this message (except the first)
-            if (audioBuffers.length > 0 && silenceBuffer) {
-                audioBuffers.push(silenceBuffer);
-                cumulativeOffset += actualSilenceDuration;
-            }
-
-            const startIndex = allTimestamps.length;
-            const startTime = cumulativeOffset;
-
-            // Offset timestamps by cumulative duration
-            const offsetTimestamps = result.wordTimestamps.map(w => ({
-                word: w.word,
-                start: w.start + cumulativeOffset,
-                end: w.end + cumulativeOffset,
-            }));
-
-            audioBuffers.push(result.buffer);
-            allTimestamps.push(...offsetTimestamps);
-
-            // Calculate actual clip duration from buffer size (192kbps MP3)
-            const actualClipDuration = (result.buffer.length * 8) / 192000;
-            const timestampDuration = result.wordTimestamps.length > 0
-                ? result.wordTimestamps[result.wordTimestamps.length - 1].end
-                : 0;
-            const msgDuration = Math.max(actualClipDuration, timestampDuration);
-
-            const endIndex = allTimestamps.length - 1;
-            const endTime = cumulativeOffset + msgDuration;
-
-            messageBoundaries.push({
-                role: msg.role,
-                startIndex,
-                endIndex: Math.max(startIndex, endIndex),
-                startTime,
-                endTime,
-            });
-
-            cumulativeOffset += msgDuration;
-
-            const cleanText = cleanTextForTTS(msg.text);
-            console.log(`[PostTTS] Message ${i + 1}/${messages.length} (${msg.role}): ${wordCount(cleanText || '')}w, clip=${actualClipDuration.toFixed(2)}s, used=${msgDuration.toFixed(2)}s`);
-        }
+        const clips = await generateClipsByVoice(messages, questionerVoiceId, characterVoiceId, apiKey);
+        const { audioBuffers, wordTimestamps, messageBoundaries } = stitchClips(messages, clips, silence);
 
         if (audioBuffers.length === 0) {
             console.error('[PostTTS] No audio buffers generated for conversation');
@@ -595,40 +443,15 @@ export async function generateConversationAudio(
 
         // Concatenate all audio buffers (including silence gaps)
         const combinedBuffer = Buffer.concat(audioBuffers);
+        const finalBuffer = ffmpegPath ? reencodeMp3(ffmpegPath, combinedBuffer) : combinedBuffer;
 
-        // Re-encode through ffmpeg to produce a single valid MP3 stream.
-        // Raw Buffer.concat of multiple MP3 clips creates a multi-stream file
-        // that iOS WebKit's decodeAudioData truncates to only the first stream.
-        let finalBuffer = combinedBuffer;
-        if (ffmpegPath) {
-            try {
-                const remuxResult = spawnSync(ffmpegPath, [
-                    '-i', 'pipe:0',
-                    '-c:a', 'libmp3lame', '-b:a', '192k',
-                    '-f', 'mp3', 'pipe:1',
-                ], {
-                    input: combinedBuffer,
-                    maxBuffer: 50 * 1024 * 1024, // 50MB — enough for long conversations
-                });
-                if (remuxResult.status === 0 && remuxResult.stdout.length > 0) {
-                    finalBuffer = Buffer.from(remuxResult.stdout);
-                    console.log(`[PostTTS] Re-encoded MP3: ${combinedBuffer.length} → ${finalBuffer.length} bytes`);
-                } else {
-                    const stderr = remuxResult.stderr?.toString().slice(0, 200) || '';
-                    console.warn(`[PostTTS] ffmpeg re-encode failed (status=${remuxResult.status}), using raw concat fallback. stderr: ${stderr}`);
-                }
-            } catch (err: any) {
-                console.warn('[PostTTS] ffmpeg re-encode error:', err.message);
-            }
-        }
+        const audioUrl = await uploadPublicFile(`post-audio/${postId}_conv_${Date.now()}.mp3`, finalBuffer, { contentType: 'audio/mpeg' });
 
-        const audioUrl = await uploadAudio(finalBuffer, `post-audio/${postId}_conv_${Date.now()}.mp3`);
-
-        console.log(`[PostTTS] Conversation audio generated for post ${postId}: ${messages.length} messages, ${allTimestamps.length} words`);
+        console.log(`[PostTTS] Conversation audio generated for post ${postId}: ${messages.length} messages, ${wordTimestamps.length} words`);
 
         return {
             audioUrl,
-            wordTimestamps: allTimestamps,
+            wordTimestamps,
             messageBoundaries,
         };
     } catch (err) {
@@ -637,3 +460,200 @@ export async function generateConversationAudio(
     }
 }
 
+// ─── Conversation audio helpers ─────────────────────────────────────────────
+
+type TTSAudio = NonNullable<Awaited<ReturnType<typeof generateTTSAudio>>>;
+
+/** Bundled ffmpeg-static binary, else ffmpeg on the PATH, else null. */
+function resolveFfmpegPath(): string | null {
+    try {
+        const candidate = join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+        if (existsSync(candidate)) return candidate;
+        try {
+            return execSync('which ffmpeg', { encoding: 'utf8' }).trim();
+        } catch {
+            console.warn('[PostTTS] ffmpeg not found — silence gaps and re-encode unavailable');
+        }
+    } catch (err: any) {
+        console.warn('[PostTTS] Failed to resolve ffmpeg path:', err.message);
+    }
+    return null;
+}
+
+/**
+ * Generate a real silent MP3 (1.2 seconds target) to put between messages.
+ * Returns null if ffmpeg fails.
+ */
+function generateSilence(ffmpegPath: string): { buffer: Buffer; duration: number } | null {
+    const SILENCE_DURATION_TARGET = 1.2;
+    try {
+        const result = spawnSync(ffmpegPath, [
+            '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono`,
+            '-t', String(SILENCE_DURATION_TARGET),
+            '-c:a', 'libmp3lame', '-b:a', '192k',
+            '-f', 'mp3', 'pipe:1',
+        ], { maxBuffer: 50 * 1024 });
+        if (result.status === 0 && result.stdout.length > 0) {
+            const buffer = result.stdout as Buffer;
+            // Calculate actual duration from MP3 bitrate: duration = (bytes * 8) / bitrate
+            const duration = (buffer.length * 8) / 192000;
+            console.log(`[PostTTS] Silence buffer: ${buffer.length} bytes, actual duration: ${duration.toFixed(3)}s`);
+            return { buffer, duration };
+        }
+    } catch (err: any) {
+        console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
+    }
+    return null;
+}
+
+/**
+ * Generate one TTS clip per message, keyed by message index.
+ *
+ * ElevenLabs rejects concurrent requests on the SAME voice (409).
+ * Solution: group messages by voice, run each voice's messages sequentially,
+ * but process both voice streams in parallel. ~2x faster than fully sequential.
+ */
+async function generateClipsByVoice(
+    messages: Array<{ role: 'user' | 'ideal_self'; text: string }>,
+    questionerVoiceId: string,
+    characterVoiceId: string,
+    apiKey: string,
+): Promise<Map<number, TTSAudio>> {
+    const ttsInputs = messages.map((msg, i) => ({
+        index: i,
+        role: msg.role,
+        voiceId: msg.role === 'user' ? questionerVoiceId : characterVoiceId,
+        cleanText: cleanTextForTTS(msg.text),
+    })).filter(m => !!m.cleanText);
+
+    console.log(`[PostTTS] Generating ${ttsInputs.length} TTS clips (parallel-by-voice)...`);
+    const ttsResultMap = new Map<number, TTSAudio>();
+
+    // Group by voice
+    const voiceGroups = new Map<string, typeof ttsInputs>();
+    for (const input of ttsInputs) {
+        const group = voiceGroups.get(input.voiceId) || [];
+        group.push(input);
+        voiceGroups.set(input.voiceId, group);
+    }
+
+    // Process each voice's messages sequentially, but run voices in parallel
+    const voiceStreams = [...voiceGroups.entries()].map(async ([voiceId, inputs]) => {
+        for (const { index, cleanText } of inputs) {
+            // Try up to 2 times (initial + 1 retry on 409)
+            let result: Awaited<ReturnType<typeof generateTTSAudio>> = null;
+            for (let attempt = 0; attempt < 2; attempt++) {
+                result = await generateTTSAudio(cleanText!, voiceId, apiKey);
+                if (result) break;
+                if (attempt === 0) {
+                    console.log(`[PostTTS] Retrying message ${index} after 1s...`);
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+            if (result) {
+                ttsResultMap.set(index, result);
+            }
+        }
+    });
+
+    await Promise.all(voiceStreams);
+    console.log(`[PostTTS] ${ttsResultMap.size}/${ttsInputs.length} TTS calls succeeded`);
+    return ttsResultMap;
+}
+
+/**
+ * Assemble the clips in message order with silence gaps between them, offsetting
+ * word timestamps and recording each message's boundaries.
+ */
+function stitchClips(
+    messages: Array<{ role: 'user' | 'ideal_self'; text: string }>,
+    clips: Map<number, TTSAudio>,
+    silence: { buffer: Buffer; duration: number } | null,
+): { audioBuffers: Buffer[]; wordTimestamps: WordTimestamp[]; messageBoundaries: MessageBoundary[] } {
+    const audioBuffers: Buffer[] = [];
+    const allTimestamps: WordTimestamp[] = [];
+    const messageBoundaries: MessageBoundary[] = [];
+    let cumulativeOffset = 0;
+
+    for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        const result = clips.get(i);
+        if (!result) {
+            console.error(`[PostTTS] No audio for message ${i} (${msg.role}) — skipping`);
+            continue;
+        }
+
+        // Insert silence gap before this message (except the first)
+        if (audioBuffers.length > 0 && silence) {
+            audioBuffers.push(silence.buffer);
+            cumulativeOffset += silence.duration;
+        }
+
+        const startIndex = allTimestamps.length;
+        const startTime = cumulativeOffset;
+
+        // Offset timestamps by cumulative duration
+        const offsetTimestamps = result.wordTimestamps.map(w => ({
+            word: w.word,
+            start: w.start + cumulativeOffset,
+            end: w.end + cumulativeOffset,
+        }));
+
+        audioBuffers.push(result.buffer);
+        allTimestamps.push(...offsetTimestamps);
+
+        // Calculate actual clip duration from buffer size (192kbps MP3)
+        const actualClipDuration = (result.buffer.length * 8) / 192000;
+        const timestampDuration = result.wordTimestamps.length > 0
+            ? result.wordTimestamps[result.wordTimestamps.length - 1].end
+            : 0;
+        const msgDuration = Math.max(actualClipDuration, timestampDuration);
+
+        const endIndex = allTimestamps.length - 1;
+        const endTime = cumulativeOffset + msgDuration;
+
+        messageBoundaries.push({
+            role: msg.role,
+            startIndex,
+            endIndex: Math.max(startIndex, endIndex),
+            startTime,
+            endTime,
+        });
+
+        cumulativeOffset += msgDuration;
+
+        const cleanText = cleanTextForTTS(msg.text);
+        console.log(`[PostTTS] Message ${i + 1}/${messages.length} (${msg.role}): ${wordCount(cleanText || '')}w, clip=${actualClipDuration.toFixed(2)}s, used=${msgDuration.toFixed(2)}s`);
+    }
+
+    return { audioBuffers, wordTimestamps: allTimestamps, messageBoundaries };
+}
+
+/**
+ * Re-encode through ffmpeg to produce a single valid MP3 stream.
+ * Raw Buffer.concat of multiple MP3 clips creates a multi-stream file
+ * that iOS WebKit's decodeAudioData truncates to only the first stream.
+ * Falls back to the raw concatenation if ffmpeg fails.
+ */
+function reencodeMp3(ffmpegPath: string, combinedBuffer: Buffer): Buffer {
+    try {
+        const remuxResult = spawnSync(ffmpegPath, [
+            '-i', 'pipe:0',
+            '-c:a', 'libmp3lame', '-b:a', '192k',
+            '-f', 'mp3', 'pipe:1',
+        ], {
+            input: combinedBuffer,
+            maxBuffer: 50 * 1024 * 1024, // 50MB — enough for long conversations
+        });
+        if (remuxResult.status === 0 && remuxResult.stdout.length > 0) {
+            const finalBuffer = Buffer.from(remuxResult.stdout);
+            console.log(`[PostTTS] Re-encoded MP3: ${combinedBuffer.length} → ${finalBuffer.length} bytes`);
+            return finalBuffer;
+        }
+        const stderr = remuxResult.stderr?.toString().slice(0, 200) || '';
+        console.warn(`[PostTTS] ffmpeg re-encode failed (status=${remuxResult.status}), using raw concat fallback. stderr: ${stderr}`);
+    } catch (err: any) {
+        console.warn('[PostTTS] ffmpeg re-encode error:', err.message);
+    }
+    return combinedBuffer;
+}

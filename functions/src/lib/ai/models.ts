@@ -11,6 +11,9 @@ export const OPUS_MODEL = 'claude-opus-5'; // Primary — Deep Reasoning Engine 
 export const OPUS_FALLBACK = 'claude-opus-4-8'; // Stable Fallback for Opus
 export const SONNET_MODEL = 'claude-sonnet-5'; // Lightweight — list management, consolidation
 
+// Image generation (Nano Banana 2) — synchronous and Batch API calls
+export const IMAGE_MODEL = 'gemini-3.1-flash-image';
+
 // Mirror Chat (chat + plan). Text-only, so Opus 5.5's always-on thinking and
 // no-forced-tool-use rules don't apply. Its default effort is 'medium', so
 // MIRROR_EFFORT is passed explicitly.
