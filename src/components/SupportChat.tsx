@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { HelpCircle, X, ArrowUp, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { cn } from "@/lib/utils/cn";
+import { useAuth } from "@/context/AuthContext";
 import { useTranslations } from "next-intl";
+import { authFetch } from "@/lib/auth/authFetch";
 
 interface Message {
     role: 'user' | 'assistant';
@@ -48,24 +49,19 @@ export function SupportChat({ isOpen: controlledOpen, onClose, standalone = fals
         setIsLoading(true);
 
         try {
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
-            };
-
-            // Include auth header if logged in
-            if (user) {
-                const idToken = await user.getIdToken();
-                headers['Authorization'] = `Bearer ${idToken}`;
-            }
-
-            const res = await fetch('/api/support', {
+            const init: RequestInit = {
                 method: 'POST',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: text,
                     history: messages.slice(-10),
                 }),
-            });
+            };
+
+            // Include auth header if logged in
+            const res = user
+                ? await authFetch(user, '/api/support', init)
+                : await fetch('/api/support', init);
 
             if (res.ok) {
                 const data = await res.json();

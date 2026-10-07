@@ -24,7 +24,7 @@ export interface Bible {
 }
 
 /** Avatar — system-generated */
-export interface Avatar {
+interface Avatar {
     url?: string;
     status?: 'ready' | 'generating' | 'pending' | 'failed';
     last_attempt?: number;
@@ -33,7 +33,7 @@ export interface Avatar {
 }
 
 /** Voice — system-assigned or user-selected */
-export interface Voice {
+interface Voice {
     id?: string;
     name?: string;
     confirmed?: boolean;

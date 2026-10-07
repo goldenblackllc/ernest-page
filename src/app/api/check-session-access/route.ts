@@ -5,8 +5,8 @@ const MAX_SESSIONS_PER_DAY = 5;
 
 /**
  * POST /api/check-session-access
- * Lightweight access check — verifies daily cap only.
- * Earnest Page is free for all authenticated users.
+ * Lightweight pre-check of the daily session cap. It does not look at credits
+ * or subscriptions; mirrorReply (functions/src/mirror.ts) enforces access.
  */
 export async function POST(req: Request) {
     try {
@@ -36,9 +36,6 @@ export async function POST(req: Request) {
         });
     } catch (error: any) {
         console.error('Check Session Access Error:', error);
-        return Response.json(
-            { error: error.message || 'Failed to check session access.' },
-            { status: 500 }
-        );
+        return Response.json({ error: 'Failed to check session access.' }, { status: 500 });
     }
 }

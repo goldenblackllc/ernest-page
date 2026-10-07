@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
-import { WantsEditor } from "../mylife/WantsEditor";
+import { WantsEditor } from "../WantsEditor";
 import { WantItem } from "@/types/character";
 
 describe("WantsEditor", () => {

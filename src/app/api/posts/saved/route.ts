@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase/admin';
-import { getAuth } from 'firebase-admin/auth';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { Timestamp } from 'firebase-admin/firestore';
 import { serializePostsForViewer } from '@/lib/posts/serializePosts';
 
@@ -16,19 +16,8 @@ const PAGE_SIZE = 15;
  */
 export async function GET(req: Request) {
     try {
-        const authHeader = req.headers.get('Authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const idToken = authHeader.split('Bearer ')[1];
-        let uid: string;
-        try {
-            const decoded = await getAuth().verifyIdToken(idToken);
-            uid = decoded.uid;
-        } catch {
-            return Response.json({ error: 'Invalid token' }, { status: 401 });
-        }
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
         const url = new URL(req.url);
         const cursor = url.searchParams.get('cursor');
@@ -74,6 +63,6 @@ export async function GET(req: Request) {
         return Response.json({ posts, nextCursor });
     } catch (error: any) {
         console.error('[Saved Posts] Error:', error);
-        return Response.json({ error: error.message || 'Failed to fetch saved posts' }, { status: 500 });
+        return Response.json({ error: 'Failed to fetch saved posts' }, { status: 500 });
     }
 }

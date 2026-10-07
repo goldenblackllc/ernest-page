@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         // 2. Posts
         const postsSnap = await db.collection('posts')
             .where('authorId', '==', uid)
-            .orderBy('createdAt', 'desc')
+            .orderBy('created_at', 'desc')
             .get();
 
         exportData.posts = postsSnap.docs.map(doc => {
@@ -52,12 +52,16 @@ export async function POST(req: Request) {
                 id: doc.id,
                 type: d.type || 'post',
                 title: d.title || null,
-                content: d.content || null,
+                public_post: d.public_post || null,
                 content_raw: d.content_raw || null,
                 counsel: d.counsel || null,
-                privacy: d.privacy || null,
-                image_url: d.image_url || null,
-                created_at: d.createdAt?.toDate?.()?.toISOString?.() || d.createdAt || null,
+                visibility: d.visibility || null,
+                is_public: d.is_public ?? null,
+                language: d.language || null,
+                imagen_urls: d.imagen_urls || [],
+                message_images: d.message_images || [],
+                user_photo_url: d.user_photo_url || null,
+                created_at: d.created_at?.toDate?.()?.toISOString?.() || d.created_at || null,
             };
         });
 
@@ -70,7 +74,7 @@ export async function POST(req: Request) {
             return {
                 id: doc.id,
                 messages: d.messages || [],
-                routing: d.routing || null,
+                routing: d.sessionRouting || null,
                 created_at: d.createdAt?.toDate?.()?.toISOString?.() || d.createdAt || null,
             };
         });
@@ -86,9 +90,6 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[Account Export] Error:', error);
-        return Response.json(
-            { error: error.message || 'Data export failed.' },
-            { status: 500 }
-        );
+        return Response.json({ error: 'Data export failed.' }, { status: 500 });
     }
 }

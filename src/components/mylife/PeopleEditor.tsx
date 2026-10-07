@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { ProfilePerson } from '@/types/character';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 import { useTranslations } from 'next-intl';
 
 export interface PeopleEditorProps {
@@ -302,5 +302,3 @@ export function PeopleEditor({ people = [], onSave, className }: PeopleEditorPro
         </div>
     );
 }
-
-export default PeopleEditor;

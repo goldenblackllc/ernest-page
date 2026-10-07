@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { generateWithFallback, OPUS_MODEL } from '@functions/lib/ai/models';
@@ -31,11 +30,11 @@ export async function POST(req: Request) {
         const { postIds, targetLocale } = await req.json();
 
         if (!postIds || !Array.isArray(postIds) || postIds.length === 0 || !targetLocale) {
-            return NextResponse.json({ error: 'Missing postIds array or targetLocale' }, { status: 400 });
+            return Response.json({ error: 'Missing postIds array or targetLocale' }, { status: 400 });
         }
 
         if (targetLocale === 'en') {
-            return NextResponse.json({ translations: {} });
+            return Response.json({ translations: {} });
         }
 
         const batch = postIds.slice(0, MAX_BATCH_SIZE);
@@ -105,10 +104,10 @@ export async function POST(req: Request) {
 
         await Promise.all(translationPromises);
 
-        return NextResponse.json({ translations });
+        return Response.json({ translations });
 
     } catch (error: any) {
         console.error('Batch Translation Error:', error);
-        return NextResponse.json({ error: error.message || 'Batch translation failed' }, { status: 500 });
+        return Response.json({ error: 'Batch translation failed' }, { status: 500 });
     }
 }

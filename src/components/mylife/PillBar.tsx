@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 import { useTranslations } from "next-intl";
 
 export type MyLifeSection = "wants" | "loves" | "people" | "dream";
@@ -72,5 +72,3 @@ export function PillBar({ activeSection, onSelect, className }: PillBarProps) {
     </div>
   );
 }
-
-export default PillBar;

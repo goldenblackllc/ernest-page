@@ -1,4 +1,5 @@
 import { db } from "@/lib/firebase/admin";
+import { serializePublicPost } from "@/lib/posts/serializePublicPost";
 
 export async function GET(
     req: Request,
@@ -19,38 +20,7 @@ export async function GET(
             return Response.json({ error: "Post not found" }, { status: 404 });
         }
 
-        // Return sanitized public data only — no PII, no raw content
-        const post: any = {
-            id: postDoc.id,
-            public_post: data.public_post || {},
-            imagen_url: data.imagen_url || null,
-            audio_url: data.audio_url || null,
-            audio_letter_ratio: data.audio_letter_ratio ?? null,
-            audio_word_timestamps: data.audio_word_timestamps ?? null,
-            // Legacy two-file format for backward compat with old posts
-            letter_audio_url: data.letter_audio_url || null,
-            response_audio_url: data.response_audio_url || null,
-            photo_vibe: data.photo_vibe || null,
-            like_count: data.like_count || data.likes || 0,
-            comments: data.comments || 0,
-            language: data.language || null,
-            sponsored_by: data.sponsored_by || null,
-            sponsored_link: data.sponsored_link || null,
-            created_at: data.created_at?._seconds
-                ? { _seconds: data.created_at._seconds, _nanoseconds: data.created_at._nanoseconds || 0 }
-                : null,
-        };
-
-        // Fetch author avatar
-        if (data.authorId || data.uid) {
-            try {
-                const authorDoc = await db.collection("users").doc(data.authorId || data.uid).get();
-                if (authorDoc.exists) {
-                    const authorData = authorDoc.data();
-                    post.author_avatar_url = authorData?.avatar?.url || null;
-                }
-            } catch { /* silent */ }
-        }
+        const post = await serializePublicPost(postDoc.id, data);
 
         return Response.json({ post });
     } catch (error: any) {

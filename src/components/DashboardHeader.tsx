@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { Bell, Shield, LogOut, Users, HelpCircle } from "lucide-react";

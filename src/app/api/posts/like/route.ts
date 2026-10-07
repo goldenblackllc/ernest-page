@@ -1,6 +1,7 @@
 import { db } from "@/lib/firebase/admin";
-import { getAuth } from "firebase-admin/auth";
+import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
 import { FieldValue } from "firebase-admin/firestore";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export const maxDuration = 10;
 
@@ -18,19 +19,12 @@ export const maxDuration = 10;
 export async function POST(req: Request) {
     try {
         // Authenticate via Firebase ID token
-        const authHeader = req.headers.get("Authorization");
-        if (!authHeader?.startsWith("Bearer ")) {
-            return Response.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
-        const idToken = authHeader.split("Bearer ")[1];
-        let uid: string;
-        try {
-            const decoded = await getAuth().verifyIdToken(idToken);
-            uid = decoded.uid;
-        } catch {
-            return Response.json({ error: "Invalid token" }, { status: 401 });
-        }
+        // Rate limit: 30 likes per minute per user
+        const rl = checkRateLimit(`like:${uid}`, { maxRequests: 30, windowMs: 60_000 });
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
         // Read the postId the user tapped
         const { postId } = await req.json();
@@ -67,9 +61,6 @@ export async function POST(req: Request) {
         return Response.json({ success: true });
     } catch (error: any) {
         console.error("Karma like error:", error);
-        return Response.json(
-            { error: error.message || "An unexpected error occurred." },
-            { status: 500 }
-        );
+        return Response.json({ error: "An unexpected error occurred." }, { status: 500 });
     }
 }

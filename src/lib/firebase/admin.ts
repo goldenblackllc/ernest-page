@@ -1,8 +1,6 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-import { getStorage } from "firebase-admin/storage";
-
 const serviceAccount = JSON.parse(
     process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string || "{}"
 );
@@ -15,5 +13,4 @@ if (!getApps().length) {
 }
 
 export const db = getFirestore();
-export const storage = getStorage();
 export { FieldValue };

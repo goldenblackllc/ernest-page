@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Bell, CheckCircle2, Circle, Loader2, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 import { updateDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { CharacterProfile } from "@/types/character";
 import { useTranslations } from "next-intl";
 

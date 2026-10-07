@@ -1,31 +1,14 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FeedPostCard } from '@/components/FeedPostCard';
 import { Loader2 } from 'lucide-react';
-
-interface PublicPost {
-    id: string;
-    type: string;
-    post_type?: string | null;
-    pseudonym?: string | null;
-    letter?: string | null;
-    response?: string | null;
-    imagen_url?: string | null;
-    audio_url?: string | null;
-    audio_letter_ratio?: number | null;
-    audio_word_timestamps?: any[] | null;
-    directive_title?: string | null;
-    unexpected_yield?: string | null;
-    author_avatar_url?: string | null;
-    author_title?: string | null;
-    like_count?: number;
-    comments?: number;
-    created_at: { _seconds: number; _nanoseconds: number } | null;
-}
+import { useTranslations } from 'next-intl';
+import type { Post } from '@/types/post';
 
 export function PublicFeed() {
-    const [posts, setPosts] = useState<PublicPost[]>([]);
+    const t = useTranslations('feed');
+    const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -115,7 +98,7 @@ export function PublicFeed() {
             {posts.map((post) => (
                 <FeedPostCard
                     key={post.id}
-                    post={{ ...post, type: post.type || 'checkin', uid: '' } as any}
+                    post={{ ...post, uid: '' }}
                 />
             ))}
 
@@ -130,7 +113,7 @@ export function PublicFeed() {
 
             {!hasMore && posts.length > 0 && (
                 <div className="text-center py-8">
-                    <p className="text-xs text-zinc-600">You&apos;re all caught up.</p>
+                    <p className="text-xs text-zinc-600">{t('caughtUp')}</p>
                 </div>
             )}
         </section>

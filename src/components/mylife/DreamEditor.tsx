@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import React, { useState, useRef, useEffect } from 'react';
 import { CloudSun } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 import { useTranslations } from 'next-intl';
 
 export interface DreamEditorProps {
@@ -190,5 +190,3 @@ export function DreamEditor({
         </div>
     );
 }
-
-export default DreamEditor;

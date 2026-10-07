@@ -1,23 +1,12 @@
 import { db } from '@/lib/firebase/admin';
-import { getAuth } from 'firebase-admin/auth';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(req: Request) {
     try {
         // 1. Authenticate
-        const authHeader = req.headers.get('Authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const idToken = authHeader.split('Bearer ')[1];
-        let uid: string;
-        try {
-            const decoded = await getAuth().verifyIdToken(idToken);
-            uid = decoded.uid;
-        } catch {
-            return Response.json({ error: 'Invalid token' }, { status: 401 });
-        }
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
         const { postId, commentId } = await req.json();
         if (!postId || !commentId) {
@@ -46,6 +35,6 @@ export async function POST(req: Request) {
         return Response.json({ success: true });
     } catch (error: any) {
         console.error('[Comment Delete] Error:', error);
-        return Response.json({ error: error.message || 'Failed to delete comment' }, { status: 500 });
+        return Response.json({ error: 'Failed to delete comment' }, { status: 500 });
     }
 }

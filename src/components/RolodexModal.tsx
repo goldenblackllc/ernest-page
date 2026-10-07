@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Trash2, Users } from 'lucide-react';
-import { useAuth } from '@/lib/auth/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { updateCharacterProfile } from '@/lib/firebase/character';
 import { CharacterProfile } from '@/types/character';
 import { useTranslations } from 'next-intl';

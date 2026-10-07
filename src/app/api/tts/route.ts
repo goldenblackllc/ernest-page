@@ -90,6 +90,6 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[TTS] API Error:', error);
-        return Response.json({ error: error.message || 'Unexpected error' }, { status: 500 });
+        return Response.json({ error: 'Unexpected error' }, { status: 500 });
     }
 }

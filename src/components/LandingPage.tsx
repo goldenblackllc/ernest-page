@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
 import { useState, useCallback } from 'react';
-import { useTrackEvent } from '@/lib/analytics/useTrackEvent';
+import { useTrackEvent } from '@/hooks/useTrackEvent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { Link, useRouter } from "@/i18n/navigation";

@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Shield, ShieldCheck, Loader2, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { X, Shield, ShieldCheck, Loader2, AlertTriangle, Download } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
+import { useAuth } from "@/context/AuthContext";
 import { CharacterProfile } from "@/types/character";
 import { useTranslations } from "next-intl";
+import { authFetch } from "@/lib/auth/authFetch";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface SecurityVaultProps {
@@ -21,7 +22,30 @@ export function SecurityVault({ isOpen, onClose }: SecurityVaultProps) {
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const t = useTranslations('securityVault');
+
+    const handleExport = async () => {
+        if (!user) return;
+        setIsExporting(true);
+        setStatusMessage(null);
+        try {
+            const res = await authFetch(user, '/api/account/export', { method: 'POST' });
+            if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+            const filename = res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1] || 'earnest-page-export.json';
+            const url = URL.createObjectURL(await res.blob());
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('[SecurityVault] Export failed:', err);
+            setStatusMessage(t('exportFailed'));
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     // Close on escape
     useEffect(() => {
@@ -75,7 +99,25 @@ export function SecurityVault({ isOpen, onClose }: SecurityVaultProps) {
                         </div>
                     )}
 
-                    {/* ═══ SECTION 5: ACCOUNT DELETION ═══ */}
+                    {/* ═══ DATA EXPORT ═══ */}
+                    <div className="px-6 py-8 border-t border-zinc-800/50">
+                        <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
+                            {t('dataExportTitle')}
+                        </h3>
+                        <p className="text-xs text-zinc-600 mb-6 leading-relaxed">
+                            {t('dataExportDesc')}
+                        </p>
+                        <button
+                            onClick={handleExport}
+                            disabled={isExporting}
+                            className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl border border-zinc-800 text-zinc-300 text-xs font-bold uppercase tracking-[0.15em] hover:text-zinc-100 hover:border-zinc-600 transition-all duration-200 disabled:opacity-30"
+                        >
+                            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            {t('downloadMyData')}
+                        </button>
+                    </div>
+
+                    {/* ═══ ACCOUNT DELETION ═══ */}
                     <div className="px-6 py-8 border-t border-zinc-800/50">
                         <h3 className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 mb-2">
                             {t('accountDeletionTitle')}
@@ -119,11 +161,7 @@ export function SecurityVault({ isOpen, onClose }: SecurityVaultProps) {
                                             if (deleteInput !== 'DELETE' || !user) return;
                                             setIsDeleting(true);
                                             try {
-                                                const idToken = await user.getIdToken();
-                                                const res = await fetch('/api/account/delete', {
-                                                    method: 'DELETE',
-                                                    headers: { 'Authorization': `Bearer ${idToken}` },
-                                                });
+                                                const res = await authFetch(user, '/api/account/delete', { method: 'DELETE' });
                                                 if (res.ok) {
                                                     // Account is gone — sign out client
                                                     const { clearFeedCache } = await import('@/lib/feedCache');

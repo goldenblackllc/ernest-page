@@ -97,7 +97,7 @@ export async function GET(req: Request) {
         return Response.json({ posts, nextCursor });
     } catch (error: any) {
         console.error("[Public Posts API] Error:", error);
-        return Response.json({ error: error.message }, { status: 500 });
+        return Response.json({ error: 'Failed to fetch posts' }, { status: 500 });
     }
 }
 

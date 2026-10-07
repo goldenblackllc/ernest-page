@@ -3,11 +3,11 @@
 import { useLocale } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/navigation';
 import { useTransition } from 'react';
-import { useAuth } from '@/lib/auth/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Globe } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 
 export function LocaleSwitcher({ className }: { className?: string }) {
     const [isPending, startTransition] = useTransition();

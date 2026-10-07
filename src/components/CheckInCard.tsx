@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Mail } from "lucide-react";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useTranslations } from "next-intl";

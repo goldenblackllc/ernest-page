@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { CheckCircle2, Circle, X, Plus } from "lucide-react";
-import { WantItem } from "@/types/character";
-import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import React, { useMemo } from 'react';
+import { CheckCircle2, Circle } from 'lucide-react';
+import { WantItem } from '@/types/character';
+import { useTranslations } from 'next-intl';
+import { EditableList } from './EditableList';
 
 export interface WantsEditorProps {
     wants: WantItem[];
@@ -19,64 +19,20 @@ export interface WantsEditorProps {
  */
 export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps) {
     const t = useTranslations("mylife.wants");
-    const [inputValue, setInputValue] = useState("");
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [editValue, setEditValue] = useState("");
+    const list = useMemo(() => (Array.isArray(wants) ? wants : []), [wants]);
 
     // Unchecked items show first, then checked items at bottom
     const sortedWants = useMemo(() => {
-        const list = Array.isArray(wants) ? wants : [];
         const unchecked = list.filter((item) => !item.completed);
         const checked = list.filter((item) => item.completed);
         return [...unchecked, ...checked];
-    }, [wants]);
+    }, [list]);
 
-    // Tap circle to toggle completed status
     const handleToggle = (id: string) => {
-        const list = Array.isArray(wants) ? wants : [];
-        const updated = list.map((item) =>
-            item.id === id ? { ...item, completed: !item.completed } : item
-        );
-        onSave(updated);
+        onSave(list.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)));
     };
 
-    // Delete item from list
-    const handleDelete = (id: string) => {
-        const list = Array.isArray(wants) ? wants : [];
-        const updated = list.filter((item) => item.id !== id);
-        onSave(updated);
-    };
-
-    // Start editing an item
-    const startEditing = (item: WantItem) => {
-        setEditingId(item.id);
-        setEditValue(item.text);
-    };
-
-    // Save edit
-    const saveEdit = () => {
-        if (!editingId) return;
-        const trimmed = editValue.trim();
-        if (!trimmed) {
-            // If emptied, delete it
-            handleDelete(editingId);
-        } else {
-            const list = Array.isArray(wants) ? wants : [];
-            const updated = list.map((item) =>
-                item.id === editingId ? { ...item, text: trimmed } : item
-            );
-            onSave(updated);
-        }
-        setEditingId(null);
-        setEditValue("");
-    };
-
-    // Add new item on enter/submit
-    const handleAdd = (e: React.FormEvent) => {
-        e.preventDefault();
-        const text = inputValue.trim();
-        if (!text) return;
-
+    const handleAdd = (text: string) => {
         const newItem: WantItem = {
             id: typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
                 ? crypto.randomUUID()
@@ -85,110 +41,40 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
             completed: false,
             created_at: Date.now(),
         };
-
-        const list = Array.isArray(wants) ? wants : [];
         onSave([...list, newItem]);
-        setInputValue("");
     };
 
     return (
-        <div className={cn("flex flex-col h-full min-h-0", className)}>
-            {/* Title */}
-            <div className="pb-4 shrink-0">
-                <h2 className="text-xl font-bold text-white">{t("title")}</h2>
-            </div>
-
-            {/* Top input */}
-            <form onSubmit={handleAdd} className="pb-3 shrink-0">
-                <div className="relative flex items-center">
-                    <button
-                        type="submit"
-                        disabled={!inputValue.trim()}
-                        className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500 hover:text-white disabled:hover:text-zinc-500 transition-colors"
-                        aria-label={t("addAria")}
-                        tabIndex={-1}
-                    >
-                        <Plus className="w-4 h-4" />
-                    </button>
-                    <input
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        placeholder={t("addPlaceholder")}
-                        className="w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 pl-9 pr-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-colors"
-                    />
-                </div>
-            </form>
-
-            {/* Scrollable list */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-                {sortedWants.length === 0 ? (
-                    <div className="py-8 text-center text-zinc-500 text-sm">
-                        {t("noWants")}
-                    </div>
-                ) : (
-                    sortedWants.map((item) => (
-                        <div
-                            key={item.id}
-                            className="flex items-center justify-between gap-3 py-3 border-b border-zinc-800/50 group"
-                        >
-                            {/* Checkbox and Text */}
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <button
-                                    type="button"
-                                    onClick={() => handleToggle(item.id)}
-                                    className="shrink-0 p-0.5 text-zinc-400 hover:text-white transition-colors focus:outline-none"
-                                    aria-label={item.completed ? t("markIncomplete", { text: item.text }) : t("markComplete", { text: item.text })}
-                                >
-                                    {item.completed ? (
-                                        <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
-                                    ) : (
-                                        <Circle className="w-5 h-5 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0" />
-                                    )}
-                                </button>
-                                {editingId === item.id ? (
-                                    <input
-                                        type="text"
-                                        value={editValue}
-                                        onChange={(e) => setEditValue(e.target.value)}
-                                        onBlur={saveEdit}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") { e.preventDefault(); saveEdit(); }
-                                            if (e.key === "Escape") { setEditingId(null); setEditValue(""); }
-                                        }}
-                                        autoFocus
-                                        className="flex-1 bg-zinc-800/50 rounded border border-amber-500/50 px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-                                    />
-                                ) : (
-                                    <span
-                                        onClick={() => startEditing(item)}
-                                        className={cn(
-                                            "text-sm break-words flex-1 cursor-pointer select-none transition-colors",
-                                            item.completed ? "text-zinc-500 line-through" : "text-white"
-                                        )}
-                                        title={t("tapToEdit")}
-                                    >
-                                        {item.text}
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Delete button */}
-                            <button
-                                type="button"
-                                onClick={() => handleDelete(item.id)}
-                                className="shrink-0 p-1 text-zinc-600 hover:text-red-400 transition-colors rounded focus:outline-none"
-                                aria-label={t("deleteItem", { text: item.text })}
-                                title={t("deleteTitle")}
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
+        <EditableList
+            items={sortedWants}
+            getKey={(item) => item.id}
+            getText={(item) => item.text}
+            onAdd={handleAdd}
+            onEdit={(edited, text) => onSave(list.map((item) => (item.id === edited.id ? { ...item, text } : item)))}
+            onDelete={(deleted) => onSave(list.filter((item) => item.id !== deleted.id))}
+            title={t("title")}
+            addPlaceholder={t("addPlaceholder")}
+            addAriaLabel={t("addAria")}
+            emptyText={t("noWants")}
+            editTitle={t("tapToEdit")}
+            deleteAriaLabel={(text) => t("deleteItem", { text })}
+            deleteTitle={t("deleteTitle")}
+            className={className}
+            renderLeading={(item) => (
+                <button
+                    type="button"
+                    onClick={() => handleToggle(item.id)}
+                    className="shrink-0 p-0.5 text-zinc-400 hover:text-white transition-colors focus:outline-none"
+                    aria-label={item.completed ? t("markIncomplete", { text: item.text }) : t("markComplete", { text: item.text })}
+                >
+                    {item.completed ? (
+                        <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
+                    ) : (
+                        <Circle className="w-5 h-5 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0" />
+                    )}
+                </button>
+            )}
+            itemTextClassName={(item) => (item.completed ? "text-zinc-500 line-through" : "text-white hover:text-zinc-200")}
+        />
     );
 }
-
-export default WantsEditor;

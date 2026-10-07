@@ -26,8 +26,6 @@ export async function POST(req: Request) {
         const phone = (body.phone || '').replace(/[^\d+]/g, '');
         const code = body.code || '';
 
-        console.log('[verify-code] Received:', { phone, code, length: phone.length });
-
         if (!phone || !code) {
             return Response.json({ error: "Phone and code are required." }, { status: 400 });
         }
@@ -58,7 +56,7 @@ export async function POST(req: Request) {
             // Only create user if the error is specifically "user not found"
             if (lookupError?.code === 'auth/user-not-found') {
                 try {
-                    console.log('[verify-code] Creating user with phone:', JSON.stringify(phone), 'length:', phone.length);
+                    console.log('[verify-code] Creating new user');
                     const newUser = await adminAuth.createUser({ phoneNumber: phone });
                     uid = newUser.uid;
 

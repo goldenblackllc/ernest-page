@@ -13,7 +13,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     'Permissions-Policy': 'camera=(self), microphone=(), geolocation=(self)',
 };
 
-export default function proxy(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const response = intlMiddleware(request);
 
     for (const [key, value] of Object.entries(SECURITY_HEADERS)) {

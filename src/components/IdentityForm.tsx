@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { SKIN_TONE_OPTIONS, HAIR_COLOR_OPTIONS, HAIR_TEXTURE_OPTIONS, HAIR_VOLUME_OPTIONS, EYE_COLOR_OPTIONS, HEIGHT_OPTIONS, optionKey } from '@/lib/constants/appearance';
 
 export interface IdentityFormData {
     character_name: string;
@@ -30,16 +31,6 @@ interface IdentityFormProps {
 
 export type FormStep = 1 | 2 | 3;
 
-export const SKIN_TONE_OPTIONS = ['Fair', 'Light', 'Medium', 'Olive', 'Tan', 'Brown', 'Dark Brown', 'Deep'];
-export const HAIR_COLOR_OPTIONS = ['Black', 'Dark Brown', 'Brown', 'Light Brown', 'Auburn', 'Red', 'Blonde', 'Gray', 'White'];
-export const HAIR_TEXTURE_OPTIONS = ['Straight', 'Wavy', 'Curly', 'Coily'];
-export const HAIR_VOLUME_OPTIONS = ['Thick', 'Full', 'Thinning', 'Receding', 'Bald/Shaved'];
-export const EYE_COLOR_OPTIONS = ['Brown', 'Hazel', 'Green', 'Blue', 'Gray', 'Amber'];
-export const HEIGHT_OPTIONS = [
-    `4'8"`, `4'9"`, `4'10"`, `4'11"`,
-    `5'0"`, `5'1"`, `5'2"`, `5'3"`, `5'4"`, `5'5"`, `5'6"`, `5'7"`, `5'8"`, `5'9"`, `5'10"`, `5'11"`,
-    `6'0"`, `6'1"`, `6'2"`, `6'3"`, `6'4"`, `6'5"`, `6'6"`, `6'7"`, `6'8"`,
-];
 
 const inputClass = "w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-base text-white placeholder-zinc-500 focus:border-white/40 focus:ring-1 focus:ring-white/30";
 const selectClass = "w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-3 py-2.5 text-sm text-white focus:border-white/40 focus:ring-1 focus:ring-white/30 [color-scheme:dark] appearance-none";
@@ -53,6 +44,8 @@ export function IdentityForm({
     visibleSteps,
 }: IdentityFormProps) {
     const t = useTranslations();
+    const tForm = useTranslations('onboarding.form');
+    const optionLabel = (prefix: string, value: string) => tForm(`${prefix}${optionKey(value)}` as Parameters<typeof tForm>[0]);
     const allSteps: FormStep[] = visibleSteps || [1, 2, 3];
     const [step, setStep] = useState<FormStep>(allSteps[0]);
     const stepIndex = allSteps.indexOf(step);
@@ -201,14 +194,14 @@ export function IdentityForm({
                                 <label className={labelClass}>{t('onboarding.identityForm.skinToneLabel')}</label>
                                 <select value={skinTone} onChange={(e) => setSkinTone(e.target.value)} className={selectClass}>
                                     <option value="">—</option>
-                                    {SKIN_TONE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    {SKIN_TONE_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('skinTone', opt)}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className={labelClass}>{t('onboarding.identityForm.eyeColorLabel')}</label>
                                 <select value={eyeColor} onChange={(e) => setEyeColor(e.target.value)} className={selectClass}>
                                     <option value="">—</option>
-                                    {EYE_COLOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    {EYE_COLOR_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('eyeColor', opt)}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -230,21 +223,21 @@ export function IdentityForm({
                                     className={selectClass}
                                 >
                                     <option value="">—</option>
-                                    {HAIR_COLOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    {HAIR_COLOR_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('hairColor', opt)}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className={labelClass}>{t('onboarding.identityForm.hairTextureLabel')}</label>
                                 <select value={hairTexture} onChange={(e) => setHairTexture(e.target.value)} className={selectClass}>
                                     <option value="">—</option>
-                                    {HAIR_TEXTURE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    {HAIR_TEXTURE_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('hairTexture', opt)}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className={labelClass}>{t('onboarding.identityForm.hairVolumeLabel')}</label>
                                 <select value={hairVolume} onChange={(e) => setHairVolume(e.target.value)} className={selectClass}>
                                     <option value="">—</option>
-                                    {HAIR_VOLUME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    {HAIR_VOLUME_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('hairVolume', opt)}</option>)}
                                 </select>
                             </div>
                         </div>

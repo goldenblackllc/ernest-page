@@ -109,7 +109,7 @@ export const COUNTRY_CODES: CountryCode[] = [
  * Timezone → country code mapping for auto-detection.
  * Falls back to 'US' if timezone not recognized.
  */
-export const TIMEZONE_TO_COUNTRY: Record<string, string> = {
+const TIMEZONE_TO_COUNTRY: Record<string, string> = {
     // Americas
     'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
     'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US',

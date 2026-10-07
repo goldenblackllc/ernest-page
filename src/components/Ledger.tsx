@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { doc, onSnapshot, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { CheckInCard } from "@/components/CheckInCard";
 import { VoiceBrowser } from "@/components/VoiceBrowser";
@@ -13,7 +13,9 @@ import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
 import { useTranslations, useLocale } from "next-intl";
 
-import { Timestamp } from "firebase/firestore";
+import { authFetch } from "@/lib/auth/authFetch";
+import { reviveCreatedAt, timestampToDate } from "@/lib/posts/timestamps";
+import type { Post } from "@/types/post";
 import { getFeedCache, setFeedCache, clearFeedCache } from "@/lib/feedCache";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -28,7 +30,7 @@ export function Ledger() {
 
     // Restore from module-level cache so returning to this tab is instant
     const cache = getFeedCache();
-    const [entries, setEntries] = useState<any[]>(cache.entries || []);
+    const [entries, setEntries] = useState<Post[]>(cache.entries || []);
     const [followingMap, setFollowingMap] = useState<Record<string, string>>(cache.followingMap || {});
     const [loading, setLoading] = useState(cache.entries === null); // skip skeleton if cached
 
@@ -88,10 +90,7 @@ export function Ledger() {
         fetchingRef.current = true;
 
         try {
-            const idToken = await user.getIdToken();
-
-            const res = await fetch(`/api/posts/feed?locale=${locale}&page=${page}`, {
-                headers: { 'Authorization': `Bearer ${idToken}` },
+            const res = await authFetch(user, `/api/posts/feed?locale=${locale}&page=${page}`, {
                 cache: 'no-store',
             });
 
@@ -99,21 +98,16 @@ export function Ledger() {
 
             const data = await res.json();
 
-            const posts = (data.posts || [])
-                .filter((post: any) => post.images_complete !== false) // hide posts still generating images
-                .map((post: any) => {
-                    if (post.created_at && post.created_at._seconds !== undefined) {
-                        post.created_at = new Timestamp(post.created_at._seconds, post.created_at._nanoseconds || 0);
-                    }
-                    return post;
-                });
+            const posts: Post[] = (data.posts || [])
+                .filter((post: Post) => post.images_complete !== false) // hide posts still generating images
+                .map(reviveCreatedAt);
 
             if (page === 0) {
                 setEntries(posts);
             } else {
                 setEntries(prev => {
                     const existingIds = new Set(prev.map(p => p.id));
-                    const newPosts = posts.filter((p: any) => !existingIds.has(p.id));
+                    const newPosts = posts.filter(p => !existingIds.has(p.id));
                     return [...prev, ...newPosts];
                 });
             }
@@ -128,8 +122,8 @@ export function Ledger() {
                 const newNewest = posts.length > 0
                     ? (() => {
                         const newest = posts[0];
-                        const time = newest.created_at?.toMillis?.() || (newest.created_at?._seconds ? newest.created_at._seconds * 1000 : 0);
-                        return time ? new Date(time).toISOString() : newestPostTimeRef.current;
+                        const date = timestampToDate(newest.created_at);
+                        return date ? date.toISOString() : newestPostTimeRef.current;
                     })()
                     : newestPostTimeRef.current;
                 newestPostTimeRef.current = newNewest;
@@ -139,13 +133,9 @@ export function Ledger() {
             // Auto-translate posts that don't have a cached translation yet
             const needsTranslation: string[] = data.needsTranslation || [];
             if (needsTranslation.length > 0) {
-                const idTokenForTranslate = await user.getIdToken();
-                fetch('/api/posts/translate/batch', {
+                authFetch(user, '/api/posts/translate/batch', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${idTokenForTranslate}`,
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ postIds: needsTranslation, targetLocale: locale }),
                 })
                     .then(r => r.json())
@@ -206,11 +196,9 @@ export function Ledger() {
             if (!newestPostTimeRef.current) return;
 
             try {
-                const idToken = await user.getIdToken();
                 const params = new URLSearchParams({ newer_than: newestPostTimeRef.current });
 
-                const res = await fetch(`/api/posts/feed?${params.toString()}`, {
-                    headers: { 'Authorization': `Bearer ${idToken}` },
+                const res = await authFetch(user, `/api/posts/feed?${params.toString()}`, {
                     cache: 'no-store',
                 });
 
@@ -471,7 +459,6 @@ export function Ledger() {
                         digestMode
                         post={{
                             id: `digest-${profile.daily_digest.date}`,
-                            type: 'checkin',
                             uid: user?.uid,
                             author_avatar_url: profile?.avatar?.url,
                             title: profile.daily_digest.title,
@@ -597,7 +584,6 @@ export function Ledger() {
                     digestMode
                     post={{
                         id: `digest-${profile.daily_digest.date}`,
-                        type: 'checkin',
                         uid: user?.uid,
                         author_avatar_url: profile?.avatar?.url,
                         title: profile.daily_digest.title,
@@ -625,7 +611,7 @@ export function Ledger() {
             {entries.map((entry) => (
                 <React.Fragment key={entry.id}>
                     <FeedPostCard
-                        post={entry as any}
+                        post={entry}
                         followingMap={followingMap}
                         onFollowClick={(id) => setSelectedAuthorToFollow({ id, title: entry.author_title || t('idealSelfDefault') })}
                         onRequestDelete={setPostToDelete}

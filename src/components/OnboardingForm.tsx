@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { Circle, Heart, CloudSun, Loader2, Users, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 import { useTranslations } from 'next-intl';
+import { SKIN_TONE_OPTIONS, HAIR_COLOR_OPTIONS, HAIR_TEXTURE_OPTIONS, EYE_COLOR_OPTIONS, optionKey } from '@/lib/constants/appearance';
 
 export interface OnboardingFormData {
     defining_words: string[];
@@ -45,6 +46,7 @@ function padPeople(arr: { name: string; relationship: string; about: string }[] 
 
 export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }: OnboardingFormProps) {
     const t = useTranslations('onboarding.form');
+    const optionLabel = (prefix: string, value: string) => t(`${prefix}${optionKey(value)}` as Parameters<typeof t>[0]);
     const iv = initialValues || {};
     const [definingWords, setDefiningWords] = useState<string[]>(padArray(iv.defining_words, 3));
     const [wants, setWants] = useState<string[]>(padArray(iv.wants, 3));
@@ -109,8 +111,6 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
 
         onSubmit(data);
     };
-
-    const HAIR_COLOR_OPTIONS = ['Black', 'Brown', 'Blonde', 'Red', 'Gray', 'White', 'Auburn'];
 
     return (
         <div className="w-full h-full overflow-y-auto bg-zinc-950 p-4 sm:p-6 text-zinc-100">
@@ -271,36 +271,21 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                             <label className={labelClass}>{t("skinToneLabel")}</label>
                             <select className={cn(inputClass, "appearance-none")} value={skinTone} onChange={e => setSkinTone(e.target.value)}>
                                 <option value="">{t("genderSelect")}</option>
-                                <option value="Fair">{t("skinToneFair")}</option>
-                                <option value="Light">{t("skinToneLight")}</option>
-                                <option value="Medium">{t("skinToneMedium")}</option>
-                                <option value="Olive">{t("skinToneOlive")}</option>
-                                <option value="Tan">{t("skinToneTan")}</option>
-                                <option value="Brown">{t("skinToneBrown")}</option>
-                                <option value="Dark Brown">{t("skinToneDarkBrown")}</option>
-                                <option value="Deep">{t("skinToneDeep")}</option>
+                                {SKIN_TONE_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('skinTone', opt)}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className={labelClass}>{t("hairTextureLabel")}</label>
                             <select className={cn(inputClass, "appearance-none")} value={hairTexture} onChange={e => setHairTexture(e.target.value)}>
                                 <option value="">{t("genderSelect")}</option>
-                                <option value="Straight">{t("hairTextureStraight")}</option>
-                                <option value="Wavy">{t("hairTextureWavy")}</option>
-                                <option value="Curly">{t("hairTextureCurly")}</option>
-                                <option value="Coily">{t("hairTextureCoily")}</option>
+                                {HAIR_TEXTURE_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('hairTexture', opt)}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className={labelClass}>{t("eyeColorLabel")}</label>
                             <select className={cn(inputClass, "appearance-none")} value={eyeColor} onChange={e => setEyeColor(e.target.value)}>
                                 <option value="">{t("genderSelect")}</option>
-                                <option value="Brown">{t("skinToneBrown")}</option>
-                                <option value="Blue">{t("eyeColorBlue")}</option>
-                                <option value="Green">{t("eyeColorGreen")}</option>
-                                <option value="Hazel">{t("eyeColorHazel")}</option>
-                                <option value="Gray">{t("eyeColorGray")}</option>
-                                <option value="Amber">{t("eyeColorAmber")}</option>
+                                {EYE_COLOR_OPTIONS.map(opt => <option key={opt} value={opt}>{optionLabel('eyeColor', opt)}</option>)}
                             </select>
                         </div>
                         <div>
@@ -312,14 +297,14 @@ export function OnboardingForm({ onSubmit, isSubmitting = false, initialValues }
                             <label className={labelClass}>{t("hairColorLabel")}</label>
                             <div className="flex flex-wrap gap-3 mt-2">
                                 {HAIR_COLOR_OPTIONS.map(color => (
-                                    <label key={t(`hairColor${color}` as any)} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+                                    <label key={color} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             className="rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-amber-500/50"
                                             checked={hairColors.includes(color)}
                                             onChange={() => toggleHairColor(color)}
                                         />
-                                        {t(`hairColor${color}` as any)}
+                                        {optionLabel('hairColor', color)}
                                     </label>
                                 ))}
                             </div>

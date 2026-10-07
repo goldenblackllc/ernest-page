@@ -2,7 +2,7 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { AudioMuteProvider } from "@/context/AudioMuteContext";
-import { AuthProvider } from "@/lib/auth/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { CookieConsent } from "@/components/CookieConsent";
 

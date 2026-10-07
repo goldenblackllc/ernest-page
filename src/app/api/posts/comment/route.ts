@@ -1,27 +1,25 @@
 import { db } from '@/lib/firebase/admin';
-import { getAuth } from 'firebase-admin/auth';
-import { generateTextWithFallback, OPUS_MODEL } from '@functions/lib/ai/models';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getPostText } from '@functions/lib/getPostText';
 
-export const maxDuration = 60;
+export const maxDuration = 10;
 
+/**
+ * Save the user's personal comment on a post (visible only to them).
+ *
+ * The generateAIComment Cloud Function picks up the new comment and has the
+ * user's character leave a public comment on a random post by someone else.
+ */
 export async function POST(req: Request) {
     try {
         // 1. Authenticate
-        const authHeader = req.headers.get('Authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const uid = await verifyAuth(req);
+        if (!uid) return unauthorizedResponse();
 
-        const idToken = authHeader.split('Bearer ')[1];
-        let uid: string;
-        try {
-            const decoded = await getAuth().verifyIdToken(idToken);
-            uid = decoded.uid;
-        } catch {
-            return Response.json({ error: 'Invalid token' }, { status: 401 });
-        }
+        // Rate limit: 10 comments per minute per user (each one triggers an AI comment)
+        const rl = checkRateLimit(`comment:${uid}`, { maxRequests: 10, windowMs: 60_000 });
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
         const { postId, comment } = await req.json();
         if (!postId || !comment?.trim()) {
@@ -53,109 +51,13 @@ export async function POST(req: Request) {
             comments: FieldValue.increment(1),
         });
 
-        // 4. Generate AI comment in the background (fire-and-forget)
-        generateAIComment(uid).catch(err =>
-            console.error('[Comment] AI comment generation error:', err)
-        );
-
         return Response.json({
             success: true,
             author_title: authorTitle,
             author_avatar_url: authorAvatarUrl,
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Comment] Error:', error);
-        return Response.json({ error: error.message || 'Failed to save comment' }, { status: 500 });
-    }
-}
-
-async function generateAIComment(commenterUid: string) {
-    // 1. Fetch the commenter's character bible
-    const userDoc = await db.collection('users').doc(commenterUid).get();
-    if (!userDoc.exists) return;
-
-    const userData = userDoc.data()!;
-    const bible = userData.character_bible;
-    const identity = userData.identity;
-
-    if (!bible && !identity && !userData.defining_words) return;
-
-    const characterTitle = userData.defining_words?.join(', ') || identity?.title || bible?.source_code?.archetype || 'A thoughtful person';
-    const avatarUrl = userData.avatar?.url || null;
-
-    // Build a character voice excerpt from the bible
-    const sections = userData.bible?.sections || bible?.compiled_output?.ideal || [];
-    const bibleExcerpt = sections
-        ?.slice(0, 2)
-        .map((s: any) => s.content?.substring(0, 200))
-        .join('\n') || identity?.dream_self || '';
-
-    // 2. Find a random recent public post (not by the commenter)
-    const postsSnap = await db.collection('posts')
-        .orderBy('created_at', 'desc')
-        .limit(30)
-        .get();
-
-    const candidatePosts = postsSnap.docs.filter(doc => {
-        const data = doc.data();
-        return data.authorId !== commenterUid && data.is_public !== false;
-    });
-
-    if (candidatePosts.length === 0) return;
-
-    // Pick a random one
-    const targetDoc = candidatePosts[Math.floor(Math.random() * candidatePosts.length)];
-    const targetData = targetDoc.data();
-    const { letter: targetLetter } = getPostText(targetData);
-
-    if (!targetLetter) return;
-
-    // 3. Generate the AI comment
-    const prompt = `You are "${characterTitle}". You are commenting on a post written by SOMEONE ELSE — a stranger. Read their post and leave a short, genuine comment (1-3 sentences) directed at the POST AUTHOR.
-
-Character voice reference (use this for tone and style only):
-${bibleExcerpt}
-
-Post written by someone else:
-"${targetLetter.substring(0, 500)}"
-
-Rules:
-- You are speaking TO THE POST AUTHOR, not to yourself or your own user.
-- Be specific to the post content. Reference something in it.
-- No generic comments ("great post!", "love this!", "so true!")
-- Be encouraging but authentic to the character's voice
-- Keep it under 50 words
-- Write as a public comment on someone else's post. Casual, warm, real.
-- Do not use quotation marks around your response
-- If the post mentions a personal struggle, respond with empathy toward the AUTHOR of the post, not as if you are the one experiencing it`;
-
-    try {
-        const result = await generateTextWithFallback({
-            primaryModelId: OPUS_MODEL,
-            abortSignal: AbortSignal.timeout(30_000),
-            prompt,
-        });
-
-        const aiComment = result.text?.trim();
-        if (!aiComment) return;
-
-        // 4. Save the AI comment to the target post
-        await db.collection('posts').doc(targetDoc.id).collection('comments').add({
-            commenter_uid: commenterUid,
-            author_title: characterTitle,
-            author_avatar_url: avatarUrl,
-            content: aiComment,
-            type: 'ai_generated', // Visible to everyone
-            created_at: FieldValue.serverTimestamp(),
-        });
-
-        // Increment comment count on the target post
-        await db.collection('posts').doc(targetDoc.id).update({
-            comments: FieldValue.increment(1),
-        });
-
-        console.log(`[Comment] AI comment placed on post ${targetDoc.id} as "${characterTitle}"`);
-    } catch (err) {
-        console.error('[Comment] AI generation failed:', err);
+        return Response.json({ error: 'Failed to save comment' }, { status: 500 });
     }
 }

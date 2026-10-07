@@ -1,24 +1,16 @@
 {
   "common": {
-    "loading": "Loading...",
-    "signOut": "Sign out",
     "cancel": "Cancel",
-    "save": "Save",
     "close": "Close",
-    "delete": "Delete",
-    "confirm": "Confirm",
     "back": "Back",
     "submit": "Submit",
-    "brand": "Earnest Page Beta",
-    "error": "Something went wrong. Please try again."
+    "brand": "Earnest Page Beta"
   },
   "landing": {
     "nav": {
       "login": "Log In"
     },
     "auth": {
-      "heading1": "Get started",
-      "heading2": "Private and anonymous.",
       "phonePlaceholder": "Phone number",
       "sendCode": "Send Code",
       "sending": "Sending...",
@@ -30,7 +22,6 @@
       "errorNoPhone": "Please enter a phone number.",
       "errorSendFailed": "Failed to send code. Please try again.",
       "errorVerifyFailed": "Invalid code. Please try again.",
-      "tryWhatsApp": "Didn't receive it? Try WhatsApp instead",
       "byContinuing": "By continuing, you agree to our",
       "and": "and"
     },
@@ -52,10 +43,6 @@
   },
   "onboarding": {
     "headerTitle": "Get Started",
-    "processing": "Building your character...",
-    "processingSubtext": "This takes a few minutes. Hang tight.",
-    "submitLabel": "Create My Character",
-    "errorDefault": "Something went wrong. Please try again.",
     "identityForm": {
       "nameLabel": "First Name",
       "namePlaceholder": "Leave blank to auto-generate",
@@ -64,7 +51,6 @@
       "bornLabel": "Date of Birth",
       "aboutYouLabel": "About You",
       "ethnicityLabel": "Ethnicity (optional)",
-      "ethnicityPlaceholder": "e.g., Dominican, Filipino, Persian, Nigerian, Irish-Italian",
       "skinToneLabel": "Skin Tone",
       "hairColorLabel": "Hair Color",
       "hairTextureLabel": "Texture",
@@ -80,11 +66,7 @@
       "skip": "Skip for now"
     },
     "preChat": {
-      "heading": "One thing before we begin.",
-      "subtext": "This helps us build someone who matches you.",
-      "genderLabel": "Gender",
-      "genderPlaceholder": "Man, Woman, etc.",
-      "cta": "Continue"
+      "genderLabel": "Gender"
     },
     "form": {
       "title": "Your Ideal Self",
@@ -142,7 +124,14 @@
       "hairColorGray": "Gray",
       "hairColorWhite": "White",
       "hairColorAuburn": "Auburn",
-      "submitButton": "Build My Ideal Self"
+      "submitButton": "Build My Ideal Self",
+      "hairColorDarkBrown": "Dark Brown",
+      "hairColorLightBrown": "Light Brown",
+      "hairVolumeThick": "Thick",
+      "hairVolumeFull": "Full",
+      "hairVolumeThinning": "Thinning",
+      "hairVolumeReceding": "Receding",
+      "hairVolumeBaldShaved": "Bald/Shaved"
     }
   },
   "mylife": {
@@ -185,11 +174,8 @@
       "deleteAria": "Delete {name}",
       "nameLabel": "Name",
       "namePlaceholder": "Full name",
-      "relationshipLabel": "Relationship",
       "relationshipPlaceholder": "e.g. Partner, Friend, Coworker",
-      "aboutLabel": "About them",
       "aboutPlaceholder": "Age, personality, interests, your relationship dynamic...",
-      "birthdayLabel": "Birthday",
       "birthdayPlaceholder": "MM-DD or YYYY-MM-DD",
       "addPerson": "+ Add a person"
     },
@@ -202,13 +188,10 @@
     }
   },
   "mirrorChat": {
-    "consultingMirror": "Consulting The Mirror",
     "connectionSecured": "Connection secured.",
     "promptFriction": "\"Name what you want. Name what's in the way.\"",
-    "promptOnboarding": "Say hello — this is your free first session.",
     "extractingDirectives": "Extracting directives...",
     "extractDirectives": "Extract 24-Hour Directives",
-    "directivesSaved": "✓ Directives saved",
     "directivesFailed": "Failed to extract directives. Try again.",
     "sessionRouting": "Session Routing:",
     "publicFeed": "Public Feed",
@@ -221,11 +204,8 @@
     "sessionExpiredDesc": "Your {hours}-hour session window has ended. Extract your directives and close to start a new session.",
     "placeholderDefault": "Name it...",
     "placeholderEnded": "Session ended. Close to start a new one.",
-    "encryptedPrivate": "Encrypted & Private",
     "stop": "Stop",
-    "commit": "Commit",
     "regenerate": "Regenerate Response",
-    "mode": "Mode",
     "sessionRoutingSettings": "Session routing settings",
     "removePhoto": "Remove photo",
     "send": "Send"
@@ -233,28 +213,16 @@
   "triagePanel": {
     "buildingCharacter": "Building your character...",
     "openChat": "Open chat",
-    "purchaseSession": "Start a session",
     "startOnboarding": "Set up your character",
     "dailyLimit": "Daily limit reached — go do the work."
   },
   "feed": {
     "bibleCompilingTitle": "Building your Ideal Self...",
     "bibleCompilingSub": "We're building someone specific to you from what you told us. This takes a few minutes — your session starts as soon as it's ready.",
-    "bibleStaleTitle": "Build timed out.",
-    "bibleStaleSub": "The build took longer than expected. Tap below to try again.",
-    "bibleFailedTitle": "Build failed.",
-    "bibleFailedSub": "Something went wrong during the build. Tap below to try again.",
-    "bibleRateLimitDailyTitle": "Daily limit reached.",
-    "bibleRateLimitDailySub": "You've used all your character builds for today. Try again tomorrow.",
-    "bibleRateLimitCooldownTitle": "Too soon to rebuild.",
-    "bibleRateLimitCooldownSub": "Please wait a few minutes before rebuilding your character.",
-    "bibleRetry": "Retry Build",
-    "bibleRetrying": "Rebuilding...",
     "bibleReadyTitle": "Build Finished ✓",
     "idealSelfDefault": "Your Ideal Self",
     "bibleReadySub": "Tap to view your Ideal Self →",
     "writingPending": "Writing to Dear Earnest...",
-    "emptyFeed": "No posts yet. Start a conversation to create your first post.",
     "yourFirstSession": "Ready when you are",
     "sessionsAvailable": "Sessions Available",
     "sessionAvailable": "Session Available",
@@ -265,56 +233,41 @@
     "authorMe": "Me",
     "authorAnonymous": "Anonymous",
     "followAuthor": "+ Follow Author",
-    "privacyEveryone": "Everyone",
-    "privacyOnlyMe": "Only Me",
     "justNow": "just now",
-    "realityShiftTitle": "Something Unexpected",
-    "showLess": "Show Less ⌃",
-    "readMore": "Read More ⌄",
-    "readCounsel": "Read the Counsel ⌄",
-    "theCounsel": "THE COUNSEL:",
-    "rawConversation": "Raw Conversation",
-    "rawInputCounsel": "Raw Input & Counsel",
     "roleYou": "You",
-    "roleCharacter": "Character",
-    "rawInputTitle": "My Raw Input",
-    "rawCounselTitle": "Raw AI Counsel",
-    "deletePost": "Delete Post",
-    "likeTooltip": "Send love to the universe",
-    "commentTooltip": "Comment",
-    "viewPublic": "View Public",
-    "viewPrivate": "View Private",
     "commentPlaceholder": "Leave a reflection...",
     "deleteComment": "Delete comment",
-    "translatedFrom": "Translated from {language}",
-    "translate": "Translate",
-    "translatePost": "Translate post",
-    "adPartner": "Partner",
-    "adSponsored": "Sponsored",
     "digestLabel": "Your Daily Standard",
     "checkinContext": "I am here for my 30 day check-in.",
     "checkinTitle": "30 Day Check-in ✓",
     "checkinSub": "Tap to start →",
     "labelResponse": "Response",
-    "postImageAlt": "Post image",
-    "avatarAlt": "Avatar"
+    "avatarAlt": "Avatar",
+    "viewShort": "Short",
+    "viewText": "Text",
+    "viewPost": "Post",
+    "viewChat": "Chat",
+    "linkCopied": "Link copied",
+    "originalChat": "Original Chat",
+    "visibilityPrivate": "Only Me",
+    "visibilityCommunity": "Community",
+    "visibilityPublic": "Public",
+    "labelLetter": "Letter",
+    "copied": "Copied!",
+    "copyFullTranscript": "Copy Full Transcript",
+    "copyFullCaption": "Copy Full Caption",
+    "copyLetter": "Copy letter",
+    "copyResponse": "Copy response"
   },
   "profile": {
     "avatarAlt": "Avatar",
     "unknownCharacter": "Unknown Character",
     "profileTab": "Profile",
     "lastUpdated": "Last updated {date}",
-    "edit": "Edit",
-    "identityTitle": "Identity",
-    "editIdentityModalTitle": "Edit Identity",
     "close": "Close",
-    "rebuildingCharacter": "Rebuilding your character...",
-    "rebuildCharacterBtn": "Rebuild Character",
     "editAppearance": "Edit Appearance",
     "genderLabel": "Gender",
-    "dobLabel": "Date of Birth",
     "updateAvatar": "Update Avatar",
-    "saving": "Saving...",
     "avatarUpdated": "Avatar updated",
     "done": "Done",
     "regeneratingAvatar": "Regenerating your avatar...",
@@ -326,38 +279,18 @@
   },
   "securityVault": {
     "title": "Security & Routing",
-    "statusLocked": "Status: Locked.",
-    "statusOpen": "Status: Open.",
-    "identitiesSecured": "{count} Identities Secured.",
-    "identitySecured": "{count} Identity Secured.",
-    "manageFirewall": "Manage Firewall",
-    "purge": "Purge",
-    "confirmPurge": "Confirm Purge",
-    "proximityTitle": "Proximity Blind Spot",
-    "proximityDesc": "Posts within a 200-mile radius of your location are mathematically filtered from your feed. If browser GPS is disabled, anchor your radius manually.",
-    "enterZipCode": "Enter Zip Code (e.g., 01741)",
-    "anchorRadius": "Anchor Radius",
-    "currentAnchor": "Current Anchor:",
-    "liveGps": "Live GPS",
-    "defaultRoutingTitle": "Default Post Routing",
-    "defaultRoutingDesc": "Determine where your friction is logged by default.",
-    "publicRouting": "Public (Dear Earnest Feed)",
-    "publicRoutingDesc": "Anonymized friction routed to the network.",
-    "privateRouting": "Private (Personal Ledger)",
-    "privateRoutingDesc": "Strict historical logging. No external visibility.",
-    "dataDestructionTitle": "Data Destruction",
-    "dataDestructionDesc": "Permanently and irrevocably delete your entire history of friction and tactical plans. We hold nothing back.",
-    "burnLedger": "Burn the Ledger",
-    "burnWarning": "This action is irreversible. All posts will be destroyed.",
     "cancel": "Cancel",
-    "confirm": "Confirm",
     "accountDeletionTitle": "Account Deletion",
     "accountDeletionDesc": "Permanently delete your entire account, including all posts, conversations, character data, and authentication. This action is immediate and irreversible.",
     "deleteMyAccount": "Delete My Account",
     "deleteWarning": "Type DELETE to confirm. All data will be destroyed.",
     "typeDelete": "Type DELETE",
     "deleteForever": "Delete Forever",
-    "vaultSecured": "Vault Secured"
+    "vaultSecured": "Vault Secured",
+    "dataExportTitle": "Your Data",
+    "dataExportDesc": "Download a copy of everything Earnest Page stores about you: your profile, character, posts and conversations, as a JSON file.",
+    "downloadMyData": "Download My Data",
+    "exportFailed": "The download didn’t work. Please try again in a moment."
   },
   "supportChat": {
     "title": "Support",
@@ -370,12 +303,7 @@
   },
   "directivesMenu": {
     "title": "My Daily Plan",
-    "completing": "Completing",
-    "question": "Did anything unexpected happen?",
     "placeholder": "Something shifted, someone said something, a door opened...",
-    "description": "If something surprising happened, it'll be shared as a Reality Shift in the feed.",
-    "logging": "Logging Shift...",
-    "completeAndLog": "Complete & Log Shift",
     "markComplete": "Mark Complete",
     "cancel": "Cancel",
     "noDirectives": "No Active Directives",
@@ -391,12 +319,9 @@
   },
   "followAuthorModal": {
     "title": "Follow Author",
-    "description": "Assign a private name to this author. Only you will see this name next to their future posts in your feed.",
     "placeholder": "e.g., 'Stoic Boston Dad' or 'Sarah'",
-    "errorEmpty": "Please enter a name for this author.",
     "errorSave": "Failed to save alias.",
-    "cancel": "Cancel",
-    "saveAlias": "Save Alias"
+    "cancel": "Cancel"
   },
   "terms": {
     "title": "Terms of Service",
@@ -731,18 +656,6 @@
     "noResults": "No voices found. Try different filters."
   },
   "auth": {
-    "loginTitle": "Login",
-    "verifyTitle": "Verify",
-    "phonePlaceholder": "Phone number",
-    "sendCode": "Send Code",
-    "sending": "Sending...",
-    "verifying": "Verifying...",
-    "verifyAndLogin": "Verify & Login",
-    "changePhoneNumber": "Change Phone Number",
-    "countryHint": "Select your country above and enter your phone number.",
-    "errorNoPhone": "Please enter a phone number.",
-    "errorSendFailed": "Failed to send code. Please try again.",
-    "errorVerifyFailed": "Invalid code. Please try again.",
     "selectCountryCode": "Select country code",
     "searchCountry": "Search country..."
   },
@@ -753,7 +666,6 @@
     "end": "You've seen all your posts."
   },
   "saved": {
-    "loading": "Loading...",
     "title": "Liked",
     "subtitle": "Posts you've shown love to.",
     "empty": "No liked posts yet. Tap the heart on any post to save it here."
@@ -762,11 +674,8 @@
     "notFound": "Post not found",
     "notFoundDesc": "This post may be private or no longer exists.",
     "sharedNotFoundDesc": "This shared link may have expired or been removed.",
-    "visitLink": "Visit Earnest Page",
     "brand": "Earnest Page",
-    "tapToListen": "Tap to listen",
-    "theResponse": "The Response",
-    "tryEarnestPage": "Try Earnest Page →"
+    "theResponse": "The Response"
   },
   "legalDisclaimer": "This legal document is translated for your convenience. In case of any discrepancies, the English version prevails."
 }

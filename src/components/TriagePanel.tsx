@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth/AuthContext";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils/cn";
 import { MessageCircle, Home, User as UserIcon } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -23,6 +23,7 @@ import { WantsEditor } from "./mylife/WantsEditor";
 import { LovesEditor } from "./mylife/LovesEditor";
 import { PeopleEditor } from "./mylife/PeopleEditor";
 import { DreamEditor } from "./mylife/DreamEditor";
+import { authFetch } from "@/lib/auth/authFetch";
 
 
 
@@ -213,13 +214,9 @@ export function TriagePanel() {
 
         // Trigger bible compile + initial dossier in the background
         try {
-            const idToken = await user.getIdToken();
-            fetch('/api/onboarding/process', {
+            authFetch(user, '/api/onboarding/process', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`,
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     defining_words: data.defining_words,
                     name: data.name.trim(),
@@ -263,14 +260,10 @@ export function TriagePanel() {
 
         // Layer 2: Check access without consuming credit (deferred to first message)
         try {
-            const idToken = await user?.getIdToken();
-            const res = await fetch('/api/check-session-access', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                },
-            });
+            const init: RequestInit = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+            const res = user
+                ? await authFetch(user, '/api/check-session-access', init)
+                : await fetch('/api/check-session-access', init);
             const data = await res.json();
 
             if (data.reason === 'daily_limit') {

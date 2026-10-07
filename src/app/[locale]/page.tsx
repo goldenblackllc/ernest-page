@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth, getAuthHint } from "@/lib/auth/AuthContext";
-import { useTrackEvent } from "@/lib/analytics/useTrackEvent";
+import { useAuth, getAuthHint } from "@/context/AuthContext";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { LandingPage } from "@/components/LandingPage";
 
 import { TriagePanel } from "@/components/TriagePanel";

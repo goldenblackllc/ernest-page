@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/lib/auth/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/i18n/navigation';
 import { useEffect } from 'react';
 

@@ -70,6 +70,6 @@ export async function GET(req: Request) {
 
     } catch (error: any) {
         console.error('[VoiceSearch] Error:', error);
-        return Response.json({ error: error.message || 'Unexpected error' }, { status: 500 });
+        return Response.json({ error: 'Unexpected error' }, { status: 500 });
     }
 }

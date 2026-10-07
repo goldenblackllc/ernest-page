@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 import { Loader2 } from "lucide-react";
-import { Timestamp, deleteDoc, doc } from "firebase/firestore";
+import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useLocale } from "next-intl";
+import { authFetch } from "@/lib/auth/authFetch";
+import { reviveCreatedAt } from "@/lib/posts/timestamps";
+import type { Post } from "@/types/post";
 
 interface PostListProps {
     /** Paginated API route returning { posts, nextCursor } */
@@ -20,7 +23,7 @@ interface PostListProps {
 export function PostList({ endpoint, emptyText, endText, emptyIcon }: PostListProps) {
     const { user } = useAuth();
     const locale = useLocale();
-    const [posts, setPosts] = useState<any[]>([]);
+    const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -45,28 +48,20 @@ export function PostList({ endpoint, emptyText, endText, emptyIcon }: PostListPr
         if (isLoadMore) setLoadingMore(true);
 
         try {
-            const idToken = await user.getIdToken();
             const params = new URLSearchParams({ locale });
             if (cursor) params.set("cursor", cursor);
 
-            const res = await fetch(`${endpoint}?${params.toString()}`, {
-                headers: { 'Authorization': `Bearer ${idToken}` },
-            });
+            const res = await authFetch(user, `${endpoint}?${params.toString()}`);
 
             if (!res.ok) throw new Error(`API returned ${res.status}`);
             const data = await res.json();
 
-            const mapped = (data.posts || []).map((post: any) => {
-                if (post.created_at && post.created_at._seconds !== undefined) {
-                    post.created_at = new Timestamp(post.created_at._seconds, post.created_at._nanoseconds || 0);
-                }
-                return post;
-            });
+            const mapped: Post[] = (data.posts || []).map(reviveCreatedAt);
 
             if (isLoadMore) {
                 setPosts(prev => {
                     const existingIds = new Set(prev.map(e => e.id));
-                    return [...prev, ...mapped.filter((p: any) => !existingIds.has(p.id))];
+                    return [...prev, ...mapped.filter(p => !existingIds.has(p.id))];
                 });
             } else {
                 setPosts(mapped);

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { useAuth } from "@/lib/auth/AuthContext";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils/cn";
 import { Loader2, Volume2, Square, Check } from "lucide-react";
 import { useLocale, useTranslations } from 'next-intl';
+import { authFetch } from '@/lib/auth/authFetch';
 
 /** Accent filter options per locale — values must match ElevenLabs shared-voices API accent values */
 const ACCENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
@@ -95,7 +96,6 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
         stopPlaying();
 
         try {
-            const idToken = await user.getIdToken();
             const params = new URLSearchParams();
             params.set('language', locale);
             if (gender) params.set('gender', gender);
@@ -103,9 +103,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
             if (accent) params.set('accent', accent);
             if (query) params.set('q', query);
 
-            const res = await fetch(`/api/voice/search?${params}`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-            });
+            const res = await authFetch(user, `/api/voice/search?${params}`);
             if (res.ok) {
                 const data = await res.json();
                 setResults(data.voices || []);
@@ -137,13 +135,9 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
         setSelectingId(voice.voice_id);
 
         try {
-            const idToken = await user.getIdToken();
-            const res = await fetch('/api/voice/select', {
+            const res = await authFetch(user, '/api/voice/select', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${idToken}`,
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ voiceId: voice.voice_id, voiceName: voice.name }),
             });
 
@@ -197,11 +191,8 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                             }
                             if (!selectedId || !user) return;
                             try {
-                                const idToken = await user.getIdToken();
                                 const params = new URLSearchParams({ q: selectedName });
-                                const res = await fetch(`/api/voice/search?${params}`, {
-                                    headers: { Authorization: `Bearer ${idToken}` },
-                                });
+                                const res = await authFetch(user, `/api/voice/search?${params}`);
                                 if (res.ok) {
                                     const data = await res.json();
                                     const match = (data.voices || []).find((v: any) => v.voice_id === selectedId);

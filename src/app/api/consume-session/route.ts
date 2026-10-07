@@ -6,7 +6,8 @@ const MAX_SESSIONS_PER_DAY = 5;
 /**
  * POST /api/consume-session
  * Called when a user starts a new Mirror Chat session.
- * Enforces daily cap (5/day for everyone). Earnest Page is free.
+ * Enforces the daily cap (5/day for everyone) and increments sessions_today,
+ * which mirrorReply's access check reads.
  */
 export async function POST(req: Request) {
     try {
@@ -61,9 +62,6 @@ export async function POST(req: Request) {
         });
     } catch (error: any) {
         console.error('Consume Session Error:', error);
-        return Response.json(
-            { error: error.message || 'Failed to consume session.' },
-            { status: 500 }
-        );
+        return Response.json({ error: 'Failed to consume session.' }, { status: 500 });
     }
 }

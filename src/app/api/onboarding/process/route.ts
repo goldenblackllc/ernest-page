@@ -81,15 +81,9 @@ export async function POST(req: Request) {
             error.name === "AbortError" ||
             (error.message || "").toLowerCase().includes("timeout")
         ) {
-            return Response.json(
-                { success: false, errorType: "TIMEOUT", message: "Processing timed out" },
-                { status: 504 }
-            );
+            return Response.json({ error: "Processing timed out" }, { status: 504 });
         }
 
-        return Response.json(
-            { error: error.message || "Unexpected error" },
-            { status: 500 }
-        );
+        return Response.json({ error: "Unexpected error" }, { status: 500 });
     }
 }

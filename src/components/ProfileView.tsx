@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile, Bible } from "@/types/character";
 import { db, functions } from "@/lib/firebase/config";
 import { httpsCallable } from "firebase/functions";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 import { User, ChevronDown, Heart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
