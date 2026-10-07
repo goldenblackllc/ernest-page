@@ -14,6 +14,7 @@ People talk with their "ideal self", an AI character built from their own Charac
 Rules:
 - **New heavy or background work goes in `functions/`.** Vercel times out and drops work after the response is sent.
 - **The AI/post pipeline exists only in `functions/src/lib/`.** The website imports the few shared files through the `@functions/*` alias (`@functions/lib/ai/models`, `@functions/lib/getPostText`). Never copy them into `src/lib`.
+- **Every package a shared file imports must also be in the root `package.json`.** Vercel installs only the root packages. Locally those imports silently resolve from `functions/node_modules`, so a missing one only fails on Vercel. To check, build with `functions/node_modules` moved aside.
 - `firebase/admin.ts` is deliberately separate per side: the website uses a service-account key, Functions use default credentials.
 - Don't rename or remove an exported Cloud Function without checking callers. Deployed names are URLs. For example, `src/app/api/onboarding/process` calls `compileCharacterBible` by URL.
 - Model ids live in `functions/src/lib/ai/models.ts`. Change them there only.
