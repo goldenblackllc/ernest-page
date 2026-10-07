@@ -342,7 +342,7 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
                     <div className="relative w-24 h-24">
                         <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-zinc-700">
                             {displayUrl ? (
-                                <img src={displayUrl} alt={t('avatarAlt')} className="w-full h-full object-cover" />
+                                <img src={displayUrl} alt={t('profile.avatarAlt')} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-500">
                                     <User className="w-8 h-8" />

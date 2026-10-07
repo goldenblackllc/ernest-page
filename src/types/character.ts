@@ -73,7 +73,8 @@ export interface CharacterProfile {
     dossier_updated_at?: any;             // Firestore Timestamp
     session_count?: number;
     session_recaps?: Array<{
-        date: string;
+        date: string;                     // YYYY-MM-DD in the user's time zone
+        at?: number;                      // session start (ms), gives recaps a time of day
         recap: string;
     }>;
 

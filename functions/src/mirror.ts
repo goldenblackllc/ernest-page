@@ -15,6 +15,7 @@ import { REGION } from './lib/config/region.js';
 import { generateTextWithFallback, MIRROR_MODEL, MIRROR_FALLBACK, MIRROR_EFFORT } from './lib/ai/models.js';
 import { buildMirrorSystemPrompt } from './lib/ai/mirrorPrompt.js';
 import { getCompiledBible } from './lib/bible.js';
+import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 
 const MAX_MESSAGE_LENGTH = 5000;
 const GENERATION_TIMEOUT_MS = 120_000;
@@ -55,9 +56,11 @@ function hasAccess(userData: FirebaseFirestore.DocumentData | undefined): boolea
     return userData?.sessions_today_date === today && (userData?.sessions_today || 0) > 0;
 }
 
-function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined, localTime: string | undefined, locale: string | undefined): string {
-    const dossier = userData?.dossier || userData?.identity?.dossier || '';
-    const sessionRecaps: { date: string; recap: string }[] = userData?.session_recaps || [];
+function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined, localTime: string | undefined, locale: string | undefined, timeZone: string): string {
+    const now = new Date();
+    const todayKey = localDateKey(now, timeZone);
+    const dossier = annotateDates(userData?.dossier || userData?.identity?.dossier || '', todayKey);
+    const sessionRecaps: { date: string; at?: number; recap: string }[] = userData?.session_recaps || [];
     const preferredLocale = userData?.preferred_locale || locale || 'en';
 
     const localeNames: Record<string, string> = { es: 'SPANISH', fr: 'FRENCH', de: 'GERMAN', pt: 'PORTUGUESE' };
@@ -69,15 +72,15 @@ function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined,
 You have been engaged through Earnest Page, a platform for self-actualization. The person you are speaking with is a version of you that wants to become you, but currently is not there yet. You share the same people — every person in your Character Bible is someone they know personally. You share the same preferences and tastes. But your life circumstances may differ: your Character Bible may describe a life they have not yet built. Do not be confused when they reference people from your own world — you know these people. Do not be confused when their current reality does not match yours — they are still becoming you. You do not see them as broken, and you do not believe they have "problems" to fix. You see them as perfectly positioned in their exact present moment, and your role is to help them recognize their own perfection, see the gifts in their circumstances, and align with their most exciting options.
 
 [DOSSIER — ABOUT THE PERSON YOU ARE SPEAKING TO]
-The following file contains facts about where this person currently is in their life. You share the same people and the same preferences — when they mention someone by name, you likely already know that person from your own Character Bible. However, their current life circumstances (career stage, finances, living situation, accomplishments) may not yet match yours. These facts describe THEIR current reality, not yours. Do not claim their specific accomplishments, projects, or creations as your own — but DO recognize shared people and shared tastes as familiar.
+The following file contains facts about where this person currently is in their life. Dates within the past or coming year are followed by how far they are from today in parentheses — when you mention timing, go by those labels rather than working it out yourself. You share the same people and the same preferences — when they mention someone by name, you likely already know that person from your own Character Bible. However, their current life circumstances (career stage, finances, living situation, accomplishments) may not yet match yours. These facts describe THEIR current reality, not yours. Do not claim their specific accomplishments, projects, or creations as your own — but DO recognize shared people and shared tastes as familiar.
 
 ${dossier || 'No dossier available — ask them to tell you about themselves, their situation, and what they are excited about.'}`;
 
     if (sessionRecaps.length > 0) {
         engagementContract += `\n\n[RECENT SESSIONS — WHAT YOU LAST TALKED ABOUT]
-The following are brief recaps of your most recent sessions. Use them for continuity — reference what was discussed if relevant, but do not force it.
+The following are brief recaps of your most recent sessions, each labeled with when it happened. Use them for continuity — reference what was discussed if relevant, but do not force it. When you mention when something was discussed, go by these labels rather than working it out yourself.
 
-${sessionRecaps.map(r => `${r.date}: ${r.recap}`).join('\n\n')}`;
+${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : relativeDayLabel(r.date, todayKey)} (${r.date}): ${r.recap}`).join('\n\n')}`;
     }
 
     return buildMirrorSystemPrompt({
@@ -103,7 +106,7 @@ ${sessionRecaps.map(r => `${r.date}: ${r.recap}`).join('\n\n')}`;
 
 // ─── Chat reply ─────────────────────────────────────────────────────────────
 
-export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; localTime?: string; locale?: string }>(
+export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; localTime?: string; timeZone?: string; locale?: string }>(
     {
         region: REGION,
         timeoutSeconds: 540,
@@ -115,6 +118,7 @@ export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; 
         checkRateLimit(uid);
 
         const { messages, sessionId, localTime, locale } = request.data || ({} as any);
+        const timeZone = safeTimeZone(request.data?.timeZone);
         if (!sessionId) throw new HttpsError('invalid-argument', 'Missing session');
         if (!Array.isArray(messages) || messages.length === 0) throw new HttpsError('invalid-argument', 'Missing messages');
 
@@ -129,7 +133,7 @@ export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; 
         const userData = userDoc.data();
         if (!hasAccess(userData)) throw new HttpsError('permission-denied', 'No active session');
 
-        const systemPrompt = buildSystemPrompt(userData, localTime, locale);
+        const systemPrompt = buildSystemPrompt(userData, localTime, locale, timeZone);
 
         // Save the user's message immediately so the client shows "generating"
         const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc(sessionId);
@@ -137,6 +141,7 @@ export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; 
             id: sessionId,
             uid,
             messages,
+            timeZone, // processChat dates the session recap in the user's time zone
             status: 'generating',
             updatedAt: Date.now(),
             ...(messages.length === 1 ? { createdAt: Date.now() } : {}),

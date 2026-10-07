@@ -7,6 +7,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/security/serverHash.js';
 import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt, buildDossierCondensePrompt, DOSSIER_WORD_LIMIT } from './lib/ai/dossierPrompt.js';
+import { safeTimeZone, localDateKey } from './lib/utils/relativeDates.js';
 import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
 import { matchSponsor } from './lib/config/ecosystem.js';
 import { generateCondensedTranscript, type CondensedTranscript } from './lib/ai/condensedTranscript.js';
@@ -88,7 +89,7 @@ export const processChat = onDocumentUpdated(
         const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
 
         const sessionCount = (userData?.session_count || identity?.session_count || 0) + 1;
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateKey(new Date(), safeTimeZone(after.timeZone));
 
         try {
             const { condensed, rewrittenDossier, recap } = await analyzeSession(userData, transcript, today);
@@ -105,7 +106,7 @@ export const processChat = onDocumentUpdated(
 
             // Write session metadata + dossier — do NOT touch unified_profile, wants_for_bible, or source_code
             const dossierPromise = (userData && recap)
-                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, rewrittenDossier, today, sessionCount })
+                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, rewrittenDossier, today, sessionStartedAt: after.createdAt || now, sessionCount })
                 : Promise.resolve();
 
             if (condensed.is_publishable && condensedMessages && condensedMessages.length > 0) {
@@ -269,11 +270,12 @@ async function saveSessionMetadata(opts: {
     sessionRecap: string;
     rewrittenDossier: string | undefined;
     today: string;
+    sessionStartedAt: number;
     sessionCount: number;
 }): Promise<void> {
-    const { userRef, userData, uid, sessionRecap, today, sessionCount } = opts;
+    const { userRef, userData, uid, sessionRecap, today, sessionStartedAt, sessionCount } = opts;
     const existingRecaps = userData?.session_recaps || [];
-    const newRecap = { date: today, recap: sessionRecap };
+    const newRecap = { date: today, at: sessionStartedAt, recap: sessionRecap };
     const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
 
     let dossierBody: string | undefined = opts.rewrittenDossier?.trim();

@@ -88,7 +88,7 @@ export function buildImageRequestParts(options: {
         },
     }));
 
-    const referencePrefix = referenceImages.length > 0 ? REFERENCE_PREFIX[referenceMode] : '';
+    const referencePrefix = referenceImages.length > 0 ? (REFERENCE_PREFIX[referenceMode] ?? REFERENCE_PREFIX.full) : '';
     parts.push({ text: referencePrefix + prompt + (ASPECT_RATIO_HINT[aspectRatio] ?? '') });
     return parts;
 }

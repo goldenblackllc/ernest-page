@@ -117,6 +117,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
     const requestReply = (replyMessages: Message[]) => mirrorReply({
         sessionId,
         localTime: mirrorLocalTime(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         messages: replyMessages,
         locale,
     });

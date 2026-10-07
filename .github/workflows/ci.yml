@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Builds the website the way Vercel does: only the root packages are
+  # installed, so a package that shared functions code needs but the root
+  # package.json lacks fails here instead of on Vercel.
+  website-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Build
+        run: |
+          # Throwaway credentials: the build loads firebase-admin but never calls Firebase.
+          export FIREBASE_SERVICE_ACCOUNT_KEY=$(node -e '
+            const { generateKeyPairSync } = require("crypto");
+            const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+            console.log(JSON.stringify({
+              project_id: "ci-placeholder",
+              client_email: "ci@ci-placeholder.iam.gserviceaccount.com",
+              private_key: privateKey.export({ type: "pkcs8", format: "pem" }),
+            }));')
+          npx next build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:0:web:0"
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix functions
+      - run: npm test
+
+  functions-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm ci --prefix functions
+      - run: npm run build --prefix functions

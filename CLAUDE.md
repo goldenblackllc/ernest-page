@@ -59,6 +59,18 @@ node scripts/find-dead-code.mjs     # unreachable files, unused exports, unused 
 
 Website env vars are in `.env.local`; function secrets are in `functions/.env`.
 
+## Tests and CI
+
+- Vitest runs every `*.test.ts(x)` in the repo, website and functions alike, from the root with `npm test`. Put tests in a `__tests__/` folder next to the code. Server and functions tests start with `// @vitest-environment node`.
+- Never call real services in tests. Mock `@/lib/firebase/admin` (or use `src/test/fakeFirestore.ts`), `firebase-admin`, and every AI, Twilio and ElevenLabs module.
+- Guards worth keeping green: `serializePublicPost` never leaks private fields, every authenticated route returns 401 without a valid token, the publish rule in `functions/src/lib/posts.ts`, and `src/messages/__tests__` (all locales match, and every key the code uses exists).
+- GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request:
+  - **website-build:** typecheck, then `next build` with only root packages installed, like Vercel.
+  - **tests:** `npm test`.
+  - **functions-build:** compiles the Cloud Functions.
+
+  CI reports results but doesn't block Vercel deploys.
+
 ## Deploying and git
 
 - Never commit or push unless the user asks, and each request covers only that one commit or push (see `.agents/workflows/git-rules.md`). Commit with an explicit pathspec, because other agents may have staged files.
