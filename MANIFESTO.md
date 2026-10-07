@@ -7,7 +7,7 @@
 *   **The Ethical North Star:** Our metric for success is NOT "Time on App," but "User Empowerment." We win when the user feels happier, stronger, and more capable *offline*.
 
 ## 2. The Philosophical Engine: Reality Rules
-The AI does not improvise a worldview. It operates within a strict set of 16 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat, Ghost-Writing, and Plan Generation.
+The AI does not improvise a worldview. It operates within a strict set of 24 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat, Ghost-Writing, and Plan Generation.
 
 **Key principles:**
 *   All feelings come from beliefs, never from external circumstances. The world provides circumstances; the character provides the meaning.
@@ -18,8 +18,6 @@ The AI does not improvise a worldview. It operates within a strict set of 16 "Un
 *   A character does not think its way into a new feeling; it acts its way there.
 
 **Core Characteristics (every character has these):** Free, secure, powerful, enjoys being alive, unconditionally loved, creates their reality, abundant.
-
-**Master Belief System:** A curated library of 20 belief pairs (negative/positive) used for belief pattern tracking. Categories: Identity ("I am powerless" → "I am in complete control") and Reality ("Life is hard" → "I really enjoy being alive"). These map to the user's emotional patterns and are referenced in dossier updates.
 
 The Reality Rules live in `functions/src/lib/constants/realityRules.ts` (the Mirror and bible compile both run on Cloud Functions).
 
@@ -34,14 +32,7 @@ The Reality Rules live in `functions/src/lib/constants/realityRules.ts` (the Mir
 ### Copywriting & Brand Voice: "Executive Dossier"
 The app functions as a "Character Editor," but the UI uses commanding, professional language — not therapy or developer jargon.
 
-| **BANNED Terms** | **REQUIRED Terms** |
-| :--- | :--- |
-| `Code` / `Source Code` | **Values** / **Beliefs** / **Compass** |
-| `OS` / `Operating System` | **Core Self** / **Foundation** |
-| `Glitch` / `Bug` / `Error` | **Tension** / **Block** / **Signal** |
-| `Repair` / `Debug` / `Fix` | **Recast** / **Shift** / **Resolve** |
-| `Protocol` / `Algorithm` | **Practice** / **Habit** / **Ritual** |
-| `Coach` / `Mentor` / `Life Coach` | **Advisor** / **Partner** / **Analyst** |
+Avoid developer and machine words in the UI (code, operating system, bug, debug, fix, protocol, algorithm) and coaching or therapy words (coach, mentor, life coach, therapy).
 
 ## 4. Conceptual Function (The Logic Only)
 **Metaphor:** "Character Editor."
@@ -52,7 +43,7 @@ The app functions as a "Character Editor," but the UI uses commanding, professio
 **Phone-only authentication via Twilio Verify.** No emails, no passwords.
 *   **Flow:** User enters a phone number on the Landing Page → `/api/auth/send-code` sends an OTP via Twilio (protected by a Cloudflare Turnstile check) → user enters the 6-digit code → `/api/auth/verify-code` validates it and returns a Firebase custom token → client signs in with `signInWithCustomToken`.
 *   **Dial Code Detection:** The landing page detects the user's timezone and pre-fills the matching country dial code.
-*   **Phone numbers are not stored** in Firestore, only a salted hash for lookup.
+*   **Phone numbers live only in Firebase Auth.** Firestore and posts hold only a salted hash, used for matching.
 
 ## 6. The Mechanics (The Toolkit)
 
@@ -73,7 +64,7 @@ The core profile, stored at `users/{uid}`.
 An anonymous advice column powered by real conversations.
 *   **Post Creation:** When a Mirror Chat closes, `processChat` synthesizes it into an anonymous "Dear [Archetype]" post. Images (one per message), narrated audio and a downloadable video are generated in the background; the post is published once its images and audio exist.
 *   **Feed Structure:** Chronological (newest first), merging the user's own posts, followed authors' posts, and new public posts.
-*   **Post Features:** Like (private, doubles as a bookmark; liked posts appear on the profile), AI-generated and personal comments, follow authors, delete or change the visibility of your own posts, translation into the reader's language.
+*   **Post Features:** Like (private, doubles as a bookmark; liked posts appear on the profile), AI-generated and personal comments, follow authors, delete or change the visibility of your own posts.
 
 ### D. Action Directives & Todos (My Daily Plan)
 *   **Source:** Generated from Mirror Chat via the "Give Me A Plan" button.
@@ -86,7 +77,7 @@ An anonymous advice column powered by real conversations.
 
 ### F. Support Chat
 *   **Component:** Floating help button (bottom-right) opens a chat panel backed by `/api/support`.
-*   **Rules:** 2-3 sentence responses. No markdown. Never says "AI"; uses "your Ideal Self" or "your character." Never exposes technical details. Redirects personal questions to Mirror Chat.
+*   **Rules:** 2-3 sentence responses. No markdown. Never describes Earnest Page as "AI-powered", a "language model" or a "chatbot"; uses "your Ideal Self" or "your character." Never exposes technical details. Redirects personal questions to Mirror Chat.
 *   **Rate limited:** 10 messages per 5 minutes per user (or per IP when signed out).
 
 ## 7. Security & Privacy
@@ -97,7 +88,7 @@ Every post has two versions:
 2.  **Public Version (Ghost-Written):** AI-synthesized "Dear [Archetype]" letter and response, anonymized with pseudonyms. Stored as `public_post`.
 
 ### B. Likes & Social Metrics
-*   **No vanity metrics.** We never display like counts, follower counts, or engagement numbers.
+*   **No real popularity metrics.** Likes are anonymous karma: each like adds +1 to a random recent public post by someone else, so a post's like count is not a measure of its popularity. Follower counts are never shown. Comment counts are shown.
 *   **Like state is private.** A user can only see whether *they* have liked a post.
 
 ### C. Security Vault

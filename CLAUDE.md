@@ -23,7 +23,10 @@ Rules:
 
 **Website (`src/`)**
 - `app/[locale]/`: pages. `app/api/`: route handlers. `proxy.ts`: locale routing and security headers (Next 16's renamed middleware).
-- `components/`: UI. `components/mirror/` and `hooks/useMirrorSession`, `useCharacterTTS`, `useVisualViewport` make up the Mirror chat. `components/mylife/` holds the profile editors.
+- `components/`: UI.
+  - Mirror chat: `components/mirror/` plus `hooks/useMirrorSession`, `useCharacterTTS` and `useVisualViewport`.
+  - Feed post card: `components/feed/` plus `hooks/useFeedAudio` and `usePostComments`. The `Post` type is in `types/post.ts`.
+  - Profile editors: `components/mylife/`.
 - `context/`: React providers (`AuthContext`, `AudioMuteContext`). `hooks/`: custom hooks.
 - `lib/auth/`: `serverAuth.ts` (`verifyAuth` for API routes) and `authFetch.ts` (client fetch with the ID token).
 - `lib/posts/`: post serializers and timestamp helpers. `lib/firebase/`: client `config.ts` and server `admin.ts`.

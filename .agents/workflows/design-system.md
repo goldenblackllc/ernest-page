@@ -24,27 +24,18 @@ description: design system and brand voice rules for all UI work
 ## 2. Copywriting & Metaphor Shift (Strict Enforcement)
 The app functions as a "Character Editor," but we DO NOT use "Developer/Machine" language in the UI.
 
-| **BANNED (Developer/Machine Terms)** | **REQUIRED (Human/Growth Terms)** |
-| :--- | :--- |
-| `Code` / `Source Code` | **Values** / **Beliefs** / **Compass** |
-| `OS` / `Operating System` | **Core Self** / **Foundation** |
-| `Glitch` / `Bug` / `Error` | **Tension** / **Block** / **Signal** |
-| `Repair` / `Debug` / `Fix` | **Recast** / **Shift** / **Resolve** |
-| `Protocol` / `Algorithm` | **Practice** / **Habit** / **Ritual** |
-| `// REPAIR` (Syntax decoration) | **Recast** (Clean text) |
+Avoid developer and machine words in the UI: code, source code, operating system, glitch, bug, error, repair, debug, fix, protocol, algorithm, and code-style decoration such as `// REPAIR`.
 
 ## 3. Component Standards
 *   **The Feed Card:**
-    *   Looks like a Tweet or Insta post.
-    *   Header: Avatar + Name + Time.
-    *   Body: The Content.
-    *   Footer: Action interactions (Recast, Align, Share).
-*   **The "Character Bible" (Profile):**
-    *   Standard "Profile" layout. Avatar centered or left. Stats (Actions Taken, Recasts).
-    *   Tabs: "Posts", "Values" (was Code), "Vision" (was Visual Board).
-*   **The Input (Recast Engine):**
-    *   Feels like "Compose Tweet" or "Create Story."
-    *   Minimalist. Large text input. Focus on the thought.
+    *   A 16:9 video-style card: the post's images with narrated audio and word-by-word subtitles.
+    *   Header overlay: Avatar + Name + Time.
+    *   Footer: Like, Comments, Restart, Text view, Share. Authors also get the original chat, delete, and video download.
+*   **The Profile:**
+    *   Standard profile layout. Avatar, character name and title.
+    *   Tabs: "About", "Posts", "Liked".
+*   **The Mirror Chat Input:**
+    *   Feels like a messaging app composer. Minimalist. Large text input. Focus on the thought.
 
 ## 4. Accessibility & Polish
 *   Touch targets must be at least 44px.
