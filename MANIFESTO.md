@@ -24,7 +24,7 @@ The Reality Rules live in `functions/src/lib/constants/realityRules.ts` (the Mir
 ## 3. Visual Aesthetic (Strict Adherence)
 **North Star:** "Premium Native Mobile Social."
 **Design Philosophy:** "Radical Familiarity" — the app must look indistinguishable from Instagram, X (Twitter), or TikTok.
-*   **Color Palette:** Monochromatic. Deep blacks (`bg-black`, `bg-zinc-950`), zinc grays for surfaces, `text-zinc-100` through `text-zinc-500` for hierarchy. **No accent colors** — no emerald, no blue, no brand color. High-contrast white on black is the only accent.
+*   **Color Palette:** Monochromatic. Deep blacks (`bg-black`, `bg-zinc-950`), zinc grays for surfaces, `text-zinc-100` through `text-zinc-500` for hierarchy. No brand color. Accents are used only to carry meaning: amber for the spoken subtitle word, warnings and the My Life editors; emerald for confirmations, live indicators and following.
 *   **Surfaces:** Thin borders (`border-white/10`), not heavy background fills. Cards separated by subtle lines.
 *   **Typography:** HK Grotesk (sans-serif), bold, tight tracking. `uppercase tracking-widest` for labels. 16px base.
 *   **Interactions:** Pill buttons (`rounded-full`), snappy 150-200ms transitions. No sci-fi, no dashboards, no cinematic hero sections.

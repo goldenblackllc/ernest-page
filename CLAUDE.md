@@ -8,7 +8,7 @@ People talk with their "ideal self", an AI character built from their own Charac
 |---|---|---|
 | Path | `src/` | `functions/src/` (separate package, own `package.json`) |
 | Runs on | Vercel (Next.js 16 App Router) | Firebase Cloud Functions (Node 22, `us-central1`) |
-| Does | Pages, auth, reads, quick AI replies (support, translate, TTS) | Everything slow or in the background: Mirror chat replies, post generation, images, audio, video, bibles, avatars, digests, admin email |
+| Does | Pages, auth, reads, quick replies (support chat, TTS, voice search) | Everything slow or in the background: Mirror chat replies, post generation, images, audio, video, bibles, avatars, digests, admin email |
 | Entry | `src/app/` | `functions/src/index.ts` |
 
 Rules:
