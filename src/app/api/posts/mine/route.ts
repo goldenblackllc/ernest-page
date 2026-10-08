@@ -13,7 +13,6 @@ export async function GET(req: Request) {
 
         const url = new URL(req.url);
         const cursor = url.searchParams.get("cursor");
-        const locale = url.searchParams.get("locale") || "en";
         const limit = Math.min(parseInt(url.searchParams.get("limit") || String(PAGE_SIZE)), 50);
 
         const postsRef = db.collection("posts");
@@ -32,7 +31,6 @@ export async function GET(req: Request) {
             const posts = await serializePostsForViewer(
                 snap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                 uid,
-                locale,
             );
 
             let nextCursor: string | null = null;
@@ -54,7 +52,6 @@ export async function GET(req: Request) {
             const posts = await serializePostsForViewer(
                 snap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                 uid,
-                locale,
             );
             // Manual sort
             posts.sort((a: any, b: any) => {

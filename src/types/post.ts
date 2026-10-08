@@ -27,13 +27,6 @@ export interface AudioMessageBoundary {
 
 export type PostVisibility = 'private' | 'community' | 'public';
 
-/** Letter/response text in another locale, as returned by /api/posts/translate/batch. */
-export interface PostTranslation {
-    letter?: string;
-    response?: string;
-    [field: string]: unknown;
-}
-
 /**
  * A post as the feed APIs serve it to the client (and as FeedPostCard renders it).
  * API serializers may send null for absent fields; the UI only checks truthiness.
@@ -93,8 +86,6 @@ export interface Post {
     short_audio_url?: string;
     short_audio_word_timestamps?: WordTimestamp[];
     short_audio_letter_ratio?: number;
-    translations?: Record<string, PostTranslation>;
-    _translated?: PostTranslation;
     shareToken?: string;
 }
 

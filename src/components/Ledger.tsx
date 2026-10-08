@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
 import { FollowAuthorModal } from "@/components/FollowAuthorModal";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 
 import { authFetch } from "@/lib/auth/authFetch";
 import { reviveCreatedAt, timestampToDate } from "@/lib/posts/timestamps";
@@ -83,14 +83,13 @@ export function Ledger() {
     }, [user]);
 
     // Fetch feed (supports pagination via page param)
-    const locale = useLocale();
     const fetchFeed = useCallback(async (page: number = 0) => {
         if (!user) return;
         if (fetchingRef.current) return;
         fetchingRef.current = true;
 
         try {
-            const res = await authFetch(user, `/api/posts/feed?locale=${locale}&page=${page}`, {
+            const res = await authFetch(user, `/api/posts/feed?page=${page}`, {
                 cache: 'no-store',
             });
 
@@ -130,27 +129,6 @@ export function Ledger() {
                 setFeedCache(posts, data.following || {}, newNewest);
             }
 
-            // Auto-translate posts that don't have a cached translation yet
-            const needsTranslation: string[] = data.needsTranslation || [];
-            if (needsTranslation.length > 0) {
-                authFetch(user, '/api/posts/translate/batch', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postIds: needsTranslation, targetLocale: locale }),
-                })
-                    .then(r => r.json())
-                    .then(result => {
-                        if (result.translations && Object.keys(result.translations).length > 0) {
-                            setEntries(prev => prev.map(p => {
-                                if (result.translations[p.id]) {
-                                    return { ...p, _translated: result.translations[p.id] };
-                                }
-                                return p;
-                            }));
-                        }
-                    })
-                    .catch(err => console.error('Batch translation failed:', err));
-            }
         } catch (error) {
             console.error("Failed to fetch feed:", error);
         } finally {
@@ -158,7 +136,7 @@ export function Ledger() {
             setLoadingMore(false);
             fetchingRef.current = false;
         }
-    }, [user, locale]);
+    }, [user]);
 
 
     // Initial load + stale-while-revalidate

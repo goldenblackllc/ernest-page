@@ -4,13 +4,11 @@ import { db } from "@/lib/firebase/admin";
  * Shapes raw post documents for a given viewer, mirroring the feed route:
  * - attaches author avatar + identity title
  * - strips private fields (raw content, conversation) from posts the viewer doesn't own
- * - inlines the cached translation for the viewer's locale (non-owned posts only)
  * - normalizes created_at to { _seconds, _nanoseconds }
  */
 export async function serializePostsForViewer(
     posts: Array<{ id: string } & Record<string, any>>,
     uid: string,
-    locale: string = "en",
 ): Promise<any[]> {
     const authorIds = [...new Set(posts.map(p => p.authorId || p.uid).filter(Boolean))];
     const avatarMap: Record<string, string> = {};
@@ -46,10 +44,6 @@ export async function serializePostsForViewer(
             delete clean.rant;
             delete clean.conversation_messages;
             delete clean.counsel;
-
-            if (locale !== "en" && clean.translations?.[locale]) {
-                clean._translated = clean.translations[locale];
-            }
         }
         delete clean.translations;
 

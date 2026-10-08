@@ -21,7 +21,6 @@ export async function GET(req: Request) {
 
         const url = new URL(req.url);
         const cursor = url.searchParams.get('cursor');
-        const locale = url.searchParams.get('locale') || 'en';
         const limit = Math.min(parseInt(url.searchParams.get('limit') || String(PAGE_SIZE)), 30);
 
         let likedQuery = db.collection('users').doc(uid)
@@ -52,7 +51,7 @@ export async function GET(req: Request) {
             })
             .map(doc => ({ id: doc.id, ...doc.data(), isLikedByMe: true }));
 
-        const posts = await serializePostsForViewer(visible, uid, locale);
+        const posts = await serializePostsForViewer(visible, uid);
 
         let nextCursor: string | null = null;
         if (likedSnap.docs.length === limit) {

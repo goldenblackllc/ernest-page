@@ -16,7 +16,6 @@ export async function GET(req: Request) {
         const url = new URL(req.url);
         const newerThan = url.searchParams.get("newer_than"); // ISO timestamp
         const newerThanDate = newerThan ? new Date(newerThan) : null;
-        const localeParam = url.searchParams.get("locale"); // e.g. "es"
         const pageParam = parseInt(url.searchParams.get("page") || '0', 10);
         const page = Math.min(Math.max(pageParam, 0), MAX_PAGES - 1);
         const fetchLimit = PAGE_SIZE * (page + 1) * 4; // overfetch to compensate for post-fetch filtering
@@ -26,8 +25,6 @@ export async function GET(req: Request) {
         const userData = userDoc.data() || {};
         const followingMap: Record<string, string> = userData.following || {};
         const followedIds = Object.keys(followingMap);
-        const preferredLocale = localeParam || userData.preferred_locale || "en";
-        const shouldTranslate = preferredLocale !== "en";
 
         // 4. Chronological feed: fetch from all buckets, merge, sort newest-first
         const postsRef = db.collection("posts");
@@ -178,8 +175,7 @@ export async function GET(req: Request) {
             likedSet = new Set(likedDocs.filter(d => d.exists).map(d => d.id));
         }
 
-        // 11. Sanitize & inline cached translations
-        const needsTranslation: string[] = [];
+        // 11. Sanitize
         const sanitized = pageSlice.map((post: any) => {
             const isLikedByMe = likedSet.has(post.id);
 
@@ -199,16 +195,7 @@ export async function GET(req: Request) {
                 delete clean.counsel;
             }
 
-            // Auto-translation: for non-owner posts when locale != en
-            if (shouldTranslate && !isOwner) {
-                if (clean.translations && clean.translations[preferredLocale]) {
-                    clean._translated = clean.translations[preferredLocale];
-                } else {
-                    needsTranslation.push(clean.id);
-                }
-            }
-
-            // Strip full translations map — only send the user's locale
+            // Strip the legacy translations map
             delete clean.translations;
 
             // Strip imagen_prompt — implementation detail, sponsor info is in sponsored_by/sponsored_link
@@ -228,7 +215,6 @@ export async function GET(req: Request) {
             posts: sanitized,
             following: followingMap,
             hasMore,
-            needsTranslation: shouldTranslate ? needsTranslation : [],
         }, {
             headers: { 'Cache-Control': 'no-store, max-age=0' },
         });

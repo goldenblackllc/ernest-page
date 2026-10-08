@@ -7,7 +7,6 @@ import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal
 import { Loader2 } from "lucide-react";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { useLocale } from "next-intl";
 import { authFetch } from "@/lib/auth/authFetch";
 import { reviveCreatedAt } from "@/lib/posts/timestamps";
 import type { Post } from "@/types/post";
@@ -22,7 +21,6 @@ interface PostListProps {
 
 export function PostList({ endpoint, emptyText, endText, emptyIcon }: PostListProps) {
     const { user } = useAuth();
-    const locale = useLocale();
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -48,7 +46,7 @@ export function PostList({ endpoint, emptyText, endText, emptyIcon }: PostListPr
         if (isLoadMore) setLoadingMore(true);
 
         try {
-            const params = new URLSearchParams({ locale });
+            const params = new URLSearchParams();
             if (cursor) params.set("cursor", cursor);
 
             const res = await authFetch(user, `${endpoint}?${params.toString()}`);
@@ -74,7 +72,7 @@ export function PostList({ endpoint, emptyText, endText, emptyIcon }: PostListPr
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [user, endpoint, locale]);
+    }, [user, endpoint]);
 
     useEffect(() => {
         fetchPosts();
