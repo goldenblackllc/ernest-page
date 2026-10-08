@@ -105,7 +105,7 @@ Earnest Page is **free** for all authenticated users.
 
 ### Abuse Prevention
 *   **Phone authentication:** One phone number = one account.
-*   **AI intent constraint:** The Mirror Chat prompt restricts conversations to personal growth. It will not respond to coding requests or off-topic prompts.
+*   **Mentor, not assistant:** The character helps with the person's life, including everyday choices, but does not do their work for them (code, essays, homework, long documents). It turns the conversation back to the person instead.
 *   **Rate limiting** on AI and auth endpoints.
 *   **Acceptable Use Policy:** Prohibits bots, scrapers, and circumvention of platform features.
 
