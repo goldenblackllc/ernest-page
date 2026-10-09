@@ -34,7 +34,7 @@ export const CURRENCY = 'usd';
 export const SELLER = {
     name: 'Earnest Page',
     legalName: 'Golden Black LLC',
-    address: '347 Russell St\nCarlisle, MA 01741',
+    address: '1001 S Main St, Ste 600\nKalispell, MT 59901-1498',
     taxId: '',
 };
 
