@@ -1,8 +1,8 @@
 /**
  * Daily Digest — one reflection card per active user per day.
  *
- * dailyDigest (scheduled, 4:00 AM UTC) finds users who were active in the
- * last day and have a compiled bible, then enqueues one dailyDigestUser task
+ * dailyDigest (scheduled, 4:00 AM UTC) finds users who were active on the
+ * previous UTC calendar day and have a compiled bible, then enqueues one dailyDigestUser task
  * per user. Each task builds the card (image prompts, TTS, thumbnail, images)
  * and writes it to users/{uid}.daily_digest.
  *
@@ -21,6 +21,7 @@ import { processPostContent } from './lib/ai/processPostContent.js';
 import { generateMessageImages } from './lib/ai/generatePostImage.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
 import { getCompiledBible } from './lib/bible.js';
+import { localDateKey } from './lib/utils/relativeDates.js';
 
 
 interface DigestTask {
@@ -40,7 +41,9 @@ export const dailyDigest = onSchedule(
         memory: '512MiB',
     },
     async () => {
-        const date = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const date = localDateKey(now, 'UTC');
+        const yesterday = localDateKey(new Date(now.getTime() - 24 * 60 * 60 * 1000), 'UTC');
         const usersSnapshot = await db.collection('users').get();
         const queue = getFunctions().taskQueue<DigestTask>(`locations/${REGION}/functions/dailyDigestUser`);
 
@@ -49,11 +52,9 @@ export const dailyDigest = onSchedule(
             const userData = userDoc.data();
             if (!getDigestBible(userData)) continue;
 
-            // Skip users who haven't opened the app recently
-            const lastActive = userData?.last_active_date;
-            if (!lastActive) continue;
-            const daysSinceActive = Math.floor((Date.now() - new Date(lastActive).getTime()) / (24 * 60 * 60 * 1000));
-            if (daysSinceActive > 1) continue;
+            // Only users active yesterday. A calendar-date match (not elapsed hours)
+            // means each active day earns exactly one card.
+            if (activeDateKey(userData?.last_active_date) !== yesterday) continue;
 
             try {
                 // Task ID dedupes accidental double runs for the same user and day
@@ -68,6 +69,16 @@ export const dailyDigest = onSchedule(
         console.log(`[Daily Digest] Enqueued ${enqueued} users for ${date}`);
     }
 );
+
+/**
+ * The UTC date (YYYY-MM-DD) of last_active_date. The website writes a UTC date
+ * string; a full ISO timestamp is accepted too. Null when missing or invalid.
+ */
+function activeDateKey(lastActive: unknown): string | null {
+    if (typeof lastActive !== 'string' || !lastActive) return null;
+    const when = new Date(lastActive);
+    return isNaN(when.getTime()) ? null : localDateKey(when, 'UTC');
+}
 
 // ─── Worker: build one user's card ──────────────────────────────────────────
 
