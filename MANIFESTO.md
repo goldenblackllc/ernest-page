@@ -52,7 +52,7 @@ The conversational AI interface. Users talk to a simulation of their "Ideal Self
 *   **How it works:** User opens chat from the floating action button → converses with their character (replies come from the `mirrorReply` Cloud Function) → optionally generates a plan → closes chat → the `processChat` Cloud Function turns it into a post and updates the dossier.
 *   **Session Routing:** Each session is set to Public feed, Private ledger, or Burn on close (deleted with no processing).
 *   **Plan Generation:** "Give Me A Plan" extracts 3-7 actionable directives from the conversation and saves them to the user's `active_todos`.
-*   **Session Limits:** Up to 5 sessions per day; each session is capped at 2 hours / 30 exchanges. Abandoned sessions are swept every 15 minutes.
+*   **Session Limits:** Up to 5 sessions per day; each session is capped at 30 exchanges and 3 hours. A session idle for 60 minutes is closed (the sweep runs every 15 minutes). See §8.
 
 ### B. The Character Bible (The Config File)
 The core profile, stored at `users/{uid}`.
@@ -96,12 +96,29 @@ A security panel on the user profile for full account deletion.
 
 ## 8. Access Model
 
-Earnest Page is **free** for all authenticated users.
+Earnest Page is priced on value, not cost, and quality is never traded for margin: the Mirror's model, effort and turn count don't change to protect a price. A high price is part of the product. It asks for commitment, and people who commit do the work.
 
-| Limit | Value | Rationale |
+| | What it is | Price |
 |---|---|---|
-| **Daily sessions** | 5 per day | Encourages users to do the real work between sessions |
-| **Session length** | Up to 2 hours / 30 exchanges | Prevents open-ended resource consumption |
+| **Free sessions** | 5 per account year, counted from signup. Onboarding is free on top. | Free |
+| **One session** | A founding price, stated as one. It rises as the product proves itself. | $100 |
+| **Three sessions** | For people who have already decided. | $250 |
+| **Membership** | A session every day, for people who make it a practice. | $1,000 / month |
+
+*   **The free sessions are a way in, not a trial.** They exist for the teenager, the person who is broke right now, and the person in a hard moment. They renew every year, so nobody is ever locked out. Present them as a gift with its value stated, never as a free tier.
+*   **Order of use:** membership first, then free sessions, then purchased sessions. Purchased sessions never expire.
+*   **Limits for everyone:** 5 sessions a day, 30 exchanges and 3 hours per session. These are product philosophy ("go live it"), not cost control.
+*   **No fake anchors.** Every price shown is a real price someone pays. No "was $250" prices.
+*   **Everything is in-house.** Payment, card updates, cancellation and refunds happen inside the app (Stripe Payment Element). No Stripe-hosted pages.
+
+### Refunds
+Self-serve and no questions asked, so no support is ever needed:
+*   **Unused sessions:** refundable anytime.
+*   **A used session:** refundable within 7 days. One refund per 5 paid sessions (the first is always allowed), and at most 3 a year. Sessions from a 3-pack refund at the pack's per-session price.
+*   **Membership:** a first membership is fully refundable within 7 days if 3 sessions or fewer were used. Once per account. Cancelling otherwise ends it at the end of the paid month.
+*   Free sessions can't be refunded.
+
+The rules live in one place, `functions/src/lib/access/sessionAccess.ts`, used by the website routes and the Mirror functions alike.
 
 ### Abuse Prevention
 *   **Phone authentication:** One phone number = one account.

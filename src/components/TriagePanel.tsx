@@ -24,6 +24,8 @@ import { LovesEditor } from "./mylife/LovesEditor";
 import { PeopleEditor } from "./mylife/PeopleEditor";
 import { DreamEditor } from "./mylife/DreamEditor";
 import { authFetch } from "@/lib/auth/authFetch";
+import { PurchasePanel } from "./payments/PurchasePanel";
+import type { AccessSummary } from "@functions/lib/access/sessionAccess";
 
 
 
@@ -53,8 +55,8 @@ export function TriagePanel() {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-    // Session state
-    const [sessionsToday, setSessionsToday] = useState<number>(0);
+    // Shown when the free sessions are used up and nothing is left to pay with
+    const [purchaseSummary, setPurchaseSummary] = useState<AccessSummary | null>(null);
 
     // My Life drawer state
     const [activeSection, setActiveSection] = useState<MyLifeSection | null>(null);
@@ -70,10 +72,6 @@ export function TriagePanel() {
             const isLegacyComplete = !!data.defining_words;
             const hasCompletedOnboarding = data.onboarding_complete || isLegacyComplete;
             setNeedsOnboarding(!hasCompletedOnboarding);
-
-            // Daily session count
-            const today = new Date().toISOString().split('T')[0];
-            setSessionsToday(data.sessions_today_date === today ? (data.sessions_today || 0) : 0);
         });
         return () => unsubscribe();
     }, [user]);
@@ -128,7 +126,7 @@ export function TriagePanel() {
         };
         window.addEventListener('open-mirror-checkin', handleCheckin);
         return () => window.removeEventListener('open-mirror-checkin', handleCheckin);
-    }, [sessionsToday]);
+    }, [user, bible, needsOnboarding]);
 
     const isBibleReady = bible != null && (bible.sections?.length ?? 0) > 0;
 
@@ -258,17 +256,13 @@ export function TriagePanel() {
             // If lookup fails, continue with normal flow
         }
 
-        // Layer 2: Check access without consuming credit (deferred to first message)
+        // Check access without using anything (the session starts with the first message)
         try {
-            const init: RequestInit = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
-            const res = user
-                ? await authFetch(user, '/api/check-session-access', init)
-                : await fetch('/api/check-session-access', init);
-            const data = await res.json();
+            const res = await authFetch(user!, '/api/check-session-access', { method: 'POST' });
+            const data: AccessSummary = await res.json();
 
-            if (data.reason === 'daily_limit') {
-                setIsDailyCapHit(true);
-                setTimeout(() => setIsDailyCapHit(false), 5000);
+            if (data.reason === 'payment_required') {
+                setPurchaseSummary(data);
                 return;
             }
 
@@ -412,6 +406,19 @@ export function TriagePanel() {
                 )}
             </div>
 
+
+            {/* Purchase — free sessions used up */}
+            {purchaseSummary && user && (
+                <PurchasePanel
+                    user={user}
+                    summary={purchaseSummary}
+                    onClose={() => setPurchaseSummary(null)}
+                    onPurchased={() => {
+                        setPurchaseSummary(null);
+                        openMirror();
+                    }}
+                />
+            )}
 
             {/* Mirror Chat Modal */}
             <MirrorChat

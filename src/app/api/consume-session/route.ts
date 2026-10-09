@@ -1,66 +1,36 @@
-import { db } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
-
-const MAX_SESSIONS_PER_DAY = 5;
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { startSession } from '@/lib/access/accessStore';
 
 /**
- * POST /api/consume-session
- * Called when a user starts a new Mirror Chat session.
- * Enforces the daily cap (5/day for everyone) and increments sessions_today,
- * which mirrorReply's access check reads.
+ * POST /api/consume-session  { sessionId }
+ * Starts a Mirror session (called with the first message). Uses the membership,
+ * a free session or a paid credit, and records the grant on the active chat;
+ * mirrorReply refuses sessions without one. Starting the same session twice is
+ * a no-op. Refusals: 429 { reason: 'daily_limit' }, 402 { reason: 'payment_required' }.
  */
 export async function POST(req: Request) {
     try {
         const uid = await verifyAuth(req);
         if (!uid) return unauthorizedResponse();
 
-        const userDoc = await db.collection('users').doc(uid).get();
-        const data = userDoc.data();
+        const rl = checkRateLimit(`consume-session:${uid}`, { maxRequests: 10, windowMs: 60_000 });
+        if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
-        // ─── FREE ONBOARDING SESSION ───
-        const isLegacyComplete = !!data?.identity?.title;
-        const isOnboardingComplete = data?.identity?.onboarding_complete || isLegacyComplete;
-        
-        if (!isOnboardingComplete) {
-            return Response.json({
-                granted: true,
-                source: 'free_onboarding',
-                remaining: 'free',
-                sessionsToday: 0,
-                dailyRemaining: MAX_SESSIONS_PER_DAY,
-            });
+        const { sessionId } = await req.json().catch(() => ({}));
+        if (typeof sessionId !== 'string' || !/^[\w-]{8,64}$/.test(sessionId)) {
+            return Response.json({ error: 'Missing or invalid session' }, { status: 400 });
         }
 
-        // ─── DAILY CAP (applies to everyone) ───
-        const today = new Date().toISOString().split('T')[0];
-        const sessionsToday = data?.sessions_today_date === today ? (data?.sessions_today || 0) : 0;
-
-        if (sessionsToday >= MAX_SESSIONS_PER_DAY) {
+        const result = await startSession(uid, sessionId);
+        if (!result.granted) {
             return Response.json(
-                {
-                    error: `You've reached your daily limit of ${MAX_SESSIONS_PER_DAY} sessions. Come back tomorrow — or better yet, go do the work.`,
-                    granted: false,
-                    dailyLimit: true,
-                    remaining: 0,
-                },
-                { status: 429 }
+                { error: 'Session not available', granted: false, reason: result.reason },
+                { status: result.reason === 'daily_limit' ? 429 : 402 },
             );
         }
-
-        // Increment daily counter
-        await db.collection('users').doc(uid).update({
-            sessions_today: sessionsToday + 1,
-            sessions_today_date: today,
-        });
-
-        return Response.json({
-            granted: true,
-            source: 'free',
-            remaining: 'unlimited',
-            sessionsToday: sessionsToday + 1,
-            dailyRemaining: MAX_SESSIONS_PER_DAY - sessionsToday - 1,
-        });
-    } catch (error: any) {
+        return Response.json({ granted: true, source: result.source, resumed: result.resumed });
+    } catch (error) {
         console.error('Consume Session Error:', error);
         return Response.json({ error: 'Failed to consume session.' }, { status: 500 });
     }

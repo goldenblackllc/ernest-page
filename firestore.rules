@@ -7,23 +7,35 @@ service cloud.firestore {
       // Users can read their own document
       allow read: if request.auth != null && request.auth.uid == userId;
 
-      // Users can create their own document
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Server-managed fields. `access` holds everything about sessions and
+      // billing: credits, free sessions, daily counts, membership, Stripe ids
+      // (functions/src/lib/access/sessionAccess.ts).
+      function serverManagedUserFields() {
+        return ['access', 'created_at', 'daily_digest', 'session_recaps'];
+      }
+
+      // Users can create their own document, without server-managed fields
+      allow create: if request.auth != null && request.auth.uid == userId
+        && !request.resource.data.keys().hasAny(serverManagedUserFields());
 
       // Users can update their own document, but NOT server-managed fields
       allow update: if request.auth != null && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys()
-            .hasAny(['subscription', 'session_credits', 'sessions_today',
-                      'sessions_today_date', 'daily_digest', 'stripeCustomerId',
-                      'session_purchases', 'session_recaps']);
+            .hasAny(serverManagedUserFields());
 
       // Users can delete their own document (account deletion)
       allow delete: if request.auth != null && request.auth.uid == userId;
 
       // ─── ACTIVE CHATS (subcollection) ───
+      // `access` records how the session was paid for; only the server writes it.
       match /active_chats/{sessionId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId
+          && !request.resource.data.keys().hasAny(['access']);
+        allow update: if request.auth != null && request.auth.uid == userId
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['access']);
       }
+      // credit_lots and paid_sessions are server-only (default deny below).
 
       // ─── LIKED POSTS (subcollection) ───
       match /liked_posts/{postId} {

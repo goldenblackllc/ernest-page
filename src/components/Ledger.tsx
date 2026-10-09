@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/context/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { CheckInCard } from "@/components/CheckInCard";
+import { BalanceCard } from "@/components/feed/BalanceCard";
 import { VoiceBrowser } from "@/components/VoiceBrowser";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 
@@ -17,6 +18,7 @@ import { authFetch } from "@/lib/auth/authFetch";
 import { reviveCreatedAt, timestampToDate } from "@/lib/posts/timestamps";
 import type { Post } from "@/types/post";
 import { getFeedCache, setFeedCache, clearFeedCache } from "@/lib/feedCache";
+import { accessSummary } from "@functions/lib/access/sessionAccess";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const CHECKIN_INTERVAL_MS = 28 * 24 * 60 * 60 * 1000; // 28 days
@@ -344,19 +346,15 @@ export function Ledger() {
     const isFeedEmpty = entries.length === 0 && !pendingPostId && !showBibleCompiling && profileLoaded;
 
     if (isFeedEmpty) {
-        const sessionCredits = profile?.session_credits || 0;
-        const sub = profile?.subscription;
-        const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
-        const hasActiveSub = (sub?.status === 'active' || sub?.status === 'past_due') && subEndDate && new Date(subEndDate) > new Date();
+        const summary = accessSummary(profile?.access, profile?.created_at ? Date.parse(profile.created_at) : undefined, new Date().getTime());
+        const available = summary.freeRemaining + summary.credits;
         const isNewUser = !profile?.session_count || profile.session_count < 1;
 
         let badgeText = t('yourFirstSession');
-        if (hasActiveSub) {
+        if (summary.membership) {
             badgeText = t('sessionsAvailable');
-        } else if (sessionCredits > 0) {
-            badgeText = `${sessionCredits} ${sessionCredits === 1 ? t('sessionAvailable') : t('sessionsAvailable')}`;
-        } else if (!isNewUser) {
-            badgeText = t('yourFirstSession'); // Fallback for 0-credit returners with deleted feeds
+        } else if (!isNewUser && available > 0) {
+            badgeText = `${available} ${available === 1 ? t('sessionAvailable') : t('sessionsAvailable')}`;
         }
 
         const emptyStateContent = (
@@ -467,6 +465,11 @@ export function Ledger() {
     return (
         <section className="flex flex-col gap-6 pt-2">
 
+            {/* Sessions available (not for members) */}
+            {profileLoaded && (profile?.onboarding_complete || !!profile?.defining_words?.length) && (
+                <BalanceCard summary={accessSummary(profile?.access, profile?.created_at ? Date.parse(profile.created_at) : undefined, new Date().getTime())} />
+            )}
+
             {/* Bible Generation Status Card */}
             {showBibleCompiling && (
                 <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm relative">
@@ -510,7 +513,7 @@ export function Ledger() {
 
             {/* 28-Day Check-in Card */}
             {(() => {
-                const anchor = profile?.last_thirty_day_checkin || profile?.subscription?.subscribedAt || (profile?.updatedAt?.toDate?.()?.toISOString?.()) || null;
+                const anchor = profile?.last_thirty_day_checkin || profile?.created_at || (profile?.updatedAt?.toDate?.()?.toISOString?.()) || null;
                 if (!anchor) return null;
                 const elapsed = Date.now() - new Date(anchor).getTime();
                 if (elapsed < CHECKIN_INTERVAL_MS) return null;

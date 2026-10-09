@@ -60,9 +60,8 @@ export async function POST(req: Request) {
                     const newUser = await adminAuth.createUser({ phoneNumber: phone });
                     uid = newUser.uid;
 
-                    // Give new users 1 free session credit
+                    // created_at starts the user's free-session year (sessionAccess.ts)
                     await db.collection('users').doc(newUser.uid).set({
-                        session_credits: 1,
                         created_at: new Date().toISOString(),
                     }, { merge: true });
                 } catch (createError: any) {

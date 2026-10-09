@@ -27,6 +27,16 @@ const AUTH_ROUTES: [string, string, () => Promise<Record<string, unknown>>][] = 
     ["check-session-access", "POST", () => import("../check-session-access/route")],
     ["consume-session", "POST", () => import("../consume-session/route")],
     ["onboarding/process", "POST", () => import("../onboarding/process/route")],
+    ["payments/email", "POST", () => import("../payments/email/route")],
+    ["payments/history", "GET", () => import("../payments/history/route")],
+    ["payments/methods", "GET", () => import("../payments/methods/route")],
+    ["payments/methods", "POST", () => import("../payments/methods/route")],
+    ["payments/membership", "POST", () => import("../payments/membership/route")],
+    ["payments/membership/cancel", "POST", () => import("../payments/membership/cancel/route")],
+    ["payments/purchase", "POST", () => import("../payments/purchase/route")],
+    ["payments/receipt", "GET", () => import("../payments/receipt/route")],
+    ["payments/refund", "POST", () => import("../payments/refund/route")],
+    ["payments/status", "GET", () => import("../payments/status/route")],
     ["posts/comment", "POST", () => import("../posts/comment/route")],
     ["posts/comment/delete", "POST", () => import("../posts/comment/delete/route")],
     ["posts/comments", "GET", () => import("../posts/comments/route")],
@@ -97,6 +107,9 @@ describe("internal errors", () => {
         ["posts/comment", "POST", () => import("../posts/comment/route"), { postId: "p1", comment: "hi" }],
         ["voice/select", "POST", () => import("../voice/select/route"), { voiceId: "voice-id-1234567", voiceName: "V" }],
         ["account/export", "POST", () => import("../account/export/route"), {}],
+        ["consume-session", "POST", () => import("../consume-session/route"), { sessionId: "session-0001" }],
+        ["payments/status", "GET", () => import("../payments/status/route"), undefined],
+        ["payments/refund", "POST", () => import("../payments/refund/route"), { kind: "credits", lotId: "pi_1" }],
     ];
 
     it.each(SAMPLES)("%s returns a generic 500 that hides the thrown message", async (path, method, load, reqBody) => {

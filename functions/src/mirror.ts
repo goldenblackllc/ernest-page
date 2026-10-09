@@ -13,8 +13,9 @@ import { randomUUID } from 'crypto';
 import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { generateTextWithFallback, MIRROR_MODEL, MIRROR_FALLBACK, MIRROR_EFFORT } from './lib/ai/models.js';
-import { buildMirrorSystemPrompt } from './lib/ai/mirrorPrompt.js';
+import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } from './lib/ai/mirrorPrompt.js';
 import { getCompiledBible } from './lib/bible.js';
+import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 
 const MAX_MESSAGE_LENGTH = 5000;
@@ -41,22 +42,20 @@ function checkRateLimit(uid: string) {
     recentRequests.set(uid, timestamps);
 }
 
-/** Subscription, credits, a session already consumed today, or free onboarding. */
-function hasAccess(userData: FirebaseFirestore.DocumentData | undefined): boolean {
-    const isLegacyComplete = !!userData?.defining_words?.length || !!userData?.identity?.title;
-    const isOnboarding = !(userData?.onboarding_complete || userData?.identity?.onboarding_complete || isLegacyComplete);
-    if (isOnboarding) return true;
-
-    const sub = userData?.subscription;
-    const subEndDate = sub?.currentPeriodEnd || sub?.subscribedUntil;
-    const hasActiveSub = (sub?.status === 'active' || sub?.status === 'past_due') && subEndDate && new Date(subEndDate) > new Date();
-    if (hasActiveSub || (userData?.session_credits || 0) > 0) return true;
-
-    const today = new Date().toISOString().split('T')[0];
-    return userData?.sessions_today_date === today && (userData?.sessions_today || 0) > 0;
+/**
+ * The session must have been started (and paid for) through /api/consume-session,
+ * which records the grant on the active chat. Enforces the turn, time and size limits.
+ */
+async function requireSessionAccess(uid: string, sessionId: unknown, messages: ChatMessage[], { forPlan = false } = {}) {
+    if (typeof sessionId !== 'string' || !sessionId) throw new HttpsError('invalid-argument', 'Missing session');
+    const chat = (await db.collection('users').doc(uid).collection('active_chats').doc(sessionId).get()).data();
+    const check = checkReply(chat?.access as SessionGrant | undefined, messages, Date.now());
+    // A plan can still be made once the session hits its turn or time limit.
+    const planAllowed = forPlan && !check.ok && (check.reason === 'expired' || check.reason === 'turn_limit');
+    if (!check.ok && !planAllowed) throw new HttpsError('permission-denied', 'This session has ended', { reason: check.reason });
 }
 
-function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined, localTime: string | undefined, locale: string | undefined, timeZone: string): string {
+function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined, sessionId: string, locale: string | undefined, timeZone: string): string {
     const now = new Date();
     const todayKey = localDateKey(now, timeZone);
     const dossier = annotateDates(userData?.dossier || userData?.identity?.dossier || '', todayKey);
@@ -84,7 +83,7 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
     }
 
     return buildMirrorSystemPrompt({
-        localTime: localTime || '',
+        negativeInventory: pickNegativeInventory(sessionId),
         compiledBible: getCompiledBible(userData),
         languageInstruction,
         // Tone directive removed — the Conversation Spine provides structural flow,
@@ -128,12 +127,13 @@ export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; 
             throw new HttpsError('invalid-argument', 'Message is too long. Please keep it under 5,000 characters.');
         }
 
+        await requireSessionAccess(uid, sessionId, messages);
+
         const userDoc = await db.collection('users').doc(uid).get();
         if (!userDoc.exists) throw new HttpsError('not-found', 'User not found');
         const userData = userDoc.data();
-        if (!hasAccess(userData)) throw new HttpsError('permission-denied', 'No active session');
 
-        const systemPrompt = buildSystemPrompt(userData, localTime, locale, timeZone);
+        const systemPrompt = buildSystemPrompt(userData, sessionId, locale, timeZone);
 
         // Save the user's message immediately so the client shows "generating"
         const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc(sessionId);
@@ -153,11 +153,14 @@ export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; 
                 primaryModelId: MIRROR_MODEL,
                 fallbackModelId: MIRROR_FALLBACK,
                 messages: [
+                    // Cached: identical on every turn of the session.
                     {
                         role: 'system',
                         content: systemPrompt,
                         providerOptions: { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } },
                     },
+                    // After the cache breakpoint: changes every turn.
+                    { role: 'system', content: buildMirrorTimeBlock(localTime) },
                     ...messages,
                 ],
                 providerOptions: { anthropic: { effort: MIRROR_EFFORT } },
@@ -188,7 +191,7 @@ const PLAN_LANGUAGE: Record<string, string> = {
     pt: 'You MUST respond entirely in PORTUGUESE (Português). Do not use English unless the user explicitly asks for an English word.',
 };
 
-export const mirrorPlan = onCall<{ messages: ChatMessage[]; localTime?: string; locale?: string }>(
+export const mirrorPlan = onCall<{ messages: ChatMessage[]; sessionId: string; localTime?: string; locale?: string }>(
     {
         region: REGION,
         timeoutSeconds: 300,
@@ -198,10 +201,13 @@ export const mirrorPlan = onCall<{ messages: ChatMessage[]; localTime?: string; 
         const uid = request.auth?.uid;
         if (!uid) throw new HttpsError('unauthenticated', 'Sign in required');
 
-        const { messages, localTime, locale } = request.data || ({} as any);
+        checkRateLimit(uid);
+
+        const { messages, sessionId, localTime, locale } = request.data || ({} as any);
         if (!Array.isArray(messages) || messages.length < 2) {
             throw new HttpsError('invalid-argument', 'Insufficient conversation context');
         }
+        await requireSessionAccess(uid, sessionId, messages, { forPlan: true });
 
         const userDoc = await db.collection('users').doc(uid).get();
         if (!userDoc.exists) throw new HttpsError('not-found', 'User not found');

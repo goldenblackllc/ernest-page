@@ -73,6 +73,65 @@ class FakeDb {
         this.autoId += 1;
         return `auto-${this.autoId}`;
     }
+
+    /**
+     * Runs fn with a transaction whose writes are applied to the stored documents
+     * (set with merge deep-merges maps, like Firestore) and recorded in `writes`.
+     * Unlike plain ref.set/update, which only record.
+     */
+    async runTransaction<T>(fn: (tx: FakeTransaction) => Promise<T>): Promise<T> {
+        if (this.failWith) throw this.failWith;
+        return fn(new FakeTransaction(this));
+    }
+
+    apply(path: string, data: DocData, merge: boolean) {
+        const current = this.docs.get(path);
+        this.docs.set(path, merge && current ? deepMerge(current, data) : resolveOps({}, data));
+    }
+}
+
+function isPlainObject(v: unknown): v is DocData {
+    return !!v && typeof v === "object" && !Array.isArray(v) && !(v as DocData).__op;
+}
+
+/** Applies FieldValue.increment; drops FieldValue.delete. */
+function resolveOps(current: DocData, data: DocData): DocData {
+    const out: DocData = { ...current };
+    for (const [k, v] of Object.entries(data)) {
+        const op = (v as DocData | null)?.__op;
+        if (op === "increment") out[k] = ((current[k] as number) || 0) + (v as { n: number }).n;
+        else if (op === "delete") delete out[k];
+        else out[k] = v;
+    }
+    return out;
+}
+
+function deepMerge(current: DocData, data: DocData): DocData {
+    const out = resolveOps(current, data);
+    for (const [k, v] of Object.entries(data)) {
+        if (isPlainObject(v) && isPlainObject(current[k])) out[k] = deepMerge(current[k] as DocData, v);
+    }
+    return out;
+}
+
+class FakeTransaction {
+    constructor(private db: FakeDb) {}
+
+    get<T>(target: { get: () => Promise<T> }): Promise<T> {
+        return target.get();
+    }
+
+    set(ref: { path: string }, data: DocData, opts?: { merge?: boolean }) {
+        this.db.writes.push({ op: "set", path: ref.path, data });
+        this.db.apply(ref.path, data, !!opts?.merge);
+        return this;
+    }
+
+    update(ref: { path: string }, data: DocData) {
+        this.db.writes.push({ op: "update", path: ref.path, data });
+        this.db.apply(ref.path, data, true);
+        return this;
+    }
 }
 
 class FakeQuery {

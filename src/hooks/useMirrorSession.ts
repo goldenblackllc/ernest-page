@@ -7,14 +7,16 @@ import { functions } from "@/lib/firebase/config";
 import { subscribeToActiveChat, getMostRecentActiveChat, saveActiveChat, deleteActiveChat } from "@/lib/firebase/chat";
 import { authFetch } from "@/lib/auth/authFetch";
 import type { Message, SessionRouting } from "@/types/chat";
+import { SESSION_LIMITS, SESSION_MS } from "@functions/lib/access/sessionAccess";
 
 // Mirror Chat runs on Cloud Functions; the reply is written to Firestore and
 // rendered from the active-chat subscription. High-effort replies can take minutes.
 const mirrorReply = httpsCallable(functions, 'mirrorReply', { timeout: 540_000 });
 
-export const MAX_EXCHANGES = 30;
-export const MAX_SESSION_HOURS = 2;
-const MAX_SESSION_MS = MAX_SESSION_HOURS * 60 * 60 * 1000;
+// The server enforces the same limits (functions/src/lib/access/sessionAccess.ts).
+export const MAX_EXCHANGES = SESSION_LIMITS.turnsPerSession;
+export const MAX_SESSION_HOURS = SESSION_LIMITS.sessionHours;
+const MAX_SESSION_MS = SESSION_MS;
 
 /** The user's local time, as sent to the Mirror functions. */
 export function mirrorLocalTime(): string {
@@ -80,21 +82,21 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         }
     }, [uid, isOpen, sessionId]);
 
-    // Layer 2: Register session via consume-session (handles both credits and subscriber daily caps).
-    // Returns false when access was refused and the chat has been closed.
+    // Start the session on the server (membership, free session or credit). mirrorReply
+    // refuses sessions that weren't started. Returns false when access was refused
+    // and the chat has been closed.
     const consumeSession = async (): Promise<boolean> => {
+        if (!sessionId || !authUser) return false;
         try {
-            const init: RequestInit = {
+            const res = await authFetch(authUser, '/api/consume-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-            };
-            const res = authUser
-                ? await authFetch(authUser, '/api/consume-session', init)
-                : await fetch('/api/consume-session', init);
+                body: JSON.stringify({ sessionId }),
+            });
             const data = await res.json();
 
             if (!data.granted) {
-                // Daily limit reached — close chat
+                // Daily limit reached or nothing left to pay with — close chat
                 onClose();
                 return false;
             }
@@ -109,7 +111,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
                 }, sessionId).catch(() => {});
             }
         } catch {
-            // Network error — proceed, mirror route will re-check access
+            // Network error — proceed; mirrorReply refuses if the session didn't start
         }
         return true;
     };
@@ -161,7 +163,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
                 if (chat.user_photo_url) {
                     setPostPhotoUrl(chat.user_photo_url);
                 }
-                // Restore session start time from Firestore so the 2-hour timer
+                // Restore session start time from Firestore so the session timer
                 // survives close/reopen without resetting.
                 if (chat.createdAt && !sessionStartedAt) {
                     setSessionStartedAt(chat.createdAt);

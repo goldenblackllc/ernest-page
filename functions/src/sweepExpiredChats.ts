@@ -1,6 +1,8 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
+import { sweepShouldRetrigger } from './lib/chatRetry.js';
+import { IDLE_TIMEOUT_MS } from './lib/access/sessionAccess.js';
 
 export const sweepExpiredChats = onSchedule(
     {
@@ -11,7 +13,7 @@ export const sweepExpiredChats = onSchedule(
     },
     async () => {
         const now = Date.now();
-        const timeoutMs = 30 * 60 * 1000; // 30 mins
+        const timeoutMs = IDLE_TIMEOUT_MS;
         let count = 0;
 
         const usersSnap = await db.collection('users').get();
@@ -27,20 +29,18 @@ export const sweepExpiredChats = onSchedule(
                 for (const chatDoc of chatsSnap.docs) {
                     const data = chatDoc.data();
                     
-                    if (data.retryAfter && data.retryAfter > now) continue;
-                    if (data.processing && data.processingStartedAt && (now - data.processingStartedAt < 10 * 60 * 1000)) continue;
-                    
                     const isExpired = data.updatedAt && data.updatedAt <= (now - timeoutMs);
                     const isClosed = data.isClosed === true;
                     
                     // An expired open chat is closed, which triggers processChat.
-                    // A closed chat that isn't processing (never picked up, or failed
-                    // earlier) gets a _triggerCron timestamp write, which fires
-                    // processChat's onDocumentUpdated trigger again.
+                    // A closed chat that was never picked up, failed and has
+                    // waited out its backoff, or holds a stale claim gets a
+                    // _triggerCron timestamp write, which fires processChat again
+                    // (see lib/chatRetry.ts for the limits).
                     if (isExpired && !isClosed) {
                         await chatDoc.ref.update({ isClosed: true });
                         count++;
-                    } else if (isClosed && !data.processing) {
+                    } else if (sweepShouldRetrigger(data, now)) {
                         await chatDoc.ref.update({ _triggerCron: Date.now() });
                         count++;
                     }

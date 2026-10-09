@@ -8,60 +8,19 @@ import type { Message } from "@/types/chat";
 
 const SILENT_MP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwCHAAAAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwCHAAAAAAAAAAAAAAAAAAAA';
 
-// ═══ TTS — Split text into chunks at sentence boundaries ═══
-function splitTextIntoChunks(text: string, maxLen: number): string[] {
-    if (text.length <= maxLen) return [text];
-
-    const chunks: string[] = [];
-    let remaining = text;
-
-    while (remaining.length > 0) {
-        if (remaining.length <= maxLen) {
-            chunks.push(remaining);
-            break;
-        }
-
-        // Find the last sentence-ending punctuation within the limit
-        let splitAt = -1;
-        const searchRegion = remaining.slice(0, maxLen);
-
-        // Prefer splitting at sentence boundaries: . ! ? followed by a space
-        for (let i = searchRegion.length - 1; i >= Math.floor(maxLen * 0.5); i--) {
-            if ((searchRegion[i] === '.' || searchRegion[i] === '!' || searchRegion[i] === '?')
-                && (i + 1 >= searchRegion.length || searchRegion[i + 1] === ' ')) {
-                splitAt = i + 1;
-                break;
-            }
-        }
-
-        // Fallback: split at last space
-        if (splitAt === -1) {
-            splitAt = searchRegion.lastIndexOf(' ');
-        }
-
-        // Last resort: hard split at maxLen
-        if (splitAt <= 0) {
-            splitAt = maxLen;
-        }
-
-        chunks.push(remaining.slice(0, splitAt).trim());
-        remaining = remaining.slice(splitAt).trim();
-    }
-
-    return chunks.filter(c => c.length > 0);
-}
-
 interface UseCharacterTTSOptions {
     isOpen: boolean;
     authUser: User | null | undefined;
     voiceId: string | null;
+    sessionId: string | null;
     messages: Message[];
     isLoading: boolean;
 }
 
-export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading }: UseCharacterTTSOptions) {
+export function useCharacterTTS({ isOpen, authUser, voiceId, sessionId, messages, isLoading }: UseCharacterTTSOptions) {
     const [autoSpeak, setAutoSpeak] = useState(() => {
-        try { return localStorage.getItem('ep-auto-speak') === '1'; } catch { return false; }
+        // On by default; only an explicit 'off' ('0') turns it off.
+        try { return localStorage.getItem('ep-auto-speak') !== '0'; } catch { return true; }
     });
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
@@ -113,52 +72,38 @@ export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading
         }
     };
 
-    // ═══ TTS — Fetch audio blob(s) for full text, chunking if needed ═══
-    const fetchTTSAudio = async (text: string): Promise<Blob | null> => {
-        if (!voiceId) return null;
-
-        // Strip markdown for cleaner speech
-        const cleanText = text
-            .replace(/[#*_~`>]/g, '')
-            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-            .replace(/\n{2,}/g, '. ')
-            .replace(/\n/g, ' ')
-            .trim();
-
-        if (!cleanText) return null;
-
-        // Split into chunks that fit within ElevenLabs eleven_v3 limit (5000 chars)
-        // Use 4800 as the chunk target to leave margin
-        const chunks = splitTextIntoChunks(cleanText, 4800);
+    // ═══ TTS — Fetch audio for a stored message. The server looks up the text
+    // and splits long replies into parts (X-TTS-Parts); the parts are joined here.
+    const fetchTTSAudio = async (messageId: string): Promise<Blob | null> => {
+        if (!voiceId || !sessionId || !authUser) return null;
 
         try {
             const audioBlobs: Blob[] = [];
+            let parts = 1;
 
-            for (const chunk of chunks) {
-                const init: RequestInit = {
+            for (let part = 0; part < parts; part++) {
+                const res = await authFetch(authUser, '/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: chunk, voiceId }),
-                };
-                const res = authUser
-                    ? await authFetch(authUser, '/api/tts', init)
-                    : await fetch('/api/tts', init);
+                    body: JSON.stringify({ sessionId, messageId, part }),
+                });
 
                 if (!res.ok) {
                     const errText = await res.text().catch(() => '');
                     console.error(`[TTS] Failed: ${res.status}`, errText);
-                    // If any chunk fails, return whatever we have so far
+                    // If any part fails, return whatever we have so far
                     break;
                 }
+                parts = Number(res.headers.get('X-TTS-Parts')) || 1;
                 audioBlobs.push(await res.blob());
             }
 
             if (audioBlobs.length === 0) return null;
 
-            // Single chunk — return directly (most common case)
+            // Single part — return directly (most common case)
             if (audioBlobs.length === 1) return audioBlobs[0];
 
-            // Multiple chunks — concatenate into a single blob
+            // Multiple parts — concatenate into a single blob
             return new Blob(audioBlobs, { type: 'audio/mpeg' });
         } catch (err) {
             console.error('[TTS] Fetch failed:', err);
@@ -228,7 +173,7 @@ export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading
                 blob = cached;
             } else {
                 setIsLoadingTTS(true);
-                blob = await fetchTTSAudio(lastMsg.content);
+                blob = await fetchTTSAudio(lastMsg.id);
                 // Persist to IndexedDB so it survives app switches
                 if (blob) cacheTTSBlob(lastMsg.id, blob).catch(() => {});
             }
@@ -244,7 +189,7 @@ export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading
             // Auto-play only if speaker is on
             if (blob && autoSpeak) await playAudioBlob(blob);
         })();
-    }, [messages, isLoading, voiceId]);
+    }, [messages, isLoading, voiceId, sessionId]);
 
     // Compute whether to hold the last assistant message during render (no flash).
     // Only hold when autoSpeak is on — when speaker is off, show the message immediately
@@ -314,7 +259,7 @@ export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading
             return;
         }
         // Last resort — fetch from TTS API
-        const blob = await fetchTTSAudio(lastAssistant.content);
+        const blob = await fetchTTSAudio(lastAssistant.id);
         if (blob) {
             cachedBlobRef.current = blob;
             cachedBlobMsgIdRef.current = lastAssistant.id;

@@ -19,7 +19,7 @@ import { RoutingMenu } from "@/components/mirror/RoutingMenu";
 import { MirrorInputBar } from "@/components/mirror/MirrorInputBar";
 
 const mirrorPlan = httpsCallable<
-    { messages: unknown[]; localTime: string; locale: string },
+    { messages: unknown[]; sessionId: string | null; localTime: string; locale: string },
     { success: boolean; directives: string[] }
 >(functions, 'mirrorPlan', { timeout: 300_000 });
 
@@ -113,7 +113,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
 
     // ═══ CHARACTER VOICE (TTS) ═══
     const voiceId = profile?.voice?.id || null;
-    const tts = useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading });
+    const tts = useCharacterTTS({ isOpen, authUser, voiceId, sessionId: session.sessionId, messages, isLoading });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInput(e.target.value);
@@ -174,6 +174,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         try {
             const { data } = await mirrorPlan({
                 messages,
+                sessionId: session.sessionId,
                 localTime: mirrorLocalTime(),
                 locale,
             });

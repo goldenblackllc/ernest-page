@@ -18,6 +18,7 @@ import { computeAge } from './lib/utils/parseBirthDate.js';
 import { getCompiledBible } from './lib/bible.js';
 import { REGION } from './lib/config/region.js';
 import { sendAdminEmail, buildNewPostEmail } from './lib/email/adminEmail.js';
+import { closeDecision, failureUpdate, MAX_PROCESS_ATTEMPTS } from './lib/chatRetry.js';
 
 type CondensedMessage = { role: 'user' | 'ideal_self'; text: string };
 
@@ -44,15 +45,11 @@ export const processChat = onDocumentUpdated(
         console.log(`[ProcessChat] Trigger fired for user=${uid} session=${sessionId} isClosed=${after?.isClosed} before.isClosed=${before?.isClosed} processing=${after?.processing}`);
 
         const now = Date.now();
-        // Skip if already being processed (unless the claim is stale > 10 min)
-        if (after.processing === true && (now - (after.processingStartedAt || 0)) < 10 * 60 * 1000) {
-            console.log(`[ProcessChat] Skipping — already processing (started ${Math.round((now - (after.processingStartedAt || 0)) / 1000)}s ago)`);
-            return;
-        }
-
-        // Skip if this trigger was caused by our own processing update (we just set processing: true)
-        if (!before?.processing && after.processing === true) {
-            console.log(`[ProcessChat] Skipping — this is our own processing claim update`);
+        // Skips our own claim and failure writes, fresh claims, backoff and
+        // exhausted retries. A failed run is retried only by the sweep.
+        const decision = closeDecision(before, after, now);
+        if (decision !== 'process') {
+            console.log(`[ProcessChat] Skipping — ${decision} (attempts=${after.processAttempts || 0})`);
             return;
         }
 
@@ -105,8 +102,11 @@ export const processChat = onDocumentUpdated(
             }
 
             // Write session metadata + dossier — do NOT touch unified_profile, wants_for_bible, or source_code
-            const dossierPromise = (userData && recap)
+            // Saved once: a retry after a later failure must not add a second
+            // recap or count the session twice.
+            const dossierPromise = (userData && recap && !after.metadataSaved)
                 ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, rewrittenDossier, today, sessionStartedAt: after.createdAt || now, sessionCount })
+                    .then(() => event.data?.after.ref.update({ metadataSaved: true }))
                 : Promise.resolve();
 
             if (condensed.is_publishable && condensedMessages && condensedMessages.length > 0) {
@@ -180,11 +180,11 @@ export const processChat = onDocumentUpdated(
             }
         } catch (error: any) {
             console.error(`[ProcessChat] Error processing chat for user ${uid}:`, error);
-            await event.data?.after.ref.update({
-                processing: false,
-                lastError: (error?.message || String(error)).slice(0, 500),
-                lastErrorAt: Date.now(),
-            });
+            const failure = failureUpdate(after, error, Date.now());
+            if (failure.processAttempts >= MAX_PROCESS_ATTEMPTS) {
+                console.error(`[ProcessChat] Giving up on session ${sessionId} for user ${uid} after ${failure.processAttempts} attempts`);
+            }
+            await event.data?.after.ref.update(failure);
         }
     }
 );

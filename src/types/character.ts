@@ -1,3 +1,5 @@
+import type { AccessState } from "@functions/lib/access/sessionAccess";
+
 /** A person in the user's life */
 export interface ProfilePerson {
     name: string;
@@ -92,36 +94,10 @@ export interface CharacterProfile {
     saved_posts?: string[];
     default_post_routing?: 'private' | 'public' | 'burn';
     last_thirty_day_checkin?: string;
-    subscription?: {
-        status: 'active' | 'canceled' | 'expired' | 'past_due';
-        plan: 'proving_ground' | 'long_game' | 'archangel';
-        subscribedAt: string;
-        subscribedUntil?: string;
-        currentPeriodEnd?: string;
-        cancelAtPeriodEnd?: boolean;
-        paymentIntentId?: string;
-        stripeSubscriptionId?: string;
-        stripeCustomerId?: string;
-        grantedBy?: 'admin' | 'stripe';
-        canceledAt?: string;
-        refunded?: boolean;
-        lastInvoiceId?: string;
-        paymentFailedAt?: string;
-    };
-    session_credits?: number;
-    sessions_today?: number;
-    sessions_today_date?: string;
-    session_purchases?: Array<{
-        id: string;
-        type: 'session_single' | 'session_3pack' | 'session_gift';
-        amount: number;
-        credits: number;
-        purchasedAt: string;
-        refunded?: boolean;
-        refundedAt?: string;
-    }>;
-    refund_count?: number;
-    total_sessions_purchased?: number;
+    /** Signup time; starts the free-session year */
+    created_at?: string;
+    /** Server-managed: credits, free sessions, daily count, membership */
+    access?: AccessState;
     daily_digest?: {
         title: string;
         content: string;

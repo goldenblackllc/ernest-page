@@ -6,7 +6,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell, Shield, LogOut, Users, HelpCircle } from "lucide-react";
+import { Bell, Shield, LogOut, Users, HelpCircle, CreditCard } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
 import { DirectivesMenu } from "@/components/DirectivesMenu";
@@ -100,6 +100,18 @@ export function DashboardHeader() {
                                         >
                                             <Shield className="w-4 h-4 text-zinc-500" />
                                             {t('dashboard.header.securityVault')}
+                                        </button>
+
+                                        {/* Billing: balance, membership, cards, history, refunds */}
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                router.push('/billing');
+                                            }}
+                                            className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <CreditCard className="w-4 h-4 text-zinc-500" />
+                                            {t('dashboard.header.billing')}
                                         </button>
 
                                         {/* Rolodex */}

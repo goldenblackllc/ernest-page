@@ -1,35 +1,67 @@
+import { db, FieldValue } from '@/lib/firebase/admin';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { cleanSpeechText, splitTextIntoChunks, TTS_CHUNK_CHARS } from '@/lib/tts/speechText';
 
 export const maxDuration = 120;
 
-// Max characters per TTS request — ElevenLabs eleven_v3 supports up to 5,000
-const MAX_TEXT_LENGTH = 5000;
+/**
+ * Characters one user can have spoken per day. Five full sessions of long
+ * replies are about 180k, so this only stops scripted abuse (~$0.08 per 1k chars).
+ */
+export const DAILY_TTS_CHAR_LIMIT = 250_000;
 
-// Validate voice ID — basic format check, real validation happens at ElevenLabs
-function isValidVoiceId(id: string): boolean {
-    return typeof id === 'string' && id.length >= 10 && id.length <= 40;
-}
+/** Plan messages exist only on the client; their ids start with this. */
+const PLAN_MESSAGE_PREFIX = 'plan-';
 
+/**
+ * POST /api/tts  { sessionId, messageId, part? }
+ * Speaks a reply the Mirror stored in users/{uid}/active_chats/{sessionId}, or,
+ * for a plan message, the directives saved to the user's active_todos. The
+ * client never sends text, so this can't be used as a general TTS service.
+ * Long replies are split into parts; the X-TTS-Parts header gives the count.
+ */
 export async function POST(req: Request) {
     try {
         const uid = await verifyAuth(req);
         if (!uid) return unauthorizedResponse();
 
-        // Rate limit: 20 TTS requests per minute per user
         const rl = checkRateLimit(`tts:${uid}`, { maxRequests: 20, windowMs: 60_000 });
         if (!rl.allowed) return rateLimitResponse(rl.resetMs);
 
-        const { text, voiceId } = await req.json();
-
-        if (!text || typeof text !== 'string') {
-            return Response.json({ error: 'Missing or invalid text' }, { status: 400 });
+        const { sessionId, messageId, part = 0 } = await req.json();
+        if (typeof sessionId !== 'string' || !sessionId || typeof messageId !== 'string' || !messageId
+            || !Number.isInteger(part) || part < 0) {
+            return Response.json({ error: 'Missing or invalid message' }, { status: 400 });
         }
 
-        if (text.length > MAX_TEXT_LENGTH) {
-            return Response.json({
-                error: `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters`,
-            }, { status: 400 });
+        const userRef = db.collection('users').doc(uid);
+        const userData = (await userRef.get()).data();
+        const voiceId: string | undefined = userData?.voice?.id || userData?.character_bible?.voice_id;
+        if (!voiceId) {
+            return Response.json({ error: 'No voice configured for this character' }, { status: 400 });
+        }
+
+        let sourceText: string | undefined;
+        if (messageId.startsWith(PLAN_MESSAGE_PREFIX)) {
+            const todos: { task?: string }[] = userData?.active_todos || [];
+            sourceText = todos.map(t => t.task).filter(Boolean).join('\n\n');
+        } else {
+            const chat = (await userRef.collection('active_chats').doc(sessionId).get()).data();
+            const message = (chat?.messages || []).find((m: { id?: string; role?: string }) => m?.id === messageId && m?.role === 'assistant');
+            sourceText = message?.content;
+        }
+        if (!sourceText) return Response.json({ error: 'Message not found' }, { status: 404 });
+
+        const chunks = splitTextIntoChunks(cleanSpeechText(sourceText), TTS_CHUNK_CHARS);
+        const text = chunks[part];
+        if (!text) return Response.json({ error: 'Message not found' }, { status: 404 });
+
+        const today = new Date().toISOString().split('T')[0];
+        const usage = userData?.access?.voice_usage;
+        const spokenToday = usage?.date === today ? (usage?.chars || 0) : 0;
+        if (spokenToday + text.length > DAILY_TTS_CHAR_LIMIT) {
+            return Response.json({ error: 'Daily voice limit reached' }, { status: 429 });
         }
 
         const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -37,11 +69,6 @@ export async function POST(req: Request) {
             return Response.json({ error: 'TTS service not configured' }, { status: 503 });
         }
 
-        if (!voiceId || !isValidVoiceId(voiceId)) {
-            return Response.json({ error: 'No voice configured for this character' }, { status: 400 });
-        }
-
-        // Call ElevenLabs TTS API
         const ttsResponse = await fetch(
             `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
             {
@@ -76,7 +103,14 @@ export async function POST(req: Request) {
             return Response.json({ error: 'TTS generation failed' }, { status: 502 });
         }
 
-        // Stream the audio back to the client
+        await userRef.set({
+            access: {
+                voice_usage: usage?.date === today
+                    ? { date: today, chars: FieldValue.increment(text.length) }
+                    : { date: today, chars: text.length },
+            },
+        }, { merge: true });
+
         const audioBuffer = await ttsResponse.arrayBuffer();
 
         return new Response(audioBuffer, {
@@ -85,6 +119,7 @@ export async function POST(req: Request) {
                 'Content-Type': 'audio/mpeg',
                 'Content-Length': audioBuffer.byteLength.toString(),
                 'Cache-Control': 'private, max-age=3600', // Cache for 1 hour client-side
+                'X-TTS-Parts': String(chunks.length),
             },
         });
 

@@ -37,9 +37,8 @@ export async function GET(req: Request) {
         const newUser = await adminAuth.createUser({ phoneNumber: payload.phone });
         uid = newUser.uid;
 
-        // Give new SSO users 1 free session credit (same as regular signup)
+        // created_at starts the user's free-session year (sessionAccess.ts)
         await db.collection('users').doc(newUser.uid).set({
-          session_credits: 1,
           created_at: new Date().toISOString(),
           sso_source: payload.source,
         }, { merge: true });

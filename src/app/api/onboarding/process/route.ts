@@ -44,7 +44,6 @@ export async function POST(req: Request) {
         const updates: Record<string, any> = {};
 
         if (!hasExistingDossier) {
-            updates.session_credits = 1;
             updates.dossier = dossierText;
             updates.dossier_updated_at = FieldValue.serverTimestamp();
             updates.session_count = 0;
