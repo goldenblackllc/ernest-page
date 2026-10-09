@@ -9,8 +9,9 @@
  * Uses the @google/genai SDK to support the new AQ.-format API keys.
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type Part } from '@google/genai';
 import { IMAGE_MODEL } from './models.js';
+import { errorMessage, isQuotaError, quotaError } from '../utils/errors.js';
 
 export type ImageAspectRatio = '1:1' | '9:16' | '16:9' | '4:3' | '3:4' | '4:5';
 export type ReferenceMode = 'full' | 'face-only';
@@ -78,10 +79,10 @@ export function buildImageRequestParts(options: {
     aspectRatio?: ImageAspectRatio;
     referenceImages?: Buffer[];
     referenceMode?: ReferenceMode;
-}): any[] {
+}): Part[] {
     const { prompt, aspectRatio = '16:9', referenceImages = [], referenceMode = 'full' } = options;
 
-    const parts: any[] = referenceImages.map(imgBuffer => ({
+    const parts: Part[] = referenceImages.map(imgBuffer => ({
         inlineData: {
             mimeType: 'image/jpeg',
             data: imgBuffer.toString('base64'),
@@ -133,10 +134,10 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
         }
 
         // Find the image part (inlineData with image MIME type)
-        const imagePart = responseParts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'));
+        const imagePart = responseParts.find(p => p.inlineData?.mimeType?.startsWith('image/'));
         if (!imagePart) {
             // Check for text-only response (possible safety filter)
-            const textPart = responseParts.find((p: any) => p.text);
+            const textPart = responseParts.find(p => p.text);
             if (textPart) {
                 console.warn(`[${logPrefix}] Got text instead of image (possible safety filter):`, (textPart.text as string).slice(0, 200));
             } else {
@@ -150,15 +151,14 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
             buffer,
             mimeType: imagePart.inlineData!.mimeType as string,
         };
-    } catch (err: any) {
+    } catch (err) {
         // Surface quota errors distinctly
-        if (err.status === 429 || err.message?.includes('quota')) {
-            const error = new Error('Image generation quota exhausted');
-            (error as any).isQuotaError = true;
-            throw error;
+        const status = (err as { status?: unknown } | null)?.status;
+        if (status === 429 || (err instanceof Error && err.message.includes('quota'))) {
+            throw quotaError('Image generation quota exhausted');
         }
-        if ((err as any).isQuotaError) throw err;
-        console.error(`[${logPrefix}] Image generation exception:`, err.message);
+        if (isQuotaError(err)) throw err;
+        console.error(`[${logPrefix}] Image generation exception:`, errorMessage(err));
         return null;
     }
 }

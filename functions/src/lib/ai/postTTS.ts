@@ -2,6 +2,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { spawnSync, execSync } from 'child_process';
 import { uploadPublicFile } from '../firebase/storage.js';
+import { errorMessage } from '../utils/errors.js';
 
 /**
  * Generate TTS audio for a Dear Earnest post using ElevenLabs.
@@ -312,8 +313,9 @@ async function findConversationalVoice(
             );
             if (!res.ok) continue;
             const data = await res.json();
-            const candidates = (data.voices || [])
-                .filter((v: any) =>
+            const voices: SharedVoice[] = data.voices || [];
+            const candidates = voices
+                .filter(v =>
                     v.voice_id &&
                     !excludeIds.has(v.voice_id) &&
                     v.use_case === 'conversational',
@@ -323,7 +325,7 @@ async function findConversationalVoice(
                 const pick = candidates[Math.floor(Math.random() * candidates.length)];
                 const relaxed = i > 0 ? ` (relaxed filters: attempt ${i + 1}/4)` : '';
                 console.log(`[PostTTS] Found conversational voice: ${pick.name} (${pick.voice_id}) — picked from ${candidates.length} candidates${relaxed}`);
-                return pick.voice_id;
+                return pick.voice_id ?? null;
             }
         } catch (err) {
             console.error('[PostTTS] Conversational voice search failed:', err);
@@ -371,6 +373,13 @@ export async function resolveConversationVoices(
     // Fallback: use character voice for both (better than no audio)
     console.warn('[PostTTS] No conversational voice found — using character voice for both');
     return { characterVoiceId, questionerVoiceId: characterVoiceId };
+}
+
+/** A voice from the ElevenLabs shared-voices search (only the fields we read). */
+interface SharedVoice {
+    voice_id?: string;
+    name?: string;
+    use_case?: string;
 }
 
 export interface MessageBoundary {
@@ -474,8 +483,8 @@ function resolveFfmpegPath(): string | null {
         } catch {
             console.warn('[PostTTS] ffmpeg not found — silence gaps and re-encode unavailable');
         }
-    } catch (err: any) {
-        console.warn('[PostTTS] Failed to resolve ffmpeg path:', err.message);
+    } catch (err) {
+        console.warn('[PostTTS] Failed to resolve ffmpeg path:', errorMessage(err));
     }
     return null;
 }
@@ -500,8 +509,8 @@ function generateSilence(ffmpegPath: string): { buffer: Buffer; duration: number
             console.log(`[PostTTS] Silence buffer: ${buffer.length} bytes, actual duration: ${duration.toFixed(3)}s`);
             return { buffer, duration };
         }
-    } catch (err: any) {
-        console.warn('[PostTTS] Failed to generate silence buffer:', err.message);
+    } catch (err) {
+        console.warn('[PostTTS] Failed to generate silence buffer:', errorMessage(err));
     }
     return null;
 }
@@ -652,8 +661,8 @@ function reencodeMp3(ffmpegPath: string, combinedBuffer: Buffer): Buffer {
         }
         const stderr = remuxResult.stderr?.toString().slice(0, 200) || '';
         console.warn(`[PostTTS] ffmpeg re-encode failed (status=${remuxResult.status}), using raw concat fallback. stderr: ${stderr}`);
-    } catch (err: any) {
-        console.warn('[PostTTS] ffmpeg re-encode error:', err.message);
+    } catch (err) {
+        console.warn('[PostTTS] ffmpeg re-encode error:', errorMessage(err));
     }
     return combinedBuffer;
 }

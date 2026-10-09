@@ -1,3 +1,4 @@
+import type { DocumentData } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
 
@@ -29,7 +30,7 @@ export async function GET(req: Request) {
         // 4. Chronological feed: fetch from all buckets, merge, sort newest-first
         const postsRef = db.collection("posts");
         const seenIds = new Set<string>();
-        const allPosts: any[] = [];
+        const allPosts: Array<{ id: string } & DocumentData> = [];
 
         const addPosts = (docs: FirebaseFirestore.QueryDocumentSnapshot[]) => {
             docs.forEach((doc) => {
@@ -120,7 +121,7 @@ export async function GET(req: Request) {
         addPosts(discoveryDocs.slice(0, fetchLimit));
 
         // 5. Sort all posts chronologically: newest first
-        const getPostTime = (p: any) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
+        const getPostTime = (p: DocumentData) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
         allPosts.sort((a, b) => getPostTime(b) - getPostTime(a));
 
         // 6c. Filter incomplete posts — posts without audio are still processing
@@ -168,7 +169,7 @@ export async function GET(req: Request) {
 
         // 10. Batch-check which posts the user has liked (subcollection lookup)
         const likedRef = db.collection("users").doc(uid).collection("liked_posts");
-        const likedRefs = pageSlice.map((post: any) => likedRef.doc(post.id));
+        const likedRefs = pageSlice.map((post) => likedRef.doc(post.id));
         let likedSet = new Set<string>();
         if (likedRefs.length > 0) {
             const likedDocs = await db.getAll(...likedRefs);
@@ -176,10 +177,10 @@ export async function GET(req: Request) {
         }
 
         // 11. Sanitize
-        const sanitized = pageSlice.map((post: any) => {
+        const sanitized = pageSlice.map((post) => {
             const isLikedByMe = likedSet.has(post.id);
 
-            const clean: any = { ...post };
+            const clean: DocumentData = { ...post };
             clean.author_avatar_url = avatarMap[post.authorId || post.uid] || null;
             clean.author_title = titleMap[post.authorId || post.uid] || null;
 
@@ -218,7 +219,7 @@ export async function GET(req: Request) {
         }, {
             headers: { 'Cache-Control': 'no-store, max-age=0' },
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Feed API Error:", error);
         return Response.json({ error: "An unexpected error occurred." }, { status: 500 });
     }

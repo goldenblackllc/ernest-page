@@ -10,16 +10,13 @@ import { Suspense } from 'react';
 function SSOCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
+  const token = searchParams.get('token');
+  const source = searchParams.get('source');
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const error = token ? signInError : 'Invalid SSO link. Please try again.';
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    const source = searchParams.get('source');
-
-    if (!token) {
-      setError('Invalid SSO link. Please try again.');
-      return;
-    }
+    if (!token) return;
 
     (async () => {
       try {
@@ -29,10 +26,10 @@ function SSOCallbackInner() {
         router.replace('/');
       } catch (err) {
         console.error('[sso-callback] Sign-in failed:', err);
-        setError('Sign-in failed. The link may have expired. Please try again.');
+        setSignInError('Sign-in failed. The link may have expired. Please try again.');
       }
     })();
-  }, [searchParams, router]);
+  }, [token, source, router]);
 
   if (error) {
     return (

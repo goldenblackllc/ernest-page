@@ -7,20 +7,25 @@ vi.mock('next-intl', () => ({
     useTranslations: () => (key: string) => key,
 }));
 
+interface MotionDivProps extends React.HTMLAttributes<HTMLDivElement> {
+    animate?: { height?: number };
+    transition?: unknown;
+}
+
 // Mock framer-motion to render plain divs
 vi.mock('framer-motion', () => ({
     motion: {
-        div: React.forwardRef(function MotionDiv({ children, animate, transition, className, ...props }: any, ref: any) {
+        div: React.forwardRef<HTMLDivElement, MotionDivProps>(function MotionDiv({ children, animate, transition, className, ...props }, ref) {
             const style = animate?.height !== undefined ? { height: animate.height } : {};
             return React.createElement('div', { ref, className, style, ...props }, children);
         }),
     },
-    AnimatePresence: ({ children }: any) => children,
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
 // Mock lucide-react
 vi.mock('lucide-react', () => ({
-    Loader2: (props: any) => React.createElement('span', { ...props, 'data-testid': 'loader' }, '⟳'),
+    Loader2: (props: React.HTMLAttributes<HTMLSpanElement>) => React.createElement('span', { ...props, 'data-testid': 'loader' }, '⟳'),
 }));
 
 import { PullToRefresh } from '@/components/PullToRefresh';

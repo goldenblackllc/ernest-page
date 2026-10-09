@@ -90,7 +90,7 @@ export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading
         // instead of pausing it. Supported on iOS Safari 16.4+.
         try {
             if ('audioSession' in navigator) {
-                (navigator as any).audioSession.type = 'ambient';
+                (navigator as Navigator & { audioSession: { type: string } }).audioSession.type = 'ambient';
             }
         } catch {}
 
@@ -244,17 +244,15 @@ export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading
             // Auto-play only if speaker is on
             if (blob && autoSpeak) await playAudioBlob(blob);
         })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire only when a new reply lands; adding autoSpeak would re-fetch TTS on speaker toggle
     }, [messages, isLoading, voiceId]);
 
     // Compute whether to hold the last assistant message during render (no flash).
     // Only hold when autoSpeak is on — when speaker is off, show the message immediately
     // and let the play button indicate TTS loading state.
     const lastMsg = messages[messages.length - 1];
-    const shouldHoldLastMessage = !!(autoSpeak
-        && expectingVoiceRef.current
-        && !isLoading
-        && lastMsg?.role === 'assistant'
-        && lastMsg.id !== releasedMsgId);
+    // eslint-disable-next-line react-hooks/refs -- intentional render-time read: the hold flag is set in the send handler right before the reply renders; state would be one render late and flash the text
+    const shouldHoldLastMessage = !!(autoSpeak && expectingVoiceRef.current && !isLoading && lastMsg?.role === 'assistant' && lastMsg.id !== releasedMsgId);
 
     // Pause audio without destroying the element (supports resume)
     const pauseAudio = () => {
@@ -334,11 +332,13 @@ export function useCharacterTTS({ isOpen, authUser, voiceId, messages, isLoading
 
     // When speaker is toggled off, pause playback (don't destroy — play button stays available)
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs the <audio> element to the speaker toggle; pauseAudio also clears isSpeaking
         if (!autoSpeak) pauseAudio();
     }, [autoSpeak]);
 
     useEffect(() => {
         return () => cleanupAudio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only cleanup; cleanupAudio only touches refs and setters
     }, []);
 
     // Resume audio when returning to the PWA (iOS suspends audio on tab/app switch)

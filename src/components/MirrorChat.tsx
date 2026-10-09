@@ -10,6 +10,7 @@ import { httpsCallable } from "firebase/functions";
 import { useTranslations, useLocale } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
 import type { Message, SessionRouting } from "@/types/chat";
+import type { CharacterProfile } from "@/types/character";
 import { useMirrorSession, mirrorLocalTime, MAX_EXCHANGES, MAX_SESSION_HOURS } from "@/hooks/useMirrorSession";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useCharacterTTS } from "@/hooks/useCharacterTTS";
@@ -26,7 +27,7 @@ const mirrorPlan = httpsCallable<
 interface MirrorChatProps {
     isOpen: boolean;
     onClose: () => void;
-    profile: any | null;
+    profile: CharacterProfile | null;
     uid: string;
     initialContext?: string | null;
     defaultPostRouting?: 'private' | 'public' | 'burn';

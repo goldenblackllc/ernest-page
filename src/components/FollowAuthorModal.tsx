@@ -38,9 +38,9 @@ export function FollowAuthorModal({ isOpen, onClose, postAuthorId, authorTitle, 
             });
 
             onClose();
-        } catch (err: any) {
+        } catch (err) {
             console.error("Failed to follow author:", err);
-            setError(err.message || t('errorSave'));
+            setError((err instanceof Error && err.message) || t('errorSave'));
         } finally {
             setIsSaving(false);
         }

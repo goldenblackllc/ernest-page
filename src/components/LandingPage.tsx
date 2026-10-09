@@ -79,6 +79,7 @@ export function LandingPage() {
 
     useEffect(() => {
         // Detect timezone-based country after hydration to avoid SSR mismatch
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- timezone is client-only; reading it after mount avoids a hydration mismatch
         setSelectedCountry(detectCountryFromTimezone());
     }, []);
 
@@ -121,7 +122,7 @@ export function LandingPage() {
                 return;
             }
             setStep('INPUT_CODE');
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error sending code:', err);
             setError(t('landing.auth.errorSendFailed'));
             setTurnstileToken(null);

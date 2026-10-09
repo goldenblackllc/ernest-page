@@ -35,6 +35,7 @@ export function usePWAInstall() {
     // Detect iOS and iOS Safari
     useEffect(() => {
         const flags = getIOSFlags();
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- user agent is client-only; reading it after mount avoids a hydration mismatch
         setIsIOS(flags.isIOS);
         setIsIOSSafari(flags.isIOSSafari);
     }, []);
@@ -44,6 +45,7 @@ export function usePWAInstall() {
         if (typeof window === "undefined") return;
 
         const mq = window.matchMedia("(display-mode: standalone)");
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- initial value of an external media query, read after mount to avoid a hydration mismatch
         setIsInstalled(mq.matches);
 
         const handler = (e: MediaQueryListEvent) => setIsInstalled(e.matches);
@@ -54,6 +56,7 @@ export function usePWAInstall() {
     // Read dismiss state from localStorage
     useEffect(() => {
         if (typeof window === "undefined") return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only; reading it after mount avoids a hydration mismatch
         setIsDismissed(localStorage.getItem(DISMISS_KEY) === "true");
     }, []);
 

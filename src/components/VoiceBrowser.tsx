@@ -158,11 +158,13 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
 
     // Search on filter change
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch triggered by filter changes
         if (isOpen) search();
     }, [gender, age, accent]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Auto-search when starting open
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch when the browser starts open
         if (startOpen && results.length === 0) search();
     }, [startOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -195,7 +197,7 @@ export function VoiceBrowser({ currentVoiceId, currentVoiceName, startOpen = fal
                                 const res = await authFetch(user, `/api/voice/search?${params}`);
                                 if (res.ok) {
                                     const data = await res.json();
-                                    const match = (data.voices || []).find((v: any) => v.voice_id === selectedId);
+                                    const match = (data.voices || []).find((v: VoiceResult) => v.voice_id === selectedId);
                                     if (match?.preview_url) {
                                         stopPlaying();
                                         const audio = new Audio(match.preview_url);

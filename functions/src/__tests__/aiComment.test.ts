@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const h = vi.hoisted(() => {
     const state: {
-        users: Record<string, any>;
-        posts: { id: string; data: any }[];
+        users: Record<string, Record<string, unknown>>;
+        posts: { id: string; data: Record<string, unknown> }[];
     } = { users: {}, posts: [] };
 
     const commentAdd = vi.fn().mockResolvedValue({ id: 'new' });
@@ -28,8 +28,8 @@ const h = vi.hoisted(() => {
             return {
                 ...postsQuery,
                 doc: (id: string) => ({
-                    update: (data: any) => postUpdate(id, data),
-                    collection: () => ({ add: (data: any) => commentAdd(id, data) }),
+                    update: (data: unknown) => postUpdate(id, data),
+                    collection: () => ({ add: (data: unknown) => commentAdd(id, data) }),
                 }),
             };
         }),
@@ -53,7 +53,7 @@ vi.mock('../lib/ai/models.js', () => ({
 
 import { generateAIComment } from '../aiComment.js';
 
-const handler = generateAIComment as unknown as (event: any) => Promise<void>;
+const handler = generateAIComment as unknown as (e: ReturnType<typeof event>) => Promise<void>;
 
 function event(comment: Record<string, unknown> | undefined) {
     return { data: comment ? { data: () => comment } : undefined, params: { postId: 'p', commentId: 'c' } };

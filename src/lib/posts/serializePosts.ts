@@ -1,3 +1,4 @@
+import type { DocumentData } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 
 /**
@@ -7,9 +8,9 @@ import { db } from "@/lib/firebase/admin";
  * - normalizes created_at to { _seconds, _nanoseconds }
  */
 export async function serializePostsForViewer(
-    posts: Array<{ id: string } & Record<string, any>>,
+    posts: Array<{ id: string } & DocumentData>,
     uid: string,
-): Promise<any[]> {
+): Promise<DocumentData[]> {
     const authorIds = [...new Set(posts.map(p => p.authorId || p.uid).filter(Boolean))];
     const avatarMap: Record<string, string> = {};
     const titleMap: Record<string, string> = {};
@@ -31,7 +32,7 @@ export async function serializePostsForViewer(
     return posts.map((post) => {
         const authorId = post.authorId || post.uid;
         const isOwner = post.authorId === uid || post.uid === uid;
-        const clean: any = { ...post };
+        const clean: DocumentData = { ...post };
 
         clean.author_avatar_url = avatarMap[authorId] || null;
         clean.author_title = titleMap[authorId] || null;

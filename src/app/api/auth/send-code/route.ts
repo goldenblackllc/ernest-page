@@ -78,24 +78,25 @@ export async function POST(req: Request) {
             .verifications.create({ to: phone, channel: verifyChannel });
 
         return Response.json({ success: true, channel: verifyChannel });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Send Code Error:", error);
+        const code = (error as { code?: number } | null)?.code;
 
         // Twilio-specific error handling
-        if (error.code === 60203) {
+        if (code === 60203) {
             return Response.json(
                 { error: "Too many attempts. Please try again later." },
                 { status: 429 }
             );
         }
-        if (error.code === 60200) {
+        if (code === 60200) {
             return Response.json(
                 { error: "Invalid phone number." },
                 { status: 400 }
             );
         }
         // Channel not configured (e.g. WhatsApp not enabled in Twilio)
-        if (error.code === 60205 || error.code === 60207) {
+        if (code === 60205 || code === 60207) {
             return Response.json(
                 { error: "This verification method is not available. Please try SMS." },
                 { status: 400 }

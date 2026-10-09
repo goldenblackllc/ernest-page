@@ -54,14 +54,14 @@ export async function GET(req: Request) {
                 uid,
             );
             // Manual sort
-            posts.sort((a: any, b: any) => {
+            posts.sort((a, b) => {
                 const aT = a.created_at?._seconds || 0;
                 const bT = b.created_at?._seconds || 0;
                 return bT - aT;
             });
             return Response.json({ posts, nextCursor: null });
         }
-    } catch (error: any) {
+    } catch (error) {
         console.error("My Posts API Error:", error);
         return Response.json({ error: "An unexpected error occurred." }, { status: 500 });
     }

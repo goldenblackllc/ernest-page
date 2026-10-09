@@ -1,6 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { errorMessage } from '../utils/errors.js';
 
 // ─── Gemini 3.6 Flash for cheap, fast image validation ───────────────────────
 const google = createGoogleGenerativeAI({
@@ -90,13 +91,13 @@ THE PROMPT USED TO GENERATE THIS IMAGE:
         });
 
         return result.object;
-    } catch (error: any) {
+    } catch (error) {
         // Validator should never block the pipeline — pass through on error
-        console.warn('[ImageValidator] Validation failed, passing image through:', error.message);
+        console.warn('[ImageValidator] Validation failed, passing image through:', errorMessage(error));
         return {
             pass: true,
             issues: [],
-            summary: `Validation skipped: ${error.message}`,
+            summary: `Validation skipped: ${errorMessage(error)}`,
         };
     }
 }

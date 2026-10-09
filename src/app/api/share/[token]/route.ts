@@ -36,7 +36,7 @@ export async function GET(
         const post = await serializePublicPost(postDoc.id, data);
 
         return Response.json({ post });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Share fetch error:", error);
         return Response.json({ error: "Server error" }, { status: 500 });
     }

@@ -1,3 +1,4 @@
+import type { DocumentData } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 
 /**
@@ -5,8 +6,8 @@ import { db } from "@/lib/firebase/admin";
  * Allowlist only: no author uid, raw content, conversation, location or translation map.
  * Attaches the author's avatar and identity title.
  */
-export async function serializePublicPost(id: string, data: Record<string, any>) {
-    const post: Record<string, any> = {
+export async function serializePublicPost(id: string, data: DocumentData) {
+    const post: DocumentData = {
         id,
         public_post: data.public_post || {},
         title: data.title || data.public_post?.title || null,

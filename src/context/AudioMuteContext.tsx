@@ -41,6 +41,7 @@ export const AudioMuteProvider = ({ children }: { children: React.ReactNode }) =
         try {
             const stored = localStorage.getItem(MUTE_KEY);
             if (stored === '0') {
+                // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only; hydrating after mount avoids a server/client mismatch
                 setIsMuted(false);
             }
             // If stored is '1' or absent, stay muted (default)

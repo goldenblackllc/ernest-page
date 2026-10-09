@@ -65,8 +65,8 @@ export async function POST(req: Request) {
         await batch.commit();
 
         return Response.json({ ok: true }, { status: 200 });
-    } catch (error: any) {
-        console.error('[Track Visit]', error.message);
+    } catch (error) {
+        console.error('[Track Visit]', error instanceof Error ? error.message : error);
         // Never block the user — always return 200
         return Response.json({ ok: true }, { status: 200 });
     }

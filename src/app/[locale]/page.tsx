@@ -20,6 +20,7 @@ export default function Home() {
     // Defer localStorage-based auth hint until after hydration to prevent
     // server/client mismatch (server has no localStorage).
     const [hasMounted, setHasMounted] = useState(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration gate: must flip only after the first client render
     useEffect(() => { setHasMounted(true); }, []);
 
     // ── Funnel: track unique visit on mount ──

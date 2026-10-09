@@ -8,7 +8,7 @@ import { buildImageRequestParts, type ImageAspectRatio, type ReferenceMode } fro
 const PROMPT = 'A person walking on a beach.';
 const ref = Buffer.from('fake-jpeg');
 
-function textOf(parts: any[]): string {
+function textOf(parts: ReturnType<typeof buildImageRequestParts>): string | undefined {
     return parts[parts.length - 1].text;
 }
 

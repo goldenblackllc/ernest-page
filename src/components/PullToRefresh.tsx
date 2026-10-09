@@ -82,6 +82,8 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
     }, [pullDistance, isRefreshing, onRefresh]);
 
     const pastThreshold = pullDistance >= THRESHOLD;
+    // The finger is down and pulling: track it instantly instead of animating
+    const isDragging = pullDistance > 0 && !isRefreshing;
 
     return (
         <div
@@ -93,7 +95,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
             {/* Pull indicator */}
             <motion.div
                 animate={{ height: pullDistance > 0 || isRefreshing ? Math.max(pullDistance, isRefreshing ? 48 : 0) : 0 }}
-                transition={isPulling.current ? { duration: 0 } : { duration: 0.2, ease: "easeOut" }}
+                transition={isDragging ? { duration: 0 } : { duration: 0.2, ease: "easeOut" }}
                 className="overflow-hidden flex items-center justify-center"
             >
                 {isRefreshing ? (

@@ -18,6 +18,7 @@ import { REGION } from './lib/config/region.js';
 import { generateImage } from './lib/ai/generateImage.js';
 import { validateGeneratedImage } from './lib/ai/validateImage.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
+import { errorMessage } from './lib/utils/errors.js';
 
 const MAX_AVATAR_ATTEMPTS = 3;
 const AVATAR_RETRY_DELAY_MS = 2000;
@@ -188,9 +189,9 @@ export async function generateAvatarForUser(uid: string): Promise<{ success: boo
 
         console.log(`[Avatar] Saved: ${avatarUrl}`);
         return { success: true, avatarUrl };
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Avatar] Error:', error);
-        const message = error.message || 'Avatar generation failed';
+        const message = errorMessage(error) || 'Avatar generation failed';
         await markFailed(uid, message);
         return { success: false, error: message };
     }
@@ -252,8 +253,8 @@ export const retryAvatars = onSchedule(
             try {
                 await enqueueAvatar(doc.id);
                 enqueued++;
-            } catch (err: any) {
-                console.error(`[RetryAvatars] Failed to enqueue ${doc.id}:`, err.message);
+            } catch (err) {
+                console.error(`[RetryAvatars] Failed to enqueue ${doc.id}:`, errorMessage(err));
             }
         }
 

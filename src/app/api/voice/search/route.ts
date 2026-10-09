@@ -1,6 +1,17 @@
 import { verifyAuth } from '@/lib/auth/serverAuth';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
+interface SharedVoice {
+    voice_id: string;
+    name: string;
+    accent?: string;
+    age?: string;
+    gender?: string;
+    category?: string;
+    description?: string;
+    preview_url?: string;
+}
+
 export const maxDuration = 15;
 
 /**
@@ -55,7 +66,7 @@ export async function GET(req: Request) {
         const data = await res.json();
 
         // Return only the fields the client needs
-        const voices = (data.voices || []).map((v: any) => ({
+        const voices = (data.voices || []).map((v: SharedVoice) => ({
             voice_id: v.voice_id,
             name: v.name,
             accent: v.accent || '',
@@ -68,7 +79,7 @@ export async function GET(req: Request) {
 
         return Response.json({ voices });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('[VoiceSearch] Error:', error);
         return Response.json({ error: 'Unexpected error' }, { status: 500 });
     }

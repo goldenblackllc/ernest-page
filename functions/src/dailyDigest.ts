@@ -17,10 +17,11 @@ import { getFunctions } from 'firebase-admin/functions';
 import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
-import { processPostContent } from './lib/ai/processPostContent.js';
+import { processPostContent, type PostAudioFields } from './lib/ai/processPostContent.js';
 import { generateMessageImages } from './lib/ai/generatePostImage.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
-import { getCompiledBible } from './lib/bible.js';
+import { getCompiledBible, type BibleSection } from './lib/bible.js';
+import { errorMessage } from './lib/utils/errors.js';
 
 
 interface DigestTask {
@@ -59,9 +60,9 @@ export const dailyDigest = onSchedule(
                 // Task ID dedupes accidental double runs for the same user and day
                 await queue.enqueue({ uid: userDoc.id, date }, { id: `digest-${date}-${userDoc.id}` });
                 enqueued++;
-            } catch (err: any) {
-                if (err?.code === 'functions/task-already-exists') continue;
-                console.error(`[Daily Digest] Failed to enqueue ${userDoc.id}:`, err.message);
+            } catch (err) {
+                if ((err as { code?: unknown } | null)?.code === 'functions/task-already-exists') continue;
+                console.error(`[Daily Digest] Failed to enqueue ${userDoc.id}:`, errorMessage(err));
             }
         }
 
@@ -95,13 +96,13 @@ export const dailyDigestUser = onTaskDispatched<DigestTask>(
 // ─── Card generation ────────────────────────────────────────────────────────
 
 /** The user's compiled bible, or null when there is nothing to build a card from. */
-function getDigestBible(userData: FirebaseFirestore.DocumentData | undefined): any[] | null {
+function getDigestBible(userData: FirebaseFirestore.DocumentData | undefined): BibleSection[] | null {
     const compiledBible = getCompiledBible(userData);
     return Array.isArray(compiledBible) && compiledBible.length > 0 ? compiledBible : null;
 }
 
 /** Split each bible category into its bolded subsections. */
-function getSubsections(compiledBible: any[]): { title: string; content: string }[] {
+function getSubsections(compiledBible: BibleSection[]): { title: string; content: string }[] {
     const subsections: { title: string; content: string }[] = [];
 
     for (const entry of compiledBible) {
@@ -135,7 +136,7 @@ function getSubsections(compiledBible: any[]): { title: string; content: string 
     return subsections;
 }
 
-function buildDemographicHint(userData: any): string {
+function buildDemographicHint(userData: FirebaseFirestore.DocumentData | undefined): string {
     const identity = userData?.identity;
     const gender = userData?.gender || identity?.gender || '';
     const ethnicity = userData?.ethnicity || identity?.ethnicity || '';
@@ -199,7 +200,7 @@ async function generateDigestCard(uid: string, date: string): Promise<void> {
     const needsThumbnail = !thumbnailUrl;
 
     // ─── Shared pipeline: image prompts + TTS + thumbnail (same as post feed) ───
-    let audioFields: Record<string, any> = {};
+    let audioFields: PostAudioFields = {};
     if (needsPrompts || needsAudio || needsThumbnail) {
         const pipelineResult = await processPostContent({
             transcript: '', // unused — preCondensed provides messages

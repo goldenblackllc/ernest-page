@@ -17,6 +17,7 @@ import { REGION } from './lib/config/region.js';
 import { generateSubtitles, generateAssSubtitles, buildChunksFromTimestamps } from './lib/video/videoSubtitles.js';
 import { renderFrame } from './lib/video/renderFrame.js';
 import { getPostText } from './lib/getPostText.js';
+import { errorMessage } from './lib/utils/errors.js';
 
 interface RenderPostVideoRequest {
     postId: string;
@@ -117,7 +118,7 @@ export const renderPostVideo = onCall<RenderPostVideoRequest>(
 
             console.log(`[Video] Rendered ${videoPath} (${(video.length / 1e6).toFixed(1)} MB)`);
             return { url: downloadUrl(bucket.name, videoPath, token) };
-        } catch (error: any) {
+        } catch (error) {
             console.error('[Video] Generation failed:', error);
             throw new HttpsError('internal', 'Video generation failed');
         }
@@ -164,8 +165,8 @@ async function buildVideo(post: FirebaseFirestore.DocumentData): Promise<Buffer>
                 const imgPath = join(workDir, `img_${idx}.jpg`);
                 await download(url, imgPath);
                 imagePaths[idx] = imgPath;
-            } catch (err: any) {
-                console.warn(`[Video] Failed to download image ${idx}: ${err.message}`);
+            } catch (err) {
+                console.warn(`[Video] Failed to download image ${idx}: ${errorMessage(err)}`);
             }
         }));
         const validImagePaths = imagePaths.filter(Boolean);

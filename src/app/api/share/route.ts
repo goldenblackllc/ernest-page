@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         await postRef.update({ shareToken });
 
         return Response.json({ shareToken });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Share token generation error:", error);
         return Response.json({ error: "Server error" }, { status: 500 });
     }

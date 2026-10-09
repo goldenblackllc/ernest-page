@@ -15,6 +15,7 @@ import { generateMessageImages } from './lib/ai/generatePostImage.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
 import { getPostAuthorId, savePostImages } from './lib/posts.js';
 import { getCompiledBible } from './lib/bible.js';
+import { errorMessage } from './lib/utils/errors.js';
 
 export const regeneratePost = onCall<{ postId: string }>(
     {
@@ -97,8 +98,8 @@ export const regeneratePost = onCall<{ postId: string }>(
         let imagesGenerated = 0;
         try {
             imagesGenerated = (await generateImagesForPost(postId)).count;
-        } catch (err: any) {
-            console.error(`[RegeneratePost] Image generation failed for ${postId} — scheduled job will retry:`, err.message);
+        } catch (err) {
+            console.error(`[RegeneratePost] Image generation failed for ${postId} — scheduled job will retry:`, errorMessage(err));
         }
 
         console.log(`[RegeneratePost] Complete for ${postId} (messages: ${condensed.messages.length}, audio: ${!!audioFields.audio_url}, images: ${imagesGenerated}/${imagePrompts.length})`);

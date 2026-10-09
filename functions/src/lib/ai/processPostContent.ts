@@ -15,8 +15,17 @@
 
 import { generateCondensedTranscript } from './condensedTranscript.js';
 import { generateMessageImagePrompts } from './generatePostImage.js';
-import { generateConversationAudio, resolveConversationVoices } from './postTTS.js';
+import { generateConversationAudio, resolveConversationVoices, type MessageBoundary, type WordTimestamp } from './postTTS.js';
+import type { BibleSection } from '../bible.js';
 import { generateThumbnail } from './generateThumbnail.js';
+
+/** Audio fields spread into a post document. */
+export interface PostAudioFields {
+    audio_url?: string;
+    audio_word_timestamps?: WordTimestamp[];
+    audio_message_boundaries?: MessageBoundary[];
+    audio_letter_ratio?: number;
+}
 
 export interface ProcessPostInput {
     /** Raw chat transcript (role: content lines) */
@@ -26,7 +35,7 @@ export interface ProcessPostInput {
     /** Post document ID (used for TTS file naming) */
     postId: string;
     /** Compiled character bible sections */
-    compiledBible?: any[];
+    compiledBible?: BibleSection[];
     /** Demographic appearance hint for image prompts */
     demographicHint: string;
     /** User's cloned voice ID for TTS */
@@ -63,7 +72,7 @@ export interface ProcessPostResult {
     /** One image prompt per condensed transcript message */
     imagePrompts: string[];
     /** Audio fields ready to spread into the post document */
-    audioFields: Record<string, any>;
+    audioFields: PostAudioFields;
     /** Public URL of the generated thumbnail image, or null */
     thumbnailUrl: string | null;
 }
@@ -133,7 +142,7 @@ export async function processPostContent(
         demographicHint,
     });
 
-    const audioFields: Record<string, any> = {};
+    const audioFields: PostAudioFields = {};
     const ttsPromise = (characterVoiceId && messages.length > 0)
         ? (async () => {
             // Monologue mode (e.g. daily digest): character voice for both roles

@@ -48,7 +48,7 @@ async function commentAsCharacter(commenterUid: string): Promise<void> {
     const sections = getCompiledBible(userData);
     const bibleExcerpt = sections
         ?.slice(0, 2)
-        .map((s: any) => s.content?.substring(0, 200))
+        .map(s => s.content?.substring(0, 200))
         .join('\n') || identity?.dream_self || '';
 
     // 2. Find a random recent public post (not by the commenter)
