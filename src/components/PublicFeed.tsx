@@ -44,6 +44,7 @@ export function PublicFeed() {
 
     // Initial fetch
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch; state is set after the request resolves
         fetchPosts().finally(() => setLoading(false));
     }, [fetchPosts]);
 

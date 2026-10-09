@@ -26,6 +26,7 @@ export function useVisualViewport(isOpen: boolean) {
 
     useEffect(() => {
         if (!isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the external viewport measurement when the chat closes, so a reopen never starts from a stale offset
             setKeyboardOffset(0);
             setViewportTop(0);
             return;

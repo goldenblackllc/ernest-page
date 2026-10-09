@@ -19,8 +19,12 @@ import { getCompiledBible } from './lib/bible.js';
 import { REGION } from './lib/config/region.js';
 import { sendAdminEmail, buildNewPostEmail } from './lib/email/adminEmail.js';
 import { closeDecision, failureUpdate, MAX_PROCESS_ATTEMPTS } from './lib/chatRetry.js';
+import { errorMessage } from './lib/utils/errors.js';
 
 type CondensedMessage = { role: 'user' | 'ideal_self'; text: string };
+
+/** A raw Mirror chat message as stored on the active chat document. */
+type RawChatMessage = { role: string; content?: string };
 
 export const processChat = onDocumentUpdated(
     {
@@ -83,7 +87,7 @@ export const processChat = onDocumentUpdated(
         console.log(`[ProcessChat] User data loaded for ${uid}`);
 
         const identity = userData?.identity;
-        const transcript = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+        const transcript = messages.map((m: RawChatMessage) => `${m.role}: ${m.content}`).join('\n');
 
         const sessionCount = (userData?.session_count || identity?.session_count || 0) + 1;
         const today = localDateKey(new Date(), safeTimeZone(after.timeZone));
@@ -178,7 +182,7 @@ export const processChat = onDocumentUpdated(
                 await dossierPromise;
                 await event.data?.after.ref.delete();
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error(`[ProcessChat] Error processing chat for user ${uid}:`, error);
             const failure = failureUpdate(after, error, Date.now());
             if (failure.processAttempts >= MAX_PROCESS_ATTEMPTS) {
@@ -258,8 +262,8 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
 
     return {
         condensed,
-        rewrittenDossier: (dossierResult.object as any)?.rewritten_dossier,
-        recap: recapResult.object as any,
+        rewrittenDossier: dossierResult.object?.rewritten_dossier,
+        recap: recapResult.object,
     };
 }
 
@@ -292,11 +296,11 @@ async function saveSessionMetadata(opts: {
                 }),
                 prompt: buildDossierCondensePrompt(dossierBody, wordCount, today),
             });
-            const condensedBody = (condensed.object as any)?.condensed_dossier?.trim();
+            const condensedBody = condensed.object?.condensed_dossier?.trim();
             if (condensedBody) dossierBody = condensedBody;
             console.log(`[ProcessChat] Dossier condensed from ${wordCount} to ${condensedBody?.split(/\s+/).length ?? wordCount} words`);
-        } catch (condenseError: any) {
-            console.error(`[ProcessChat] Dossier condense failed — saving uncondensed (${wordCount} words):`, condenseError?.message);
+        } catch (condenseError) {
+            console.error(`[ProcessChat] Dossier condense failed — saving uncondensed (${wordCount} words):`, errorMessage(condenseError));
         }
     }
 
@@ -405,17 +409,17 @@ async function notifyAdminOfNewPost(opts: {
     postId: string;
     userData: FirebaseFirestore.DocumentData;
     chat: FirebaseFirestore.DocumentData;
-    messages: any[];
+    messages: RawChatMessage[];
     condensed: CondensedTranscript;
     thumbnailUrl: string | null;
     visibility: string;
     pendingImages: number;
 }): Promise<void> {
     const { chat, messages, condensed } = opts;
-    const rawUserMsgs = messages.filter((m: any) => m.role === 'user');
+    const rawUserMsgs = messages.filter(m => m.role === 'user');
     const userTurns = rawUserMsgs.length;
     const avgLength = userTurns > 0
-        ? Math.round(rawUserMsgs.reduce((sum: number, m: any) => sum + (m.content?.length || 0), 0) / userTurns)
+        ? Math.round(rawUserMsgs.reduce((sum, m) => sum + (m.content?.length || 0), 0) / userTurns)
         : 0;
     const durationMs = (chat.updatedAt || 0) - (chat.createdAt || 0);
     const closeReason: string = chat.closeReason || (chat.isClosed ? 'user' : 'abandoned');

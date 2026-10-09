@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
         return Response.json({ voice_id: voiceId });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('[VoiceSelect] Error:', error);
         return Response.json({ error: 'Unexpected error' }, { status: 500 });
     }

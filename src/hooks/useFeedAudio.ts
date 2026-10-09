@@ -61,6 +61,7 @@ export function useFeedAudio({ unifiedAudioUrl, letterAudioUrl, responseAudioUrl
             probe.src = ''; // release network connection
         };
         return () => { probe.src = ''; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- probe once per URL; audioDuration is only a skip guard, and re-running when it changes would cancel nothing useful
     }, [unifiedAudioUrl]);
 
     // Audio toggle handler — supports both unified and legacy formats

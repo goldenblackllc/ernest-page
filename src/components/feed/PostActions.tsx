@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Trash2, Heart, RefreshCw, RotateCcw, MessageCircle, Share2, Loader2, FileText, ImagePlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { httpsCallable } from "firebase/functions";
@@ -150,11 +150,16 @@ export function PostActions({
     const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const isOwner = user?.uid === post.uid;
 
-    const [localLiked, setLocalLiked] = useState<boolean>(post.isLikedByMe || (isAuthor && (post.like_count || 0) > 0));
+    const serverLiked = Boolean(post.isLikedByMe || (isAuthor && (post.like_count || 0) > 0));
+    const [localLiked, setLocalLiked] = useState<boolean>(serverLiked);
 
-    useEffect(() => {
-        setLocalLiked(post.isLikedByMe || (isAuthor && (post.like_count || 0) > 0));
-    }, [post.isLikedByMe, isAuthor, post.like_count]);
+    // Reset the optimistic like whenever the server-side inputs change (adjusting state during render)
+    const likeInputs = `${post.isLikedByMe}|${isAuthor}|${post.like_count}`;
+    const [prevLikeInputs, setPrevLikeInputs] = useState(likeInputs);
+    if (likeInputs !== prevLikeInputs) {
+        setPrevLikeInputs(likeInputs);
+        setLocalLiked(serverLiked);
+    }
 
     // Total likes: karma pool likes + viewer's own like
     const totalLikes = (post.like_count || 0) + (localLiked ? 1 : 0);

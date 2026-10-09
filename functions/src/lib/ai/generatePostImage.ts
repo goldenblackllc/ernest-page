@@ -14,7 +14,9 @@ import { uploadPublicFile } from '../firebase/storage.js';
 import { generateImage } from './generateImage.js';
 import { validateGeneratedImage } from './validateImage.js';
 import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from './models.js';
-import { buildBatchRequest } from './batchImageGeneration.js';
+import { buildBatchRequest, type BatchRequestEntry } from './batchImageGeneration.js';
+import type { BibleSection } from '../bible.js';
+import { errorMessage, isQuotaError } from '../utils/errors.js';
 
 
 // ─── Low-level helpers ───────────────────────────────────────────────────────
@@ -86,9 +88,9 @@ async function generateVerdictImage(
         // Both attempts failed validation
         console.warn(`[Storyboard] Image validation failed on retry for ${fileId}:`, retryValidation.summary, '— skipping image for now');
         return null;
-    } catch (err: any) {
+    } catch (err) {
         console.error("[Storyboard] Verdict image generation failed:", err);
-        if (err?.isQuotaError) throw err; // propagate so callers can stop the batch
+        if (isQuotaError(err)) throw err; // propagate so callers can stop the batch
         return null;
     }
 }
@@ -113,7 +115,7 @@ export interface MessageImagePromptOptions {
     /** Condensed transcript messages (role + text) */
     messages: Array<{ role: 'user' | 'ideal_self'; text: string }>;
     /** Compiled character bible sections */
-    compiledBible?: any[];
+    compiledBible?: BibleSection[];
     /** Demographic appearance hint */
     demographicHint: string;
 }
@@ -180,11 +182,11 @@ Return exactly ${numMessages} image prompts, one per message, in conversation or
             prompt: directorPrompt,
         });
 
-        const prompts = (result.object as any).prompts;
+        const prompts = result.object.prompts;
         console.log(`[MessageImages] Generated ${prompts.length} prompts for ${numMessages} messages`);
         return prompts;
-    } catch (err: any) {
-        console.error(`[MessageImages] Prompt generation failed:`, err.message);
+    } catch (err) {
+        console.error(`[MessageImages] Prompt generation failed:`, errorMessage(err));
         return [];
     }
 }
@@ -261,8 +263,8 @@ export async function generateMessageImages(
                         i < 2 ? 'face-only' : 'full',
                     );
                     return { index: i, url };
-                } catch (err: any) {
-                    if (err?.isQuotaError) {
+                } catch (err) {
+                    if (isQuotaError(err)) {
                         quotaExhausted = true;
                         console.warn(`[MessageImages] Quota exhausted at image ${i}/${prompts.length}`);
                     }
@@ -309,7 +311,7 @@ export interface BuildMessageImageBatchOptions {
  */
 export function buildMessageImageBatchRequests(
     opts: BuildMessageImageBatchOptions
-): { requests: any[]; missingIndices: number[] } {
+): { requests: BatchRequestEntry[]; missingIndices: number[] } {
     const { prompts, filePrefix, referenceImages, existingUrls } = opts;
 
     // Build existing results array to identify gaps

@@ -32,6 +32,7 @@ export function MyLifeDrawer({
         cancelAnimationFrame(raf);
       };
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the enter animation so the next open slides in again
       setVisible(false);
     }
   }, [isOpen]);

@@ -41,7 +41,7 @@ export async function POST(req: Request) {
             .replace(/\{TITLE\}/g, title)
             .replace("{DATE}", today);
 
-        const updates: Record<string, any> = {};
+        const updates: Record<string, unknown> = {};
 
         if (!hasExistingDossier) {
             updates.dossier = dossierText;
@@ -73,12 +73,12 @@ export async function POST(req: Request) {
 
         // Return immediately — client proceeds to dashboard
         return Response.json({ success: true });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Onboarding Process API Error:", error);
 
         if (
-            error.name === "AbortError" ||
-            (error.message || "").toLowerCase().includes("timeout")
+            error instanceof Error &&
+            (error.name === "AbortError" || error.message.toLowerCase().includes("timeout"))
         ) {
             return Response.json({ error: "Processing timed out" }, { status: 504 });
         }

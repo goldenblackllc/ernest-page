@@ -6,6 +6,12 @@ vi.mock('next-intl', () => ({
     useTranslations: () => (key: string) => key,
 }));
 
+/** A plain Event with the BeforeInstallPromptEvent fields assigned onto it. */
+type MockPromptEvent = Event & {
+    prompt?: () => Promise<void>;
+    userChoice?: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+};
+
 describe('usePWAInstall', () => {
     let originalMatchMedia: typeof window.matchMedia;
     let originalNavigator: PropertyDescriptor | undefined;
@@ -63,7 +69,7 @@ describe('usePWAInstall', () => {
 
         // Simulate beforeinstallprompt
         const mockPrompt = vi.fn().mockResolvedValue(undefined);
-        const mockEvent = new Event('beforeinstallprompt') as any;
+        const mockEvent = new Event('beforeinstallprompt') as MockPromptEvent;
         mockEvent.prompt = mockPrompt;
         mockEvent.userChoice = Promise.resolve({ outcome: 'dismissed' as const });
         mockEvent.preventDefault = vi.fn();
@@ -80,7 +86,7 @@ describe('usePWAInstall', () => {
         const { result } = renderHook(() => usePWAInstall());
 
         // First fire beforeinstallprompt
-        const mockEvent = new Event('beforeinstallprompt') as any;
+        const mockEvent = new Event('beforeinstallprompt') as MockPromptEvent;
         mockEvent.prompt = vi.fn().mockResolvedValue(undefined);
         mockEvent.userChoice = Promise.resolve({ outcome: 'dismissed' as const });
         mockEvent.preventDefault = vi.fn();
@@ -108,7 +114,7 @@ describe('usePWAInstall', () => {
         const { result } = renderHook(() => usePWAInstall());
 
         // Even if beforeinstallprompt fires, should stay false
-        const mockEvent = new Event('beforeinstallprompt') as any;
+        const mockEvent = new Event('beforeinstallprompt') as MockPromptEvent;
         mockEvent.prompt = vi.fn();
         mockEvent.userChoice = Promise.resolve({ outcome: 'dismissed' as const });
         mockEvent.preventDefault = vi.fn();
@@ -145,7 +151,7 @@ describe('usePWAInstall', () => {
         const { result } = renderHook(() => usePWAInstall());
 
         const mockPrompt = vi.fn().mockResolvedValue(undefined);
-        const mockEvent = new Event('beforeinstallprompt') as any;
+        const mockEvent = new Event('beforeinstallprompt') as MockPromptEvent;
         mockEvent.prompt = mockPrompt;
         mockEvent.userChoice = Promise.resolve({ outcome: 'accepted' as const });
         mockEvent.preventDefault = vi.fn();

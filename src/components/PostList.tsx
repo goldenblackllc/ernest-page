@@ -75,6 +75,7 @@ export function PostList({ endpoint, emptyText, endText, emptyIcon }: PostListPr
     }, [user, endpoint]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch; fetchPosts only sets state after its await on first load
         fetchPosts();
     }, [fetchPosts]);
 

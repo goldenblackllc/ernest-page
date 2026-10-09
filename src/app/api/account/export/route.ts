@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         const uid = await verifyAuth(req);
         if (!uid) return unauthorizedResponse();
 
-        const exportData: Record<string, any> = {
+        const exportData: Record<string, unknown> = {
             exported_at: new Date().toISOString(),
             user_id: uid,
         };
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
             },
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Account Export] Error:', error);
         return Response.json({ error: 'Data export failed.' }, { status: 500 });
     }

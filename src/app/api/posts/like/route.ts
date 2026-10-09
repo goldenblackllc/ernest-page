@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         }
 
         return Response.json({ success: true });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Karma like error:", error);
         return Response.json({ error: "An unexpected error occurred." }, { status: 500 });
     }

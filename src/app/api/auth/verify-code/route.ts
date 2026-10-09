@@ -52,9 +52,9 @@ export async function POST(req: Request) {
         try {
             const existingUser = await adminAuth.getUserByPhoneNumber(phone);
             uid = existingUser.uid;
-        } catch (lookupError: any) {
+        } catch (lookupError) {
             // Only create user if the error is specifically "user not found"
-            if (lookupError?.code === 'auth/user-not-found') {
+            if ((lookupError as { code?: string } | null)?.code === 'auth/user-not-found') {
                 try {
                     console.log('[verify-code] Creating new user');
                     const newUser = await adminAuth.createUser({ phoneNumber: phone });
@@ -64,8 +64,9 @@ export async function POST(req: Request) {
                     await db.collection('users').doc(newUser.uid).set({
                         created_at: new Date().toISOString(),
                     }, { merge: true });
-                } catch (createError: any) {
-                    console.error('[verify-code] createUser failed:', createError?.code, createError?.message, JSON.stringify(createError?.errorInfo));
+                } catch (createError) {
+                    const err = createError as { code?: string; message?: string; errorInfo?: unknown } | null;
+                    console.error('[verify-code] createUser failed:', err?.code, err?.message, JSON.stringify(err?.errorInfo));
                     throw createError;
                 }
             } else {
@@ -78,10 +79,10 @@ export async function POST(req: Request) {
         const customToken = await adminAuth.createCustomToken(uid);
 
         return Response.json({ success: true, token: customToken });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Verify Code Error:", error);
 
-        if (error.code === 60202) {
+        if ((error as { code?: number } | null)?.code === 60202) {
             return Response.json(
                 { error: "Too many attempts. Please request a new code." },
                 { status: 429 }

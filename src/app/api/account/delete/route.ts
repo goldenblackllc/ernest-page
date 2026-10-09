@@ -92,7 +92,7 @@ export async function DELETE(req: Request) {
             ...results,
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Account Delete] Error:', error);
         return Response.json({ error: 'Account deletion failed.' }, { status: 500 });
     }

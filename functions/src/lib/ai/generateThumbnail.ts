@@ -13,6 +13,7 @@
 import { generateImage } from './generateImage.js';
 import { loadUserReferenceImage } from './loadUserReferenceImage.js';
 import { uploadPublicFile } from '../firebase/storage.js';
+import { errorMessage } from '../utils/errors.js';
 
 interface GenerateThumbnailOptions {
     /** Condensed transcript messages */
@@ -87,9 +88,9 @@ INSTRUCTIONS:
         const url = await uploadThumbnailBuffer(result.buffer, postId);
         console.log(`[${logPrefix}] ✅ Thumbnail uploaded: ${url}`);
         return url;
-    } catch (err: any) {
+    } catch (err) {
         // Don't let thumbnail failure crash the pipeline
-        console.error(`[${logPrefix}] Thumbnail generation failed:`, err.message);
+        console.error(`[${logPrefix}] Thumbnail generation failed:`, errorMessage(err));
         return null;
     }
 }

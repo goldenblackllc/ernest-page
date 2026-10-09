@@ -6,6 +6,7 @@ import { Play, Heart, MessageCircle, Share2 } from "lucide-react";
 import { use } from "react";
 import { getPostText } from '@functions/lib/getPostText';
 import { useTranslations } from 'next-intl';
+import type { Post } from '@/types/post';
 
 /**
  * Shared post viewer — public page, no auth required.
@@ -14,7 +15,7 @@ import { useTranslations } from 'next-intl';
  */
 export default function SharedPostPage({ params }: { params: Promise<{ locale: string; token: string }> }) {
     const { token } = use(params);
-    const [post, setPost] = useState<any>(null);
+    const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const t = useTranslations("post");
@@ -24,6 +25,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioPhase, setAudioPhase] = useState<'idle' | 'letter' | 'response'>('idle');
     const [audioProgress, setAudioProgress] = useState(0);
+    const [audioCurrentTime, setAudioCurrentTime] = useState(0);
 
     useEffect(() => {
         fetch(`/api/share/${token}`)
@@ -59,7 +61,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
             if (unifiedUrl) {
                 audio.src = unifiedUrl;
             } else {
-                audio.src = post.letter_audio_url;
+                audio.src = post.letter_audio_url || "";
             }
             setAudioPhase('letter');
         }
@@ -77,6 +79,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                 if (audio.duration) {
                     const progress = audio.currentTime / audio.duration;
                     setAudioProgress(progress);
+                    setAudioCurrentTime(audio.currentTime);
                     const newPhase = progress < letterRatio ? 'letter' : 'response';
                     setAudioPhase(prev => prev !== newPhase && prev !== 'idle' ? newPhase : prev);
                 }
@@ -85,23 +88,27 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                 setIsPlaying(false);
                 setAudioPhase('idle');
                 setAudioProgress(0);
+                setAudioCurrentTime(0);
             };
         } else {
             audio.ontimeupdate = () => {
                 if (audio.duration) {
                     setAudioProgress(audio.currentTime / audio.duration);
+                    setAudioCurrentTime(audio.currentTime);
                 }
             };
             audio.onended = () => {
                 if (audioPhase === 'letter' || audio.src.includes('_letter')) {
-                    audio.src = post.response_audio_url;
+                    audio.src = post.response_audio_url || "";
                     setAudioPhase('response');
                     setAudioProgress(0);
+                    setAudioCurrentTime(0);
                     audio.play();
                 } else {
                     setIsPlaying(false);
                     setAudioPhase('idle');
                     setAudioProgress(0);
+                    setAudioCurrentTime(0);
                 }
             };
         }
@@ -130,7 +137,7 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                 await navigator.clipboard.writeText(url);
             }
         } catch { /* cancelled */ }
-    }, []);
+    }, [t]);
 
     if (loading) {
         return (
@@ -216,8 +223,8 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
         if (audioPhase === 'idle' && !isPlaying) return null;
 
         // Timestamp-based sync with karaoke
-        if (timestampChunks && audioRef.current) {
-            const currentTime = audioRef.current.currentTime;
+        if (timestampChunks) {
+            const currentTime = audioCurrentTime;
             let chunkIndex = 0;
             for (let i = 0; i < timestampChunks.length; i++) {
                 if (currentTime >= timestampChunks[i].start) {
@@ -334,11 +341,11 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1.5 text-zinc-400">
                                     <Heart className="w-5 h-5" />
-                                    {post.like_count > 0 && <span className="text-xs font-medium">{post.like_count}</span>}
+                                    {(post.like_count ?? 0) > 0 && <span className="text-xs font-medium">{post.like_count}</span>}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-zinc-400">
                                     <MessageCircle className="w-5 h-5" />
-                                    {post.comments > 0 && <span className="text-xs font-medium">{post.comments}</span>}
+                                    {(post.comments ?? 0) > 0 && <span className="text-xs font-medium">{post.comments}</span>}
                                 </div>
                             </div>
                             <button onClick={handleShare} className="text-zinc-400 hover:text-white transition-colors p-1">

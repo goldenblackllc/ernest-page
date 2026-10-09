@@ -11,6 +11,23 @@ type DocData = Record<string, unknown>;
 export const VALID_TOKEN = "valid-test-token";
 export const TEST_UID = "test-user-uid";
 
+interface FakeSnapshot {
+    id: string;
+    exists: boolean;
+    data: () => DocData | undefined;
+    ref: FakeDocRef;
+}
+
+interface FakeDocRef {
+    id: string;
+    path: string;
+    get: () => Promise<FakeSnapshot>;
+    set: (data: DocData) => Promise<void>;
+    update: (data: DocData) => Promise<void>;
+    delete: () => Promise<void>;
+    collection: (sub: string) => FakeQuery;
+}
+
 interface Write {
     op: "set" | "update" | "add" | "delete";
     path: string;
@@ -40,7 +57,7 @@ class FakeDb {
         return new FakeQuery(this, path);
     }
 
-    snapshot(path: string) {
+    snapshot(path: string): FakeSnapshot {
         const data = this.docs.get(path);
         const id = path.split("/").pop()!;
         return {
@@ -51,7 +68,7 @@ class FakeDb {
         };
     }
 
-    docRef(path: string): Record<string, any> {
+    docRef(path: string): FakeDocRef {
         return {
             id: path.split("/").pop()!,
             path,

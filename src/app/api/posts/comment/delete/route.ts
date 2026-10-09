@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         });
 
         return Response.json({ success: true });
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Comment Delete] Error:', error);
         return Response.json({ error: 'Failed to delete comment' }, { status: 500 });
     }

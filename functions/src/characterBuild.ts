@@ -16,6 +16,7 @@ import { db, FieldValue } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { compileCharacterBibleForUser } from './compileCharacterBible.js';
 import { generateAvatarForUser } from './avatar.js';
+import { errorMessage } from './lib/utils/errors.js';
 
 const MAX_ATTEMPTS = 3;
 const COOLDOWN_MS = 10 * 60 * 1000;       // wait for edits to settle
@@ -54,8 +55,8 @@ export const buildCharacter = onTaskDispatched<BuildCharacterTask>(
         let result: { success: boolean; error?: string };
         try {
             result = await compileCharacterBibleForUser(uid);
-        } catch (err: any) {
-            result = { success: false, error: err.message };
+        } catch (err) {
+            result = { success: false, error: errorMessage(err) };
         }
 
         if (!result.success) {
@@ -73,7 +74,7 @@ export const buildCharacter = onTaskDispatched<BuildCharacterTask>(
 
         // Success — mark ready. For recompiles, clear the dirty flag unless the
         // user edited again while we were compiling (then the scheduler picks it up).
-        const updates: Record<string, any> = {
+        const updates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
             'bible.status': 'ready',
             bible_compile_queued_at: FieldValue.delete(),
         };
@@ -121,8 +122,8 @@ export const recompileBibles = onSchedule(
                     dirtySince: data.bible_dirty_since?.toMillis?.(),
                 });
                 enqueued++;
-            } catch (err: any) {
-                console.error(`[RecompileBibles] Failed to enqueue ${doc.id}:`, err.message);
+            } catch (err) {
+                console.error(`[RecompileBibles] Failed to enqueue ${doc.id}:`, errorMessage(err));
             }
         }
 

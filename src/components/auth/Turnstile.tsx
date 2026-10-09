@@ -26,8 +26,10 @@ export default function Turnstile({ onVerify, onExpire, theme = 'auto', classNam
     const onExpireRef = useRef(onExpire);
 
     // Keep callback refs current without re-triggering the effect
-    onVerifyRef.current = onVerify;
-    onExpireRef.current = onExpire;
+    useEffect(() => {
+        onVerifyRef.current = onVerify;
+        onExpireRef.current = onExpire;
+    });
 
     const renderWidget = useCallback(() => {
         const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;

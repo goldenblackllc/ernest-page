@@ -10,6 +10,7 @@
  */
 
 import { storage } from '../firebase/admin.js';
+import { errorMessage } from '../utils/errors.js';
 
 /**
  * Load the user's avatar reference image as a Buffer.
@@ -33,8 +34,8 @@ export async function loadUserReferenceImage(uid: string): Promise<Buffer | null
             const [buffer] = await file.download();
             console.log(`[ReferenceImage] Loaded ${fileName} for user ${uid} (${buffer.length} bytes)`);
             return buffer;
-        } catch (err: any) {
-            console.warn(`[ReferenceImage] Failed to load ${fileName}:`, err.message);
+        } catch (err) {
+            console.warn(`[ReferenceImage] Failed to load ${fileName}:`, errorMessage(err));
         }
     }
 

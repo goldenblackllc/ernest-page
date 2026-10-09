@@ -41,6 +41,7 @@ export function usePostComments(postId: string, initialCount: number | undefined
     // Auto-load comments if the post has them
     useEffect(() => {
         if ((initialCount && initialCount > 0) && !commentsLoaded) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch; fetchComments only sets state after its await
             fetchComments();
         }
     }, [initialCount, commentsLoaded, fetchComments]);

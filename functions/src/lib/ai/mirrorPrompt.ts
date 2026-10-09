@@ -1,4 +1,5 @@
 import { REALITY_RULES } from '../constants/realityRules.js';
+import type { BibleSection } from '../bible.js';
 
 /**
  * Shared coaching logic for the Mirror system prompt.
@@ -163,7 +164,7 @@ export interface MirrorPromptConfig {
     /** Whether this session opens with the negative-inventory variant (see pickNegativeInventory) */
     negativeInventory?: boolean;
     /** The compiled character bible ideal array */
-    compiledBible: any[];
+    compiledBible: BibleSection[];
     /** Full language mandate block, e.g. "\n[LANGUAGE MANDATE]\nYou MUST respond entirely in ENGLISH." */
     languageInstruction: string;
     /** Tone directive string from ENGAGEMENT_TONES */

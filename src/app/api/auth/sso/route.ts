@@ -31,8 +31,8 @@ export async function GET(req: Request) {
     try {
       const existingUser = await adminAuth.getUserByPhoneNumber(payload.phone);
       uid = existingUser.uid;
-    } catch (lookupError: any) {
-      if (lookupError?.code === 'auth/user-not-found') {
+    } catch (lookupError) {
+      if ((lookupError as { code?: string } | null)?.code === 'auth/user-not-found') {
         // Create new user — they'll go through onboarding when they tap the chat FAB
         const newUser = await adminAuth.createUser({ phoneNumber: payload.phone });
         uid = newUser.uid;
@@ -58,8 +58,8 @@ export async function GET(req: Request) {
     callbackUrl.searchParams.set('source', payload.source);
 
     return Response.redirect(callbackUrl.toString(), 302);
-  } catch (error: any) {
-    console.error('[sso] Error:', error.message);
+  } catch (error) {
+    console.error('[sso] Error:', error instanceof Error ? error.message : error);
 
     // Redirect to landing page with error indicator for user-facing failures
     const url = new URL(req.url);

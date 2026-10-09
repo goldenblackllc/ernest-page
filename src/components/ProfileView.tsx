@@ -51,6 +51,7 @@ export function ProfileView() {
 
     useEffect(() => {
         if (!user) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- show the loader while (re)subscribing to the external profile listener
         setLoading(true);
 
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
@@ -68,6 +69,7 @@ export function ProfileView() {
         window.addEventListener('open-identity-editor', handleOpenEditor);
         // Also check URL param (from feed card navigation to /profile)
         if (typeof window !== 'undefined' && window.location.search.includes('edit=identity')) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of a URL flag that is then stripped from history
             setIsAvatarEditOpen(true);
             // Clean up URL param
             window.history.replaceState({}, '', '/profile');
@@ -256,7 +258,7 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
     const [waitingForAvatar, setWaitingForAvatar] = useState(false);
     const [avatarReady, setAvatarReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const savedAvatarUrl = React.useRef<string | undefined>(undefined);
+    const [savedAvatarUrl, setSavedAvatarUrl] = useState<string | undefined>(undefined);
 
     // Track open state for resets
     const wasOpen = React.useRef(false);
@@ -268,19 +270,17 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
             setWaitingForAvatar(false);
             setAvatarReady(false);
             setError(null);
-            savedAvatarUrl.current = undefined;
+            setSavedAvatarUrl(undefined);
             setFormKey(k => k + 1);
         }
         wasOpen.current = isOpen;
     }, [isOpen]);
 
-    // Detect when new avatar arrives from Firestore subscription
-    React.useEffect(() => {
-        if (waitingForAvatar && savedAvatarUrl.current !== undefined && avatarUrl && avatarUrl !== savedAvatarUrl.current) {
-            setWaitingForAvatar(false);
-            setAvatarReady(true);
-        }
-    }, [avatarUrl, waitingForAvatar]);
+    // Detect when new avatar arrives from Firestore subscription (adjusting state during render)
+    if (waitingForAvatar && savedAvatarUrl !== undefined && avatarUrl && avatarUrl !== savedAvatarUrl) {
+        setWaitingForAvatar(false);
+        setAvatarReady(true);
+    }
 
     if (!isOpen) return null;
 
@@ -313,17 +313,17 @@ function EditAvatarModal({ isOpen, onClose, currentCharacterName, currentGender,
                 .catch(err => console.error('[Avatar] Regeneration error:', err));
 
             // Transition to waiting state
-            savedAvatarUrl.current = avatarUrl;
+            setSavedAvatarUrl(avatarUrl);
             setIsSaving(false);
             setWaitingForAvatar(true);
-        } catch (err: any) {
-            setError(err.message || 'Something went wrong.');
+        } catch (err) {
+            setError((err instanceof Error && err.message) || 'Something went wrong.');
             setIsSaving(false);
         }
     };
 
     const isEditing = !waitingForAvatar && !avatarReady;
-    const displayUrl = avatarReady ? avatarUrl : (savedAvatarUrl.current || avatarUrl);
+    const displayUrl = avatarReady ? avatarUrl : (savedAvatarUrl || avatarUrl);
 
     return (
         <div className="fixed inset-0 z-[60] bg-zinc-950 flex flex-col">

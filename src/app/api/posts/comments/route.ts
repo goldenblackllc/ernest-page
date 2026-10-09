@@ -46,7 +46,7 @@ export async function GET(req: Request) {
             .filter(Boolean);
 
         return Response.json({ comments });
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Comments Fetch] Error:', error);
         return Response.json({ error: 'Failed to fetch comments' }, { status: 500 });
     }

@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_",
       }],
+      // User images are remote Firebase Storage URLs; next/image would route each through Vercel's paid image optimization.
+      "@next/next/no-img-element": "off",
     },
   },
   // Override default ignores of eslint-config-next.

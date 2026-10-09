@@ -85,7 +85,7 @@ export async function POST(req: Request) {
 
         // Build messages array from history
         const messages = [
-            ...history.slice(-10).map((m: any) => ({
+            ...history.slice(-10).map((m: { role: string; content: string }) => ({
                 role: m.role as 'user' | 'assistant',
                 content: m.content,
             })),
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
 
         return Response.json({ response: result.text });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Support] Error:', error);
         return Response.json(
             { error: 'Support is temporarily unavailable. Please try again.' },

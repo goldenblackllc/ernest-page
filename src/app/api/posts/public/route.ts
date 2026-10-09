@@ -95,7 +95,7 @@ export async function GET(req: Request) {
         const nextCursor = posts.length >= limit ? lastDoc.id : null;
 
         return Response.json({ posts, nextCursor });
-    } catch (error: any) {
+    } catch (error) {
         console.error("[Public Posts API] Error:", error);
         return Response.json({ error: 'Failed to fetch posts' }, { status: 500 });
     }

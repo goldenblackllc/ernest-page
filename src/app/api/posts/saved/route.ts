@@ -60,7 +60,7 @@ export async function GET(req: Request) {
         }
 
         return Response.json({ posts, nextCursor });
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Saved Posts] Error:', error);
         return Response.json({ error: 'Failed to fetch saved posts' }, { status: 500 });
     }

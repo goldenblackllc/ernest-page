@@ -45,6 +45,12 @@ Rules:
 - Client calls to our API go through `authFetch(user, url, init)`.
 - A post's author is `uid || authorId` (older posts have only one). In functions use `getPostAuthorId`.
 - Firestore field names are snake_case (`created_at`, `is_public`, `message_images`).
+- Post images:
+  - `message_images` holds one slot per message, with `null` gaps until each image is generated.
+  - `imagen_urls` lists the images that exist so far.
+  - `imagen_url` is the cover (first) image.
+
+  All three are written by `savePostImages`. About 70 older posts have only `imagen_url(s)`, so readers must fall back to them.
 - No UI string is hardcoded. Add it to all five locale files.
 
 ## Sessions and payments

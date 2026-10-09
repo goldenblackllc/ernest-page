@@ -8,8 +8,10 @@
  * Cost savings: Batch API is billed at 50% of standard generateContent rates.
  */
 
+import type { Content, Part } from '@google/genai';
 import { IMAGE_MODEL } from './models.js';
 import { buildImageRequestParts, type ImageAspectRatio, type ReferenceMode } from './generateImage.js';
+import { quotaError } from '../utils/errors.js';
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -22,6 +24,38 @@ function getApiKey(): string {
         throw new Error('[BatchImageGen] Missing GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY environment variable');
     }
     return apiKey;
+}
+
+/** One keyed GenerateContentRequest in an inline batch. */
+export interface BatchRequestEntry {
+    key: string;
+    request: {
+        contents: Content[];
+        generationConfig: { responseModalities: string[] };
+    };
+}
+
+/** A GenerateContentResponse inside a finished batch job (only the fields we read). */
+interface BatchGenerateResponse {
+    candidates?: { content?: { parts?: Part[] } }[];
+}
+
+type BatchResponseItem = BatchGenerateResponse & {
+    key?: string;
+    metadata?: { key?: string };
+    response?: BatchGenerateResponse;
+};
+
+interface BatchResponseContainer {
+    inlinedResponses?: { inlinedResponses?: BatchResponseItem[] };
+    inlineResponse?: BatchResponseItem[];
+    responses?: BatchResponseItem[];
+}
+
+/** A finished batch job. The API has nested results in several places over time. */
+interface BatchJob extends BatchResponseContainer {
+    metadata?: { output?: BatchResponseContainer };
+    response?: BatchResponseContainer;
 }
 
 export interface BuildBatchRequestOptions {
@@ -39,7 +73,7 @@ export interface BuildBatchRequestOptions {
  * @param {BuildBatchRequestOptions} options Request configuration
  * @returns The formatted request object for batch submission
  */
-export function buildBatchRequest(options: BuildBatchRequestOptions): { key: string; request: any } {
+export function buildBatchRequest(options: BuildBatchRequestOptions): BatchRequestEntry {
     const { key, prompt, referenceImages, referenceMode, aspectRatio } = options;
     const parts = buildImageRequestParts({ prompt, aspectRatio, referenceImages, referenceMode });
 
@@ -71,7 +105,7 @@ export interface BatchStatus {
  * @param requests Array of request objects from buildBatchRequest
  * @returns The batch job name (e.g. 'batches/abc123')
  */
-export async function submitImageBatch(requests: Array<{ key: string; request: any }>): Promise<string> {
+export async function submitImageBatch(requests: BatchRequestEntry[]): Promise<string> {
     const apiKey = getApiKey();
 
     console.log(`[BatchImageGen] Submitting inline batch with ${requests.length} requests`);
@@ -105,9 +139,7 @@ export async function submitImageBatch(requests: Array<{ key: string; request: a
         console.error(`[BatchImageGen] Batch submission error ${res.status}:`, errText.slice(0, 1000));
 
         if (res.status === 429) {
-            const error = new Error('Batch submission quota exhausted');
-            (error as any).isQuotaError = true;
-            throw error;
+            throw quotaError('Batch submission quota exhausted');
         }
         throw new Error(`Batch submission failed with status ${res.status}: ${errText.slice(0, 200)}`);
     }
@@ -200,7 +232,7 @@ function normalizeBatchState(rawState: string, done?: boolean): string {
  * @param batchJob The completed batch job response
  * @returns Array of parsed image results
  */
-function parseBatchResults(batchJob: any): ParsedBatchResult[] {
+function parseBatchResults(batchJob: BatchJob): ParsedBatchResult[] {
     const results: ParsedBatchResult[] = [];
 
     // The actual API nests results at metadata.output.inlinedResponses.inlinedResponses
@@ -231,17 +263,17 @@ function parseBatchResults(batchJob: any): ParsedBatchResult[] {
             const candidates = response?.candidates || [];
             if (candidates.length > 0) {
                 const parts = candidates[0].content?.parts || [];
-                const imagePart = parts.find((p: any) => p.inlineData && p.inlineData.mimeType?.startsWith('image/'));
+                const imagePart = parts.find(p => p.inlineData && p.inlineData.mimeType?.startsWith('image/'));
 
-                if (imagePart) {
+                if (imagePart?.inlineData?.data) {
                     buffer = Buffer.from(imagePart.inlineData.data, 'base64');
-                    mimeType = imagePart.inlineData.mimeType;
+                    mimeType = imagePart.inlineData.mimeType ?? null;
                 }
             }
 
             if (!buffer) {
                 // Log why this particular result has no image
-                const textPart = (item.response?.candidates?.[0]?.content?.parts || []).find((p: any) => p.text);
+                const textPart = (item.response?.candidates?.[0]?.content?.parts || []).find(p => p.text);
                 if (textPart) {
                     console.warn(`[BatchImageGen] Result for key "${key}" returned text instead of image (safety filter?):`, textPart.text?.slice(0, 200));
                 } else {

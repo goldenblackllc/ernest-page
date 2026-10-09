@@ -75,7 +75,7 @@ export function DirectivesMenu({ isOpen, onClose, profile }: DirectivesMenuProps
         try {
             const updatedTodos = activeTodos.map(todo => {
                 if (todo.id === todoId) {
-                    const { unexpected_yield, ...rest } = todo as any;
+                    const { unexpected_yield, ...rest } = todo;
                     return { ...rest, completed: false };
                 }
                 return todo;

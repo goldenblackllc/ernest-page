@@ -1,6 +1,7 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateObject, generateText, jsonSchema as createJsonSchema } from 'ai';
+import { generateObject, generateText, jsonSchema as createJsonSchema, type GenerateObjectResult, type JSONSchema7, type ModelMessage } from 'ai';
+import type { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 const google = createGoogleGenerativeAI({
@@ -33,13 +34,30 @@ function getProviderModel(modelName: string) {
  * claude-opus-5 requires `type` in the tool input_schema; discriminated unions
  * produce schemas without it, causing validation errors.
  */
-function fixSchema(zodSchema: any) {
-    const converted: any = zodToJsonSchema(zodSchema, { $refStrategy: 'none' });
+function fixSchema<SCHEMA extends z.ZodTypeAny>(zodSchema: SCHEMA) {
+    const converted = zodToJsonSchema(zodSchema, { $refStrategy: 'none' }) as JSONSchema7;
     if (!converted.type) converted.type = 'object';
-    return createJsonSchema(converted);
+    return createJsonSchema<z.infer<SCHEMA>>(converted);
 }
 
-export async function generateWithFallback(options: any) {
+type ProviderOptions = Parameters<typeof generateText>[0]['providerOptions'];
+
+/** Options shared by both fallback helpers; the rest is passed through to the AI SDK. */
+type FallbackOptions = {
+    primaryModelId?: string;
+    fallbackModelId?: string;
+    abortSignal?: AbortSignal;
+    system?: string;
+    maxOutputTokens?: number;
+    providerOptions?: ProviderOptions;
+} & (
+    | { prompt: string; messages?: never }
+    | { messages: ModelMessage[]; prompt?: never }
+);
+
+export async function generateWithFallback<SCHEMA extends z.ZodTypeAny>(
+    options: FallbackOptions & { schema: SCHEMA },
+): Promise<GenerateObjectResult<z.infer<SCHEMA>>> {
     const primary = options.primaryModelId || OPUS_MODEL;
     const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, schema, ...aiOptions } = options;
@@ -65,8 +83,8 @@ export async function generateWithFallback(options: any) {
             model: getProviderModel(primary),
             allowSystemInMessages: true,
         });
-    } catch (error: any) {
-        console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
+    } catch (error) {
+        console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error instanceof Error ? error.message : error);
         return await generateObject({
             ...aiOptions,
             schema: fixedSchema,
@@ -78,7 +96,7 @@ export async function generateWithFallback(options: any) {
     }
 }
 
-export async function generateTextWithFallback(options: any) {
+export async function generateTextWithFallback(options: FallbackOptions) {
     const primary = options.primaryModelId || OPUS_MODEL;
     const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, ...aiOptions } = options;
@@ -91,8 +109,8 @@ export async function generateTextWithFallback(options: any) {
             model: getProviderModel(primary),
             allowSystemInMessages: true,
         });
-    } catch (error: any) {
-        console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error.message);
+    } catch (error) {
+        console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error instanceof Error ? error.message : error);
         return await generateText({
             ...aiOptions,
             abortSignal: AbortSignal.timeout(150_000),

@@ -7,7 +7,9 @@
  * instantly without showing a skeleton loader or re-fetching.
  */
 
-let cachedEntries: any[] | null = null;
+import type { Post } from "@/types/post";
+
+let cachedEntries: Post[] | null = null;
 let cachedFollowingMap: Record<string, string> | null = null;
 let cachedNewestPostTime: string | null = null;
 
@@ -20,7 +22,7 @@ export function getFeedCache() {
 }
 
 export function setFeedCache(
-    entries: any[],
+    entries: Post[],
     followingMap: Record<string, string>,
     newestPostTime: string | null,
 ) {

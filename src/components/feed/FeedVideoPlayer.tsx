@@ -51,6 +51,7 @@ export function FeedVideoPlayer({ post, audio, track, letterRatio, isUnified, fu
     // Show controls when not playing, auto-hide when playing
     useEffect(() => {
         if (!isPlaying) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- controls visibility is tied to the auto-hide timer managed here; deriving it would skip the 3s delay on resume
             setControlsVisible(true);
             if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
         } else {

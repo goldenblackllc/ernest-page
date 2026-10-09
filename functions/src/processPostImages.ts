@@ -25,7 +25,8 @@ import { REGION } from './lib/config/region.js';
 import { buildMessageImageBatchRequests, resizeToPostImage, uploadImageBuffer } from './lib/ai/generatePostImage.js';
 import { getPostAuthorId, savePostImages } from './lib/posts.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
-import { submitImageBatch, pollBatchJob, type ParsedBatchResult } from './lib/ai/batchImageGeneration.js';
+import { submitImageBatch, pollBatchJob, type BatchRequestEntry, type ParsedBatchResult } from './lib/ai/batchImageGeneration.js';
+import { errorMessage } from './lib/utils/errors.js';
 import {
     createBatchRecord,
     getActiveBatchJobs,
@@ -106,8 +107,8 @@ async function pollActiveBatches(): Promise<Set<string>> {
                 console.log(`[Phase2] Poll summary: ${stillRunning} still running, ${completed} completed, ${timedOut} timed out`);
             }
         }
-    } catch (err: any) {
-        console.error('[Phase2] Error in Phase A (poll):', err.message);
+    } catch (err) {
+        console.error('[Phase2] Error in Phase A (poll):', errorMessage(err));
         // Continue to Phase B even if polling fails
     }
 
@@ -138,8 +139,8 @@ async function retryMissingThumbnails(): Promise<void> {
                 await retryThumbnail(postDoc);
             }
         }
-    } catch (err: any) {
-        console.error('[Phase2] Error in thumbnail retry phase:', err.message);
+    } catch (err) {
+        console.error('[Phase2] Error in thumbnail retry phase:', errorMessage(err));
     }
 }
 
@@ -176,9 +177,9 @@ async function retryThumbnail(postDoc: FirebaseFirestore.QueryDocumentSnapshot):
             await postDoc.ref.update({ thumbnail_retries: retries + 1 });
             console.warn(`[Phase2] Thumbnail retry ${retries + 1}/${MAX_THUMBNAIL_RETRIES} failed for ${postDoc.id}`);
         }
-    } catch (thumbErr: any) {
+    } catch (thumbErr) {
         await postDoc.ref.update({ thumbnail_retries: retries + 1 });
-        console.error(`[Phase2] Thumbnail retry error for ${postDoc.id}:`, thumbErr.message);
+        console.error(`[Phase2] Thumbnail retry error for ${postDoc.id}:`, errorMessage(thumbErr));
     }
 }
 
@@ -201,7 +202,7 @@ async function submitPendingImageBatches(postsWithActiveBatches: Set<string>): P
     console.log(`[Phase2] Found ${pendingPosts.size} post(s) needing images.`);
 
     // Collect all batch requests across posts
-    const allBatchRequests: any[] = [];
+    const allBatchRequests: BatchRequestEntry[] = [];
     const promptMapping: Record<string, { postId: string; index: number }> = {};
     const postIds: string[] = [];
     const postsToIncrement: Array<{ ref: FirebaseFirestore.DocumentReference; retryCount: number }> = [];
@@ -266,11 +267,11 @@ async function submitPendingImageBatches(postsWithActiveBatches: Set<string>): P
             for (const idx of missingIndices) {
                 promptMapping[`${postDoc.id}_msg${idx}`] = { postId: postDoc.id, index: idx };
             }
-        } catch (err: any) {
-            console.error(`[Phase2] Error building batch for post ${postDoc.id}:`, err.message);
+        } catch (err) {
+            console.error(`[Phase2] Error building batch for post ${postDoc.id}:`, errorMessage(err));
             await postDoc.ref.update({
                 image_retries: retryCount + 1,
-                image_last_error: (err?.message || String(err)).slice(0, 500),
+                image_last_error: errorMessage(err).slice(0, 500),
                 image_last_error_at: Date.now(),
             });
         }
@@ -283,7 +284,7 @@ async function submitPendingImageBatches(postsWithActiveBatches: Set<string>): P
 
 /** Submit the consolidated batch, track it, and count an attempt on every participating post. */
 async function submitBatch(
-    allBatchRequests: any[],
+    allBatchRequests: BatchRequestEntry[],
     postIds: string[],
     promptMapping: Record<string, { postId: string; index: number }>,
     postsToIncrement: Array<{ ref: FirebaseFirestore.DocumentReference; retryCount: number }>,
@@ -308,13 +309,13 @@ async function submitBatch(
         for (const { ref, retryCount } of postsToIncrement) {
             await ref.update({ image_retries: retryCount + 1 });
         }
-    } catch (err: any) {
-        console.error('[Phase2] Error submitting batch job:', err.message);
+    } catch (err) {
+        console.error('[Phase2] Error submitting batch job:', errorMessage(err));
         // Increment retry counters even on batch submission failure
         for (const { ref, retryCount } of postsToIncrement) {
             await ref.update({
                 image_retries: retryCount + 1,
-                image_last_error: (err?.message || String(err)).slice(0, 500),
+                image_last_error: errorMessage(err).slice(0, 500),
                 image_last_error_at: Date.now(),
             });
         }
@@ -387,8 +388,8 @@ async function processCompletedBatch(job: BatchJobRecord): Promise<void> {
             await updateBatchJobState(job.jobName, 'JOB_STATE_SUCCEEDED');
             await deleteBatchRecord(job.jobName);
         }
-    } catch (err: any) {
-        console.error(`[Phase2] Error processing batch ${job.jobName}:`, err.message);
+    } catch (err) {
+        console.error(`[Phase2] Error processing batch ${job.jobName}:`, errorMessage(err));
     }
 }
 
@@ -434,8 +435,8 @@ async function processPostBatchResults(
                     // main cause of DEADLINE_EXCEEDED (extra API call per image).
                     const url = await uploadImageBuffer(resizedBuffer, `${postId}_msg${index}`);
                     return { index, url };
-                } catch (err: any) {
-                    console.error(`[Phase2] Error processing image ${postId}_msg${index}:`, err.message);
+                } catch (err) {
+                    console.error(`[Phase2] Error processing image ${postId}_msg${index}:`, errorMessage(err));
                     return { index, url: '' };
                 }
             })
@@ -450,7 +451,7 @@ async function processPostBatchResults(
 
         const { filledCount, complete } = await savePostImages(postId, postData, urls);
         console.log(`[Phase2] Post ${postId}: ${filledCount}/${imagePrompts.length} images${complete ? ' ✅ complete' : `, ${imagePrompts.length - filledCount} remaining`}`);
-    } catch (err: any) {
-        console.error(`[Phase2] Error updating post ${postId}:`, err.message);
+    } catch (err) {
+        console.error(`[Phase2] Error updating post ${postId}:`, errorMessage(err));
     }
 }

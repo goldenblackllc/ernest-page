@@ -6,6 +6,7 @@ import { enqueueBuildCharacter } from './characterBuild.js';
 import { generateWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.js';
 import { REALITY_RULES } from './lib/constants/realityRules.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
+import { errorMessage } from './lib/utils/errors.js';
 
 // --- SAFETY SETTINGS ---
 const SAFETY_SETTINGS = [
@@ -130,7 +131,7 @@ interface CompileInputs {
 // ─── Assemble raw inputs from My Life data ───
 function buildCompileInputs(data: FirebaseFirestore.DocumentData): CompileInputs {
     const definingWords = data?.defining_words || [];
-    const allWants = (data?.wants || []).map((w: any) => w.text);
+    const allWants = (data?.wants || []).map((w: { text: string }) => w.text);
     const unifiedPeople = data?.people || [];
     const unifiedInterests = data?.interests || [];
 
@@ -155,7 +156,7 @@ function buildCompileInputs(data: FirebaseFirestore.DocumentData): CompileInputs
         dreamFinancial: data?.dream_financial || 'Not specified',
         physicalTraits: physicalTraits.length > 0 ? physicalTraits.join(', ') : 'Not specified',
         people: unifiedPeople.length > 0
-            ? unifiedPeople.map((p: any) =>
+            ? unifiedPeople.map((p: { name: string; relationship: string; who?: string }) =>
                 `Name: ${p.name}\nRelationship: ${p.relationship}\nAbout: ${p.who || 'N/A'}`
             ).join('\n\n')
             : 'None',
@@ -176,7 +177,6 @@ async function compilePresentTenseFacts(inputs: CompileInputs): Promise<z.infer<
     const phase1Result = await generateWithFallback({
         primaryModelId: SONNET_MODEL,
         abortSignal: AbortSignal.timeout(30_000), // 30s — this is a fast, small task
-        maxTokens: 2000,
         providerOptions: PROVIDER_OPTIONS,
         system: PHASE1_SYSTEM_PROMPT,
         prompt: phase1Prompt,
@@ -212,17 +212,16 @@ async function generateIdealSections(
     const idealResult = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
         abortSignal: AbortSignal.timeout(480_000), // 8 min — Cloud Functions have room
-        maxTokens: 32000,
         providerOptions: PROVIDER_OPTIONS,
         system: SYSTEM_PROMPT,
         prompt: idealPrompt,
         schema: IDEAL_BIBLE_SCHEMA,
     });
 
-    const rawObj = idealResult.object as any;
+    const rawObj = idealResult.object;
 
     // Debug: log each section's content length
-    const sectionKeys = ['Style_and_Presence', 'Daily_Life_and_Habits', 'People_and_Connections', 'The_Inner_Mind', 'Quirks_and_Details', 'Order_and_Sanctuary', 'The_World_I_Love'];
+    const sectionKeys = ['Style_and_Presence', 'Daily_Life_and_Habits', 'People_and_Connections', 'The_Inner_Mind', 'Quirks_and_Details', 'Order_and_Sanctuary', 'The_World_I_Love'] as const;
     const sectionLengths = sectionKeys.map(k => `${k}=${(rawObj[k] || '').length}`).join(', ');
     console.log(`[BibleCompile] Model output lengths: ${sectionLengths}`);
 
@@ -249,7 +248,7 @@ async function resolveCharacterName(data: FirebaseFirestore.DocumentData, defini
             prompt: `Based on this character archetype "${definingWords}" generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
             schema: z.object({ name: z.string().describe("A single first name") }),
         });
-        return (nameResult.object as any).name || 'The Architect';
+        return nameResult.object.name || 'The Architect';
     } catch {
         return 'The Architect';
     }
@@ -297,8 +296,8 @@ async function findDefaultVoice(data: FirebaseFirestore.DocumentData): Promise<{
 
         console.log(`[BibleCompile] Auto-assigned voice: ${topVoice.name} (${topVoice.voice_id})`);
         return { id: topVoice.voice_id, name: topVoice.name };
-    } catch (err: any) {
-        console.error('[BibleCompile] Voice auto-default failed (non-fatal):', err.message);
+    } catch (err) {
+        console.error('[BibleCompile] Voice auto-default failed (non-fatal):', errorMessage(err));
         return null;
     }
 }
@@ -311,7 +310,7 @@ async function findDefaultVoice(data: FirebaseFirestore.DocumentData): Promise<{
  * Phase 2 writes the seven bible sections from those facts. Called by the
  * buildCharacter task (characterBuild.ts).
  */
-export async function compileCharacterBibleForUser(uid: string): Promise<{ success: boolean; ideal?: any[]; error?: string }> {
+export async function compileCharacterBibleForUser(uid: string): Promise<{ success: boolean; ideal?: { heading: string; content: string }[]; error?: string }> {
     const userDocRef = db.collection('users').doc(uid);
     const userDoc = await userDocRef.get();
     const data = userDoc.data();
@@ -396,9 +395,9 @@ export const compileCharacterBible = onRequest(
         try {
             await enqueueBuildCharacter({ uid, reason: 'onboarding' });
             res.status(202).json({ queued: true });
-        } catch (error: any) {
-            console.error('[BibleCompile] Failed to enqueue build:', error.message);
-            res.status(500).json({ error: error.message || 'Unexpected error' });
+        } catch (error) {
+            console.error('[BibleCompile] Failed to enqueue build:', errorMessage(error));
+            res.status(500).json({ error: errorMessage(error) || 'Unexpected error' });
         }
     }
 );

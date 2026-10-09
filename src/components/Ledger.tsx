@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { doc, onSnapshot, deleteDoc } from "firebase/firestore";
+import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/context/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
@@ -35,8 +35,9 @@ export function Ledger() {
     const [entries, setEntries] = useState<Post[]>(cache.entries || []);
     const [followingMap, setFollowingMap] = useState<Record<string, string>>(cache.followingMap || {});
     const [loading, setLoading] = useState(cache.entries === null); // skip skeleton if cached
+    // Reference time for the check-in card window (read once, keeps render pure)
+    const [mountedAt] = useState(() => Date.now());
 
-    const [pendingPostId, setPendingPostId] = useState<string | null>(null);
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<{ id: string, title: string } | null>(null);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
@@ -44,6 +45,9 @@ export function Ledger() {
     const currentPageRef = useRef(0);
     const sentinelRef = useRef<HTMLDivElement>(null);
     const fetchingRef = useRef(false);
+
+    const newestPostTimeRef = useRef<string | null>(cache.newestPostTime);
+    const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Track previous user to detect account switches and clear stale data
     const prevUserUidRef = useRef<string | null>(user?.uid ?? null);
@@ -70,9 +74,6 @@ export function Ledger() {
         }
         setPostToDelete(null);
     };
-
-    const newestPostTimeRef = useRef<string | null>(cache.newestPostTime);
-    const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Subscribe to user profile
     useEffect(() => {
@@ -140,12 +141,12 @@ export function Ledger() {
         }
     }, [user]);
 
-
     // Initial load + stale-while-revalidate
     // When we have cached data, render it instantly but always fetch fresh data.
     useEffect(() => {
         if (!user) return;
         currentPageRef.current = 0;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch; fetchFeed only sets state after its await
         fetchFeed(0);
     }, [user, fetchFeed]);
 
@@ -215,21 +216,7 @@ export function Ledger() {
             if (pollTimerRef.current) clearInterval(pollTimerRef.current);
             document.removeEventListener("visibilitychange", handleVisibility);
         };
-    }, [user]);
-
-    // Listen for checkin-publishing-start
-    useEffect(() => {
-        const handleStart = (e: any) => {
-            const id = e.detail?.postId;
-            if (id) {
-                setPendingPostId(id);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        };
-
-        window.addEventListener('checkin-publishing-start', handleStart);
-        return () => window.removeEventListener('checkin-publishing-start', handleStart);
-    }, []);
+    }, [user, fetchFeed]);
 
     // Listen for pull-to-refresh / post-close refresh trigger
     useEffect(() => {
@@ -243,26 +230,6 @@ export function Ledger() {
         return () => window.removeEventListener('ledger-refresh', handleRefresh);
     }, [fetchFeed]);
 
-    // Monitor background check-in post
-    useEffect(() => {
-        if (!pendingPostId) return;
-
-        const unsub = onSnapshot(doc(db, "posts", pendingPostId), (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                // Wait until images are fully generated (Phase 2 complete) or the post failed
-                const isReady = data.images_complete === true || data.status === 'failed';
-                if (isReady) {
-                    setPendingPostId(null);
-                    // Refresh from the top to show the new post
-                    setLoading(true);
-                }
-            }
-        });
-
-        return () => unsub();
-    }, [pendingPostId]);
-
     // Bible generation status — backed by Firestore, survives page reloads
     // IMPORTANT: These hooks must be ABOVE all early returns to satisfy Rules of Hooks
     const bibleStatus = profile?.bible?.status;
@@ -273,8 +240,7 @@ export function Ledger() {
     const showBibleCompiling = bibleStatus === 'compiling' || isAwaitingBuild;
     const showBibleReady = bibleStatus === 'ready';
 
-
-    const dismissBibleReady = async () => {
+    const dismissBibleReady = useCallback(async () => {
         if (!user) return;
         try {
             const { doc: firestoreDoc, updateDoc: firestoreUpdate } = await import('firebase/firestore');
@@ -284,8 +250,7 @@ export function Ledger() {
         } catch (e) {
             console.error('Failed to dismiss bible ready card:', e);
         }
-    };
-
+    }, [user]);
 
     // Auto-dismiss bible ready card after 15 minutes
     useEffect(() => {
@@ -315,7 +280,7 @@ export function Ledger() {
             }, fifteenMin - ageMs);
             return () => clearTimeout(timer);
         }
-    }, [showBibleReady, user, profile?.bible?.last_commit]);
+    }, [showBibleReady, user, profile?.bible?.last_commit, dismissBibleReady]);
 
     // Skeleton loading
     if (loading) {
@@ -343,7 +308,7 @@ export function Ledger() {
     }
 
     // Render feed or empty states
-    const isFeedEmpty = entries.length === 0 && !pendingPostId && !showBibleCompiling && profileLoaded;
+    const isFeedEmpty = entries.length === 0 && !showBibleCompiling && profileLoaded;
 
     if (isFeedEmpty) {
         const summary = accessSummary(profile?.access, profile?.created_at ? Date.parse(profile.created_at) : undefined, new Date().getTime());
@@ -406,7 +371,6 @@ export function Ledger() {
                         </div>
                     </button>
                 )}
-
 
                 {/* Voice Selection — always show until user has confirmed a voice */}
                 {user && !profile?.voice?.confirmed && (
@@ -515,7 +479,7 @@ export function Ledger() {
             {(() => {
                 const anchor = profile?.last_thirty_day_checkin || profile?.created_at || (profile?.updatedAt?.toDate?.()?.toISOString?.()) || null;
                 if (!anchor) return null;
-                const elapsed = Date.now() - new Date(anchor).getTime();
+                const elapsed = mountedAt - new Date(anchor).getTime();
                 if (elapsed < CHECKIN_INTERVAL_MS) return null;
                 if (elapsed > CHECKIN_WINDOW_MS) return null; // Auto-hide after 7-day window
                 return (
@@ -525,18 +489,6 @@ export function Ledger() {
                     />
                 );
             })()}
-
-            {pendingPostId && (
-                <div className="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm relative animate-pulse flex items-center justify-center p-8">
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="w-6 h-6 rounded-full border-2 border-zinc-700 border-t-zinc-300 animate-spin" />
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest inline-block text-center mt-2">
-                            {t('writingPending')}
-                        </span>
-                    </div>
-                </div>
-            )}
-
 
             {/* Voice Selection — always show until user has confirmed a voice */}
             {user && !profile?.voice?.confirmed && (

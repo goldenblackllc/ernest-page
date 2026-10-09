@@ -46,6 +46,7 @@ export interface Post {
     content_raw?: string;
     public_post?: {
         pseudonym?: string;
+        title?: string;
         letter?: string;
         response?: string;
         imagen_url?: string;

@@ -7,6 +7,8 @@
  * forever. Retries come only from sweepExpiredChats, once retryAfter has passed.
  */
 
+import { errorMessage } from './utils/errors.js';
+
 export const MAX_PROCESS_ATTEMPTS = 3;
 const RETRY_BACKOFF_MS = 15 * 60 * 1000;
 export const STALE_CLAIM_MS = 10 * 60 * 1000;
@@ -37,7 +39,7 @@ export function failureUpdate(after: ChatDoc, error: unknown, now: number) {
     const processAttempts = (after?.processAttempts || 0) + 1;
     return {
         processing: false,
-        lastError: ((error as any)?.message || String(error)).slice(0, 500),
+        lastError: errorMessage(error).slice(0, 500),
         lastErrorAt: now,
         processAttempts,
         retryAfter: now + RETRY_BACKOFF_MS * processAttempts,
