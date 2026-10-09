@@ -775,6 +775,8 @@
     "balanceAvailable": "{count, plural, =0 {Keine Sitzungen verfügbar} one {# Sitzung verfügbar} other {# Sitzungen verfügbar}}",
     "balanceFree": "{count} kostenlos in diesem Jahr",
     "balancePurchased": "{count} gekauft",
-    "balanceRenews": "Kostenlose Sitzungen erneuern sich am {date}"
+    "balanceRenews": "Kostenlose Sitzungen erneuern sich am {date}",
+    "memberComp": "Geschenkt",
+    "memberCompNote": "Eine geschenkte Mitgliedschaft: jeden Tag eine Sitzung, ohne Verlängerung oder Kündigung."
   }
 }

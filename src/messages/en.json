@@ -775,6 +775,8 @@
     "balanceAvailable": "{count, plural, =0 {No sessions available} one {# session available} other {# sessions available}}",
     "balanceFree": "{count} free this year",
     "balancePurchased": "{count} purchased",
-    "balanceRenews": "Free sessions renew {date}"
+    "balanceRenews": "Free sessions renew {date}",
+    "memberComp": "Complimentary",
+    "memberCompNote": "A complimentary membership: a session every day, nothing to renew or cancel."
   }
 }

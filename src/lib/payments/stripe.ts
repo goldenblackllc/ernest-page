@@ -6,7 +6,7 @@ let client: Stripe | null = null;
 /** Server-side Stripe client. Throws if STRIPE_SECRET_KEY is missing or isn't a secret key. */
 export function getStripe(): Stripe {
     if (client) return client;
-    const key = process.env.STRIPE_SECRET_KEY;
+    const key = process.env.STRIPE_SECRET_KEY?.trim();
     if (!key || !(key.startsWith('sk_') || key.startsWith('rk_'))) {
         throw new Error('STRIPE_SECRET_KEY is missing or is not a secret key');
     }

@@ -775,6 +775,8 @@
     "balanceAvailable": "{count, plural, =0 {No hay sesiones disponibles} one {# sesión disponible} other {# sesiones disponibles}}",
     "balanceFree": "{count} gratis este año",
     "balancePurchased": "{count} compradas",
-    "balanceRenews": "Las sesiones gratuitas se renuevan el {date}"
+    "balanceRenews": "Las sesiones gratuitas se renuevan el {date}",
+    "memberComp": "Cortesía",
+    "memberCompNote": "Una membresía de cortesía: una sesión cada día, sin renovaciones ni cancelaciones."
   }
 }

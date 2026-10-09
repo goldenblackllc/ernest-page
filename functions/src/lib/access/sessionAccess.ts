@@ -58,7 +58,10 @@ export interface Membership {
     started_at: number;
     /** Sessions used in the first REFUND_RULES.membershipDays (for the membership refund rule) */
     first_week_sessions?: number;
+    /** Granted free by scripts/grant-membership.mjs: no Stripe subscription, no renewal, cancel or refund */
+    comp?: boolean;
 }
+
 
 /** users/{uid}.access — written only by the server. */
 export interface AccessState {
@@ -179,7 +182,7 @@ export interface AccessSummary {
     /** ms, or null if the signup date is unknown */
     freeRenewsAt: number | null;
     credits: number;
-    membership: { active: boolean; renewsAt: number; cancelAtPeriodEnd: boolean } | null;
+    membership: { active: boolean; renewsAt: number; cancelAtPeriodEnd: boolean; comp: boolean } | null;
     sessionsToday: number;
     sessionsPerDay: number;
 }
@@ -195,7 +198,7 @@ export function accessSummary(access: AccessState | undefined, signupMs: number 
         freeRenewsAt: freeRenewsAt(signupMs, now),
         credits: access?.credits || 0,
         membership: m && membershipActive(m, now)
-            ? { active: true, renewsAt: m.current_period_end, cancelAtPeriodEnd: !!m.cancel_at_period_end }
+            ? { active: true, renewsAt: m.current_period_end, cancelAtPeriodEnd: !!m.cancel_at_period_end, comp: !!m.comp }
             : null,
         sessionsToday: sessionsToday(access, now),
         sessionsPerDay: SESSION_LIMITS.sessionsPerDay,
@@ -252,7 +255,7 @@ export function canRefundUsedSession(access: AccessState | undefined, session: P
 export function canRefundMembership(access: AccessState | undefined, now: number): { ok: true } | { ok: false; reason: RefundRefusal } {
     const m = access?.membership;
     if (access?.membership_refunded) return { ok: false, reason: 'already_refunded' };
-    if (!m || !membershipActive(m, now)) return { ok: false, reason: 'not_refundable' };
+    if (!m || m.comp || !membershipActive(m, now)) return { ok: false, reason: 'not_refundable' };
     if (now - m.started_at > REFUND_RULES.membershipDays * DAY_MS) return { ok: false, reason: 'too_late' };
     if ((m.first_week_sessions || 0) > REFUND_RULES.membershipMaxSessions) return { ok: false, reason: 'limit' };
     return { ok: true };

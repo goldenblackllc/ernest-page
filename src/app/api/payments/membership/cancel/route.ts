@@ -24,6 +24,7 @@ export async function POST(req: Request) {
         if (!membership || !membershipActive(membership, Date.now())) {
             return Response.json({ error: 'No active membership' }, { status: 404 });
         }
+        if (membership.comp) return Response.json({ error: 'Complimentary memberships have nothing to cancel' }, { status: 409 });
 
         const updated = await getStripe().subscriptions.update(membership.subscription_id, {
             cancel_at_period_end: resume !== true,

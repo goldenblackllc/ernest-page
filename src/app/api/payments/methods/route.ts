@@ -38,7 +38,8 @@ export async function POST(req: Request) {
         const body = await req.json().catch(() => ({}));
         const stripe = getStripe();
         const { access } = await readAccess(uid);
-        const membership = membershipActive(access.membership, Date.now()) ? access.membership! : null;
+        // A complimentary membership has no Stripe subscription to put a card on.
+        const membership = membershipActive(access.membership, Date.now()) && !access.membership!.comp ? access.membership! : null;
 
         if (body.action === 'add') {
             const customer = await getOrCreateCustomer(stripe, uid, access);

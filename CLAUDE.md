@@ -59,7 +59,9 @@ Model and reasons are in MANIFESTO.md §8. In code:
 - **One rule, `functions/src/lib/access/sessionAccess.ts`.** `/api/check-session-access` reports it, `/api/consume-session` applies it (with the first message), and `mirrorReply`/`mirrorPlan` refuse a session that has no grant or is past its turn, time or size limits. Change limits and refund rules there only.
 - **Where the state lives.** `users/{uid}.access` (credits, free sessions, daily count, membership), `users/{uid}/credit_lots/{paymentIntentId}`, `users/{uid}/paid_sessions/{sessionId}`, and `active_chats/{sessionId}.access` (how the session was paid for). Only the server writes them; `firestore.rules` blocks the client.
 - **Stripe, in-house only.** Payment Element in our own UI; no Checkout or Customer Portal. Credits are granted and memberships updated only by the webhook (`/api/payments/webhook`). Prices are in `src/lib/payments/catalog.ts`; the membership price is created in Stripe on first use by lookup key.
-- Env (`.env.local`, and Vercel for production): `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`. Locally, `stripe listen --api-key "$STRIPE_SECRET_KEY" --forward-to localhost:3000/api/payments/webhook` prints the webhook secret.
+- Env (`.env.local`, and Vercel for production): `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`. Locally, `stripe listen --api-key "$STRIPE_SECRET_KEY" --forward-to localhost:3000/api/payments/webhook` prints the webhook secret. The production webhook URL is `https://www.earnestpage.com/api/payments/webhook` (the bare domain redirects, and Stripe doesn't follow redirects). After changing a Vercel variable, redeploy.
+- **Local development uses the live Firestore** with test Stripe keys, so a test purchase on localhost writes test-mode Stripe ids and credits into a real user record. Clean those up afterwards (`access.stripe_customer_id`, `credit_lots`, `paid_sessions`).
+- Complimentary memberships: `node scripts/grant-membership.mjs <+phone|uid> [--revoke]`. They have no Stripe subscription and can't be cancelled or refunded in Billing.
 
 ## The dossier and character data
 

@@ -124,7 +124,7 @@ export function BillingView() {
             <section className="space-y-3">
                 <Heading>{t("balance")}</Heading>
                 {summary.membership && (
-                    <Row label={t("memberActive")} value={summary.membership.cancelAtPeriodEnd
+                    <Row label={t("memberActive")} value={summary.membership.comp ? t("memberComp") : summary.membership.cancelAtPeriodEnd
                         ? t("memberEnds", { date: date(summary.membership.renewsAt) })
                         : t("memberRenews", { date: date(summary.membership.renewsAt) })} />
                 )}
@@ -143,7 +143,9 @@ export function BillingView() {
             {/* ── Membership ── */}
             <section className="space-y-3">
                 <Heading>{t("membership")}</Heading>
-                {summary.membership ? (
+                {summary.membership?.comp ? (
+                    <p className="text-sm text-zinc-400">{t("memberCompNote")}</p>
+                ) : summary.membership ? (
                     <div className="flex flex-wrap gap-2">
                         {summary.membership.cancelAtPeriodEnd
                             ? <PillButton onClick={() => run(() => post("/api/payments/membership/cancel", { resume: true }))} disabled={busy}>{t("resumeMembership")}</PillButton>

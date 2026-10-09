@@ -212,6 +212,21 @@ describe("POST /api/payments/webhook", () => {
         data: { object: { id, amount: 25000, amount_received: 25000, metadata: { uid: TEST_UID, kind: "credits", product } } },
     });
 
+    it("rejects everything when the webhook secret isn't configured", async () => {
+        vi.stubEnv("STRIPE_WEBHOOK_SECRET", "");
+        const { POST } = await import("../payments/webhook/route");
+        const res = await POST(new Request("http://localhost/api/payments/webhook", { method: "POST", headers: { "stripe-signature": "t=1,v1=sig" }, body: "{}" }));
+        expect(res.status).toBe(400);
+        expect(stripe.webhooks.constructEvent).not.toHaveBeenCalled();
+    });
+
+    it("ignores stray whitespace around the webhook secret", async () => {
+        vi.stubEnv("STRIPE_WEBHOOK_SECRET", "  whsec_test\n");
+        fakeDb.seed(USER, {});
+        await deliver(paid("single"));
+        expect(stripe.webhooks.constructEvent).toHaveBeenCalledWith(expect.anything(), expect.anything(), "whsec_test");
+    });
+
     it("rejects a bad signature", async () => {
         stripe.webhooks.constructEvent.mockImplementationOnce(() => { throw new Error("bad sig"); });
         const { POST } = await import("../payments/webhook/route");
@@ -254,6 +269,53 @@ describe("POST /api/payments/webhook", () => {
         fakeDb.seed(USER, {});
         await deliver({ id: "evt_3", type: "payment_intent.succeeded", data: { object: { id: "pi_x", amount: 100, metadata: {} } } });
         expect(fakeDb.writes).toEqual([]);
+    });
+});
+
+describe("Stripe customer", () => {
+    it("reuses the stored customer when it exists", async () => {
+        fakeDb.seed(USER, { access: { billing_email: "me@example.com", stripe_customer_id: "cus_1" } });
+        const { POST } = await import("../payments/purchase/route");
+        await POST(post("payments/purchase", { product: "single" }));
+        expect(stripe.customers.create).not.toHaveBeenCalled();
+        expect(stripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_1" }));
+    });
+
+    it("replaces a stored customer that doesn't exist in this Stripe mode", async () => {
+        vi.spyOn(console, "warn").mockImplementation(() => {});
+        fakeDb.seed(USER, { access: { billing_email: "me@example.com", stripe_customer_id: "cus_test_mode" } });
+        stripe.customers.retrieve.mockRejectedValueOnce(Object.assign(new Error("No such customer"), { code: "resource_missing" }));
+        const { POST } = await import("../payments/purchase/route");
+        const res = await POST(post("payments/purchase", { product: "single" }));
+        expect(res.status).toBe(200);
+        expect(stripe.customers.create).toHaveBeenCalledTimes(1);
+        expect(fakeDb.writes).toContainEqual({ op: "set", path: USER, data: { access: { stripe_customer_id: "cus_1" } } });
+        expect(stripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_1" }));
+    });
+
+    it("still fails on other Stripe errors", async () => {
+        fakeDb.seed(USER, { access: { billing_email: "me@example.com", stripe_customer_id: "cus_1" } });
+        stripe.customers.retrieve.mockRejectedValueOnce(Object.assign(new Error("Stripe down"), { code: "api_error" }));
+        const { POST } = await import("../payments/purchase/route");
+        expect((await POST(post("payments/purchase", { product: "single" }))).status).toBe(500);
+        expect(stripe.customers.create).not.toHaveBeenCalled();
+    });
+});
+
+describe("complimentary memberships", () => {
+    const comp = { status: "active", subscription_id: "comp", comp: true, current_period_end: Date.UTC(2100, 0, 1), started_at: NOW - DAY };
+
+    it("can't be cancelled, refunded or given a card", async () => {
+        fakeDb.seed(USER, { access: { stripe_customer_id: "cus_1", membership: comp } });
+        const cancel = (await import("../payments/membership/cancel/route")).POST;
+        expect((await cancel(post("payments/membership/cancel", {}))).status).toBe(409);
+        const refund = (await import("../payments/refund/route")).POST;
+        expect(await (await refund(post("payments/refund", { kind: "membership" }))).json()).toMatchObject({ reason: "not_refundable" });
+        const methods = (await import("../payments/methods/route")).POST;
+        await methods(post("payments/methods", { action: "default", paymentMethodId: "pm_mc" }));
+        expect(stripe.subscriptions.update).not.toHaveBeenCalled();
+        expect(stripe.subscriptions.cancel).not.toHaveBeenCalled();
+        expect(stripe.refunds.create).not.toHaveBeenCalled();
     });
 });
 

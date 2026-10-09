@@ -190,6 +190,19 @@ describe('used-session refunds', () => {
     });
 });
 
+describe('complimentary memberships', () => {
+    const comp = member({ subscription_id: 'comp', comp: true, current_period_end: Date.UTC(2100, 0, 1), started_at: NOW - DAY });
+
+    it('give daily sessions like a paid membership', () => {
+        expect(decideSessionStart({ membership: comp }, SIGNUP, NOW)).toMatchObject({ ok: true, source: 'membership' });
+        expect(accessSummary({ membership: comp }, SIGNUP, NOW).membership).toMatchObject({ active: true, comp: true });
+    });
+
+    it('can never be refunded', () => {
+        expect(canRefundMembership({ membership: comp }, NOW)).toEqual({ ok: false, reason: 'not_refundable' });
+    });
+});
+
 describe('membership refunds', () => {
     it('allows a first membership within 7 days and 3 sessions', () => {
         expect(canRefundMembership({ membership: member({ started_at: NOW - 2 * DAY, first_week_sessions: 3 }) }, NOW)).toEqual({ ok: true });

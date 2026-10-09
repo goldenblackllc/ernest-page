@@ -7,11 +7,23 @@ import type { AccessState, Membership } from '@functions/lib/access/sessionAcces
 import { CREDIT_PRODUCTS, isCreditProduct } from './catalog';
 import { grantCredits, saveMembership, saveStripeCustomerId } from '@/lib/access/accessStore';
 
+/**
+ * The user's Stripe customer, created on first purchase. A stored id that
+ * doesn't exist in the current Stripe mode (a test-mode customer seen by live
+ * keys, or a deleted one) is replaced instead of failing the purchase.
+ */
 export async function getOrCreateCustomer(stripe: Stripe, uid: string, access: AccessState): Promise<string> {
-    if (access.stripe_customer_id) return access.stripe_customer_id;
+    if (access.stripe_customer_id) {
+        const existing = await stripe.customers.retrieve(access.stripe_customer_id).catch((error: { code?: string }) => {
+            if (error?.code === 'resource_missing') return null;
+            throw error;
+        });
+        if (existing && !('deleted' in existing && existing.deleted)) return existing.id;
+        console.warn(`[Payments] Stripe customer ${access.stripe_customer_id} for ${uid} is missing in this mode; creating a new one`);
+    }
     const customer = await stripe.customers.create(
         { metadata: { uid }, ...(access.billing_email ? { email: access.billing_email } : {}) },
-        { idempotencyKey: `customer-${uid}` },
+        { idempotencyKey: `customer-${uid}-${access.stripe_customer_id || 'new'}` },
     );
     await saveStripeCustomerId(uid, customer.id);
     return customer.id;

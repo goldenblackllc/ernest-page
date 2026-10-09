@@ -775,6 +775,8 @@
     "balanceAvailable": "{count, plural, =0 {Aucune session disponible} one {# session disponible} other {# sessions disponibles}}",
     "balanceFree": "{count} offertes cette année",
     "balancePurchased": "{count} achetées",
-    "balanceRenews": "Les sessions offertes se renouvellent le {date}"
+    "balanceRenews": "Les sessions offertes se renouvellent le {date}",
+    "memberComp": "Offert",
+    "memberCompNote": "Un abonnement offert : une session chaque jour, rien à renouveler ni à résilier."
   }
 }
