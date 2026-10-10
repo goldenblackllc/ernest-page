@@ -154,6 +154,8 @@
     "placeholderEnded": "Sesión terminada. Cierra para empezar una nueva.",
     "stop": "Detener",
     "regenerate": "Regenerar Respuesta",
+    "replyFailed": "Tu mensaje no se envió. Inténtalo de nuevo.",
+    "replyTooLong": "Esta conversación es demasiado larga para continuar. Extrae tus directivas y cierra para empezar una nueva sesión.",
     "sessionRoutingSettings": "Configuración de enrutamiento de sesión",
     "removePhoto": "Eliminar foto",
     "send": "Enviar"

@@ -7,7 +7,7 @@ import { functions } from "@/lib/firebase/config";
 import { subscribeToActiveChat, getMostRecentActiveChat, saveActiveChat, deleteActiveChat } from "@/lib/firebase/chat";
 import { authFetch } from "@/lib/auth/authFetch";
 import type { Message, SessionRouting } from "@/types/chat";
-import { SESSION_LIMITS, SESSION_MS } from "@functions/lib/access/sessionAccess";
+import { SESSION_LIMITS, SESSION_MS, type ReplyRefusal } from "@functions/lib/access/sessionAccess";
 
 // Mirror Chat runs on Cloud Functions; the reply is written to Firestore and
 // rendered from the active-chat subscription. High-effort replies can take minutes.
@@ -17,6 +17,15 @@ const mirrorReply = httpsCallable(functions, 'mirrorReply', { timeout: 540_000 }
 export const MAX_EXCHANGES = SESSION_LIMITS.turnsPerSession;
 export const MAX_SESSION_HOURS = SESSION_LIMITS.sessionHours;
 const MAX_SESSION_MS = SESSION_MS;
+
+/** Why the last reply didn't arrive, shown above the input. */
+export type ReplyError = 'failed' | 'too_long';
+
+/** The access-rule reason mirrorReply gives when it refuses a session (HttpsError details). */
+function refusalReason(err: unknown): ReplyRefusal | null {
+    const e = err as { code?: string; details?: { reason?: ReplyRefusal } };
+    return e?.code === 'functions/permission-denied' ? e.details?.reason ?? null : null;
+}
 
 /** The user's local time, as sent to the Mirror functions. */
 export function mirrorLocalTime(): string {
@@ -45,6 +54,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
     // Session limits
     const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
     const [isSessionExpired, setIsSessionExpired] = useState(false);
+    const [replyError, setReplyError] = useState<ReplyError | null>(null);
 
     // Derive exchange count from messages
     const exchangeCount = messages.filter(m => m.role === 'user').length;
@@ -124,6 +134,31 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         locale,
     });
 
+    /**
+     * Ask for the Mirror's reply and handle refusals. A session the server never
+     * recorded as started (consume-session failed or was skipped) is started now
+     * and retried once; an ended session shows the session-ended banner.
+     */
+    const sendReply = async (replyMessages: Message[]) => {
+        setReplyError(null);
+        setIsLoading(true);
+        try {
+            try {
+                await requestReply(replyMessages);
+            } catch (err) {
+                if (refusalReason(err) !== 'no_session') throw err;
+                if (!(await consumeSession())) return;
+                await requestReply(replyMessages);
+            }
+        } catch (err) {
+            console.error("Failed to get the mirror's reply:", err);
+            setIsLoading(false);
+            const reason = refusalReason(err);
+            if (reason === 'expired' || reason === 'turn_limit') setIsSessionExpired(true);
+            else setReplyError(reason === 'too_long' ? 'too_long' : 'failed');
+        }
+    };
+
     // Auto-submit initial context from Signal card CTA
     useEffect(() => {
         if (!initialContext || !isOpen || !sessionId || messages.length > 0 || isLoading) return;
@@ -139,14 +174,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
             if (!creditConsumed && !(await consumeSession())) return;
 
             setMessages(newMessages);
-            setIsLoading(true);
-
-            try {
-                await requestReply(newMessages);
-            } catch (err) {
-                console.error('Failed to auto-submit signal context:', err);
-                setIsLoading(false);
-            }
+            await sendReply(newMessages);
         };
 
         autoSubmit();
@@ -201,14 +229,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
 
     const reload = async () => {
         if (!sessionId || isLoading || messages.length === 0) return;
-
-        setIsLoading(true);
-        try {
-            await requestReply(messages);
-        } catch (err) {
-            console.error("Failed to reload mirror:", err);
-            setIsLoading(false);
-        }
+        await sendReply(messages);
     };
 
     const removePhoto = async () => {
@@ -251,6 +272,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         setPostPhotoUrl(null);
         setSessionStartedAt(null);
         setIsSessionExpired(false);
+        setReplyError(null);
     };
 
     return {
@@ -264,8 +286,9 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         exchangeCount,
         isAtExchangeLimit,
         isSessionLimited,
+        replyError,
         consumeSession,
-        requestReply,
+        sendReply,
         stop,
         reload,
         removePhoto,

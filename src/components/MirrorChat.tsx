@@ -153,12 +153,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
             textareaRef.current.style.height = 'auto';
         }
 
-        try {
-            await session.requestReply(newMessages);
-        } catch (err) {
-            console.error("Failed to send message to mirror:", err);
-            setIsLoading(false);
-        }
+        await session.sendReply(newMessages);
     };
 
     // Character name: user-chosen or AI-generated name is primary; archetype roles are subtitle
@@ -298,16 +293,21 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                         className="absolute left-0 right-0 bottom-0 bg-zinc-950 border-t border-zinc-800/50"
                     >
                         <div className="max-w-3xl mx-auto px-5 sm:px-8 py-4 relative">
-                            {/* Regenerate Button */}
-                            {!isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
-                                <div className="absolute -top-12 left-1/2 -translate-x-1/2">
-                                    <button
+                            {/* Regenerate Button, with the reason the last reply didn't arrive */}
+                            {!isLoading && !isSessionLimited && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+                                <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 w-max max-w-[90vw] ${session.replyError ? '-top-20' : '-top-12'}`}>
+                                    {session.replyError && (
+                                        <p role="alert" className="text-xs text-amber-400/90 text-center">
+                                            {t(session.replyError === 'too_long' ? 'mirrorChat.replyTooLong' : 'mirrorChat.replyFailed')}
+                                        </p>
+                                    )}
+                                    {session.replyError !== 'too_long' && <button
                                         onClick={session.reload}
                                         className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-full flex items-center gap-2 hover:text-white hover:bg-zinc-700 transition-colors shadow-lg border border-zinc-700/50"
                                     >
                                         <RefreshCcw className="w-3 h-3" />
                                         {t('mirrorChat.regenerate')}
-                                    </button>
+                                    </button>}
                                 </div>
                             )}
 

@@ -154,6 +154,8 @@
     "placeholderEnded": "Sitzung beendet. Schließen, um eine neue zu beginnen.",
     "stop": "Stopp",
     "regenerate": "Antwort neu generieren",
+    "replyFailed": "Deine Nachricht kam nicht an. Versuch es noch einmal.",
+    "replyTooLong": "Dieses Gespräch ist zu lang, um weiterzumachen. Extrahiere deine Richtlinien und schließe, um eine neue Sitzung zu beginnen.",
     "sessionRoutingSettings": "Sitzungs-Routing-Einstellungen",
     "removePhoto": "Foto entfernen",
     "send": "Senden"

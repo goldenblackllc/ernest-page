@@ -154,6 +154,8 @@
     "placeholderEnded": "Session terminée. Fermez pour en démarrer une autre.",
     "stop": "Arrêt",
     "regenerate": "Régénérer la Réponse",
+    "replyFailed": "Votre message n'est pas passé. Réessayez.",
+    "replyTooLong": "Cette conversation est trop longue pour continuer. Extrayez vos directives et fermez pour commencer une nouvelle session.",
     "sessionRoutingSettings": "Paramètres de routage de session",
     "removePhoto": "Supprimer la photo",
     "send": "Envoyer"
