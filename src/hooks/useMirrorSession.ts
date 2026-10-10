@@ -178,6 +178,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         };
 
         autoSubmit();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- submit once per context and session; the guards above read the latest state
     }, [initialContext, isOpen, sessionId]);
 
     // Subscribe to active chat in Firestore
@@ -193,8 +194,8 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
                 }
                 // Restore session start time from Firestore so the session timer
                 // survives close/reopen without resetting.
-                if (chat.createdAt && !sessionStartedAt) {
-                    setSessionStartedAt(chat.createdAt);
+                if (chat.createdAt) {
+                    setSessionStartedAt(prev => prev ?? chat.createdAt);
                 }
             } else {
                 setMessages([]);
@@ -225,6 +226,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         }, 130000);
 
         return () => clearTimeout(watchdog);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- `stop` is recreated each render; depending on it would restart the timer
     }, [isLoading, sessionId]);
 
     const reload = async () => {
