@@ -16,6 +16,7 @@ import { generateTextWithFallback, MIRROR_MODEL, MIRROR_FALLBACK, MIRROR_EFFORT 
 import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } from './lib/ai/mirrorPrompt.js';
 import { getCompiledBible } from './lib/bible.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
+import { errorMessage } from './lib/utils/errors.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 
 const MAX_MESSAGE_LENGTH = 5000;
@@ -26,6 +27,9 @@ interface ChatMessage {
     content: string;
     id?: string;
 }
+
+interface MirrorReplyData { messages: ChatMessage[]; sessionId: string; localTime?: string; timeZone?: string; locale?: string }
+interface MirrorPlanData { messages: ChatMessage[]; sessionId: string; localTime?: string; locale?: string }
 
 // ─── Rate limit: 10 messages per minute per user (per instance) ─────────────
 
@@ -105,7 +109,7 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
 
 // ─── Chat reply ─────────────────────────────────────────────────────────────
 
-export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; localTime?: string; timeZone?: string; locale?: string }>(
+export const mirrorReply = onCall<MirrorReplyData>(
     {
         region: REGION,
         timeoutSeconds: 540,
@@ -116,7 +120,7 @@ export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; 
         if (!uid) throw new HttpsError('unauthenticated', 'Sign in required');
         checkRateLimit(uid);
 
-        const { messages, sessionId, localTime, locale } = request.data || ({} as any);
+        const { messages, sessionId, localTime, locale } = request.data || ({} as Partial<MirrorReplyData>);
         const timeZone = safeTimeZone(request.data?.timeZone);
         if (!sessionId) throw new HttpsError('invalid-argument', 'Missing session');
         if (!Array.isArray(messages) || messages.length === 0) throw new HttpsError('invalid-argument', 'Missing messages');
@@ -166,8 +170,8 @@ export const mirrorReply = onCall<{ messages: ChatMessage[]; sessionId: string; 
                 providerOptions: { anthropic: { effort: MIRROR_EFFORT } },
                 abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
             });
-        } catch (error: any) {
-            console.error('[MirrorChat] Generation failed:', error.message);
+        } catch (err) {
+            console.error('[MirrorChat] Generation failed:', errorMessage(err));
             await activeChatRef.set({ status: 'idle', updatedAt: Date.now() }, { merge: true }); // user can retry
             throw new HttpsError('unavailable', 'The reply could not be generated. Please try again.');
         }
@@ -191,7 +195,7 @@ const PLAN_LANGUAGE: Record<string, string> = {
     pt: 'You MUST respond entirely in PORTUGUESE (Português). Do not use English unless the user explicitly asks for an English word.',
 };
 
-export const mirrorPlan = onCall<{ messages: ChatMessage[]; sessionId: string; localTime?: string; locale?: string }>(
+export const mirrorPlan = onCall<MirrorPlanData>(
     {
         region: REGION,
         timeoutSeconds: 300,
@@ -203,7 +207,7 @@ export const mirrorPlan = onCall<{ messages: ChatMessage[]; sessionId: string; l
 
         checkRateLimit(uid);
 
-        const { messages, sessionId, localTime, locale } = request.data || ({} as any);
+        const { messages, sessionId, localTime, locale } = request.data || ({} as Partial<MirrorPlanData>);
         if (!Array.isArray(messages) || messages.length < 2) {
             throw new HttpsError('invalid-argument', 'Insufficient conversation context');
         }
@@ -262,8 +266,8 @@ LANGUAGE: ${languageInstruction}`;
                 providerOptions: { anthropic: { effort: MIRROR_EFFORT } },
                 abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
             });
-        } catch (error: any) {
-            console.error('[MirrorPlan] Generation failed:', error.message);
+        } catch (err) {
+            console.error('[MirrorPlan] Generation failed:', errorMessage(err));
             throw new HttpsError('unavailable', 'Plan generation failed. Please try again.');
         }
 

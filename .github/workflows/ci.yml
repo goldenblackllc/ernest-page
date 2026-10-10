@@ -43,6 +43,19 @@ jobs:
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
           NEXT_PUBLIC_FIREBASE_APP_ID: "1:0:web:0"
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Match the npm that writes package-lock.json locally; npm 10 reads it differently.
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npm run lint
+
   tests:
     runs-on: ubuntu-latest
     steps:

@@ -40,9 +40,13 @@ export function TriagePanel() {
     const [isDailyCapHit, setIsDailyCapHit] = useState(false);
     const [initialContext, setInitialContext] = useState<string | null>(null);
 
-    /** Pause all background audio, then open the mirror chat overlay. */
+    // My Life drawer state
+    const [activeSection, setActiveSection] = useState<MyLifeSection | null>(null);
+
+    /** Pause all background audio, close any My Life drawer, then open the mirror chat overlay. */
     const openMirror = useCallback(() => {
         pauseAll();
+        setActiveSection(null);
         setIsMirrorOpen(true);
     }, [pauseAll]);
 
@@ -57,9 +61,6 @@ export function TriagePanel() {
 
     // Shown when the free sessions are used up and nothing is left to pay with
     const [purchaseSummary, setPurchaseSummary] = useState<AccessSummary | null>(null);
-
-    // My Life drawer state
-    const [activeSection, setActiveSection] = useState<MyLifeSection | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -76,16 +77,18 @@ export function TriagePanel() {
         return () => unsubscribe();
     }, [user]);
 
-    // Automatically trigger onboarding if needed
-    useEffect(() => {
-        if (needsOnboarding) {
-            setShowOnboarding(true);
-        }
-    }, [needsOnboarding]);
+    // Automatically trigger onboarding when it becomes needed (adjusting state during render,
+    // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+    const [prevNeedsOnboarding, setPrevNeedsOnboarding] = useState(needsOnboarding);
+    if (needsOnboarding !== prevNeedsOnboarding) {
+        setPrevNeedsOnboarding(needsOnboarding);
+        if (needsOnboarding) setShowOnboarding(true);
+    }
 
     // Dev preview: ?onboarding=preview opens the overlay with existing data (no reset needed)
     useEffect(() => {
         if (process.env.NODE_ENV === 'development' && searchParams.get('onboarding') === 'preview') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- dev-only: open the overlay from the URL after hydration, so the server HTML is unchanged
             setShowOnboarding(true);
         }
     }, [searchParams]);
@@ -115,19 +118,6 @@ export function TriagePanel() {
         return () => window.removeEventListener('open-identity-editor', handleIdentityEditor);
     }, []);
 
-    // Listen for 30-day check-in card tap
-    useEffect(() => {
-        const handleCheckin = (e: any) => {
-            const context = e.detail?.context;
-            if (context) {
-                setInitialContext(context);
-                attemptStartSession();
-            }
-        };
-        window.addEventListener('open-mirror-checkin', handleCheckin);
-        return () => window.removeEventListener('open-mirror-checkin', handleCheckin);
-    }, [user, bible, needsOnboarding]);
-
     const isBibleReady = bible != null && (bible.sections?.length ?? 0) > 0;
 
 
@@ -135,7 +125,7 @@ export function TriagePanel() {
     const handleOnboardingSubmit = async (data: OnboardingFormData) => {
         if (!user) return;
 
-        const existing = profile || {} as any;
+        const existing: Partial<CharacterProfile> = profile || {};
 
         // --- Merge wants: update existing items in place, append new ones, keep extras ---
         const existingWants: WantItem[] = existing.wants || [];
@@ -236,7 +226,7 @@ export function TriagePanel() {
         setNeedsOnboarding(false);
     };
 
-    const attemptStartSession = async () => {
+    const attemptStartSession = useCallback(async () => {
         // If no character bible AND needs onboarding, show the onboarding flow
         if (!isBibleReady && needsOnboarding) {
             setShowOnboarding(true);
@@ -277,7 +267,20 @@ export function TriagePanel() {
             // Network error — try opening anyway, server will catch on next API call
             openMirror();
         }
-    };
+    }, [isBibleReady, needsOnboarding, user, openMirror]);
+
+    // Listen for 30-day check-in card tap
+    useEffect(() => {
+        const handleCheckin = (e: Event) => {
+            const context = (e as CustomEvent<{ context?: string } | undefined>).detail?.context;
+            if (context) {
+                setInitialContext(context);
+                attemptStartSession();
+            }
+        };
+        window.addEventListener('open-mirror-checkin', handleCheckin);
+        return () => window.removeEventListener('open-mirror-checkin', handleCheckin);
+    }, [attemptStartSession]);
 
     // ─── My Life Drawer Save Handlers ─────────────────────────────────────────
 
@@ -300,11 +303,6 @@ export function TriagePanel() {
         if (!user) return;
         updateDream(user.uid, updates);
     }, [user]);
-
-    // Close drawer when mirror chat opens
-    useEffect(() => {
-        if (isMirrorOpen) setActiveSection(null);
-    }, [isMirrorOpen]);
 
     // Render the active drawer's editor content
     const renderDrawerContent = () => {
@@ -455,9 +453,9 @@ export function TriagePanel() {
                             initialValues={profile ? {
                                 name: profile.name || '',
                                 defining_words: profile.defining_words || [],
-                                wants: (profile.wants || []).map((w: any) => w.text || ''),
+                                wants: (profile.wants || []).map((w) => w.text || ''),
                                 interests: profile.interests || [],
-                                people: (profile.people || []).map((p: any) => ({
+                                people: (profile.people || []).map((p) => ({
                                     name: p.name || '',
                                     relationship: p.relationship || '',
                                     about: p.who || '',

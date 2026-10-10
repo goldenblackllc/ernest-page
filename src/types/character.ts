@@ -1,3 +1,4 @@
+import type { Timestamp } from "firebase/firestore";
 import type { AccessState } from "@functions/lib/access/sessionAccess";
 
 /** A person in the user's life */
@@ -22,7 +23,7 @@ export interface Bible {
     status?: 'stable' | 'compiling' | 'ready' | 'failed';
     fail_reason?: string;
     last_updated?: number;
-    last_commit?: any;  // Firestore Timestamp
+    last_commit?: Timestamp;
 }
 
 /** Avatar — system-generated */
@@ -72,7 +73,7 @@ export interface CharacterProfile {
 
     // --- AI-Maintained ---
     dossier?: string;                     // 7-section case notes
-    dossier_updated_at?: any;             // Firestore Timestamp
+    dossier_updated_at?: Timestamp;
     session_count?: number;
     session_recaps?: Array<{
         date: string;                     // YYYY-MM-DD in the user's time zone
@@ -82,15 +83,15 @@ export interface CharacterProfile {
 
     // --- App State ---
     onboarding_complete?: boolean;
-    bible_dirty_since?: any;              // Firestore Timestamp — triggers recompile cron
+    bible_dirty_since?: Timestamp;        // triggers recompile cron
     last_compile_at?: number;
     compile_count?: number;
     compile_count_date?: string;
 
     // --- Account ---
-    active_todos?: Array<{ id: string; task: string; completed: boolean; priority?: 'immediate' | 'next'; unexpected_yield?: string; created_at: any }>;
+    active_todos?: Array<{ id: string; task: string; completed: boolean; priority?: 'immediate' | 'next'; unexpected_yield?: string; created_at: string }>;  // created_at: ISO string
     following?: Record<string, string>;
-    updatedAt?: any;
+    updatedAt?: Timestamp;
     saved_posts?: string[];
     default_post_routing?: 'private' | 'public' | 'burn';
     last_thirty_day_checkin?: string;

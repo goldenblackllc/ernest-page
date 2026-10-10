@@ -89,6 +89,7 @@ Website env vars are in `.env.local`; function secrets are in `functions/.env`.
   - **website-build:** typecheck, then `next build` with only root packages installed, like Vercel.
   - **tests:** `npm test`.
   - **functions-build:** compiles the Cloud Functions.
+  - **lint:** `npm run lint`. Errors fail the build; warnings don't. Use a disable comment only with a specific reason (`// eslint-disable-next-line <rule> -- <why>`).
 
   CI reports results but doesn't block Vercel deploys.
 
