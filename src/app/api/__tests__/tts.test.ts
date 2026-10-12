@@ -26,7 +26,6 @@ beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     fakeDb.seed(`users/${TEST_UID}`, {
         voice: { id: "voice-id-1234567" },
-        active_todos: [{ task: "Call your brother." }, { task: "Walk for 20 minutes." }],
     });
     fakeDb.seed(`users/${TEST_UID}/active_chats/s1`, {
         messages: [
@@ -67,13 +66,6 @@ describe("POST /api/tts", () => {
         expect((await POST(post({ sessionId: "other", messageId: "a1" }))).status).toBe(404);
         expect((await POST(post({ text: "free text" }))).status).toBe(400);
         expect(ttsFetch).not.toHaveBeenCalled();
-    });
-
-    it("speaks a plan from the saved directives", async () => {
-        const { POST } = await import("../tts/route");
-        const res = await POST(post({ sessionId: "s1", messageId: "plan-1700000000000" }));
-        expect(res.status).toBe(200);
-        expect(spokenText()).toBe("Call your brother.. Walk for 20 minutes.");
     });
 
     it("stops at the daily character budget", async () => {

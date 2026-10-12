@@ -109,7 +109,7 @@ async function main() {
     const { condensed, imagePrompts, audioFields, thumbnailUrl } = pipelineResult;
 
     // Update post with transcript + audio + thumbnail (images not yet generated)
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
         title: condensed.title,
         public_post: { condensed_transcript: condensed.messages },
         condensed_editorial_note: condensed.editorial_note,

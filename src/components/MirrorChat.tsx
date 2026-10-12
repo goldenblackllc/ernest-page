@@ -5,24 +5,17 @@ import { RefreshCcw, AlertTriangle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateCharacterProfile } from "@/lib/firebase/character";
 import { useAuth } from "@/context/AuthContext";
-import { functions } from "@/lib/firebase/config";
-import { httpsCallable } from "firebase/functions";
 import { useTranslations, useLocale } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
 import type { Message, SessionRouting } from "@/types/chat";
 import type { CharacterProfile } from "@/types/character";
-import { useMirrorSession, mirrorLocalTime, MAX_EXCHANGES, MAX_SESSION_HOURS } from "@/hooks/useMirrorSession";
+import { useMirrorSession, MAX_EXCHANGES, MAX_SESSION_HOURS } from "@/hooks/useMirrorSession";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useCharacterTTS } from "@/hooks/useCharacterTTS";
 import { MirrorHeader } from "@/components/mirror/MirrorHeader";
 import { MirrorMessageList } from "@/components/mirror/MirrorMessageList";
 import { RoutingMenu } from "@/components/mirror/RoutingMenu";
 import { MirrorInputBar } from "@/components/mirror/MirrorInputBar";
-
-const mirrorPlan = httpsCallable<
-    { messages: unknown[]; sessionId: string | null; localTime: string; locale: string },
-    { success: boolean; directives: string[] }
->(functions, 'mirrorPlan', { timeout: 300_000 });
 
 interface MirrorChatProps {
     isOpen: boolean;
@@ -73,8 +66,6 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         defaultPostRouting || 'public'
     );
     const hasManuallySetRouting = useRef(false);
-    const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-    const [planConfirmation, setPlanConfirmation] = useState<string | null>(null);
 
     // Sync sessionRouting when defaultPostRouting prop changes (unless user manually overrode)
     useEffect(() => {
@@ -153,12 +144,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
             textareaRef.current.style.height = 'auto';
         }
 
-        try {
-            await session.requestReply(newMessages);
-        } catch (err) {
-            console.error("Failed to send message to mirror:", err);
-            setIsLoading(false);
-        }
+        await session.sendReply(newMessages);
     };
 
     // Character name: user-chosen or AI-generated name is primary; archetype roles are subtitle
@@ -166,36 +152,6 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
     const characterArchetype = profile?.defining_words?.join(', ') || null;
     const displayName = characterName || characterArchetype || "Your Ideal Self";
     const avatarUrl = profile?.avatar?.url;
-
-    const handleExtractDirectives = async () => {
-        if (isGeneratingPlan || messages.length < 2) return;
-        setIsGeneratingPlan(true);
-        setPlanConfirmation(null);
-
-        try {
-            const { data } = await mirrorPlan({
-                messages,
-                sessionId: session.sessionId,
-                localTime: mirrorLocalTime(),
-                locale,
-            });
-            if (data.success && data.directives?.length > 0) {
-                const planMessage = `Here's your plan — ${data.directives.length} directive${data.directives.length !== 1 ? 's' : ''} set:\n\n${data.directives.map((d: string, i: number) => `${i + 1}. ${d}`).join('\n')}\n\nThese are now saved to your directives. Go make it happen.`;
-                setMessages(prev => [...prev, { id: `plan-${Date.now()}`, role: 'assistant' as const, content: planMessage }]);
-                setPlanConfirmation('✓ Directives saved');
-                setTimeout(() => setPlanConfirmation(null), 3000);
-            } else {
-                setPlanConfirmation(t('mirrorChat.directivesFailed'));
-                setTimeout(() => setPlanConfirmation(null), 4000);
-            }
-        } catch (err) {
-            console.error('Failed to extract directives:', err);
-            setPlanConfirmation(t('mirrorChat.directivesFailed'));
-            setTimeout(() => setPlanConfirmation(null), 4000);
-        } finally {
-            setIsGeneratingPlan(false);
-        }
-    };
 
     const handleSelectRouting = (option: SessionRouting) => {
         setSessionRouting(option);
@@ -223,7 +179,6 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         setIsRoutingOpen(false);
         setSessionRouting(defaultPostRouting || 'public');
         hasManuallySetRouting.current = false;
-        setPlanConfirmation(null);
 
         unsuppressAutoPlay();
 
@@ -286,9 +241,6 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                             isLoadingTTS={tts.isLoadingTTS}
                             isSpeaking={tts.isSpeaking}
                             onPlayPause={tts.handlePlayPause}
-                            canExtractDirectives={!isLoading && !shouldHoldLastMessage}
-                            isGeneratingPlan={isGeneratingPlan}
-                            onExtractDirectives={handleExtractDirectives}
                         />
                     </div>
 
@@ -298,32 +250,23 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                         className="absolute left-0 right-0 bottom-0 bg-zinc-950 border-t border-zinc-800/50"
                     >
                         <div className="max-w-3xl mx-auto px-5 sm:px-8 py-4 relative">
-                            {/* Regenerate Button */}
-                            {!isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
-                                <div className="absolute -top-12 left-1/2 -translate-x-1/2">
-                                    <button
+                            {/* Regenerate Button, with the reason the last reply didn't arrive */}
+                            {!isLoading && !isSessionLimited && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+                                <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 w-max max-w-[90vw] ${session.replyError ? '-top-20' : '-top-12'}`}>
+                                    {session.replyError && (
+                                        <p role="alert" className="text-xs text-amber-400/90 text-center">
+                                            {t(session.replyError === 'too_long' ? 'mirrorChat.replyTooLong' : 'mirrorChat.replyFailed')}
+                                        </p>
+                                    )}
+                                    {session.replyError !== 'too_long' && <button
                                         onClick={session.reload}
                                         className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-full flex items-center gap-2 hover:text-white hover:bg-zinc-700 transition-colors shadow-lg border border-zinc-700/50"
                                     >
                                         <RefreshCcw className="w-3 h-3" />
                                         {t('mirrorChat.regenerate')}
-                                    </button>
+                                    </button>}
                                 </div>
                             )}
-
-                            {/* Plan Confirmation Toast */}
-                            <AnimatePresence>
-                                {planConfirmation && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 8 }}
-                                        className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs bg-zinc-800 text-zinc-200 px-4 py-1.5 rounded-full border border-zinc-700 shadow-lg whitespace-nowrap"
-                                    >
-                                        {planConfirmation}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
 
                             {/* ═══ ROUTING LABEL + SETTINGS ═══ */}
                             <RoutingMenu

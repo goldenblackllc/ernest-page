@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const h = vi.hoisted(() => {
-    const state: { users: Record<string, any>; taskIds: Set<string> } = { users: {}, taskIds: new Set() };
+    const state: { users: Record<string, Record<string, unknown>>; taskIds: Set<string> } = { users: {}, taskIds: new Set() };
 
     const db = {
         collection: vi.fn(() => ({

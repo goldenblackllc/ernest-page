@@ -7,7 +7,7 @@
 *   **The Ethical North Star:** Our metric for success is NOT "Time on App," but "User Empowerment." We win when the user feels happier, stronger, and more capable *offline*.
 
 ## 2. The Philosophical Engine: Reality Rules
-The AI does not improvise a worldview. It operates within a strict set of 24 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat, Ghost-Writing, and Plan Generation.
+The AI does not improvise a worldview. It operates within a strict set of 24 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat and Ghost-Writing.
 
 **Key principles:**
 *   All feelings come from beliefs, never from external circumstances. The world provides circumstances; the character provides the meaning.
@@ -49,9 +49,8 @@ Avoid developer and machine words in the UI (code, operating system, bug, debug,
 
 ### A. Mirror Chat (The Primary Interaction)
 The conversational AI interface. Users talk to a simulation of their "Ideal Self", a character built from their Character Bible.
-*   **How it works:** User opens chat from the floating action button → converses with their character (replies come from the `mirrorReply` Cloud Function) → optionally generates a plan → closes chat → the `processChat` Cloud Function turns it into a post and updates the dossier.
+*   **How it works:** User opens chat from the floating action button → converses with their character (replies come from the `mirrorReply` Cloud Function) → closes chat → the `processChat` Cloud Function turns it into a post and updates the dossier.
 *   **Session Routing:** Each session is set to Public feed, Private ledger, or Burn on close (deleted with no processing).
-*   **Plan Generation:** "Give Me A Plan" extracts 3-7 actionable directives from the conversation and saves them to the user's `active_todos`.
 *   **Session Limits:** Up to 5 sessions per day; each session is capped at 30 exchanges and 3 hours. A session idle for 60 minutes is closed (the sweep runs every 15 minutes). See §8.
 
 ### B. The Character Bible (The Config File)
@@ -66,16 +65,11 @@ An anonymous advice column powered by real conversations.
 *   **Feed Structure:** Chronological (newest first), merging the user's own posts, followed authors' posts, and new public posts.
 *   **Post Features:** Like (private, doubles as a bookmark; liked posts appear on the profile), AI-generated and personal comments, follow authors, delete or change the visibility of your own posts.
 
-### D. Action Directives & Todos (My Daily Plan)
-*   **Source:** Generated from Mirror Chat via the "Give Me A Plan" button.
-*   **Display:** Bell icon in the header shows a badge count; a slide-over panel shows the checkable list.
-*   **Storage:** `active_todos` array on the user document, each with `id`, `task`, `completed`, `created_at`.
-
-### E. Daily Digest (Automated Reflection Card)
+### D. Daily Digest (Automated Reflection Card)
 *   **Schedule:** The `dailyDigest` Cloud Function runs at 4:00 AM UTC for users active in the last day who have a compiled Character Bible, with retries at about 6 and 8 AM.
 *   **Content:** A card built from a section of the user's Character Bible, with images and narration, saved to `users/{uid}.daily_digest` and shown in the feed.
 
-### F. Support Chat
+### E. Support Chat
 *   **Component:** Floating help button (bottom-right) opens a chat panel backed by `/api/support`.
 *   **Rules:** 2-3 sentence responses. No markdown. Never describes Earnest Page as "AI-powered", a "language model" or a "chatbot"; uses "your Ideal Self" or "your character." Never exposes technical details. Redirects personal questions to Mirror Chat.
 *   **Rate limited:** 10 messages per 5 minutes per user (or per IP when signed out).

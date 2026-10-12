@@ -107,7 +107,7 @@ async function main() {
     const { condensed, imagePrompts, audioFields } = pipelineResult;
 
     // 4. Update Firestore
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
         title: condensed.title,
         public_post: {
             condensed_transcript: condensed.messages,

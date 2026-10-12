@@ -1,6 +1,6 @@
 /**
  * Text preparation for character TTS, shared by /api/tts (server).
- * eleven_v3 accepts up to 5,000 characters per request; chunks target 4,800.
+ * eleven_v4 accepts up to 10,000 characters per request; chunks stay at 4,800 because the client requests audio by part index.
  */
 
 export const TTS_CHUNK_CHARS = 4800;

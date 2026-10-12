@@ -9,7 +9,7 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
-async function translateJson(sourceObj: any, targetLang: string) {
+async function translateJson(sourceObj: Record<string, unknown>, targetLang: string) {
     console.log(`Translating to ${targetLang}...`);
     
     // Convert to JSON string

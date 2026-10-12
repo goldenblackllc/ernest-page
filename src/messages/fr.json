@@ -138,9 +138,6 @@
   "mirrorChat": {
     "connectionSecured": "Connexion sécurisée.",
     "promptFriction": "\"Détaillez votre friction actuelle.\"",
-    "extractingDirectives": "Extraction des directives...",
-    "extractDirectives": "Extraire les Directives (24H)",
-    "directivesFailed": "Échec de l'extraction. Réessayez.",
     "sessionRouting": "Routage de la session :",
     "publicFeed": "Flux Public",
     "privateLedger": "Registre Privé",
@@ -148,12 +145,14 @@
     "burnMicrocopy": "Zéro rétention. Effacé immédiatement à la sortie.",
     "sessionComplete": "Session Terminée",
     "sessionExpired": "Temps de session expiré",
-    "sessionCompleteDesc": "Vous avez atteint {max} échanges. Extrayez vos directives et fermez pour commencer une nouvelle session.",
-    "sessionExpiredDesc": "Votre fenêtre de session de {hours} heures est terminée. Extrayez vos directives et fermez.",
+    "sessionCompleteDesc": "Vous avez atteint {max} échanges. Fermez pour commencer une nouvelle session.",
+    "sessionExpiredDesc": "Votre fenêtre de session de {hours} heures est terminée. Fermez pour commencer une nouvelle session.",
     "placeholderDefault": "Exprimez votre friction...",
     "placeholderEnded": "Session terminée. Fermez pour en démarrer une autre.",
     "stop": "Arrêt",
     "regenerate": "Régénérer la Réponse",
+    "replyFailed": "Votre message n'est pas passé. Réessayez.",
+    "replyTooLong": "Cette conversation est trop longue pour continuer. Fermez pour commencer une nouvelle session.",
     "sessionRoutingSettings": "Paramètres de routage de session",
     "removePhoto": "Supprimer la photo",
     "send": "Envoyer"
@@ -248,15 +247,6 @@
     "errorReach": "Impossible de joindre l'assistance. Veuillez réessayer plus tard.",
     "openSupportChat": "Ouvrir le chat d'assistance"
   },
-  "directivesMenu": {
-    "title": "Mon Plan Quotidien",
-    "placeholder": "Quelque chose a changé, quelqu'un a dit quelque chose, une porte s'est ouverte...",
-    "markComplete": "Marquer comme Terminé",
-    "cancel": "Annuler",
-    "noDirectives": "Aucune Directive Active",
-    "footer": "Suivez l'enthousiasme avec intégrité",
-    "deleteDirective": "Supprimer la directive"
-  },
   "rolodexModal": {
     "title": "Abonnements",
     "emptyState": "Aucun auteur suivi pour l'instant.",
@@ -296,13 +286,12 @@
       "l1": "Une interface conversationnelle alimentée par IA (\"Chat du Miroir\") qui simule le dialogue avec votre Moi Idéal défini",
       "l2": "Un dossier personnel maintenu par IA basé sur vos conversations",
       "l3": "Publication anonyme de posts synthétisés par IA dans un flux social (\"Cher Earnest\")",
-      "l4": "Planification d'actions et suivi de directives",
-      "l5": "Création de profil de personnage et génération d'avatar"
+      "l4": "Création de profil de personnage et génération d'avatar"
     },
     "s5": {
       "title": "5. Traitement IA et Génération de Contenu",
       "p1": "En utilisant le Service, vous reconnaissez et consentez à ce qui suit :",
-      "l1": "Vos conversations avec le Chat du Miroir sont traitées par des modèles d'IA tiers (Anthropic Claude) pour générer des réponses, des plans d'action et des insights personnels.",
+      "l1": "Vos conversations avec le Chat du Miroir sont traitées par des modèles d'IA tiers (Anthropic Claude) pour générer des réponses et des insights personnels.",
       "l2": "Les conversations peuvent être synthétisées en publications anonymes écrites par IA qui sont publiées dans le flux public. Toute information personnellement identifiable est supprimée avant publication.",
       "l3": "Le contenu généré par IA ne constitue pas un conseil professionnel. Le Service ne remplace pas la thérapie, le conseil, les soins médicaux ou tout autre service professionnel."
     },

@@ -162,13 +162,12 @@ async function generateTTSChunkWithTimestamps(
             },
             body: JSON.stringify({
                 text: chunk,
-                model_id: 'eleven_v3',
+                model_id: 'eleven_v4',
                 voice_settings: {
                     stability: 0.5,
                     similarity_boost: 0.8,
                     style: 0.45,
                     use_speaker_boost: true,
-                    speed: 1.3,
                 },
             }),
         }
@@ -272,10 +271,27 @@ async function getVoiceLabels(
     }
 }
 
+// ElevenLabs publishes no speaking rate, so the voice's descriptive label and
+// name are the best hint. Brisk voices keep post videos short without
+// speeding up the audio.
+const BRISK_VOICE_WORDS = ['upbeat', 'crisp', 'excited', 'energetic', 'sassy', 'chatty', 'rushed', 'lively', 'fast'];
+const SLOW_VOICE_WORDS = ['calm', 'relaxed', 'chill', 'soft', 'gentle', 'soothing', 'whispery', 'slow', 'meditative', 'sleepy'];
+
+/** 1 for a brisk-sounding voice, -1 for a slow one, 0 otherwise. */
+export function voicePaceScore(voice: { name?: string; descriptive?: string }): number {
+    const descriptive = voice.descriptive?.toLowerCase() ?? '';
+    const name = voice.name?.toLowerCase() ?? '';
+    const has = (words: string[]) => words.includes(descriptive) || words.some(w => new RegExp(`\\b${w}\\b`).test(name));
+    if (has(SLOW_VOICE_WORDS)) return -1;
+    if (has(BRISK_VOICE_WORDS)) return 1;
+    return 0;
+}
+
 /**
  * Search the ElevenLabs shared voice library for a conversational voice
  * matching the given labels, excluding any voice IDs in `excludeIds`.
- * Randomly picks from the top `pickFromTop` results for variety.
+ * Prefers brisk voices (`voicePaceScore`) among the matches, then randomly
+ * picks from the top `pickFromTop` results for variety.
  *
  * NOTE: The API's `use_cases` query param doesn't reliably filter by the
  * voice's actual `use_case` field. We fetch without that param and filter
@@ -320,6 +336,7 @@ async function findConversationalVoice(
                     !excludeIds.has(v.voice_id) &&
                     v.use_case === 'conversational',
                 )
+                .sort((a, b) => voicePaceScore(b) - voicePaceScore(a)) // stable: keeps usage order within a tier
                 .slice(0, pickFromTop);
             if (candidates.length > 0) {
                 const pick = candidates[Math.floor(Math.random() * candidates.length)];
@@ -379,6 +396,7 @@ export async function resolveConversationVoices(
 interface SharedVoice {
     voice_id?: string;
     name?: string;
+    descriptive?: string;
     use_case?: string;
 }
 
@@ -407,7 +425,7 @@ export interface ConversationAudioResult {
  * - 'user' messages → questionerVoiceId (random conversational voice)
  * - 'ideal_self' messages → characterVoiceId (the character's own custom voice)
  *
- * Messages are concatenated with a brief pause (~1.2s silence) between them.
+ * Messages are concatenated with a brief pause (~0.6s silence) between them.
  *
  * @param messages  Array of condensed transcript messages with role and text
  * @param questionerVoiceId  ElevenLabs voice ID for the questioner (user messages)
@@ -490,11 +508,11 @@ function resolveFfmpegPath(): string | null {
 }
 
 /**
- * Generate a real silent MP3 (1.2 seconds target) to put between messages.
+ * Generate a real silent MP3 (0.6 seconds target) to put between messages.
  * Returns null if ffmpeg fails.
  */
 function generateSilence(ffmpegPath: string): { buffer: Buffer; duration: number } | null {
-    const SILENCE_DURATION_TARGET = 1.2;
+    const SILENCE_DURATION_TARGET = 0.6;
     try {
         const result = spawnSync(ffmpegPath, [
             '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono`,

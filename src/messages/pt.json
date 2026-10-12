@@ -138,9 +138,6 @@
   "mirrorChat": {
     "connectionSecured": "Conexão segura.",
     "promptFriction": "\"Detalhe a sua fricção atual.\"",
-    "extractingDirectives": "Extraindo diretrizes...",
-    "extractDirectives": "Extrair Diretrizes (24 Horas)",
-    "directivesFailed": "Falha ao extrair diretrizes. Tente novamente.",
     "sessionRouting": "Roteamento de sessão:",
     "publicFeed": "Feed Público",
     "privateLedger": "Livro-Razão",
@@ -148,12 +145,14 @@
     "burnMicrocopy": "Retenção zero. Apagado imediatamente ao sair.",
     "sessionComplete": "Sessão Concluída",
     "sessionExpired": "Tempo de Sessão Expirado",
-    "sessionCompleteDesc": "Você atingiu {max} trocas. Extraia suas diretrizes e feche para iniciar uma nova sessão.",
-    "sessionExpiredDesc": "Sua janela de sessão de {hours} horas terminou. Extraia suas diretrizes e feche para iniciar uma nova sessão.",
+    "sessionCompleteDesc": "Você atingiu {max} trocas. Feche para iniciar uma nova sessão.",
+    "sessionExpiredDesc": "Sua janela de sessão de {hours} horas terminou. Feche para iniciar uma nova sessão.",
     "placeholderDefault": "Descreva sua fricção...",
     "placeholderEnded": "Sessão encerrada. Feche para iniciar uma nova.",
     "stop": "Parar",
     "regenerate": "Regenerar Resposta",
+    "replyFailed": "Sua mensagem não foi enviada. Tente novamente.",
+    "replyTooLong": "Esta conversa ficou longa demais para continuar. Feche para iniciar uma nova sessão.",
     "sessionRoutingSettings": "Configurações de roteamento de sessão",
     "removePhoto": "Remover foto",
     "send": "Enviar"
@@ -248,15 +247,6 @@
     "errorReach": "Não foi possível entrar em contato com o suporte. Por favor, tente novamente mais tarde.",
     "openSupportChat": "Abrir chat de suporte"
   },
-  "directivesMenu": {
-    "title": "Meu Plano Diário",
-    "placeholder": "Algo mudou, alguém disse algo, uma porta se abriu...",
-    "markComplete": "Marcar como Concluído",
-    "cancel": "Cancelar",
-    "noDirectives": "Sem Diretrizes Ativas",
-    "footer": "Siga a empolgação com integridade",
-    "deleteDirective": "Excluir diretriz"
-  },
   "rolodexModal": {
     "title": "Seguindo",
     "emptyState": "Nenhum autor seguido ainda.",
@@ -296,13 +286,12 @@
       "l1": "Uma interface conversacional alimentada por IA (\"Chat do Espelho\") que simula o diálogo com seu Eu Ideal definido",
       "l2": "Um dossiê pessoal mantido por IA baseado em suas conversas",
       "l3": "Publicação anônima de posts sintetizados por IA em um feed social (\"Querido Earnest\")",
-      "l4": "Planejamento de ações e acompanhamento de diretrizes",
-      "l5": "Criação de perfil de personagem e geração de avatar"
+      "l4": "Criação de perfil de personagem e geração de avatar"
     },
     "s5": {
       "title": "5. Processamento de IA e Geração de Conteúdo",
       "p1": "Ao usar o Serviço, você reconhece e consente com o seguinte:",
-      "l1": "Suas conversas com o Chat do Espelho são processadas por modelos de IA de terceiros (Anthropic Claude) para gerar respostas, planos de ação e insights pessoais.",
+      "l1": "Suas conversas com o Chat do Espelho são processadas por modelos de IA de terceiros (Anthropic Claude) para gerar respostas e insights pessoais.",
       "l2": "As conversas podem ser sintetizadas em publicações anônimas escritas por IA que são publicadas no feed público. Todas as informações de identificação pessoal são removidas antes da publicação.",
       "l3": "O conteúdo gerado por IA não é aconselhamento profissional. O Serviço não substitui terapia, aconselhamento, cuidados médicos ou qualquer serviço profissional."
     },

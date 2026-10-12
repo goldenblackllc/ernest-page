@@ -7,6 +7,6 @@ export { generateAvatar, requestAvatar, retryAvatars } from './avatar.js';
 export { dailyDigest, dailyDigestUser } from './dailyDigest.js';
 export { dailyReport } from './dailyReport.js';
 export { renderPostVideo } from './postVideo.js';
-export { mirrorReply, mirrorPlan } from './mirror.js';
+export { mirrorReply } from './mirror.js';
 export { regeneratePost } from './regeneratePost.js';
 export { generateAIComment } from './aiComment.js';

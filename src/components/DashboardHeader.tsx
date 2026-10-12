@@ -6,10 +6,9 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { subscribeToCharacterProfile } from "@/lib/firebase/character";
 import { CharacterProfile } from "@/types/character";
-import { Bell, Shield, LogOut, Users, HelpCircle, CreditCard } from "lucide-react";
+import { Shield, LogOut, Users, HelpCircle, CreditCard } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
-import { DirectivesMenu } from "@/components/DirectivesMenu";
 import { RolodexModal } from "@/components/RolodexModal";
 import { SupportChat } from "@/components/SupportChat";
 import { SecurityVault } from "@/components/SecurityVault";
@@ -17,7 +16,6 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 
 export function DashboardHeader() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isDirectivesOpen, setIsDirectivesOpen] = useState(false);
     const [isRolodexOpen, setIsRolodexOpen] = useState(false);
     const [isSupportOpen, setIsSupportOpen] = useState(false);
     const [isVaultOpen, setIsVaultOpen] = useState(false);
@@ -33,10 +31,6 @@ export function DashboardHeader() {
         });
         return () => unsub();
     }, [user]);
-
-    const incompleteCount = profile?.active_todos?.filter(t => !t.completed).length || 0;
-
-
 
     const handleLogout = async () => {
         try {
@@ -61,19 +55,6 @@ export function DashboardHeader() {
                         <div className="relative flex items-center gap-2 pointer-events-auto">
                             <LocaleSwitcher className="w-20 hidden sm:flex mr-1" />
                             
-                            {/* Directives Toggle */}
-                            <button
-                                onClick={() => setIsDirectivesOpen(true)}
-                                className="relative p-2 text-zinc-400 hover:text-white transition-colors rounded-full"
-                            >
-                                <Bell className="w-6 h-6" />
-                                {incompleteCount > 0 && (
-                                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                                        {incompleteCount}
-                                    </span>
-                                )}
-                            </button>
-
                             {/* Hamburger / Menu */}
                             <div className="relative">
                                 <button
@@ -164,12 +145,6 @@ export function DashboardHeader() {
                     </div>
                 </nav>
             </header>
-
-            <DirectivesMenu
-                isOpen={isDirectivesOpen}
-                onClose={() => setIsDirectivesOpen(false)}
-                profile={profile}
-            />
 
             <RolodexModal
                 isOpen={isRolodexOpen}
