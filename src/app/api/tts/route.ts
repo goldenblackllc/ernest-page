@@ -11,13 +11,9 @@ export const maxDuration = 120;
  */
 export const DAILY_TTS_CHAR_LIMIT = 250_000;
 
-/** Plan messages exist only on the client; their ids start with this. */
-const PLAN_MESSAGE_PREFIX = 'plan-';
-
 /**
  * POST /api/tts  { sessionId, messageId, part? }
- * Speaks a reply the Mirror stored in users/{uid}/active_chats/{sessionId}, or,
- * for a plan message, the directives saved to the user's active_todos. The
+ * Speaks a reply the Mirror stored in users/{uid}/active_chats/{sessionId}. The
  * client never sends text, so this can't be used as a general TTS service.
  * Long replies are split into parts; the X-TTS-Parts header gives the count.
  */
@@ -42,15 +38,9 @@ export async function POST(req: Request) {
             return Response.json({ error: 'No voice configured for this character' }, { status: 400 });
         }
 
-        let sourceText: string | undefined;
-        if (messageId.startsWith(PLAN_MESSAGE_PREFIX)) {
-            const todos: { task?: string }[] = userData?.active_todos || [];
-            sourceText = todos.map(t => t.task).filter(Boolean).join('\n\n');
-        } else {
-            const chat = (await userRef.collection('active_chats').doc(sessionId).get()).data();
-            const message = (chat?.messages || []).find((m: { id?: string; role?: string }) => m?.id === messageId && m?.role === 'assistant');
-            sourceText = message?.content;
-        }
+        const chat = (await userRef.collection('active_chats').doc(sessionId).get()).data();
+        const message = (chat?.messages || []).find((m: { id?: string; role?: string }) => m?.id === messageId && m?.role === 'assistant');
+        const sourceText: string | undefined = message?.content;
         if (!sourceText) return Response.json({ error: 'Message not found' }, { status: 404 });
 
         const chunks = splitTextIntoChunks(cleanSpeechText(sourceText), TTS_CHUNK_CHARS);

@@ -71,7 +71,6 @@ export default async function TermsPage() {
                             <li>{t('s4.l2')}</li>
                             <li>{t('s4.l3')}</li>
                             <li>{t('s4.l4')}</li>
-                            <li>{t('s4.l5')}</li>
                         </ul>
                     </section>
 

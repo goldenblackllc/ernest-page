@@ -138,9 +138,6 @@
   "mirrorChat": {
     "connectionSecured": "Conexión asegurada.",
     "promptFriction": "\"Detalla tu fricción actual.\"",
-    "extractingDirectives": "Extrayendo directivas...",
-    "extractDirectives": "Extraer Directivas (24 Horas)",
-    "directivesFailed": "Error al extraer directivas. Intenta de nuevo.",
     "sessionRouting": "Enrutamiento de sesión:",
     "publicFeed": "Muro Público",
     "privateLedger": "Libro Mayor",
@@ -148,14 +145,14 @@
     "burnMicrocopy": "Cero retención. Borrado inmediatamente al salir.",
     "sessionComplete": "Sesión Completa",
     "sessionExpired": "Tiempo de sesión expirado",
-    "sessionCompleteDesc": "Has alcanzado {max} intercambios. Extrae tus directivas y cierra para comenzar una nueva sesión.",
-    "sessionExpiredDesc": "Tu ventana de sesión de {hours} horas ha terminado. Extrae tus directivas y cierra para comenzar una nueva sesión.",
+    "sessionCompleteDesc": "Has alcanzado {max} intercambios. Cierra para comenzar una nueva sesión.",
+    "sessionExpiredDesc": "Tu ventana de sesión de {hours} horas ha terminado. Cierra para comenzar una nueva sesión.",
     "placeholderDefault": "Expresa tu fricción...",
     "placeholderEnded": "Sesión terminada. Cierra para empezar una nueva.",
     "stop": "Detener",
     "regenerate": "Regenerar Respuesta",
     "replyFailed": "Tu mensaje no se envió. Inténtalo de nuevo.",
-    "replyTooLong": "Esta conversación es demasiado larga para continuar. Extrae tus directivas y cierra para empezar una nueva sesión.",
+    "replyTooLong": "Esta conversación es demasiado larga para continuar. Cierra para empezar una nueva sesión.",
     "sessionRoutingSettings": "Configuración de enrutamiento de sesión",
     "removePhoto": "Eliminar foto",
     "send": "Enviar"
@@ -250,15 +247,6 @@
     "errorReach": "No se pudo contactar al soporte. Por favor, inténtalo más tarde.",
     "openSupportChat": "Abrir chat de soporte"
   },
-  "directivesMenu": {
-    "title": "Mi Plan Diario",
-    "placeholder": "Algo cambió, alguien dijo algo, se abrió una puerta...",
-    "markComplete": "Marcar Completo",
-    "cancel": "Cancelar",
-    "noDirectives": "Sin Directivas Activas",
-    "footer": "Sigue la emoción con integridad",
-    "deleteDirective": "Eliminar directiva"
-  },
   "rolodexModal": {
     "title": "Siguiendo",
     "emptyState": "Aún no sigues a ningún autor.",
@@ -298,13 +286,12 @@
       "l1": "Una interfaz conversacional impulsada por IA (\"Chat del Espejo\") que simula el diálogo con tu Yo Ideal definido",
       "l2": "Un expediente personal mantenido por IA basado en tus conversaciones",
       "l3": "Publicación anónima de posts sintetizados por IA en un muro social (\"Querido Earnest\")",
-      "l4": "Planificación de acciones y seguimiento de directivas",
-      "l5": "Creación de perfil de personaje y generación de avatar"
+      "l4": "Creación de perfil de personaje y generación de avatar"
     },
     "s5": {
       "title": "5. Procesamiento de IA y Generación de Contenido",
       "p1": "Al utilizar el Servicio, reconoces y consientes lo siguiente:",
-      "l1": "Tus conversaciones con el Chat del Espejo son procesadas por modelos de IA de terceros (Anthropic Claude) para generar respuestas, planes de acción e insights personales.",
+      "l1": "Tus conversaciones con el Chat del Espejo son procesadas por modelos de IA de terceros (Anthropic Claude) para generar respuestas e insights personales.",
       "l2": "Las conversaciones pueden ser sintetizadas en publicaciones anónimas escritas por IA que se publican en el muro público. Toda información de identificación personal se elimina antes de la publicación.",
       "l3": "El contenido generado por IA no es asesoramiento profesional. El Servicio no sustituye a la terapia, el asesoramiento, la atención médica ni ningún servicio profesional."
     },

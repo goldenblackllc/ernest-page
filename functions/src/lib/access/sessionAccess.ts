@@ -1,7 +1,7 @@
 /**
  * The one access rule for Mirror sessions, shared by the website
  * (/api/check-session-access, /api/consume-session, payments) and the Mirror
- * Cloud Functions (mirrorReply, mirrorPlan). Pure functions, no imports, so the
+ * Cloud Function (mirrorReply). Pure functions, no imports, so the
  * website can import it through @functions/* without extra packages.
  *
  * Model (MANIFESTO.md §8):

@@ -76,8 +76,6 @@ export async function GET(req: Request) {
                 audio_url: data.audio_url || null,
                 audio_letter_ratio: data.audio_letter_ratio ?? null,
                 audio_word_timestamps: data.audio_word_timestamps ?? null,
-                directive_title: data.directive_title || null,
-                unexpected_yield: data.unexpected_yield || null,
                 author_avatar_url: avatarMap[data.authorId || data.uid] || null,
                 author_title: titleMap[data.authorId || data.uid] || null,
                 like_count: data.like_count || data.likes || 0,

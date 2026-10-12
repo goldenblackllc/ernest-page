@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Target, Lock, Loader2, Play, Pause } from "lucide-react";
+import { Lock, Loader2, Play, Pause } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/cn";
@@ -15,14 +15,11 @@ interface MirrorMessageListProps {
     isLoadingTTS: boolean;
     isSpeaking: boolean;
     onPlayPause: () => void;
-    canExtractDirectives: boolean;
-    isGeneratingPlan: boolean;
-    onExtractDirectives: () => void;
 }
 
 export function MirrorMessageList({
     messages, hiddenMessageId, showTypingIndicator, hasVoice, isLoadingTTS, isSpeaking,
-    onPlayPause, canExtractDirectives, isGeneratingPlan, onExtractDirectives,
+    onPlayPause,
 }: MirrorMessageListProps) {
     const t = useTranslations();
 
@@ -94,25 +91,6 @@ export function MirrorMessageList({
 
                         </div>
 
-                        {/* ═══ EXTRACT DIRECTIVES — compact chip after last assistant message ═══ */}
-                        {m.role === 'assistant' && idx === filteredArr.length - 1 && canExtractDirectives && filteredArr.length >= 4 && (
-                            <div className="flex justify-end mt-2 pr-1">
-                                {isGeneratingPlan ? (
-                                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-widest px-3 py-1.5">
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        {t('mirrorChat.extractingDirectives')}
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={onExtractDirectives}
-                                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 border border-zinc-700 text-zinc-500 hover:text-white hover:border-zinc-500 rounded-full transition-all"
-                                    >
-                                        <Target className="w-3 h-3" />
-                                        {t('mirrorChat.extractDirectives')}
-                                    </button>
-                                )}
-                            </div>
-                        )}
                     </div>
                 ))
             )}

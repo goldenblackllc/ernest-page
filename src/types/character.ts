@@ -89,7 +89,6 @@ export interface CharacterProfile {
     compile_count_date?: string;
 
     // --- Account ---
-    active_todos?: Array<{ id: string; task: string; completed: boolean; priority?: 'immediate' | 'next'; unexpected_yield?: string; created_at: string }>;  // created_at: ISO string
     following?: Record<string, string>;
     updatedAt?: Timestamp;
     saved_posts?: string[];

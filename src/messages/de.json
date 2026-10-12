@@ -138,9 +138,6 @@
   "mirrorChat": {
     "connectionSecured": "Verbindung gesichert.",
     "promptFriction": "\"Benenne, was du willst. Benenne, was im Weg steht.\"",
-    "extractingDirectives": "Richtlinien extrahieren...",
-    "extractDirectives": "24-Stunden-Richtlinien extrahieren",
-    "directivesFailed": "Fehler beim Extrahieren der Richtlinien. Versuche es erneut.",
     "sessionRouting": "Sitzungs-Routing:",
     "publicFeed": "Öffentlicher Feed",
     "privateLedger": "Privates Hauptbuch",
@@ -148,14 +145,14 @@
     "burnMicrocopy": "Keine Speicherung. Wird beim Beenden sofort gelöscht.",
     "sessionComplete": "Sitzung abgeschlossen",
     "sessionExpired": "Sitzungszeit abgelaufen",
-    "sessionCompleteDesc": "Du hast {max} Austausche erreicht. Extrahiere deine Richtlinien und schließe, um eine neue Sitzung zu beginnen.",
-    "sessionExpiredDesc": "Dein {hours}-stündiges Sitzungsfenster ist beendet. Extrahiere deine Richtlinien und schließe, um eine neue Sitzung zu beginnen.",
+    "sessionCompleteDesc": "Du hast {max} Austausche erreicht. Schließe, um eine neue Sitzung zu beginnen.",
+    "sessionExpiredDesc": "Dein {hours}-stündiges Sitzungsfenster ist beendet. Schließe, um eine neue Sitzung zu beginnen.",
     "placeholderDefault": "Benenne es...",
     "placeholderEnded": "Sitzung beendet. Schließen, um eine neue zu beginnen.",
     "stop": "Stopp",
     "regenerate": "Antwort neu generieren",
     "replyFailed": "Deine Nachricht kam nicht an. Versuch es noch einmal.",
-    "replyTooLong": "Dieses Gespräch ist zu lang, um weiterzumachen. Extrahiere deine Richtlinien und schließe, um eine neue Sitzung zu beginnen.",
+    "replyTooLong": "Dieses Gespräch ist zu lang, um weiterzumachen. Schließe, um eine neue Sitzung zu beginnen.",
     "sessionRoutingSettings": "Sitzungs-Routing-Einstellungen",
     "removePhoto": "Foto entfernen",
     "send": "Senden"
@@ -250,15 +247,6 @@
     "errorReach": "Support kann nicht erreicht werden. Bitte versuche es später noch einmal.",
     "openSupportChat": "Support-Chat öffnen"
   },
-  "directivesMenu": {
-    "title": "Mein Tagesplan",
-    "placeholder": "Etwas hat sich verändert, jemand hat etwas gesagt, eine Tür hat sich geöffnet...",
-    "markComplete": "Als abgeschlossen markieren",
-    "cancel": "Abbrechen",
-    "noDirectives": "Keine aktiven Richtlinien",
-    "footer": "Folge der Begeisterung mit Integrität",
-    "deleteDirective": "Richtlinie löschen"
-  },
   "rolodexModal": {
     "title": "Folge ich",
     "emptyState": "Noch keine verfolgten Autoren.",
@@ -298,13 +286,12 @@
       "l1": "Eine KI-gestützte Konversationsschnittstelle („Mirror Chat“), die einen Dialog mit deinem definierten idealen Selbst simuliert",
       "l2": "Ein von der KI gepflegtes persönliches Dossier basierend auf deinen Gesprächen",
       "l3": "Anonymes Veröffentlichen von KI-synthetisierten Beiträgen in einem sozialen Feed („Dear Earnest“)",
-      "l4": "Aktionsplanung und Verfolgung von Richtlinien",
-      "l5": "Erstellung eines Charakterprofils und Avatar-Generierung"
+      "l4": "Erstellung eines Charakterprofils und Avatar-Generierung"
     },
     "s5": {
       "title": "5. KI-Verarbeitung & Inhaltserstellung",
       "p1": "Durch die Nutzung des Services erkennst du Folgendes an und stimmst zu:",
-      "l1": "Deine Gespräche mit dem Mirror Chat werden von KI-Modellen Dritter (Anthropic Claude) verarbeitet, um Antworten, Aktionspläne und persönliche Erkenntnisse zu generieren.",
+      "l1": "Deine Gespräche mit dem Mirror Chat werden von KI-Modellen Dritter (Anthropic Claude) verarbeitet, um Antworten und persönliche Erkenntnisse zu generieren.",
       "l2": "Gespräche können zu anonymen, von der KI verfassten Beiträgen synthetisiert werden, die im öffentlichen Feed veröffentlicht werden. Alle persönlich identifizierbaren Informationen werden vor der Veröffentlichung entfernt.",
       "l3": "KI-generierte Inhalte stellen keine professionelle Beratung dar. Der Service ist kein Ersatz für Therapie, Beratung, medizinische Versorgung oder andere professionelle Dienstleistungen."
     },
