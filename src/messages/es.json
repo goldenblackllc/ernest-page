@@ -777,6 +777,6 @@
     "balancePurchased": "{count} compradas",
     "balanceRenews": "Las sesiones gratuitas se renuevan el {date}",
     "memberComp": "Cortesía",
-    "memberCompNote": "Una membresía de cortesía: una sesión cada día, sin renovaciones ni cancelaciones."
+    "memberCompNote": "Membresía de cortesía. Hasta 5 sesiones al día, sin costo. Nada que renovar ni cancelar."
   }
 }

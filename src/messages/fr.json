@@ -777,6 +777,6 @@
     "balancePurchased": "{count} achetées",
     "balanceRenews": "Les sessions offertes se renouvellent le {date}",
     "memberComp": "Offert",
-    "memberCompNote": "Un abonnement offert : une session chaque jour, rien à renouveler ni à résilier."
+    "memberCompNote": "Abonnement offert. Jusqu'à 5 sessions par jour, gratuitement. Rien à renouveler ni à résilier."
   }
 }
