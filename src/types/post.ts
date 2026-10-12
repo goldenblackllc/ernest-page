@@ -88,6 +88,8 @@ export interface Post {
     short_audio_word_timestamps?: WordTimestamp[];
     short_audio_letter_ratio?: number;
     shareToken?: string;
+    /** Set on posts created private: 'deferred' until shared, then 'generating' and 'ready' ('failed' waits for the next share). Audio and per-message images exist only once 'ready'. See functions/src/lib/postMedia.ts. */
+    media_status?: 'deferred' | 'generating' | 'ready' | 'failed';
 }
 
 /** A comment as /api/posts/comments returns it. */

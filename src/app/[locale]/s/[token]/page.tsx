@@ -372,11 +372,18 @@ export default function SharedPostPage({ params }: { params: Promise<{ locale: s
                             </div>
                         )}
                         <h1 className="text-xl font-bold text-white mb-3">{publicTitle}</h1>
-                        <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap mb-4">{publicLetter}</div>
-                        <div className="border-t border-white/10 pt-4 mt-4">
-                            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">{t('theResponse')}</p>
-                            <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">{publicResponse}</div>
-                        </div>
+                        {publicLetter ? (
+                            <>
+                                <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap mb-4">{publicLetter}</div>
+                                <div className="border-t border-white/10 pt-4 mt-4">
+                                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">{t('theResponse')}</p>
+                                    <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">{publicResponse}</div>
+                                </div>
+                            </>
+                        ) : (
+                            /* Just shared: the reader's version is still being written (functions/src/postExposure.ts) */
+                            <p className="text-sm text-zinc-400">{t('sharedPreparing')}</p>
+                        )}
                         <div className="mt-6 text-center border-t border-white/10 pt-4">
                             <Link href="/" className="text-sm text-white font-medium hover:underline underline-offset-4">
                                 Try Earnest Page →

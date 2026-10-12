@@ -36,6 +36,8 @@ service cloud.firestore {
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['access']);
       }
       // credit_lots and paid_sessions are server-only (default deny below).
+      // So is the top-level user_keys collection: each user's wrapped data key
+      // (functions/src/lib/crypto).
 
       // ─── LIKED POSTS (subcollection) ───
       match /liked_posts/{postId} {
@@ -56,12 +58,13 @@ service cloud.firestore {
         && (request.resource.data.uid == request.auth.uid
             || request.resource.data.authorId == request.auth.uid);
 
-      // Authors can update their own posts (visibility toggle only)
+      // Authors can update their own posts (visibility toggle only). Share
+      // links are made and removed only by /api/share, so they're long and random.
       allow update: if request.auth != null
         && (resource.data.uid == request.auth.uid
             || resource.data.authorId == request.auth.uid)
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['visibility', 'is_public', 'shareToken']);
+            .hasOnly(['visibility', 'is_public']);
 
       // Authors can delete their own posts
       allow delete: if request.auth != null

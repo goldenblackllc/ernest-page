@@ -11,9 +11,7 @@ import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { processPostContent } from './lib/ai/processPostContent.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
-import { generateMessageImages } from './lib/ai/generatePostImage.js';
-import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
-import { getPostAuthorId, savePostImages } from './lib/posts.js';
+import { deletePostMediaFiles, generateImagesForPost, isPostExposed, NO_MEDIA_FIELDS } from './lib/postMedia.js';
 import { getCompiledBible } from './lib/bible.js';
 import { errorMessage } from './lib/utils/errors.js';
 
@@ -53,7 +51,8 @@ export const regeneratePost = onCall<{ postId: string }>(
             userData.ethnicity || identity?.ethnicity,
         ].filter(Boolean).join(', ');
 
-        console.log(`[RegeneratePost] Starting full regeneration for post ${postId}`);
+        const exposed = isPostExposed(postData);
+        console.log(`[RegeneratePost] Starting full regeneration for post ${postId}${exposed ? '' : ' (private: thumbnail only)'}`);
 
         const pipelineResult = await processPostContent({
             transcript,
@@ -65,12 +64,19 @@ export const regeneratePost = onCall<{ postId: string }>(
             gender,
             locale: userData.preferred_locale || 'en',
             logPrefix: 'RegeneratePost',
+            // A private post gets only its thumbnail until shared (lib/postMedia.ts)
+            media: exposed ? 'full' : 'thumbnail',
         });
         if (!pipelineResult) throw new HttpsError('failed-precondition', 'Transcript not publishable');
 
         const { condensed, imagePrompts, audioFields, thumbnailUrl } = pipelineResult;
 
+        // The old media files are replaced either way (the thumbnail is overwritten at its path).
+        await deletePostMediaFiles(postId, postData, [audioFields.audio_url].filter((u): u is string => !!u));
+
         await postDoc.ref.update({
+            ...NO_MEDIA_FIELDS,
+            media_status: exposed ? 'ready' : 'deferred',
             title: condensed.title,
             public_post: {
                 ...(postData.public_post || {}),
@@ -78,11 +84,12 @@ export const regeneratePost = onCall<{ postId: string }>(
                 condensed_transcript: condensed.messages,
             },
             condensed_editorial_note: condensed.editorial_note,
+            thumbnail_brief: condensed.thumbnail,
             // Per-message image system — prompts saved, images generated below
             image_style: 'per-message',
             image_prompts: imagePrompts,
             message_images: [],
-            images_complete: false, // the scheduled image job retries if generation below falls short
+            images_complete: imagePrompts.length === 0, // the scheduled image job retries if generation below falls short
             image_retries: 0,
             // Clear legacy images
             imagen_url: null,
@@ -96,7 +103,7 @@ export const regeneratePost = onCall<{ postId: string }>(
         });
 
         let imagesGenerated = 0;
-        try {
+        if (imagePrompts.length > 0) try {
             imagesGenerated = (await generateImagesForPost(postId)).count;
         } catch (err) {
             console.error(`[RegeneratePost] Image generation failed for ${postId} — scheduled job will retry:`, errorMessage(err));
@@ -113,42 +120,3 @@ export const regeneratePost = onCall<{ postId: string }>(
         };
     }
 );
-
-/**
- * Generate any missing per-message images for a post and publish it once every
- * image and the audio exist. Throws if no image could be generated.
- */
-async function generateImagesForPost(postId: string): Promise<{ count: number; urls: string[] }> {
-    const postDoc = await db.collection('posts').doc(postId).get();
-    const postData = postDoc.data();
-    if (!postData) throw new HttpsError('not-found', 'Post not found');
-
-    const imagePrompts = postData.image_prompts;
-    if (!imagePrompts || !Array.isArray(imagePrompts) || imagePrompts.length === 0) {
-        throw new HttpsError('failed-precondition', 'Post has no image prompts');
-    }
-
-    console.log(`[GenImages] Generating images for post ${postId}`);
-    const uid = getPostAuthorId(postData);
-    const referenceImage = await loadUserReferenceImage(uid);
-    const referenceImages = referenceImage ? [referenceImage] : undefined;
-
-    const urls = await generateMessageImages({
-        prompts: imagePrompts,
-        uid,
-        filePrefix: postId,
-        referenceImages,
-        existingUrls: postData.message_images,
-    });
-
-    const firstImage = urls.find(Boolean) || null;
-    if (!firstImage) {
-        console.error(`[GenImages] Failed to generate any images for post ${postId}`);
-        throw new HttpsError('internal', 'Failed to generate images');
-    }
-
-    // Only publishes when every image succeeded AND audio exists
-    const { filledCount, complete, published } = await savePostImages(postId, postData, urls);
-    console.log(`[GenImages] Updated post ${postId}: ${filledCount}/${imagePrompts.length} images, audio: ${!!postData.audio_url}, complete: ${complete}, published: ${published}`);
-    return { count: filledCount, urls };
-}

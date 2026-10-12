@@ -19,6 +19,7 @@ function privatePostDoc(): Record<string, unknown> {
         lat: 40.7128,
         lng: -74.006,
         geohash: `dr5r-${SECRET}`,
+        thumbnail_brief: { insight: "Allowed to rest", action: `action ${SECRET}`, scene: `scene ${SECRET}` },
         content_raw: `User: my real transcript ${SECRET}`,
         conversation_messages: [{ role: "user", content: `private chat ${SECRET}` }],
         counsel: `private counsel ${SECRET}`,

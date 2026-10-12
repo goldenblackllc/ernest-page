@@ -14,7 +14,7 @@ import { generateCondensedTranscript, type CondensedTranscript } from './lib/ai/
 
 import { processPostContent, type ProcessPostResult } from './lib/ai/processPostContent.js';
 import { VISUAL_STYLES } from './lib/ai/visualStyles.js';
-import { computeAge } from './lib/utils/parseBirthDate.js';
+import { buildDemographicHint } from './lib/postMedia.js';
 import { getCompiledBible } from './lib/bible.js';
 import { REGION } from './lib/config/region.js';
 import { sendAdminEmail, buildNewPostEmail } from './lib/email/adminEmail.js';
@@ -93,7 +93,7 @@ export const processChat = onDocumentUpdated(
         const today = localDateKey(new Date(), safeTimeZone(after.timeZone));
 
         try {
-            const { condensed, rewrittenDossier, recap } = await analyzeSession(userData, transcript, today);
+            const { condensed, rewrittenDossier, recap } = await analyzeSession(userData, transcript, today, visibility);
 
             let condensedMessages: CondensedMessage[] | null = null;
             let condensedEditorialNote: string | null = null;
@@ -113,8 +113,10 @@ export const processChat = onDocumentUpdated(
                     .then(() => event.data?.after.ref.update({ metadataSaved: true }))
                 : Promise.resolve();
 
-            if (condensed.is_publishable && condensedMessages && condensedMessages.length > 0) {
+            // A private post has no rewrite (it's made when shared, lib/postMedia.ts)
+            if (condensed.is_publishable && (visibility === 'private' || (condensedMessages && condensedMessages.length > 0))) {
                 console.log(`[ProcessChat] Chat IS publishable — creating post and running pipeline...`);
+                const postMessages = condensedMessages || [];
                 const postDocRef = db.collection('posts').doc();
                 const gender = userData?.gender || identity?.gender || '';
 
@@ -129,11 +131,14 @@ export const processChat = onDocumentUpdated(
                         gender,
                         locale: userData?.preferred_locale || 'en',
                         logPrefix: 'ProcessChat',
+                        // A private post gets only its thumbnail until shared (lib/postMedia.ts)
+                        media: visibility === 'private' ? 'thumbnail' : 'full',
                         preCondensed: {
-                            messages: condensedMessages,
+                            messages: postMessages,
                             title: condensed.title,
                             language: condensed.language,
                             editorial_note: condensedEditorialNote,
+                            thumbnail: condensed.thumbnail,
                         },
                     }),
                     dossierPromise,
@@ -153,7 +158,7 @@ export const processChat = onDocumentUpdated(
                     userData,
                     chat: after,
                     condensed,
-                    condensedMessages,
+                    condensedMessages: postMessages,
                     condensedEditorialNote,
                     pipelineResult,
                     transcript,
@@ -205,22 +210,6 @@ function getAuthorTitle(userData: FirebaseFirestore.DocumentData): string {
     return userData?.defining_words?.join(', ') || userData?.identity?.title || userData?.character_bible?.source_code?.archetype || 'Anonymous';
 }
 
-function buildDemographicHint(userData: FirebaseFirestore.DocumentData): string {
-    const identity = userData?.identity;
-    const gender = userData?.gender || identity?.gender || '';
-    const ethnicity = userData?.ethnicity || identity?.ethnicity || '';
-    const computedAge = computeAge(userData?.birthdate || identity?.birthdate);
-    const demographicParts = [
-        computedAge ? `approximately ${computedAge} years old` : '',
-        ethnicity,
-        gender,
-    ].filter(Boolean);
-    const dreamSelf = identity?.dream_self || '';
-    const demographicTag = demographicParts.length > 0 ? demographicParts.join(', ') : '';
-    return demographicTag
-        ? `\nCHARACTER APPEARANCE — MANDATORY: The main character's fixed traits (face, ethnicity, age, gender): ${demographicTag}. You MUST include "${demographicTag}" in EVERY prompt. If you omit this, the generator will default to a generic adult.${dreamSelf ? `\nTheir ASPIRATIONAL self-presentation (use for LATER beats only — pivot, move, outcome): "${dreamSelf}"` : ''}\nTRANSFORMATION ARC: If the letter describes a physical state that differs from the aspirational self (e.g., overweight, exhausted, unkempt), show the character's ACTUAL current state in Beats 1-2 (struggle). Transition in Beat 3 (pivot). By Beats 4-5 (move, outcome), the character should embody their resolved/aspirational state. This visual transformation IS the story. The face stays the same — only the body, posture, and energy transform.`
-        : '';
-}
 
 /**
  * Run the three session AI calls in parallel: condensed transcript, dossier
@@ -229,7 +218,7 @@ function buildDemographicHint(userData: FirebaseFirestore.DocumentData): string 
  * Sessions only update the dossier, recaps, and session count. People, interests, and the
  * Character Bible are owned by the user via the My Life drawers and are never touched here.
  */
-async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcript: string, today: string): Promise<{
+async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcript: string, today: string, visibility: 'public' | 'private'): Promise<{
     condensed: CondensedTranscript;
     rewrittenDossier: string | undefined;
     recap: { session_recap: string } | undefined;
@@ -239,7 +228,7 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
 
     console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + log)...`);
     const [condensed, dossierResult, recapResult] = await Promise.all([
-        generateCondensedTranscript(transcript),
+        generateCondensedTranscript(transcript, { rewrite: visibility !== 'private' }),
         // Dossier rewrite — Opus
         generateWithFallback({
             primaryModelId: OPUS_MODEL,
@@ -384,13 +373,16 @@ async function createPost(opts: {
         sponsored_link: sponsor?.link || null,
         ...getGeoFields(userData),
         content_raw: transcript,
+        thumbnail_brief: condensed.thumbnail || null,
         ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
         ...(thumbnailUrl && { thumbnail_url: thumbnailUrl }),
         ...audioFields,
         status: "completed",
         created_at: FieldValue.serverTimestamp(),
         is_public: false,
-        images_complete: false,
+        // No prompts means a private post: thumbnail only until it's shared (lib/postMedia.ts)
+        images_complete: imagePrompts.length === 0,
+        ...(visibility === 'private' && { media_status: 'deferred' }),
         visibility,
         like_count: 0,
         comments: 0

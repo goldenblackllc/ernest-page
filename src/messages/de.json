@@ -196,6 +196,7 @@
     "linkCopied": "Link kopiert",
     "originalChat": "Ursprünglicher Chat",
     "visibilityPrivate": "Nur ich",
+    "visibilityLink": "Nur per Link",
     "visibilityCommunity": "Community",
     "visibilityPublic": "Öffentlich",
     "labelLetter": "Brief",
@@ -671,6 +672,7 @@
     "notFound": "Beitrag nicht gefunden",
     "notFoundDesc": "Dieser Beitrag ist möglicherweise privat oder existiert nicht mehr.",
     "sharedNotFoundDesc": "Dieser geteilte Link ist möglicherweise abgelaufen oder wurde entfernt.",
+    "sharedPreparing": "Dieser Beitrag wird gerade vorbereitet. Schau in ein, zwei Minuten wieder vorbei.",
     "brand": "Earnest Page",
     "theResponse": "Die Antwort"
   },

@@ -164,6 +164,7 @@ async function retryThumbnail(postDoc: FirebaseFirestore.QueryDocumentSnapshot):
             title,
             uid,
             postId: postDoc.id,
+            brief: postData.thumbnail_brief || null,
             logPrefix: 'Phase2-Thumb',
         });
 

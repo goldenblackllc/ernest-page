@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/context/AuthContext";
+import { authFetch } from "@/lib/auth/authFetch";
 import { timestampToDate } from "@/lib/posts/timestamps";
 import type { Post, PostVisibility } from "@/types/post";
 
@@ -19,10 +20,13 @@ interface PostAuthorOverlayProps {
     canFollow: boolean;
     onFollow: () => void;
     digestMode?: boolean;
+    /** The author's share link token, when the post is shared by link. */
+    shareToken: string | null;
+    onShareTokenChange: (token: string | null) => void;
 }
 
 /** Author avatar, name, follow button, age and (for the owner) the visibility picker. */
-export function PostAuthorOverlay({ post, isFullscreen, displayName, isAuthor, canFollow, onFollow, digestMode }: PostAuthorOverlayProps) {
+export function PostAuthorOverlay({ post, isFullscreen, displayName, isAuthor, canFollow, onFollow, digestMode, shareToken, onShareTokenChange }: PostAuthorOverlayProps) {
     const t = useTranslations('feed');
     const { user } = useAuth();
     const [localVisibility, setLocalVisibility] = useState<PostVisibility>(post.visibility || (post.is_public ? 'community' : 'private'));
@@ -30,8 +34,8 @@ export function PostAuthorOverlay({ post, isFullscreen, displayName, isAuthor, c
     const createdAtDate = timestampToDate(post.created_at);
     const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : t('justNow');
 
-    const handleVisibilityChange = async (value: PostVisibility) => {
-        if (!user || user.uid !== post.uid) return;
+    const handleVisibilityChange = async (value: PostVisibility | 'link') => {
+        if (!user || user.uid !== post.uid || value === 'link') return;
         const prev = localVisibility;
         setLocalVisibility(value);
         try {
@@ -39,11 +43,24 @@ export function PostAuthorOverlay({ post, isFullscreen, displayName, isAuthor, c
                 visibility: value,
                 is_public: value !== 'private',
             });
+            // "Only Me" also turns off the share link
+            if (value === 'private' && shareToken) {
+                const res = await authFetch(user, '/api/share', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId: post.id }),
+                });
+                if (!res.ok) throw new Error('Failed to stop sharing');
+                onShareTokenChange(null);
+            }
         } catch (error) {
             console.error("Error changing visibility:", error);
             setLocalVisibility(prev); // revert on failure
         }
     };
+
+    // A private post with a share link shows as "Link only"
+    const pickerValue = localVisibility === 'private' && shareToken ? 'link' : localVisibility;
 
     return (
         <div className={`absolute top-0 left-0 right-0 z-10 ${isFullscreen ? 'p-6' : 'p-3 sm:p-4'}`} style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}>
@@ -74,13 +91,14 @@ export function PostAuthorOverlay({ post, isFullscreen, displayName, isAuthor, c
                 {/* Visibility control */}
                 {user?.uid === post.uid && !digestMode && (
                     <select
-                        value={localVisibility}
-                        onChange={(e) => { e.stopPropagation(); handleVisibilityChange(e.target.value as PostVisibility); }}
+                        value={pickerValue}
+                        onChange={(e) => { e.stopPropagation(); handleVisibilityChange(e.target.value as PostVisibility | 'link'); }}
                         onClick={(e) => e.stopPropagation()}
                         className={`font-bold tracking-wide bg-black/50 backdrop-blur-sm border border-white/20 text-white/70 rounded-md focus:outline-none transition-all cursor-pointer appearance-none ${isFullscreen ? 'text-sm px-3 py-1.5' : 'text-[10px] px-1.5 py-1'}`}
                         style={{ backgroundImage: 'none' }}
                     >
                         <option value="private">🔒 {t('visibilityPrivate')}</option>
+                        {pickerValue === 'link' && <option value="link">🔗 {t('visibilityLink')}</option>}
                         <option value="community">👥 {t('visibilityCommunity')}</option>
                         <option value="public">🌐 {t('visibilityPublic')}</option>
                     </select>

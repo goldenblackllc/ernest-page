@@ -14,6 +14,15 @@ import { z } from 'zod';
 
 // ─── Zod Schema ──────────────────────────────────────────────────────────────
 
+/** The thumbnail: the Ideal Self doing the session's action, captioned with its insight. */
+export const ThumbnailBriefSchema = z.object({
+    insight: z.string().describe('The new belief the session arrived at, 2-5 words, calm and declarative, no names'),
+    action: z.string().describe('The most visual action the person committed to, as a short plain phrase'),
+    scene: z.string().describe('One or two sentences: a single photograph of the Ideal Self doing their own version of that action'),
+});
+
+export type ThumbnailBrief = z.infer<typeof ThumbnailBriefSchema>;
+
 const CondensedTranscriptSchema = z.object({
     is_publishable: z.boolean().describe('Whether this transcript is worth publishing'),
     title: z.string().optional().describe('A punchy first-person hook (3-6 words) — raw, confessional, thumb-stopping'),
@@ -23,6 +32,7 @@ const CondensedTranscriptSchema = z.object({
     })).optional().describe('The condensed conversation — alternating user and ideal_self messages'),
     editorial_note: z.string().optional().describe('Brief note on what you preserved and what you cut'),
     language: z.string().optional().describe('Primary language of the conversation (e.g., "English", "Español", "日本語")'),
+    thumbnail: ThumbnailBriefSchema.optional().describe('What the thumbnail shows: the insight as words, the action as the picture (STEP 6)'),
     reached_close: z.boolean().optional().describe('Did the Ideal Self reach the CLOSE phase — naming the belief shift, assigning specific actions, and releasing the user with warmth? True only if the conversation completed its full arc. False if the user quit early, the conversation stalled, or it never progressed past surface-level Q&A.'),
 });
 
@@ -85,7 +95,26 @@ STEP 5: SESSION COMPLETION
   (c) The Ideal Self's FINAL message was a RELEASE — a closing statement that does NOT end with a question, does NOT invite further exploration, and does NOT ask "what do you think?" or "how does that feel?" It ends the session with warmth and finality.
 - CRITICAL: Deep insights, powerful observations, and penetrating questions are NOT a close. If the Ideal Self's last message ends with a question like "What's it like to hear that?" or "Does that resonate?" — that is mid-conversation, NOT a close. The Ideal Self was still working. Set false.
 - CRITICAL: If the conversation simply stops (user closes the window) while the Ideal Self was still asking questions or exploring — that is NOT a close. The session was interrupted. Set false.
-- Set true ONLY when the Ideal Self clearly finished its job and let the person go. When in doubt, set false.`;
+- Set true ONLY when the Ideal Self clearly finished its job and let the person go. When in doubt, set false.
+
+STEP 6: THUMBNAIL BRIEF
+The post's thumbnail shows the Ideal Self living the outcome of the conversation: the new belief as words, the chosen action as the picture. Strangers may see it, so it must reveal nothing personal.
+- insight: The new, empowered belief the conversation arrived at, in 2 to 5 words, in the conversation's language. Calm and declarative, in the Ideal Self's voice. Not a question, not a teaser, not a confession. No names, places or private details.
+  Good: "Enough, as I am" · "Allowed to rest" · "Safe in my own skin" · "My pace is the right pace"
+  Bad: "Why I can't trust my dad" · "You won't believe this" · "My panic attacks" · "Finding inner peace through self-care"
+- action: The one specific action the person committed to that is the most visual, or the most central to the close if none is visual. A short plain phrase. If no action was agreed, the everyday action that best expresses the insight.
+- scene: One or two sentences describing a single photograph of the Ideal Self doing their own version of that action in their everyday life: the setting, the light, what they are doing, the mood. Show the action, never the problem or the conflict behind it. No other identifiable people: anyone else involved is out of frame or out of focus. No readable text, screens with words, names or brands in the scene.`;
+
+// A private post keeps only the original conversation; the rewrite is made
+// when it's shared (lib/postMedia.ts). Without it, STEP 2 is skipped.
+const REWRITE_STEP = CONDENSED_TRANSCRIPT_PROMPT.slice(
+    CONDENSED_TRANSCRIPT_PROMPT.indexOf('STEP 2: REWRITE THE CONVERSATION'),
+    CONDENSED_TRANSCRIPT_PROMPT.indexOf('STEP 3: TITLE'),
+);
+const NO_REWRITE_PROMPT = CONDENSED_TRANSCRIPT_PROMPT.replace(
+    REWRITE_STEP,
+    'STEP 2: NO REWRITE\nDo not rewrite the conversation: return messages as an empty array. Every other step still reads the full transcript.\n\n',
+);
 
 // ─── Main Function ───────────────────────────────────────────────────────────
 
@@ -93,16 +122,18 @@ STEP 5: SESSION COMPLETION
  * Generate a condensed transcript from a raw chat transcript.
  * 
  * @param rawTranscript - The raw chat transcript (content_raw from Firestore)
+ * @param options.rewrite - Rewrite the conversation (default true); false for a private post
  * @returns The condensed transcript with messages, editorial note, and language
  */
 export async function generateCondensedTranscript(
     rawTranscript: string,
+    { rewrite = true }: { rewrite?: boolean } = {},
 ): Promise<CondensedTranscript> {
     const result = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
         fallbackModelId: OPUS_FALLBACK,
         schema: CondensedTranscriptSchema,
-        prompt: `${CONDENSED_TRANSCRIPT_PROMPT}\n\nTRANSCRIPT:\n${rawTranscript}`,
+        prompt: `${rewrite ? CONDENSED_TRANSCRIPT_PROMPT : NO_REWRITE_PROMPT}\n\nTRANSCRIPT:\n${rawTranscript}`,
     });
 
     return result.object as CondensedTranscript;

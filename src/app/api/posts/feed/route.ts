@@ -124,8 +124,11 @@ export async function GET(req: Request) {
         const getPostTime = (p: DocumentData) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
         allPosts.sort((a, b) => getPostTime(b) - getPostTime(a));
 
-        // 6c. Filter incomplete posts — posts without audio are still processing
+        // 6c. Filter incomplete posts: another author's post without audio is still processing.
+        // Your own posts always show; a private one has only its text and thumbnail
+        // (functions/src/lib/postMedia.ts).
         const complete = allPosts.filter(p => {
+            if (p.authorId === uid || p.uid === uid) return true;
             return p.audio_url || p.short_audio_url || (p.letter_audio_url && p.response_audio_url);
         });
 
@@ -194,6 +197,7 @@ export async function GET(req: Request) {
                 delete clean.rant;
                 delete clean.conversation_messages;
                 delete clean.counsel;
+                delete clean.thumbnail_brief; // the author's action
             }
 
             // Strip the legacy translations map

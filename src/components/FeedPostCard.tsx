@@ -24,9 +24,10 @@ interface FeedPostProps {
 }
 
 export function FeedPostCard(props: FeedPostProps) {
-    // Posts without audio are still processing — don't render. Checked here, not in
-    // the card body, so the body's hooks run in the same order on every render.
-    if (!getPostAudio(props.post).hasAudio) return null;
+    // Posts without audio are still processing — don't render. A private post has no
+    // audio by design (media_status set): it shows its text and thumbnail. Checked here,
+    // not in the card body, so the body's hooks run in the same order on every render.
+    if (!getPostAudio(props.post).hasAudio && !props.post.media_status) return null;
     return <FeedPostCardBody {...props} />;
 }
 
@@ -41,10 +42,12 @@ function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, 
     const [isTextView, setIsTextView] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isCommentOpen, setIsCommentOpen] = useState(false);
+    // The author's share link, shared by the Share button and the visibility picker
+    const [shareToken, setShareToken] = useState<string | null>(post.shareToken || null);
 
     // Text and audio
     const { letter: letterText, response: responseText } = getPostText(post);
-    const { unifiedAudioUrl, wordTimestamps } = getPostAudio(post);
+    const { unifiedAudioUrl, wordTimestamps, hasAudio } = getPostAudio(post);
     const letterRatio = getLetterRatio(post, letterText, responseText);
 
     const audio = useFeedAudio({
@@ -68,12 +71,20 @@ function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, 
     const canFollow = Boolean(!isAuthor && !customAlias && postAuthorId && onFollowClick && !digestMode);
     const showChat = isAuthor && hasPrivateChat(post);
 
-    // Letter and response are required
-    if (!publicLetter || !publicResponse) {
+    // A private post has no "Dear Earnest" rewrite until it's shared, only the
+    // original conversation, which its author can open
+    const hasText = Boolean(publicLetter && publicResponse);
+    if (!hasText && !showChat) {
         return null;
     }
 
-    const track = buildSubtitleTrack(publicLetter, publicResponse, wordTimestamps, letterRatio);
+    // A private post has no audio until it's shared: a tap opens the text, or the original chat
+    const openText = () => {
+        if (hasText) { setIsTextView(true); setIsChatOpen(false); }
+        else { setIsChatOpen(true); setIsTextView(false); }
+    };
+
+    const track = buildSubtitleTrack(publicLetter || '', publicResponse || '', wordTimestamps, letterRatio);
 
     return (
         <div ref={cardRef} className="bg-black border-b sm:border border-white/10 sm:rounded-xl overflow-hidden shadow-lg relative font-sans">
@@ -85,6 +96,7 @@ function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, 
                 isUnified={Boolean(unifiedAudioUrl)}
                 fullscreenRef={cardRef}
                 digestMode={digestMode}
+                onOpenText={hasAudio ? undefined : openText}
                 renderHeader={(isFullscreen) => (
                     <PostAuthorOverlay
                         post={post}
@@ -94,6 +106,8 @@ function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, 
                         canFollow={canFollow}
                         onFollow={() => postAuthorId && onFollowClick?.(postAuthorId)}
                         digestMode={digestMode}
+                        shareToken={shareToken}
+                        onShareTokenChange={setShareToken}
                     />
                 )}
             />
@@ -103,7 +117,8 @@ function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, 
                 audio={audio}
                 isAuthor={isAuthor}
                 hasPrivateChat={showChat}
-                hasImage={getPostImages(post).hasImage}
+                hasText={hasText}
+                canExportVideo={getPostImages(post).hasImage && hasAudio}
                 digestMode={digestMode}
                 isTextView={isTextView}
                 onToggleTextView={() => { setIsTextView(!isTextView); if (!isTextView) setIsChatOpen(false); }}
@@ -111,9 +126,11 @@ function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, 
                 onToggleChat={() => { setIsChatOpen(!isChatOpen); if (!isChatOpen) setIsTextView(false); }}
                 onToggleComments={() => setIsCommentOpen(!isCommentOpen)}
                 onRequestDelete={onRequestDelete}
+                shareToken={shareToken}
+                onShareTokenChange={setShareToken}
             />
 
-            {isTextView && (
+            {isTextView && publicLetter && publicResponse && (
                 <PostTextView
                     transcript={post.public_post?.condensed_transcript}
                     userLabel={post.public_post?.pseudonym || publicPseudonym || 'You'}

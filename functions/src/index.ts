@@ -1,6 +1,7 @@
 export { processChat } from './processChat.js';
 export { sweepExpiredChats } from './sweepExpiredChats.js';
 export { processPostImages } from './processPostImages.js';
+export { postExposure } from './postExposure.js';
 export { compileCharacterBible } from './compileCharacterBible.js';
 export { buildCharacter, recompileBibles } from './characterBuild.js';
 export { generateAvatar, requestAvatar, retryAvatars } from './avatar.js';

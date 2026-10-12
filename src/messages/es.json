@@ -196,6 +196,7 @@
     "linkCopied": "Enlace copiado",
     "originalChat": "Chat original",
     "visibilityPrivate": "Solo yo",
+    "visibilityLink": "Solo con enlace",
     "visibilityCommunity": "Comunidad",
     "visibilityPublic": "Público",
     "labelLetter": "Carta",
@@ -671,6 +672,7 @@
     "notFound": "Publicación no encontrada",
     "notFoundDesc": "Esta publicación puede ser privada o ya no existe.",
     "sharedNotFoundDesc": "Este enlace compartido puede haber expirado o haber sido eliminado.",
+    "sharedPreparing": "Esta publicación se está preparando. Vuelve en un par de minutos.",
     "brand": "Earnest Page",
     "theResponse": "La Respuesta"
   },

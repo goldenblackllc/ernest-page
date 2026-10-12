@@ -196,6 +196,7 @@
     "linkCopied": "Lien copié",
     "originalChat": "Discussion d’origine",
     "visibilityPrivate": "Moi uniquement",
+    "visibilityLink": "Lien uniquement",
     "visibilityCommunity": "Communauté",
     "visibilityPublic": "Public",
     "labelLetter": "Lettre",
@@ -671,6 +672,7 @@
     "notFound": "Publication introuvable",
     "notFoundDesc": "Cette publication peut être privée ou n'existe plus.",
     "sharedNotFoundDesc": "Ce lien partagé a peut-être expiré ou été supprimé.",
+    "sharedPreparing": "Cette publication est en cours de préparation. Revenez dans une minute ou deux.",
     "brand": "Earnest Page",
     "theResponse": "La Réponse"
   },

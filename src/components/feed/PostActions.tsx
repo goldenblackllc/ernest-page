@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Trash2, Heart, RefreshCw, RotateCcw, MessageCircle, Share2, Loader2, FileText, ImagePlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { httpsCallable } from "firebase/functions";
@@ -60,11 +60,10 @@ function DevRegenerateButton({ postId, className }: { postId: string; className:
 }
 
 /** Share: the author gets an unlisted /s/:token link, everyone else /post/:id. */
-function ShareButton({ post }: { post: Post }) {
+function ShareButton({ post, shareToken, onShareTokenChange }: { post: Post; shareToken: string | null; onShareTokenChange: (token: string) => void }) {
     const t = useTranslations('feed');
     const { user } = useAuth();
     const [shareToast, setShareToast] = useState(false);
-    const shareTokenRef = useRef<string | null>(post.shareToken || null);
 
     const handleShare = useCallback(async () => {
         const postAuthor = post.authorId || post.uid;
@@ -74,8 +73,8 @@ function ShareButton({ post }: { post: Post }) {
 
         if (isOwner) {
             // Author flow: generate or reuse a share token
-            if (shareTokenRef.current) {
-                url = `${window.location.origin}/s/${shareTokenRef.current}`;
+            if (shareToken) {
+                url = `${window.location.origin}/s/${shareToken}`;
             } else {
                 try {
                     const res = await authFetch(user!, '/api/share', {
@@ -85,7 +84,7 @@ function ShareButton({ post }: { post: Post }) {
                     });
                     if (!res.ok) throw new Error('Failed to generate share link');
                     const data = await res.json();
-                    shareTokenRef.current = data.shareToken;
+                    onShareTokenChange(data.shareToken);
                     url = `${window.location.origin}/s/${data.shareToken}`;
                 } catch {
                     // Fallback to regular post link
@@ -105,7 +104,7 @@ function ShareButton({ post }: { post: Post }) {
                 setTimeout(() => setShareToast(false), 2000);
             }
         } catch { /* user cancelled share sheet */ }
-    }, [post.id, post.authorId, post.uid, user]);
+    }, [post.id, post.authorId, post.uid, user, shareToken, onShareTokenChange]);
 
     return (
         <button
@@ -127,8 +126,10 @@ interface PostActionsProps {
     isAuthor: boolean;
     /** The author's original chat exists, so the Chat toggle can show. */
     hasPrivateChat: boolean;
-    /** MP4 export needs at least one image. */
-    hasImage: boolean;
+    /** The post has the "Dear Earnest" rewrite (a private post doesn't until it's shared). */
+    hasText: boolean;
+    /** MP4 export needs an image and the audio. */
+    canExportVideo: boolean;
     digestMode?: boolean;
     isTextView: boolean;
     onToggleTextView: () => void;
@@ -136,12 +137,16 @@ interface PostActionsProps {
     onToggleChat: () => void;
     onToggleComments: () => void;
     onRequestDelete?: (postId: string) => void;
+    /** The author's share link token (owned by the card, also shown by the visibility picker). */
+    shareToken: string | null;
+    onShareTokenChange: (token: string | null) => void;
 }
 
 /** Card footer: like, comments, restart | text and chat toggles | download, regenerate, delete, share. */
 export function PostActions({
-    post, audio, isAuthor, hasPrivateChat, hasImage, digestMode,
+    post, audio, isAuthor, hasPrivateChat, hasText, canExportVideo, digestMode,
     isTextView, onToggleTextView, isChatOpen, onToggleChat, onToggleComments, onRequestDelete,
+    shareToken, onShareTokenChange,
 }: PostActionsProps) {
     const t = useTranslations('feed');
     const { user } = useAuth();
@@ -224,8 +229,8 @@ export function PostActions({
 
             {/* Center: view mode toggles */}
             <div className="flex items-center gap-1.5">
-                {/* Text toggle — visible to all users */}
-                <button
+                {/* Text toggle — visible to all users, when there's a rewrite */}
+                {hasText && <button
                     onClick={onToggleTextView}
                     className={cn(
                         "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200",
@@ -236,7 +241,7 @@ export function PostActions({
                 >
                     <FileText className="w-3.5 h-3.5" />
                     {isTextView ? t('viewShort') : t('viewText')}
-                </button>
+                </button>}
 
                 {/* Chat toggle — author only */}
                 {isAuthor && hasPrivateChat && (
@@ -258,7 +263,7 @@ export function PostActions({
             {/* Right: download + delete + share */}
             <div className="flex items-center gap-2">
                 {/* MP4 Video Download — author only */}
-                {isAuthor && hasImage && !digestMode && (
+                {isAuthor && canExportVideo && !digestMode && (
                     <VideoDownloadButton postId={post.id} thumbnailUrl={post.thumbnail_url} />
                 )}
 
@@ -270,7 +275,7 @@ export function PostActions({
                         <Trash2 className="w-4 h-4" />
                     </button>
                 )}
-                {!digestMode && <ShareButton post={post} />}
+                {!digestMode && <ShareButton post={post} shareToken={shareToken} onShareTokenChange={onShareTokenChange} />}
             </div>
         </div>
     );

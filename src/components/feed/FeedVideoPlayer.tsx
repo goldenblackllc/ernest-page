@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type ReactNode, type RefObject } from "react";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, AlignLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Post } from "@/types/post";
 import type { FeedAudio } from "@/hooks/useFeedAudio";
@@ -25,13 +25,15 @@ interface FeedVideoPlayerProps {
     digestMode?: boolean;
     /** Top overlay (author row); receives the fullscreen flag for sizing. */
     renderHeader: (isFullscreen: boolean) => ReactNode;
+    /** Set when the post has no audio (a private post is text and thumbnail): a tap opens the text. */
+    onOpenText?: () => void;
 }
 
 /**
  * The 16:9 "short": images (or a plain poster while images are generating), title,
  * karaoke subtitles, a big play button and the auto-hiding control bar.
  */
-export function FeedVideoPlayer({ post, audio, track, letterRatio, isUnified, fullscreenRef, digestMode, renderHeader }: FeedVideoPlayerProps) {
+export function FeedVideoPlayer({ post, audio, track, letterRatio, isUnified, fullscreenRef, digestMode, renderHeader, onOpenText }: FeedVideoPlayerProps) {
     const t = useTranslations('feed');
     const { isPlaying, isAudioLoading, toggleAudio } = audio;
 
@@ -94,7 +96,7 @@ export function FeedVideoPlayer({ post, audio, track, letterRatio, isUnified, fu
     return (
         <div
             className="relative w-full overflow-hidden aspect-video bg-black"
-            onClick={(e) => { e.stopPropagation(); toggleAudio(); showControls(); }}
+            onClick={(e) => { e.stopPropagation(); if (onOpenText) { onOpenText(); return; } toggleAudio(); showControls(); }}
             onMouseMove={showControls}
             onTouchStart={showControls}
             style={{ cursor: 'pointer' }}
@@ -108,7 +110,9 @@ export function FeedVideoPlayer({ post, audio, track, letterRatio, isUnified, fu
             {!isPlaying && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                     <div className={`rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 transition-transform duration-200 hover:scale-110 ${isFullscreen ? 'w-24 h-24' : 'w-16 h-16 sm:w-20 sm:h-20'}`}>
-                        {isAudioLoading ? (
+                        {onOpenText ? (
+                            <AlignLeft className={`text-white ${isFullscreen ? 'w-12 h-12' : 'w-7 h-7 sm:w-9 sm:h-9'}`} />
+                        ) : isAudioLoading ? (
                             <Loader2 className={`text-white animate-spin ${isFullscreen ? 'w-12 h-12' : 'w-7 h-7 sm:w-9 sm:h-9'}`} />
                         ) : (
                             <Play className={`text-white ml-1 ${isFullscreen ? 'w-12 h-12' : 'w-7 h-7 sm:w-9 sm:h-9'}`} fill="white" />
@@ -153,12 +157,12 @@ export function FeedVideoPlayer({ post, audio, track, letterRatio, isUnified, fu
                 </div>
             )}
 
-            <PlayerControlBar
+            {!onOpenText && <PlayerControlBar
                 audio={audio}
                 visible={controlsVisible}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={toggleFullscreen}
-            />
+            />}
         </div>
     );
 }

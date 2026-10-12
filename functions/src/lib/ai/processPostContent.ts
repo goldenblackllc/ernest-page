@@ -13,7 +13,7 @@
  * (cron) or update an existing one (regenerate).
  */
 
-import { generateCondensedTranscript } from './condensedTranscript.js';
+import { generateCondensedTranscript, type ThumbnailBrief } from './condensedTranscript.js';
 import { generateMessageImagePrompts } from './generatePostImage.js';
 import { generateConversationAudio, resolveConversationVoices, type MessageBoundary, type WordTimestamp } from './postTTS.js';
 import type { BibleSection } from '../bible.js';
@@ -52,11 +52,18 @@ export interface ProcessPostInput {
      * Pre-generated condensed transcript. If provided, skips the
      * condensed transcript generation step (cron already has it).
      */
+    /**
+     * 'full' (default): image prompts, audio and thumbnail. 'thumbnail': the
+     * thumbnail only, for a private post (the rest is made when it's shared,
+     * see lib/postMedia.ts).
+     */
+    media?: 'full' | 'thumbnail';
     preCondensed?: {
         messages: Array<{ role: 'user' | 'ideal_self'; text: string }>;
         title?: string | null;
         language?: string | null;
         editorial_note?: string | null;
+        thumbnail?: ThumbnailBrief | null;
     };
 }
 
@@ -68,6 +75,7 @@ export interface ProcessPostResult {
         title: string | null;
         language: string | null;
         editorial_note: string | null;
+        thumbnail: ThumbnailBrief | null;
     };
     /** One image prompt per condensed transcript message */
     imagePrompts: string[];
@@ -107,6 +115,7 @@ export async function processPostContent(
     let title: string | null = null;
     let language: string | null = null;
     let editorialNote: string | null = null;
+    let thumbnail: ThumbnailBrief | null = null;
 
     if (preCondensed) {
         // Caller already has condensed messages (e.g. cron)
@@ -114,39 +123,96 @@ export async function processPostContent(
         title = preCondensed.title || null;
         language = preCondensed.language || null;
         editorialNote = preCondensed.editorial_note || null;
+        thumbnail = preCondensed.thumbnail || null;
         console.log(`[${logPrefix}] Using pre-condensed transcript: ${messages.length} messages`);
     } else {
         // Generate fresh (e.g. regenerate button)
         console.log(`[${logPrefix}] Generating condensed transcript...`);
-        const condensed = await generateCondensedTranscript(transcript);
+        // A private post skips the rewrite; it's made when the post is shared
+        const rewrite = (opts.media ?? 'full') === 'full';
+        const condensed = await generateCondensedTranscript(transcript, { rewrite });
 
-        if (!condensed.is_publishable || !condensed.messages || condensed.messages.length === 0) {
+        if (!condensed.is_publishable || (rewrite && (!condensed.messages || condensed.messages.length === 0))) {
             console.log(`[${logPrefix}] Transcript not publishable — skipping`);
             return null;
         }
 
-        messages = condensed.messages;
+        messages = condensed.messages || [];
         title = condensed.title || null;
         language = condensed.language || null;
         editorialNote = condensed.editorial_note || null;
+        thumbnail = condensed.thumbnail || null;
         console.log(`[${logPrefix}] Condensed: ${messages.length} messages, title: "${title}"`);
     }
 
-
-
-    // ── Steps 2 + 3 + 4: Image prompts + TTS + Thumbnail (in parallel) ──
-
-    const imagePromptsPromise = generateMessageImagePrompts({
-        messages,
-        compiledBible,
-        demographicHint,
+    // ── Steps 2 + 3 + 4: Image prompts + TTS + Thumbnail ──
+    // A private post gets only its thumbnail: media files are public URLs, so
+    // the rest is made when the author shares it (see postExposure.ts).
+    const { imagePrompts, audioFields, thumbnailUrl } = await generatePostMedia({
+        messages, title, language, uid, postId, compiledBible, demographicHint,
+        characterVoiceId, singleVoice, locale: opts.locale, logPrefix,
+        thumbnailBrief: thumbnail,
+        audioAndImages: (opts.media ?? 'full') === 'full',
     });
+    console.log(`[${logPrefix}] Complete — ${messages.length} messages, ${imagePrompts.length} prompts, audio: ${!!audioFields.audio_url}, thumbnail: ${!!thumbnailUrl}`);
+
+    return {
+        condensed: {
+            is_publishable: true,
+            messages,
+            title,
+            language,
+            editorial_note: editorialNote,
+            thumbnail,
+        },
+        imagePrompts,
+        audioFields,
+        thumbnailUrl,
+    };
+}
+
+export interface PostMediaInput {
+    messages: Array<{ role: 'user' | 'ideal_self'; text: string }>;
+    title: string | null;
+    language: string | null;
+    uid: string;
+    postId: string;
+    compiledBible?: BibleSection[];
+    demographicHint: string;
+    characterVoiceId?: string;
+    singleVoice?: boolean;
+    locale?: string;
+    logPrefix?: string;
+    /** Insight, action and scene for the thumbnail (posts; the digest has none) */
+    thumbnailBrief?: ThumbnailBrief | null;
+    /** Make the thumbnail (default true) */
+    thumbnail?: boolean;
+    /** Make image prompts and audio (default true) */
+    audioAndImages?: boolean;
+}
+
+export interface PostMedia {
+    imagePrompts: string[];
+    audioFields: PostAudioFields;
+    thumbnailUrl: string | null;
+}
+
+/** Image prompts, TTS audio and thumbnail for a condensed conversation (in parallel). */
+export async function generatePostMedia(input: PostMediaInput): Promise<PostMedia> {
+    const {
+        messages, title, language, uid, postId, compiledBible, demographicHint, characterVoiceId, singleVoice, locale,
+        thumbnailBrief, thumbnail = true, audioAndImages = true, logPrefix = 'ProcessPost',
+    } = input;
+
+    const imagePromptsPromise = audioAndImages
+        ? generateMessageImagePrompts({ messages, compiledBible, demographicHint })
+        : Promise.resolve([]);
 
     const audioFields: PostAudioFields = {};
-    const ttsPromise = (characterVoiceId && messages.length > 0)
+    const ttsPromise = (audioAndImages && characterVoiceId && messages.length > 0)
         ? (async () => {
             // Monologue mode (e.g. daily digest): character voice for both roles
-            const voiceLanguage = opts.locale || language || 'en';
+            const voiceLanguage = locale || language || 'en';
             const voices = singleVoice
                 ? { questionerVoiceId: characterVoiceId, characterVoiceId }
                 : await resolveConversationVoices(characterVoiceId, voiceLanguage);
@@ -172,13 +238,9 @@ export async function processPostContent(
         })()
         : Promise.resolve();
 
-    const thumbnailPromise = generateThumbnail({
-        messages,
-        title,
-        uid,
-        postId,
-        logPrefix,
-    });
+    const thumbnailPromise = thumbnail
+        ? generateThumbnail({ messages, title, uid, postId, brief: thumbnailBrief, logPrefix })
+        : Promise.resolve(null);
 
     const [imagePromptsResult, , thumbnailUrl] = await Promise.all([
         imagePromptsPromise,
@@ -186,19 +248,5 @@ export async function processPostContent(
         thumbnailPromise,
     ]);
 
-    const imagePrompts = imagePromptsResult || [];
-    console.log(`[${logPrefix}] Complete — ${messages.length} messages, ${imagePrompts.length} prompts, audio: ${!!audioFields.audio_url}, thumbnail: ${!!thumbnailUrl}`);
-
-    return {
-        condensed: {
-            is_publishable: true,
-            messages,
-            title,
-            language,
-            editorial_note: editorialNote,
-        },
-        imagePrompts,
-        audioFields,
-        thumbnailUrl: thumbnailUrl || null,
-    };
+    return { imagePrompts: imagePromptsResult || [], audioFields, thumbnailUrl: thumbnailUrl || null };
 }

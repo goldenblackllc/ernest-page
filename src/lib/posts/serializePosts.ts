@@ -45,6 +45,7 @@ export async function serializePostsForViewer(
             delete clean.rant;
             delete clean.conversation_messages;
             delete clean.counsel;
+            delete clean.thumbnail_brief; // the author's action
         }
         delete clean.translations;
 

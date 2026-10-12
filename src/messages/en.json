@@ -249,6 +249,7 @@
     "linkCopied": "Link copied",
     "originalChat": "Original Chat",
     "visibilityPrivate": "Only Me",
+    "visibilityLink": "Link only",
     "visibilityCommunity": "Community",
     "visibilityPublic": "Public",
     "labelLetter": "Letter",
@@ -671,6 +672,7 @@
     "notFound": "Post not found",
     "notFoundDesc": "This post may be private or no longer exists.",
     "sharedNotFoundDesc": "This shared link may have expired or been removed.",
+    "sharedPreparing": "This post is being prepared. Check back in a minute or two.",
     "brand": "Earnest Page",
     "theResponse": "The Response"
   },
