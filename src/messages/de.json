@@ -263,7 +263,7 @@
   "terms": {
     "title": "Nutzungsbedingungen",
     "subtitle": "Nutzungsbedingungen für die Earnest Page Plattform.",
-    "lastUpdated": "Zuletzt aktualisiert: 9. Oktober 2026",
+    "lastUpdated": "Zuletzt aktualisiert: 13. Oktober 2026",
     "navBrand": "Earnest Page",
     "legal": "Rechtliches",
     "s1": {
@@ -292,7 +292,7 @@
       "title": "5. KI-Verarbeitung & Inhaltserstellung",
       "p1": "Durch die Nutzung des Services erkennst du Folgendes an und stimmst zu:",
       "l1": "Deine Gespräche mit dem Mirror Chat werden von KI-Modellen Dritter (Anthropic Claude) verarbeitet, um Antworten und persönliche Erkenntnisse zu generieren.",
-      "l2": "Gespräche können zu anonymen, von der KI verfassten Beiträgen synthetisiert werden, die im öffentlichen Feed veröffentlicht werden. Alle persönlich identifizierbaren Informationen werden vor der Veröffentlichung entfernt.",
+      "l2": "Gespräche können zu anonymen, von der KI verfassten Beiträgen synthetisiert werden, die nur dann im öffentlichen Feed veröffentlicht werden, wenn du einen Beitrag teilst oder öffentlich machst. Alle persönlich identifizierbaren Informationen werden vor der Veröffentlichung entfernt.",
       "l3": "KI-generierte Inhalte stellen keine professionelle Beratung dar. Der Service ist kein Ersatz für Therapie, Beratung, medizinische Versorgung oder andere professionelle Dienstleistungen."
     },
     "s6": {
@@ -363,7 +363,7 @@
   "privacy": {
     "title": "Datenschutzrichtlinie",
     "subtitle": "Datenschutzrichtlinie für die Earnest Page Plattform.",
-    "lastUpdated": "Zuletzt aktualisiert: 9. Oktober 2026",
+    "lastUpdated": "Zuletzt aktualisiert: 13. Oktober 2026",
     "s1": {
       "title": "1. Einführung",
       "p1": "Golden Black LLC („wir“, „uns“ oder „unser“) betreibt Earnest Page. Diese Datenschutzrichtlinie beschreibt, wie wir deine persönlichen Daten sammeln, verwenden, speichern und schützen, wenn du unsere Plattform nutzt. Wir verpflichten uns zur Transparenz und zum Schutz deiner Privatsphäre."
@@ -377,7 +377,7 @@
       "t2": "2.2 Profil- & Identitätsdaten",
       "p3": "Informationen, die du freiwillig während des Onboardings und der Profilbearbeitung bereitstellst: Geschlecht, Alter, ethnische Zugehörigkeit (optional), Lebensvision, wichtige Personen in deinem Leben und persönliche Interessen. Diese Daten werden ausschließlich verwendet, um deine Charakter-Bibel zu erstellen und deine KI-Interaktionen zu personalisieren.",
       "t3": "2.3 Konversationsdaten",
-      "p4": "Deine Gespräche mit dem Mirror Chat werden während der aktiven Sitzung vorübergehend in Firebase Firestore gespeichert. Nachdem eine Sitzung geschlossen wurde, wird das Gespräch verarbeitet, um dein Dossier zu aktualisieren und (wenn du das öffentliche Routing gewählt hast) einen anonymen Beitrag zu generieren. Das rohe Gesprächsprotokoll wird als ",
+      "p4": "Deine Gespräche mit dem Mirror Chat werden während der aktiven Sitzung vorübergehend in Firebase Firestore gespeichert. Nachdem eine Sitzung geschlossen wurde, wird das Gespräch verarbeitet, um dein Dossier zu aktualisieren, und als privater Beitrag gespeichert, den nur du sehen kannst. Eine anonyme Fassung wird nur erstellt, wenn du diesen Beitrag später teilst oder öffentlich machst. Das rohe Gesprächsprotokoll wird als ",
       "code": "content_raw",
       "p5": " gespeichert und ist ",
       "strong2": "niemals für andere Benutzer als dich sichtbar",
@@ -391,7 +391,7 @@
       "title": "3. Wie wir deine Informationen verwenden",
       "l1": "Zur Authentifizierung deiner Identität und Verwaltung deines Kontos",
       "l2": "Zur Stromversorgung des KI-gesteuerten Mirror Chats, Dossier-Updates und Charakterkompilierung",
-      "l3": "Zur Generierung anonymer, KI-geschriebener Beiträge für den öffentlichen Feed (mit deiner Zustimmung über Routing-Einstellungen)",
+      "l3": "Zur Generierung anonymer, KI-geschriebener Beiträge für den öffentlichen Feed, nur für Beiträge, die du teilen oder öffentlich machen möchtest",
       "l4": "Zur Generierung von KI-gestützten Hero-Bildern für Beiträge",
       "l5": "Zur Bereitstellung von näherungsbasierter Anonymitätsfilterung",
       "l6": "Zur Aufrechterhaltung von Nutzungslimits und zur Missbrauchsprävention",
@@ -444,12 +444,12 @@
       "t1": "Vertragliche Notwendigkeit (Artikel 6 Abs. 1 lit. b)",
       "b1": "Die Verarbeitung deiner Kontodaten, die Verwaltung von Abonnements, die Bereitstellung des Mirror Chat-Dienstes und die Erstellung deiner Charakter-Bibel – diese sind notwendig, um den Dienst bereitzustellen, für den du dich angemeldet hast.",
       "t2": "Einwilligung (Artikel 6 Abs. 1 lit. a)",
-      "b2": "Veröffentlichung anonymer Beiträge im öffentlichen Feed (du kontrollierst dies über deine Routing-Einstellungen), Erfassung von Standortdaten für die Proximity Blind Spot-Funktion (du kannst den GPS-Zugriff verweigern) und Verarbeitung deiner Gespräche durch KI-Modelle Dritter.",
+      "b2": "Veröffentlichung anonymer Beiträge im öffentlichen Feed (nur wenn du einen Beitrag teilst oder öffentlich machst), Erfassung von Standortdaten für die Proximity Blind Spot-Funktion (du kannst den GPS-Zugriff verweigern) und Verarbeitung deiner Gespräche durch KI-Modelle Dritter.",
       "t3": "Berechtigtes Interesse (Artikel 6 Abs. 1 lit. f)",
       "b3": "Aufrechterhaltung der Plattformsicherheit, Verhinderung von Betrug und Missbrauch, Verbesserung des Dienstes und Erstellung aggregierter Analysen. Wir wägen unsere Interessen gegen deine Rechte ab und verwenden deine Daten nicht für Profiling, Werbung oder den Verkauf an Dritte.",
       "t4": "Gesetzliche Verpflichtung (Artikel 6 Abs. 1 lit. c)",
       "b4": "Aufbewahrung von Finanzunterlagen, wie es das Steuerrecht vorschreibt, und Reaktion auf gültige rechtliche Verfahren.",
-      "p2": "Du kannst deine Einwilligung jederzeit widerrufen, indem du deine Routing-Einstellungen auf Privat änderst, die Browser-Standortbestimmung verweigerst oder uns kontaktierst. Der Widerruf der Einwilligung berührt nicht die Rechtmäßigkeit der vor dem Widerruf durchgeführten Verarbeitung."
+      "p2": "Du kannst deine Einwilligung jederzeit widerrufen, indem du einen geteilten Beitrag wieder privat machst oder löschst, die Browser-Standortbestimmung verweigerst oder uns kontaktierst. Der Widerruf der Einwilligung berührt nicht die Rechtmäßigkeit der vor dem Widerruf durchgeführten Verarbeitung."
     },
     "s8": {
       "title": "8. Internationale Datenübermittlungen",
@@ -471,7 +471,7 @@
       "strong3": "Exportieren",
       "l3": " deiner Daten in einem portablen, maschinenlesbaren Format (über die Datenexportfunktion in der App)",
       "strong4": "Opt-out",
-      "l4": " von der öffentlichen Veröffentlichung, indem du dein Standard-Routing auf Privat stellst",
+      "l4": " von der öffentlichen Veröffentlichung: Deine Beiträge bleiben privat, solange du sie nicht teilst oder öffentlich machst, und du kannst einen geteilten Beitrag jederzeit wieder privat machen",
       "strong5": "Einschränken",
       "l5": " der Standortdatenerfassung durch Verweigerung der Browser-Geolokalisierung",
       "t2": "Zusätzliche Rechte für Benutzer im EWR, Großbritannien und der Schweiz (DSGVO)",

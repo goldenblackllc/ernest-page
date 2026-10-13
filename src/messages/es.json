@@ -263,7 +263,7 @@
   "terms": {
     "title": "Términos de Servicio",
     "subtitle": "Términos de Servicio para la plataforma Earnest Page.",
-    "lastUpdated": "Última actualización: 9 de octubre de 2026",
+    "lastUpdated": "Última actualización: 13 de octubre de 2026",
     "navBrand": "Earnest Page",
     "legal": "Legal",
     "s1": {
@@ -292,7 +292,7 @@
       "title": "5. Procesamiento de IA y Generación de Contenido",
       "p1": "Al utilizar el Servicio, reconoces y consientes lo siguiente:",
       "l1": "Tus conversaciones con el Chat del Espejo son procesadas por modelos de IA de terceros (Anthropic Claude) para generar respuestas e insights personales.",
-      "l2": "Las conversaciones pueden ser sintetizadas en publicaciones anónimas escritas por IA que se publican en el muro público. Toda información de identificación personal se elimina antes de la publicación.",
+      "l2": "Las conversaciones pueden ser sintetizadas en publicaciones anónimas escritas por IA, que se publican en el muro público solo cuando compartes una publicación o la haces pública. Toda información de identificación personal se elimina antes de la publicación.",
       "l3": "El contenido generado por IA no es asesoramiento profesional. El Servicio no sustituye a la terapia, el asesoramiento, la atención médica ni ningún servicio profesional."
     },
     "s6": {
@@ -363,7 +363,7 @@
   "privacy": {
     "title": "Política de Privacidad",
     "subtitle": "Política de Privacidad para la plataforma Earnest Page.",
-    "lastUpdated": "Última actualización: 9 de octubre de 2026",
+    "lastUpdated": "Última actualización: 13 de octubre de 2026",
     "s1": {
       "title": "1. Introducción",
       "p1": "Golden Black LLC (\"nosotros\" o \"nuestro\") opera Earnest Page. Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos y protegemos tu información personal cuando utilizas nuestra plataforma. Nos comprometemos con la transparencia y la protección de tu privacidad."
@@ -377,7 +377,7 @@
       "t2": "2.2 Datos de Perfil e Identidad",
       "p3": "Información que proporcionas voluntariamente durante la incorporación y la edición del perfil: género, edad, etnia (opcional), visión de vida, personas importantes en tu vida e intereses personales. Estos datos se utilizan exclusivamente para construir tu Biblia de Personaje y personalizar tus interacciones con la IA.",
       "t3": "2.3 Datos de Conversación",
-      "p4": "Tus conversaciones con el Chat del Espejo se almacenan temporalmente en Firebase Firestore durante la sesión activa. Después de que una sesión se cierra, la conversación se procesa para actualizar tu expediente y (si has elegido enrutamiento público) generar una publicación anónima. La transcripción original de la conversación se almacena como ",
+      "p4": "Tus conversaciones con el Chat del Espejo se almacenan temporalmente en Firebase Firestore durante la sesión activa. Después de que una sesión se cierra, la conversación se procesa para actualizar tu expediente y se guarda como una publicación privada que solo tú puedes ver. Solo se crea una versión anónima si más tarde compartes esa publicación o la haces pública. La transcripción original de la conversación se almacena como ",
       "code": "content_raw",
       "p5": " y ",
       "strong2": "nunca es visible para ningún usuario que no seas tú",
@@ -391,7 +391,7 @@
       "title": "3. Cómo Usamos Tu Información",
       "l1": "Para autenticar tu identidad y gestionar tu cuenta",
       "l2": "Para impulsar el Chat del Espejo con IA, actualizaciones de expediente y compilación de personaje",
-      "l3": "Para generar publicaciones anónimas escritas por IA para el muro público (con tu consentimiento mediante la configuración de enrutamiento)",
+      "l3": "Para generar publicaciones anónimas escritas por IA para el muro público, solo de las publicaciones que decidas compartir o hacer públicas",
       "l4": "Para generar imágenes hero con IA para las publicaciones",
       "l5": "Para proporcionar filtrado de anonimato basado en proximidad",
       "l6": "Para mantener los límites de uso y prevenir abusos",
@@ -444,12 +444,12 @@
       "t1": "Necesidad contractual (Artículo 6(1)(b))",
       "b1": "El procesamiento de los datos de su cuenta, la gestión de suscripciones, la prestación del servicio Mirror Chat y la generación de su Biblia de Personaje son necesarios para prestar el servicio al que se ha suscrito.",
       "t2": "Consentimiento (Artículo 6(1)(a))",
-      "b2": "Publicar contenido anónimo en el feed público (usted controla esto mediante sus ajustes de enrutamiento), recopilar datos de ubicación para la función Punto Ciego de Proximidad (puede denegar el acceso al GPS) y procesar sus conversaciones a través de modelos de IA de terceros.",
+      "b2": "Publicar contenido anónimo en el feed público (solo cuando usted comparte una publicación o la hace pública), recopilar datos de ubicación para la función Punto Ciego de Proximidad (puede denegar el acceso al GPS) y procesar sus conversaciones a través de modelos de IA de terceros.",
       "t3": "Interés legítimo (Artículo 6(1)(f))",
       "b3": "Mantener la seguridad de la plataforma, prevenir el fraude y el abuso, mejorar el servicio y generar análisis agregados. Sopesamos nuestros intereses frente a sus derechos y no utilizamos sus datos para la elaboración de perfiles, publicidad o venta a terceros.",
       "t4": "Obligación legal (Artículo 6(1)(c))",
       "b4": "Conservar los registros financieros según lo exige la legislación fiscal y responder a procesos legales válidos.",
-      "p2": "Puede retirar el consentimiento en cualquier momento ajustando sus configuraciones de enrutamiento a Privado, denegando la geolocalización del navegador o contactándonos. La retirada del consentimiento no afecta la licitud del procesamiento realizado antes de la retirada."
+      "p2": "Puede retirar el consentimiento en cualquier momento volviendo a hacer privada o eliminando una publicación compartida, denegando la geolocalización del navegador o contactándonos. La retirada del consentimiento no afecta la licitud del procesamiento realizado antes de la retirada."
     },
     "s8": {
       "title": "8. Transferencias Internacionales de Datos",
@@ -471,7 +471,7 @@
       "strong3": "Exportar",
       "l3": " sus datos en un formato portátil y legible por máquina (a través de la función de exportación de datos en la aplicación)",
       "strong4": "Optar por no participar",
-      "l4": " en la publicación pública configurando su enrutamiento predeterminado como Privado",
+      "l4": " en la publicación pública: sus publicaciones son privadas a menos que las comparta o las haga públicas, y puede volver a hacer privada una publicación compartida en cualquier momento",
       "strong5": "Restringir",
       "l5": " la recopilación de datos de ubicación denegando la geolocalización del navegador",
       "t2": "Derechos adicionales para usuarios del EEE, el Reino Unido y Suiza (RGPD)",

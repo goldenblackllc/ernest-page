@@ -316,7 +316,7 @@
   "terms": {
     "title": "Terms of Service",
     "subtitle": "Terms of Service for the Earnest Page platform.",
-    "lastUpdated": "Last updated: October 9, 2026",
+    "lastUpdated": "Last updated: October 13, 2026",
     "navBrand": "Earnest Page Beta",
     "legal": "Legal",
     "s1": {
@@ -345,7 +345,7 @@
       "title": "5. AI Processing & Content Generation",
       "p1": "By using the Service, you acknowledge and consent to the following:",
       "l1": "Your conversations with Mirror Chat are processed by third-party AI models (Anthropic Claude) to generate responses and personal insights.",
-      "l2": "Conversations may be synthesized into anonymous, AI-ghostwritten posts that are published to the public feed. All personally identifiable information is removed before publication.",
+      "l2": "Conversations may be synthesized into anonymous, AI-ghostwritten posts, which are published to the public feed only when you share a post or make it public. All personally identifiable information is removed before publication.",
       "l3": "AI-generated content is not professional advice. The Service is not a substitute for therapy, counseling, medical care, or any professional service."
     },
     "s6": {
@@ -416,7 +416,7 @@
   "privacy": {
     "title": "Privacy Policy",
     "subtitle": "Privacy Policy for the Earnest Page platform.",
-    "lastUpdated": "Last updated: October 9, 2026",
+    "lastUpdated": "Last updated: October 13, 2026",
     "s1": {
       "title": "1. Introduction",
       "p1": "Golden Black LLC (“we,” “us,” or “our”) operates Earnest Page. This Privacy Policy describes how we collect, use, store, and protect your personal information when you use our platform. We are committed to transparency and to protecting your privacy."
@@ -430,7 +430,7 @@
       "t2": "2.2 Profile & Identity Data",
       "p3": "Information you voluntarily provide during onboarding and profile editing: gender, age, ethnicity (optional), life vision, important people in your life, and personal interests. This data is used exclusively to build your Character Bible and personalize your AI interactions.",
       "t3": "2.3 Conversation Data",
-      "p4": "Your conversations with Mirror Chat are temporarily stored in Firebase Firestore during the active session. After a session closes, the conversation is processed to update your dossier and (if you have chosen public routing) generate an anonymous post. The raw conversation transcript is stored as ",
+      "p4": "Your conversations with Mirror Chat are temporarily stored in Firebase Firestore during the active session. After a session closes, the conversation is processed to update your dossier and saved as a private post that only you can see. An anonymous version is made only if you later share that post or make it public. The raw conversation transcript is stored as ",
       "code": "content_raw",
       "p5": " and is ",
       "strong2": "never visible to any user other than you",
@@ -444,7 +444,7 @@
       "title": "3. How We Use Your Information",
       "l1": "To authenticate your identity and manage your account",
       "l2": "To power the AI-driven Mirror Chat, dossier updates, and character compilation",
-      "l3": "To generate anonymous, AI-ghostwritten posts for the public feed (with your consent via routing settings)",
+      "l3": "To generate anonymous, AI-ghostwritten posts for the public feed, only for posts you choose to share or make public",
       "l4": "To generate AI-powered hero images for posts",
       "l5": "To provide proximity-based anonymity filtering",
       "l6": "To maintain usage limits and prevent abuse",
@@ -497,12 +497,12 @@
       "t1": "Contractual Necessity (Article 6(1)(b))",
       "b1": "Processing your account data, managing subscriptions, delivering the Mirror Chat service, and generating your Character Bible — these are necessary to provide the service you signed up for.",
       "t2": "Consent (Article 6(1)(a))",
-      "b2": "Publishing anonymous posts to the public feed (you control this via your routing settings), collecting location data for the Proximity Blind Spot feature (you can deny GPS access), and processing your conversations via third-party AI models.",
+      "b2": "Publishing anonymous posts to the public feed (only when you share a post or make it public), collecting location data for the Proximity Blind Spot feature (you can deny GPS access), and processing your conversations via third-party AI models.",
       "t3": "Legitimate Interest (Article 6(1)(f))",
       "b3": "Maintaining platform security, preventing fraud and abuse, improving the service, and generating aggregate analytics. We balance our interests against your rights and do not use your data for profiling, advertising, or sale to third parties.",
       "t4": "Legal Obligation (Article 6(1)(c))",
       "b4": "Retaining financial records as required by tax law, and responding to valid legal process.",
-      "p2": "You may withdraw consent at any time by adjusting your routing settings to Private, denying browser geolocation, or contacting us. Withdrawing consent does not affect the lawfulness of processing performed before the withdrawal."
+      "p2": "You may withdraw consent at any time by making a shared post private again or deleting it, denying browser geolocation, or contacting us. Withdrawing consent does not affect the lawfulness of processing performed before the withdrawal."
     },
     "s8": {
       "title": "8. International Data Transfers",
@@ -524,7 +524,7 @@
       "strong3": "Export",
       "l3": " your data in a portable, machine-readable format (via the data export feature in-app)",
       "strong4": "Opt out",
-      "l4": " of public publishing by setting your default routing to Private",
+      "l4": " of public publishing: your posts stay private unless you share them or make them public, and you can make a shared post private again at any time",
       "strong5": "Restrict",
       "l5": " location data collection by denying browser geolocation",
       "t2": "Additional Rights for EEA, UK, and Swiss Users (GDPR)",

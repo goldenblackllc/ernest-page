@@ -263,7 +263,7 @@
   "terms": {
     "title": "Conditions d'Utilisation",
     "subtitle": "Conditions d'Utilisation pour la plateforme Earnest Page.",
-    "lastUpdated": "Dernière mise à jour : 9 octobre 2026",
+    "lastUpdated": "Dernière mise à jour : 13 octobre 2026",
     "navBrand": "Earnest Page",
     "legal": "Juridique",
     "s1": {
@@ -292,7 +292,7 @@
       "title": "5. Traitement IA et Génération de Contenu",
       "p1": "En utilisant le Service, vous reconnaissez et consentez à ce qui suit :",
       "l1": "Vos conversations avec le Chat du Miroir sont traitées par des modèles d'IA tiers (Anthropic Claude) pour générer des réponses et des insights personnels.",
-      "l2": "Les conversations peuvent être synthétisées en publications anonymes écrites par IA qui sont publiées dans le flux public. Toute information personnellement identifiable est supprimée avant publication.",
+      "l2": "Les conversations peuvent être synthétisées en publications anonymes écrites par IA, qui ne sont publiées dans le flux public que lorsque vous partagez une publication ou la rendez publique. Toute information personnellement identifiable est supprimée avant publication.",
       "l3": "Le contenu généré par IA ne constitue pas un conseil professionnel. Le Service ne remplace pas la thérapie, le conseil, les soins médicaux ou tout autre service professionnel."
     },
     "s6": {
@@ -363,7 +363,7 @@
   "privacy": {
     "title": "Politique de Confidentialité",
     "subtitle": "Politique de Confidentialité pour la plateforme Earnest Page.",
-    "lastUpdated": "Dernière mise à jour : 9 octobre 2026",
+    "lastUpdated": "Dernière mise à jour : 13 octobre 2026",
     "s1": {
       "title": "1. Introduction",
       "p1": "Golden Black LLC (\"nous\" ou \"notre\") exploite Earnest Page. Cette Politique de Confidentialité décrit comment nous collectons, utilisons, stockons et protégeons vos informations personnelles lorsque vous utilisez notre plateforme. Nous nous engageons à la transparence et à la protection de votre vie privée."
@@ -377,7 +377,7 @@
       "t2": "2.2 Données de Profil et d'Identité",
       "p3": "Informations que vous fournissez volontairement lors de l'intégration et de l'édition du profil : genre, âge, ethnicité (facultatif), vision de vie, personnes importantes dans votre vie et intérêts personnels. Ces données sont utilisées exclusivement pour construire votre Bible de Personnage et personnaliser vos interactions avec l'IA.",
       "t3": "2.3 Données de Conversation",
-      "p4": "Vos conversations avec le Chat du Miroir sont stockées temporairement dans Firebase Firestore pendant la session active. Après la fermeture d'une session, la conversation est traitée pour mettre à jour votre dossier et (si vous avez choisi le routage public) générer une publication anonyme. La transcription originale de la conversation est stockée sous ",
+      "p4": "Vos conversations avec le Chat du Miroir sont stockées temporairement dans Firebase Firestore pendant la session active. Après la fermeture d'une session, la conversation est traitée pour mettre à jour votre dossier et enregistrée comme une publication privée que vous seul pouvez voir. Une version anonyme n'est créée que si vous partagez ensuite cette publication ou la rendez publique. La transcription originale de la conversation est stockée sous ",
       "code": "content_raw",
       "p5": " et n'est ",
       "strong2": "jamais visible par aucun utilisateur autre que vous",
@@ -391,7 +391,7 @@
       "title": "3. Comment Nous Utilisons Vos Informations",
       "l1": "Pour authentifier votre identité et gérer votre compte",
       "l2": "Pour alimenter le Chat du Miroir par IA, les mises à jour de dossier et la compilation de personnage",
-      "l3": "Pour générer des publications anonymes écrites par IA pour le flux public (avec votre consentement via les paramètres de routage)",
+      "l3": "Pour générer des publications anonymes écrites par IA pour le flux public, uniquement pour les publications que vous choisissez de partager ou de rendre publiques",
       "l4": "Pour générer des images hero par IA pour les publications",
       "l5": "Pour fournir un filtrage d'anonymat basé sur la proximité",
       "l6": "Pour maintenir les limites d'utilisation et prévenir les abus",
@@ -444,12 +444,12 @@
       "t1": "Nécessité Contractuelle (Article 6(1)(b))",
       "b1": "Le traitement des données de votre compte, la gestion des abonnements, la fourniture du service Mirror Chat et la génération de votre Bible de Personnage — ces éléments sont nécessaires pour fournir le service auquel vous vous êtes inscrit.",
       "t2": "Consentement (Article 6(1)(a))",
-      "b2": "Publier des posts anonymes sur le flux public (vous contrôlez cela via vos paramètres de routage), collecter des données de localisation pour la fonctionnalité de Zone Aveugle de Proximité (vous pouvez refuser l'accès GPS), et traiter vos conversations via des modèles d'IA tiers.",
+      "b2": "Publier des posts anonymes sur le flux public (uniquement lorsque vous partagez une publication ou la rendez publique), collecter des données de localisation pour la fonctionnalité de Zone Aveugle de Proximité (vous pouvez refuser l'accès GPS), et traiter vos conversations via des modèles d'IA tiers.",
       "t3": "Intérêt Légitime (Article 6(1)(f))",
       "b3": "Maintenir la sécurité de la plateforme, prévenir la fraude et les abus, améliorer le service, et générer des analyses agrégées. Nous équilibrons nos intérêts par rapport à vos droits et n'utilisons pas vos données pour le profilage, la publicité ou la vente à des tiers.",
       "t4": "Obligation Légale (Article 6(1)(c))",
       "b4": "Conserver les dossiers financiers comme l'exige la législation fiscale, et répondre à un processus légal valide.",
-      "p2": "Vous pouvez retirer votre consentement à tout moment en ajustant vos paramètres de routage sur Privé, en refusant la géolocalisation du navigateur, ou en nous contactant. Le retrait du consentement n'affecte pas la licéité du traitement effectué avant le retrait."
+      "p2": "Vous pouvez retirer votre consentement à tout moment en rendant de nouveau privée ou en supprimant une publication partagée, en refusant la géolocalisation du navigateur, ou en nous contactant. Le retrait du consentement n'affecte pas la licéité du traitement effectué avant le retrait."
     },
     "s8": {
       "title": "8. Transferts Internationaux de Données",
@@ -471,7 +471,7 @@
       "strong3": "Exporter",
       "l3": " vos données dans un format portable et lisible par machine (via la fonction d'exportation de données dans l'application)",
       "strong4": "Se désinscrire",
-      "l4": " de la publication publique en définissant votre routage par défaut sur Privé",
+      "l4": " de la publication publique : vos publications restent privées sauf si vous les partagez ou les rendez publiques, et vous pouvez rendre de nouveau privée une publication partagée à tout moment",
       "strong5": "Restreindre",
       "l5": " la collecte de données de localisation en refusant la géolocalisation du navigateur",
       "t2": "Droits Supplémentaires pour les Utilisateurs de l'EEE, du Royaume-Uni et de la Suisse (RGPD)",
