@@ -108,6 +108,9 @@ const IDEAL_BIBLE_SCHEMA = z.object({
     The_World_I_Love: z.string().describe("The cultural identity — specific artists, shows, movies, books, food, music, games, sports, and the named things that define their taste. Use real names, not abstractions.")
 });
 
+/** A section shorter than this means the model skipped it (good sections run 2,000+ chars). */
+const MIN_SECTION_CHARS = 300;
+
 const PROVIDER_OPTIONS = {
     google: { safetySettings: SAFETY_SETTINGS },
 };
@@ -224,6 +227,13 @@ async function generateIdealSections(
     const sectionKeys = ['Style_and_Presence', 'Daily_Life_and_Habits', 'People_and_Connections', 'The_Inner_Mind', 'Quirks_and_Details', 'Order_and_Sanctuary', 'The_World_I_Love'] as const;
     const sectionLengths = sectionKeys.map(k => `${k}=${(rawObj[k] || '').length}`).join(', ');
     console.log(`[BibleCompile] Model output lengths: ${sectionLengths}`);
+
+    // The model sometimes returns a valid object with sections left empty.
+    // Throw so the existing bible is kept and the task retries.
+    const thinSections = sectionKeys.filter(k => (rawObj[k] || '').trim().length < MIN_SECTION_CHARS);
+    if (thinSections.length > 0) {
+        throw new Error(`Bible sections empty or too short: ${thinSections.join(', ')}`);
+    }
 
     return [
         { heading: "Style & Presence", content: rawObj.Style_and_Presence },
