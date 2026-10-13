@@ -18,10 +18,12 @@ export const SONNET_MODEL = 'claude-sonnet-5'; // Lightweight — list managemen
 export const LIVE_FALLBACK = 'claude-opus-5';
 
 /**
- * Every Claude call runs at maximum effort. Opus 5.5 always thinks (it can't be
- * disabled). Never lower this: if a call is too slow, raise its timeout instead.
+ * Every Claude call runs at 'high' effort. Opus 5.5 always thinks (it can't be
+ * disabled) and defaults to 'medium'. 'max' was tried and thought ~75x longer
+ * for the same answer (Phase 1: 28s at high, 9.5 min at max), so don't use it
+ * without measuring that high falls short.
  */
-export const EFFORT = 'max';
+export const EFFORT = 'high';
 
 // Image generation (Nano Banana 2) — synchronous and Batch API calls
 export const IMAGE_MODEL = 'gemini-3.1-flash-image';
