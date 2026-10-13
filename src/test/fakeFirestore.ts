@@ -86,6 +86,10 @@ class FakeDb {
         };
     }
 
+    async getAll(...refs: { path: string }[]): Promise<FakeSnapshot[]> {
+        return refs.map((ref) => this.snapshot(ref.path));
+    }
+
     nextId() {
         this.autoId += 1;
         return `auto-${this.autoId}`;
