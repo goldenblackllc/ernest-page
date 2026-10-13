@@ -1,12 +1,12 @@
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { db } from './lib/firebase/admin.js';
 import { z } from 'zod';
-import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from './lib/ai/models.js';
+import { generateWithFallback, OPUS_MODEL } from './lib/ai/models.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/security/serverHash.js';
 import { geohashForLocation } from 'geofire-common';
-import { buildDossierPrompt, buildDossierCondensePrompt, DOSSIER_WORD_LIMIT } from './lib/ai/dossierPrompt.js';
+import { buildDossierPrompt, DOSSIER_WORD_LIMIT } from './lib/ai/dossierPrompt.js';
 import { safeTimeZone, localDateKey } from './lib/utils/relativeDates.js';
 import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
 import { matchSponsor } from './lib/config/ecosystem.js';
@@ -19,7 +19,6 @@ import { getCompiledBible } from './lib/bible.js';
 import { REGION } from './lib/config/region.js';
 import { sendAdminEmail, buildNewPostEmail } from './lib/email/adminEmail.js';
 import { closeDecision, failureUpdate, MAX_PROCESS_ATTEMPTS } from './lib/chatRetry.js';
-import { errorMessage } from './lib/utils/errors.js';
 
 type CondensedMessage = { role: 'user' | 'ideal_self'; text: string };
 
@@ -232,7 +231,6 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
         // Dossier rewrite — Opus
         generateWithFallback({
             primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
             schema: z.object({
                 rewritten_dossier: z.string().describe(`Complete rewritten dossier with all eight sections (under ${DOSSIER_WORD_LIMIT} words), no header line.`),
             }),
@@ -241,7 +239,6 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
         // Session Log Entry — Opus
         generateWithFallback({
             primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
             schema: z.object({
                 session_recap: z.string().describe("2-3 sentence factual log of this session"),
             }),
@@ -271,27 +268,10 @@ async function saveSessionMetadata(opts: {
     const newRecap = { date: today, at: sessionStartedAt, recap: sessionRecap };
     const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
 
-    let dossierBody: string | undefined = opts.rewrittenDossier?.trim();
-
-    // The model doesn't reliably respect the word limit, so condense in a second pass when over.
-    const wordCount = dossierBody ? dossierBody.split(/\s+/).length : 0;
-    if (dossierBody && wordCount > DOSSIER_WORD_LIMIT) {
-        try {
-            const condensed = await generateWithFallback({
-                primaryModelId: OPUS_MODEL,
-                fallbackModelId: OPUS_FALLBACK,
-                schema: z.object({
-                    condensed_dossier: z.string().describe(`Condensed dossier with all eight sections (under ${DOSSIER_WORD_LIMIT} words), no header line.`),
-                }),
-                prompt: buildDossierCondensePrompt(dossierBody, wordCount, today),
-            });
-            const condensedBody = condensed.object?.condensed_dossier?.trim();
-            if (condensedBody) dossierBody = condensedBody;
-            console.log(`[ProcessChat] Dossier condensed from ${wordCount} to ${condensedBody?.split(/\s+/).length ?? wordCount} words`);
-        } catch (condenseError) {
-            console.error(`[ProcessChat] Dossier condense failed — saving uncondensed (${wordCount} words):`, errorMessage(condenseError));
-        }
-    }
+    // No second condense pass: each rewrite prunes to the section budgets, so a
+    // dossier that comes back slightly over the limit doesn't keep growing.
+    const dossierBody: string | undefined = opts.rewrittenDossier?.trim();
+    if (dossierBody) console.log(`[ProcessChat] Dossier is ${dossierBody.split(/\s+/).length} words (limit ${DOSSIER_WORD_LIMIT})`);
 
     await userRef.set({
         ...(dossierBody ? { dossier: `DOSSIER\nUpdated: ${today} | Sessions: ${sessionCount}\n\n${dossierBody}` } : {}),

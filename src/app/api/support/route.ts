@@ -1,9 +1,9 @@
-import { generateTextWithFallback, OPUS_MODEL, OPUS_FALLBACK } from '@functions/lib/ai/models';
+import { generateTextWithFallback, OPUS_MODEL, LIVE_FALLBACK } from '@functions/lib/ai/models';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { verifyAuth } from '@/lib/auth/serverAuth';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30;
+export const maxDuration = 300;
 
 const SUPPORT_SYSTEM_PROMPT = `You are the Earnest Page concierge. You answer questions about the platform warmly and directly.
 
@@ -94,10 +94,10 @@ export async function POST(req: Request) {
 
         const result = await generateTextWithFallback({
             primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
+            fallbackModelId: LIVE_FALLBACK,
             system: SUPPORT_SYSTEM_PROMPT,
             messages,
-            abortSignal: AbortSignal.timeout(15000),
+            abortSignal: AbortSignal.timeout(120_000), // max effort; the fallback gets another 150s
         });
 
         return Response.json({ response: result.text });

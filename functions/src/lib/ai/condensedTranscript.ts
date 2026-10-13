@@ -1,4 +1,4 @@
-import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from './models.js';
+import { generateWithFallback, OPUS_MODEL } from './models.js';
 import { z } from 'zod';
 
 /**
@@ -131,7 +131,6 @@ export async function generateCondensedTranscript(
 ): Promise<CondensedTranscript> {
     const result = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
-        fallbackModelId: OPUS_FALLBACK,
         schema: CondensedTranscriptSchema,
         prompt: `${rewrite ? CONDENSED_TRANSCRIPT_PROMPT : NO_REWRITE_PROMPT}\n\nTRANSCRIPT:\n${rawTranscript}`,
     });

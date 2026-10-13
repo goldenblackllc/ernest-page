@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { uploadPublicFile } from '../firebase/storage.js';
 import { generateImage } from './generateImage.js';
 import { validateGeneratedImage } from './validateImage.js';
-import { generateWithFallback, OPUS_MODEL, OPUS_FALLBACK } from './models.js';
+import { generateWithFallback, OPUS_MODEL } from './models.js';
 import { buildBatchRequest, type BatchRequestEntry } from './batchImageGeneration.js';
 import type { BibleSection } from '../bible.js';
 import { errorMessage, isQuotaError } from '../utils/errors.js';
@@ -175,7 +175,6 @@ Return exactly ${numMessages} image prompts, one per message, in conversation or
     try {
         const result = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
-            fallbackModelId: OPUS_FALLBACK,
             schema: z.object({
                 prompts: z.array(z.string()).min(numMessages).max(numMessages),
             }),

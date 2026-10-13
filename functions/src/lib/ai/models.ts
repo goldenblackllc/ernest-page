@@ -8,19 +8,23 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
-export const OPUS_MODEL = 'claude-opus-5'; // Primary — Deep Reasoning Engine (all features)
-export const OPUS_FALLBACK = 'claude-opus-4-8'; // Stable Fallback for Opus
+export const OPUS_MODEL = 'claude-opus-5-5'; // Primary — Deep Reasoning Engine (all features)
 export const SONNET_MODEL = 'claude-sonnet-5'; // Lightweight — list management, consolidation
+
+/**
+ * Backup model for live calls only (Mirror chat, support chat), where a user is
+ * waiting. Background work has no fallback: it fails and its job retries.
+ */
+export const LIVE_FALLBACK = 'claude-opus-5';
+
+/**
+ * Every Claude call runs at maximum effort. Opus 5.5 always thinks (it can't be
+ * disabled). Never lower this: if a call is too slow, raise its timeout instead.
+ */
+export const EFFORT = 'max';
 
 // Image generation (Nano Banana 2) — synchronous and Batch API calls
 export const IMAGE_MODEL = 'gemini-3.1-flash-image';
-
-// Mirror Chat (chat + plan). Text-only, so Opus 5.5's always-on thinking and
-// no-forced-tool-use rules don't apply. Its default effort is 'medium', so
-// MIRROR_EFFORT is passed explicitly.
-export const MIRROR_MODEL = 'claude-opus-5-5';
-export const MIRROR_FALLBACK = 'claude-opus-5';
-export const MIRROR_EFFORT = 'high';
 
 function getProviderModel(modelName: string) {
     if (modelName.includes('gemini')) {
@@ -55,23 +59,21 @@ type FallbackOptions = {
     | { messages: ModelMessage[]; prompt?: never }
 );
 
+function withMaxEffort(providerOptions: ProviderOptions): ProviderOptions {
+    return {
+        ...providerOptions,
+        anthropic: { ...providerOptions?.anthropic, effort: EFFORT },
+    };
+}
+
+/** Generate a structured object. Falls back to `fallbackModelId` only when one is given (live calls). */
 export async function generateWithFallback<SCHEMA extends z.ZodTypeAny>(
     options: FallbackOptions & { schema: SCHEMA },
 ): Promise<GenerateObjectResult<z.infer<SCHEMA>>> {
     const primary = options.primaryModelId || OPUS_MODEL;
-    const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, schema, ...aiOptions } = options;
     const fixedSchema = fixSchema(schema);
-
-    // Disable extended thinking for structured output — thinking conflicts
-    // with forced tool calls that generateObject uses for schema compliance.
-    const providerOptions = {
-        ...aiOptions.providerOptions,
-        anthropic: {
-            ...aiOptions.providerOptions?.anthropic,
-            thinking: { type: 'disabled' },
-        },
-    };
+    const providerOptions = withMaxEffort(aiOptions.providerOptions);
 
     try {
         console.log(`Attempting generation with primary model (${primary})...`);
@@ -84,37 +86,42 @@ export async function generateWithFallback<SCHEMA extends z.ZodTypeAny>(
             allowSystemInMessages: true,
         });
     } catch (error) {
-        console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error instanceof Error ? error.message : error);
+        if (!fallbackModelId) throw error;
+        console.warn(`Primary model failed. Falling back to ${fallbackModelId}. Error: `, error instanceof Error ? error.message : error);
         return await generateObject({
             ...aiOptions,
             schema: fixedSchema,
             providerOptions,
             abortSignal: AbortSignal.timeout(150_000),
-            model: getProviderModel(fallback),
+            model: getProviderModel(fallbackModelId),
             allowSystemInMessages: true,
         });
     }
 }
 
+/** Generate text. Falls back to `fallbackModelId` only when one is given (live calls). */
 export async function generateTextWithFallback(options: FallbackOptions) {
     const primary = options.primaryModelId || OPUS_MODEL;
-    const fallback = options.fallbackModelId || OPUS_FALLBACK;
     const { primaryModelId, fallbackModelId, abortSignal, ...aiOptions } = options;
+    const providerOptions = withMaxEffort(aiOptions.providerOptions);
 
     try {
         console.log(`Attempting text generation with primary model (${primary})...`);
         return await generateText({
             ...aiOptions,
+            providerOptions,
             ...(abortSignal && { abortSignal }),
             model: getProviderModel(primary),
             allowSystemInMessages: true,
         });
     } catch (error) {
-        console.warn(`Primary model failed. Falling back to ${fallback}. Error: `, error instanceof Error ? error.message : error);
+        if (!fallbackModelId) throw error;
+        console.warn(`Primary model failed. Falling back to ${fallbackModelId}. Error: `, error instanceof Error ? error.message : error);
         return await generateText({
             ...aiOptions,
+            providerOptions,
             abortSignal: AbortSignal.timeout(150_000),
-            model: getProviderModel(fallback),
+            model: getProviderModel(fallbackModelId),
             allowSystemInMessages: true,
         });
     }

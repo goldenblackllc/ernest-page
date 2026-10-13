@@ -10,7 +10,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { randomUUID } from 'crypto';
 import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
-import { generateTextWithFallback, MIRROR_MODEL, MIRROR_FALLBACK, MIRROR_EFFORT } from './lib/ai/models.js';
+import { generateTextWithFallback, OPUS_MODEL, LIVE_FALLBACK } from './lib/ai/models.js';
 import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } from './lib/ai/mirrorPrompt.js';
 import { getCompiledBible } from './lib/bible.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
@@ -18,7 +18,7 @@ import { errorMessage } from './lib/utils/errors.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 
 const MAX_MESSAGE_LENGTH = 5000;
-const GENERATION_TIMEOUT_MS = 120_000;
+const GENERATION_TIMEOUT_MS = 240_000;
 
 interface ChatMessage {
     role: 'user' | 'assistant';
@@ -149,8 +149,8 @@ export const mirrorReply = onCall<MirrorReplyData>(
         let result;
         try {
             result = await generateTextWithFallback({
-                primaryModelId: MIRROR_MODEL,
-                fallbackModelId: MIRROR_FALLBACK,
+                primaryModelId: OPUS_MODEL,
+                fallbackModelId: LIVE_FALLBACK,
                 messages: [
                     // Cached: identical on every turn of the session.
                     {
@@ -162,7 +162,6 @@ export const mirrorReply = onCall<MirrorReplyData>(
                     { role: 'system', content: buildMirrorTimeBlock(localTime) },
                     ...messages,
                 ],
-                providerOptions: { anthropic: { effort: MIRROR_EFFORT } },
                 abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
             });
         } catch (err) {

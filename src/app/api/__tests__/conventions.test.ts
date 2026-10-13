@@ -8,7 +8,7 @@ vi.mock("firebase-admin/firestore", async () => (await import("@/test/fakeFirest
 vi.mock("firebase-admin/auth", async () => (await import("@/test/fakeFirestore")).authModuleMock());
 vi.mock("@functions/lib/ai/models", () => ({
     OPUS_MODEL: "test-model",
-    OPUS_FALLBACK: "test-fallback",
+    LIVE_FALLBACK: "test-fallback",
     generateWithFallback: vi.fn(async () => {
         throw new Error("AI must not be called in tests");
     }),

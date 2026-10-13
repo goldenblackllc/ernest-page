@@ -179,7 +179,7 @@ async function compilePresentTenseFacts(inputs: CompileInputs): Promise<z.infer<
     console.log(`[BibleCompile] Phase 1: Translating inputs to present-tense facts...`);
     const phase1Result = await generateWithFallback({
         primaryModelId: SONNET_MODEL,
-        abortSignal: AbortSignal.timeout(30_000), // 30s — this is a fast, small task
+        abortSignal: AbortSignal.timeout(180_000), // small task, but runs at max effort
         providerOptions: PROVIDER_OPTIONS,
         system: PHASE1_SYSTEM_PROMPT,
         prompt: phase1Prompt,
@@ -227,6 +227,7 @@ async function generateIdealSections(
     const sectionKeys = ['Style_and_Presence', 'Daily_Life_and_Habits', 'People_and_Connections', 'The_Inner_Mind', 'Quirks_and_Details', 'Order_and_Sanctuary', 'The_World_I_Love'] as const;
     const sectionLengths = sectionKeys.map(k => `${k}=${(rawObj[k] || '').length}`).join(', ');
     console.log(`[BibleCompile] Model output lengths: ${sectionLengths}`);
+    console.log(`[BibleCompile] Phase 2 ${idealResult.response.modelId}: finish=${idealResult.finishReason}, output=${idealResult.usage.outputTokens} tokens (thinking ${idealResult.usage.outputTokenDetails?.reasoningTokens ?? 0})`);
 
     // The model sometimes returns a valid object with sections left empty.
     // Throw so the existing bible is kept and the task retries.
@@ -254,7 +255,7 @@ async function resolveCharacterName(data: FirebaseFirestore.DocumentData, defini
     try {
         const nameResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
-            abortSignal: AbortSignal.timeout(15_000),
+            abortSignal: AbortSignal.timeout(120_000),
             prompt: `Based on this character archetype "${definingWords}" generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
             schema: z.object({ name: z.string().describe("A single first name") }),
         });

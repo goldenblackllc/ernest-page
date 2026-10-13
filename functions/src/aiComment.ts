@@ -19,7 +19,7 @@ export const generateAIComment = onDocumentCreated(
     {
         document: 'posts/{postId}/comments/{commentId}',
         region: REGION,
-        timeoutSeconds: 120,
+        timeoutSeconds: 300,
         memory: '256MiB',
     },
     async (event) => {
@@ -92,7 +92,7 @@ Rules:
     try {
         const result = await generateTextWithFallback({
             primaryModelId: OPUS_MODEL,
-            abortSignal: AbortSignal.timeout(30_000),
+            abortSignal: AbortSignal.timeout(240_000),
             prompt,
         });
 

@@ -1,5 +1,5 @@
 /**
- * Builds the prompts that rewrite and condense the user's dossier after each session.
+ * Builds the prompt that rewrites the user's dossier after each session.
  * The header line (date + session count) is written by the caller, not the model.
  */
 
@@ -88,24 +88,4 @@ CHAT TRANSCRIPT:
 ${transcript}
 
 Output the complete updated dossier (the eight sections) as plain text.`;
-}
-
-/** Second pass, run only when a rewrite comes back over DOSSIER_WORD_LIMIT. */
-export function buildDossierCondensePrompt(dossier: string, wordCount: number, today: string): string {
-    return `The dossier below describes a person who has conversations with their ideal self on Earnest Page. It is ${wordCount} words, which is over the ${DOSSIER_WORD_LIMIT}-word limit. Rewrite it to fit.
-
-Today's date: ${today}
-
-${KEEPING_RULES}
-
-${SECTION_BUDGETS}
-
-Keep the same eight sections in the same order, with the same ═══ headers. Do not add a title or header line. Do not add anything new — only condense what is there.
-
-${SECTIONS}
-
-DOSSIER:
-${dossier}
-
-Output the complete condensed dossier (the eight sections) as plain text.`;
 }

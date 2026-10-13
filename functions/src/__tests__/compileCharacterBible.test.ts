@@ -53,7 +53,12 @@ const BIBLE = {
 function mockModel(bible: Record<string, string>) {
     h.generateWithFallback
         .mockResolvedValueOnce({ object: PHASE1 })
-        .mockResolvedValueOnce({ object: bible });
+        .mockResolvedValueOnce({
+            object: bible,
+            finishReason: 'stop',
+            usage: { outputTokens: 7000 },
+            response: { modelId: 'opus' },
+        });
 }
 
 describe('compileCharacterBibleForUser', () => {
