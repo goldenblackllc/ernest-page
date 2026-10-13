@@ -179,7 +179,7 @@ async function compilePresentTenseFacts(inputs: CompileInputs): Promise<z.infer<
     console.log(`[BibleCompile] Phase 1: Translating inputs to present-tense facts...`);
     const phase1Result = await generateWithFallback({
         primaryModelId: SONNET_MODEL,
-        abortSignal: AbortSignal.timeout(180_000), // small task, but runs at max effort
+        abortSignal: AbortSignal.timeout(480_000), // 8 min — max effort thinks at length, even on a small task
         providerOptions: PROVIDER_OPTIONS,
         system: PHASE1_SYSTEM_PROMPT,
         prompt: phase1Prompt,
@@ -214,7 +214,7 @@ async function generateIdealSections(
 
     const idealResult = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
-        abortSignal: AbortSignal.timeout(480_000), // 8 min — Cloud Functions have room
+        abortSignal: AbortSignal.timeout(1_080_000), // 18 min — buildCharacter allows 30
         providerOptions: PROVIDER_OPTIONS,
         system: SYSTEM_PROMPT,
         prompt: idealPrompt,

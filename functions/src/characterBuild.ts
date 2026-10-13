@@ -20,7 +20,7 @@ import { errorMessage } from './lib/utils/errors.js';
 
 const MAX_ATTEMPTS = 3;
 const COOLDOWN_MS = 10 * 60 * 1000;       // wait for edits to settle
-const QUEUED_STALE_MS = 30 * 60 * 1000;   // re-enqueue if a queued build never finished
+const QUEUED_STALE_MS = 2 * 60 * 60 * 1000; // re-enqueue if a queued build never finished (3 attempts of up to 30 min)
 
 export interface BuildCharacterTask {
     uid: string;
@@ -29,10 +29,14 @@ export interface BuildCharacterTask {
     dirtySince?: number;
 }
 
+/** Max effort compiles are slow: allow the task queue's 30-minute maximum. */
+const BUILD_TIMEOUT_SECONDS = 1800;
+
 export function enqueueBuildCharacter(task: BuildCharacterTask) {
     return getFunctions()
         .taskQueue<BuildCharacterTask>(`locations/${REGION}/functions/buildCharacter`)
-        .enqueue(task);
+        // Cloud Tasks cancels and retries after 10 minutes unless told otherwise
+        .enqueue(task, { dispatchDeadlineSeconds: BUILD_TIMEOUT_SECONDS });
 }
 
 // ─── Task queue worker ──────────────────────────────────────────────────────
@@ -40,7 +44,7 @@ export function enqueueBuildCharacter(task: BuildCharacterTask) {
 export const buildCharacter = onTaskDispatched<BuildCharacterTask>(
     {
         region: REGION,
-        timeoutSeconds: 900,
+        timeoutSeconds: BUILD_TIMEOUT_SECONDS,
         memory: '1GiB',
         retryConfig: { maxAttempts: MAX_ATTEMPTS, minBackoffSeconds: 60 },
         rateLimits: { maxConcurrentDispatches: 5 },
