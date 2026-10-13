@@ -92,7 +92,7 @@ export interface CharacterProfile {
     following?: Record<string, string>;
     updatedAt?: Timestamp;
     saved_posts?: string[];
-    default_post_routing?: 'private' | 'public' | 'burn';
+    default_post_routing?: 'private' | 'public' | 'burn'; // 'public' is legacy and means private (toSessionRouting)
     last_thirty_day_checkin?: string;
     /** Signup time; starts the free-session year */
     created_at?: string;

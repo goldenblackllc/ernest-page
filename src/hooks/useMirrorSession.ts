@@ -117,7 +117,6 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
                 saveActiveChat(uid, {
                     creditConsumed: true,
                     sessionRouting,
-                    autoPublish: sessionRouting === 'public',
                 }, sessionId).catch(() => {});
             }
         } catch {
@@ -262,7 +261,6 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
             isClosed: true,
             sessionRouting,
             closeReason,
-            autoPublish: sessionRouting === 'public', // Legacy compat
         }, sessionId).catch(err => console.error("Failed to close mirror chat:", err));
     };
 

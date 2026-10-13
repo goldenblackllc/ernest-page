@@ -9,7 +9,6 @@ import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt, DOSSIER_WORD_LIMIT } from './lib/ai/dossierPrompt.js';
 import { safeTimeZone, localDateKey } from './lib/utils/relativeDates.js';
 import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
-import { matchSponsor } from './lib/config/ecosystem.js';
 import { generateCondensedTranscript, type CondensedTranscript } from './lib/ai/condensedTranscript.js';
 
 import { processPostContent, type ProcessPostResult } from './lib/ai/processPostContent.js';
@@ -20,7 +19,6 @@ import { REGION } from './lib/config/region.js';
 import { sendAdminEmail, buildNewPostEmail } from './lib/email/adminEmail.js';
 import { closeDecision, failureUpdate, MAX_PROCESS_ATTEMPTS } from './lib/chatRetry.js';
 
-type CondensedMessage = { role: 'user' | 'ideal_self'; text: string };
 
 /** A raw Mirror chat message as stored on the active chat document. */
 type RawChatMessage = { role: string; content?: string };
@@ -72,8 +70,6 @@ export const processChat = onDocumentUpdated(
 
         console.log(`[ProcessChat] Processing chat with ${messages.length} messages for user ${uid}`);
 
-        const visibility = getChatVisibility(after);
-
         await event.data?.after.ref.update({ processing: true, processingStartedAt: now });
 
         const userDoc = await db.collection('users').doc(uid).get();
@@ -92,17 +88,9 @@ export const processChat = onDocumentUpdated(
         const today = localDateKey(new Date(), safeTimeZone(after.timeZone));
 
         try {
-            const { condensed, rewrittenDossier, recap } = await analyzeSession(userData, transcript, today, visibility);
+            const { condensed, rewrittenDossier, recap } = await analyzeSession(userData, transcript, today);
 
-            let condensedMessages: CondensedMessage[] | null = null;
-            let condensedEditorialNote: string | null = null;
-
-            console.log(`[ProcessChat] AI calls complete. is_publishable=${condensed?.is_publishable} title="${condensed?.title}" msgs=${condensed?.messages?.length || 0} dossier_changed=${!!rewrittenDossier}`);
-
-            if (condensed && condensed.is_publishable && condensed.messages) {
-                condensedMessages = condensed.messages;
-                condensedEditorialNote = condensed.editorial_note || null;
-            }
+            console.log(`[ProcessChat] AI calls complete. is_publishable=${condensed?.is_publishable} title="${condensed?.title}" dossier_changed=${!!rewrittenDossier}`);
 
             // Write session metadata + dossier — do NOT touch unified_profile, wants_for_bible, or source_code
             // Saved once: a retry after a later failure must not add a second
@@ -112,10 +100,10 @@ export const processChat = onDocumentUpdated(
                     .then(() => event.data?.after.ref.update({ metadataSaved: true }))
                 : Promise.resolve();
 
-            // A private post has no rewrite (it's made when shared, lib/postMedia.ts)
-            if (condensed.is_publishable && (visibility === 'private' || (condensedMessages && condensedMessages.length > 0))) {
+            // Every post starts private: the raw conversation and a thumbnail. The
+            // reader's rewrite, images and audio are made when it's shared (lib/postMedia.ts).
+            if (condensed.is_publishable) {
                 console.log(`[ProcessChat] Chat IS publishable — creating post and running pipeline...`);
-                const postMessages = condensedMessages || [];
                 const postDocRef = db.collection('posts').doc();
                 const gender = userData?.gender || identity?.gender || '';
 
@@ -130,13 +118,12 @@ export const processChat = onDocumentUpdated(
                         gender,
                         locale: userData?.preferred_locale || 'en',
                         logPrefix: 'ProcessChat',
-                        // A private post gets only its thumbnail until shared (lib/postMedia.ts)
-                        media: visibility === 'private' ? 'thumbnail' : 'full',
+                        media: 'thumbnail',
                         preCondensed: {
-                            messages: postMessages,
+                            messages: [],
                             title: condensed.title,
                             language: condensed.language,
-                            editorial_note: condensedEditorialNote,
+                            editorial_note: null,
                             thumbnail: condensed.thumbnail,
                         },
                     }),
@@ -157,11 +144,8 @@ export const processChat = onDocumentUpdated(
                     userData,
                     chat: after,
                     condensed,
-                    condensedMessages: postMessages,
-                    condensedEditorialNote,
                     pipelineResult,
                     transcript,
-                    visibility,
                 });
 
                 try {
@@ -172,7 +156,6 @@ export const processChat = onDocumentUpdated(
                         messages,
                         condensed,
                         thumbnailUrl: pipelineResult.thumbnailUrl,
-                        visibility,
                         pendingImages: pipelineResult.imagePrompts.length,
                     });
                 } catch (emailErr) {
@@ -199,12 +182,6 @@ export const processChat = onDocumentUpdated(
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getChatVisibility(chat: FirebaseFirestore.DocumentData): 'public' | 'private' {
-    return chat.sessionRouting != null
-        ? (chat.sessionRouting === 'public' ? 'public' : 'private')
-        : (chat.autoPublish === true ? 'public' : 'private');
-}
-
 function getAuthorTitle(userData: FirebaseFirestore.DocumentData): string {
     return userData?.defining_words?.join(', ') || userData?.identity?.title || userData?.character_bible?.source_code?.archetype || 'Anonymous';
 }
@@ -217,7 +194,7 @@ function getAuthorTitle(userData: FirebaseFirestore.DocumentData): string {
  * Sessions only update the dossier, recaps, and session count. People, interests, and the
  * Character Bible are owned by the user via the My Life drawers and are never touched here.
  */
-async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcript: string, today: string, visibility: 'public' | 'private'): Promise<{
+async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcript: string, today: string): Promise<{
     condensed: CondensedTranscript;
     rewrittenDossier: string | undefined;
     recap: { session_recap: string } | undefined;
@@ -227,7 +204,7 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
 
     console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + log)...`);
     const [condensed, dossierResult, recapResult] = await Promise.all([
-        generateCondensedTranscript(transcript, { rewrite: visibility !== 'private' }),
+        generateCondensedTranscript(transcript, { rewrite: false }),
         // Dossier rewrite — Opus
         generateWithFallback({
             primaryModelId: OPUS_MODEL,
@@ -311,17 +288,12 @@ async function createPost(opts: {
     userData: FirebaseFirestore.DocumentData;
     chat: FirebaseFirestore.DocumentData;
     condensed: CondensedTranscript;
-    condensedMessages: CondensedMessage[];
-    condensedEditorialNote: string | null;
     pipelineResult: ProcessPostResult;
     transcript: string;
-    visibility: string;
 }): Promise<void> {
-    const { postRef, uid, userData, chat, condensed, condensedMessages, condensedEditorialNote, transcript, visibility } = opts;
+    const { postRef, uid, userData, chat, condensed, transcript } = opts;
     const { imagePrompts, audioFields, thumbnailUrl } = opts.pipelineResult;
 
-    const conversationContext = condensedMessages.map(m => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n');
-    const sponsor = matchSponsor(conversationContext);
     const randomStyle = VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)];
     const authorHash = await getAuthorHash(uid);
     const userPhotoUrl = chat.user_photo_url || null;
@@ -336,7 +308,7 @@ async function createPost(opts: {
         title: condensed.title || null,
         type: 'checkin',
         public_post: {
-            condensed_transcript: condensedMessages,
+            condensed_transcript: [],
         },
         image_style: 'per-message',
         image_prompts: imagePrompts,
@@ -349,21 +321,20 @@ async function createPost(opts: {
         imagen_urls: [],
         user_photo_url: userPhotoUrl,
         hero_source: userPhotoUrl ? 'user' : 'imagen',
-        sponsored_by: sponsor?.name || null,
-        sponsored_link: sponsor?.link || null,
+        sponsored_by: null, // matched when shared (lib/postMedia.ts)
+        sponsored_link: null,
         ...getGeoFields(userData),
         content_raw: transcript,
         thumbnail_brief: condensed.thumbnail || null,
-        ...(condensedEditorialNote && { condensed_editorial_note: condensedEditorialNote }),
         ...(thumbnailUrl && { thumbnail_url: thumbnailUrl }),
         ...audioFields,
         status: "completed",
         created_at: FieldValue.serverTimestamp(),
         is_public: false,
-        // No prompts means a private post: thumbnail only until it's shared (lib/postMedia.ts)
+        // Thumbnail only until it's shared (lib/postMedia.ts)
         images_complete: imagePrompts.length === 0,
-        ...(visibility === 'private' && { media_status: 'deferred' }),
-        visibility,
+        media_status: 'deferred',
+        visibility: 'private',
         like_count: 0,
         comments: 0
     });
@@ -384,7 +355,6 @@ async function notifyAdminOfNewPost(opts: {
     messages: RawChatMessage[];
     condensed: CondensedTranscript;
     thumbnailUrl: string | null;
-    visibility: string;
     pendingImages: number;
 }): Promise<void> {
     const { chat, messages, condensed } = opts;
@@ -401,7 +371,7 @@ async function notifyAdminOfNewPost(opts: {
         author: getAuthorTitle(opts.userData),
         title: condensed.title || null,
         thumbnailUrl: opts.thumbnailUrl || null,
-        visibility: opts.visibility || 'private',
+        visibility: 'private',
         engagementVerified: condensed?.reached_close === true,
         userTurns,
         avgLength,

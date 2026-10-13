@@ -139,7 +139,6 @@
     "connectionSecured": "Verbindung gesichert.",
     "promptFriction": "\"Benenne, was du willst. Benenne, was im Weg steht.\"",
     "sessionRouting": "Sitzungs-Routing:",
-    "publicFeed": "Öffentlicher Feed",
     "privateLedger": "Privates Hauptbuch",
     "burnOnClose": "Beim Schließen löschen",
     "burnMicrocopy": "Keine Speicherung. Wird beim Beenden sofort gelöscht.",

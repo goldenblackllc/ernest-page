@@ -23,7 +23,7 @@ interface MirrorChatProps {
     profile: CharacterProfile | null;
     uid: string;
     initialContext?: string | null;
-    defaultPostRouting?: 'private' | 'public' | 'burn';
+    defaultPostRouting?: SessionRouting;
 }
 
 export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
@@ -63,7 +63,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         return () => ro.disconnect();
     }, [isOpen]);
     const [sessionRouting, setSessionRouting] = useState<SessionRouting>(
-        defaultPostRouting || 'public'
+        defaultPostRouting || 'private'
     );
     const hasManuallySetRouting = useRef(false);
 
@@ -177,7 +177,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         session.resetSession();
         setInput("");
         setIsRoutingOpen(false);
-        setSessionRouting(defaultPostRouting || 'public');
+        setSessionRouting(defaultPostRouting || 'private');
         hasManuallySetRouting.current = false;
 
         unsuppressAutoPlay();

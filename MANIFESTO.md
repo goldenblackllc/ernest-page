@@ -50,7 +50,7 @@ Avoid developer and machine words in the UI (code, operating system, bug, debug,
 ### A. Mirror Chat (The Primary Interaction)
 The conversational AI interface. Users talk to a simulation of their "Ideal Self", a character built from their Character Bible.
 *   **How it works:** User opens chat from the floating action button → converses with their character (replies come from the `mirrorReply` Cloud Function) → closes chat → the `processChat` Cloud Function turns it into a post and updates the dossier.
-*   **Session Routing:** Each session is set to Public feed, Private ledger, or Burn on close (deleted with no processing).
+*   **Session Routing:** Each session is set to Private ledger or Burn on close (deleted with no processing). Every post starts private; the author makes it public, or shares it by link, from the feed after reading it. Only then are the anonymous rewrite, images and audio made.
 *   **Session Limits:** Up to 5 sessions per day; each session is capped at 30 exchanges and 3 hours. A session idle for 60 minutes is closed (the sweep runs every 15 minutes). See §8.
 
 ### B. The Character Bible (The Config File)

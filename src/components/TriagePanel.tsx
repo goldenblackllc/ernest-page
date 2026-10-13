@@ -26,6 +26,7 @@ import { DreamEditor } from "./mylife/DreamEditor";
 import { authFetch } from "@/lib/auth/authFetch";
 import { PurchasePanel } from "./payments/PurchasePanel";
 import type { AccessSummary } from "@functions/lib/access/sessionAccess";
+import { toSessionRouting, type SessionRouting } from "@/types/chat";
 
 
 
@@ -53,7 +54,7 @@ export function TriagePanel() {
     // Data for Mirror Chat & My Life drawers
     const [bible, setBible] = useState<Bible | null>(null);
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
-    const [defaultPostRouting, setDefaultPostRouting] = useState<'private' | 'public' | 'burn'>('private');
+    const [defaultPostRouting, setDefaultPostRouting] = useState<SessionRouting>('private');
 
     // Onboarding state (triggered when FAB tapped without character bible)
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -67,7 +68,7 @@ export function TriagePanel() {
         const unsubscribe = subscribeToCharacterProfile(user.uid, (data) => {
             setBible(data.bible || null);
             setProfile(data || null);
-            setDefaultPostRouting(data.default_post_routing || 'private');
+            setDefaultPostRouting(toSessionRouting(data.default_post_routing));
 
             // Check if user needs onboarding (no completed onboarding)
             const isLegacyComplete = !!data.defining_words;

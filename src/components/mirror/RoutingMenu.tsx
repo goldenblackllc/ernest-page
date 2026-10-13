@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { Globe, Lock, Flame, ChevronDown } from "lucide-react";
+import { Lock, Flame, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/cn";
@@ -44,11 +44,9 @@ export function RoutingMenu({ routing, isOpen, setIsOpen, onSelect }: RoutingMen
                     )}
                     aria-label={t('mirrorChat.sessionRoutingSettings')}
                 >
-                    {routing === 'public' && <Globe className="w-3 h-3" />}
                     {routing === 'private' && <Lock className="w-3 h-3" />}
                     {routing === 'burn' && <Flame className="w-3 h-3" />}
                     <span>
-                        {routing === 'public' && t('mirrorChat.publicFeed')}
                         {routing === 'private' && t('mirrorChat.privateLedger')}
                         {routing === 'burn' && t('mirrorChat.burnOnClose')}
                     </span>
@@ -67,7 +65,7 @@ export function RoutingMenu({ routing, isOpen, setIsOpen, onSelect }: RoutingMen
                             <div className="px-4 pt-3 pb-1">
                                 <p className="text-[10px] uppercase font-bold tracking-widest text-zinc-600">{t('mirrorChat.sessionRouting')}</p>
                             </div>
-                            {(['public', 'private', 'burn'] as SessionRouting[]).map(option => (
+                            {(['private', 'burn'] as SessionRouting[]).map(option => (
                                 <button
                                     key={option}
                                     onClick={() => onSelect(option)}
@@ -78,11 +76,9 @@ export function RoutingMenu({ routing, isOpen, setIsOpen, onSelect }: RoutingMen
                                             : option === 'burn' ? "text-zinc-500 hover:text-red-400 hover:bg-red-950/20" : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
                                     )}
                                 >
-                                    {option === 'public' && <Globe className="w-3.5 h-3.5 shrink-0" />}
                                     {option === 'private' && <Lock className="w-3.5 h-3.5 shrink-0" />}
                                     {option === 'burn' && <Flame className="w-3.5 h-3.5 shrink-0" />}
                                     <span>
-                                        {option === 'public' && t('mirrorChat.publicFeed')}
                                         {option === 'private' && t('mirrorChat.privateLedger')}
                                         {option === 'burn' && t('mirrorChat.burnOnClose')}
                                     </span>

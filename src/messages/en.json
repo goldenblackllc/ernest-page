@@ -192,7 +192,6 @@
     "connectionSecured": "Connection secured.",
     "promptFriction": "\"Name what you want. Name what's in the way.\"",
     "sessionRouting": "Session Routing:",
-    "publicFeed": "Public Feed",
     "privateLedger": "Private Ledger",
     "burnOnClose": "Burn on Close",
     "burnMicrocopy": "Zero retention. Erased immediately upon exit.",

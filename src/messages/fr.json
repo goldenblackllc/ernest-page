@@ -139,7 +139,6 @@
     "connectionSecured": "Connexion sécurisée.",
     "promptFriction": "\"Détaillez votre friction actuelle.\"",
     "sessionRouting": "Routage de la session :",
-    "publicFeed": "Flux Public",
     "privateLedger": "Registre Privé",
     "burnOnClose": "Brûler à la fermeture",
     "burnMicrocopy": "Zéro rétention. Effacé immédiatement à la sortie.",

@@ -17,6 +17,7 @@ import { getCompiledBible } from './bible.js';
 import { getPostAuthorId, savePostImages } from './posts.js';
 import { computeAge } from './utils/parseBirthDate.js';
 import { errorMessage } from './utils/errors.js';
+import { matchSponsor } from './config/ecosystem.js';
 
 type PostData = FirebaseFirestore.DocumentData;
 
@@ -163,8 +164,12 @@ export async function generateMediaForPost(postId: string, post: PostData): Prom
         logPrefix: 'PostMedia',
     });
 
+    const sponsor = matchSponsor(messages.map((m: { role: string; text: string }) => `${m.role === 'user' ? 'Person' : 'Consultant'}: ${m.text}`).join('\n'));
+
     await db.collection('posts').doc(postId).update({
         ...rewriteFields,
+        sponsored_by: sponsor?.name || null,
+        sponsored_link: sponsor?.link || null,
         media_status: 'ready',
         image_style: 'per-message',
         image_prompts: media.imagePrompts,
