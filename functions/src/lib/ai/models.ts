@@ -4,8 +4,11 @@ import { generateObject, generateText, jsonSchema as createJsonSchema, type Gene
 import type { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
+// GEMINI_API_KEY first: it belongs to the earnest-page project (paid tier). In
+// functions/.env, GOOGLE_GENERATIVE_AI_API_KEY is from another project whose
+// per-minute limit runs out after a few requests.
 const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
 export const OPUS_MODEL = 'claude-opus-5-5'; // Primary — Deep Reasoning Engine (all features)
@@ -25,8 +28,8 @@ export const LIVE_FALLBACK = 'claude-opus-5';
  */
 export const EFFORT = 'high';
 
-// Image generation (Nano Banana 2) — synchronous and Batch API calls
-export const IMAGE_MODEL = 'gemini-3.1-flash-image';
+// Image generation (Nano Banana 2.1) — synchronous and Batch API calls
+export const IMAGE_MODEL = 'gemini-nano-banana-2.1';
 
 function getProviderModel(modelName: string) {
     if (modelName.includes('gemini')) {

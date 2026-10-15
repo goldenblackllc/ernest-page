@@ -9,6 +9,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
 import type { Message, SessionRouting } from "@/types/chat";
 import type { CharacterProfile } from "@/types/character";
+import { currentSituation } from "@functions/lib/character/situations";
 import { useMirrorSession, MAX_EXCHANGES, MAX_SESSION_HOURS } from "@/hooks/useMirrorSession";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useCharacterTTS } from "@/hooks/useCharacterTTS";
@@ -24,6 +25,13 @@ interface MirrorChatProps {
     uid: string;
     initialContext?: string | null;
     defaultPostRouting?: SessionRouting;
+}
+
+/** The avatar for where the character is right now, by its weekly routine; the main avatar otherwise. */
+function currentAvatarUrl(profile: CharacterProfile | null): string | undefined {
+    const now = new Date();
+    const situation = currentSituation(profile?.bible?.style, now.getDay(), now.getHours());
+    return (situation && profile?.avatar?.situations?.[situation.id]) || profile?.avatar?.url;
 }
 
 export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defaultPostRouting }: MirrorChatProps) {
@@ -151,7 +159,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
     const characterName = profile?.name || null;
     const characterArchetype = profile?.defining_words?.join(', ') || null;
     const displayName = characterName || characterArchetype || "Your Ideal Self";
-    const avatarUrl = profile?.avatar?.url;
+    const avatarUrl = currentAvatarUrl(profile);
 
     const handleSelectRouting = (option: SessionRouting) => {
         setSessionRouting(option);

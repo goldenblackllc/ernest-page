@@ -15,6 +15,7 @@ import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } 
 import { getCompiledBible } from './lib/bible.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
+import { currentSituation, localDayHour, type CharacterStyle } from './lib/character/situations.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 
 const MAX_MESSAGE_LENGTH = 5000;
@@ -137,6 +138,9 @@ export const mirrorReply = onCall<MirrorReplyData>(
         const userData = userDoc.data();
 
         const systemPrompt = buildSystemPrompt(userData, sessionId, locale, timeZone);
+        // Where the character is right now, by its own weekly routine (the Mirror header shows the matching avatar)
+        const { day, hour } = localDayHour(new Date(), timeZone);
+        const situation = currentSituation(userData?.bible?.style as CharacterStyle | undefined, day, hour);
 
         // Save the user's message immediately so the client shows "generating"
         const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc(sessionId);
@@ -163,7 +167,7 @@ export const mirrorReply = onCall<MirrorReplyData>(
                         providerOptions: { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } },
                     },
                     // After the cache breakpoint: changes every turn.
-                    { role: 'system', content: buildMirrorTimeBlock(localTime) },
+                    { role: 'system', content: buildMirrorTimeBlock(localTime, situation?.label) },
                     ...messages,
                 ],
                 abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),

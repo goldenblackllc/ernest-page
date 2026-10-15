@@ -210,8 +210,10 @@ export function pickNegativeInventory(sessionId: string): boolean {
  * AFTER the cached one: anything that changes between turns must stay out of
  * buildMirrorSystemPrompt, or the prompt cache never hits.
  */
-export function buildMirrorTimeBlock(localTime: string | undefined): string {
-    return `[CURRENT TIME]\n${localTime || 'Unknown'}`;
+export function buildMirrorTimeBlock(localTime: string | undefined, situationLabel?: string): string {
+    const time = `[CURRENT TIME]\n${localTime || 'Unknown'}`;
+    if (!situationLabel) return time;
+    return `${time}\n\n[WHERE YOU ARE]\n${situationLabel}`;
 }
 
 /**

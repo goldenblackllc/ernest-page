@@ -4,8 +4,11 @@ import { z } from 'zod';
 import { errorMessage } from '../utils/errors.js';
 
 // ─── Gemini 3.6 Flash for cheap, fast image validation ───────────────────────
+// GEMINI_API_KEY first: it belongs to the earnest-page project (paid tier). In
+// functions/.env, GOOGLE_GENERATIVE_AI_API_KEY is from another project whose
+// per-minute limit runs out after a few requests.
 const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
 const VALIDATION_MODEL = 'gemini-3.6-flash';

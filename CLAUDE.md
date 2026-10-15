@@ -13,7 +13,7 @@ People talk with their "ideal self", an AI character built from their own Charac
 
 Rules:
 - **New heavy or background work goes in `functions/`.** Vercel times out and drops work after the response is sent.
-- **The AI/post pipeline exists only in `functions/src/lib/`.** The website imports the few shared files through the `@functions/*` alias (`@functions/lib/ai/models`, `@functions/lib/getPostText`, `@functions/lib/access/sessionAccess`). Never copy them into `src/lib`.
+- **The AI/post pipeline exists only in `functions/src/lib/`.** The website imports the few shared files through the `@functions/*` alias (`@functions/lib/ai/models`, `@functions/lib/getPostText`, `@functions/lib/access/sessionAccess`, `@functions/lib/character/situations`). Never copy them into `src/lib`.
 - **Every package a shared file imports must also be in the root `package.json`.** Vercel installs only the root packages. Locally those imports silently resolve from `functions/node_modules`, so a missing one only fails on Vercel. To check, build with `functions/node_modules` moved aside.
 - `firebase/admin.ts` is deliberately separate per side: the website uses a service-account key, Functions use default credentials.
 - Don't rename or remove an exported Cloud Function without checking callers. Deployed names are URLs. For example, `src/app/api/onboarding/process` calls `compileCharacterBible` by URL.
@@ -37,6 +37,7 @@ Rules:
 - One file per deployed function group (`processChat.ts`, `mirror.ts`, `processPostImages.ts`, …), all exported from `index.ts`.
 - `lib/ai/`: prompts, model calls, image/TTS generation. `lib/posts.ts`: `savePostImages` (the one place that decides when a post is published). `lib/bible.ts`, `lib/email/adminEmail.ts`, `lib/firebase/storage.ts`, `lib/config/region.ts`: shared helpers.
 - `lib/constants/realityRules.ts`: the philosophical rules every character follows.
+- `lib/character/situations.ts`: the character's situations (settings with their own look and avatar) and weekly routine, from `bible.style`. Pure, no imports; shared with the website (Mirror header).
 - `lib/access/sessionAccess.ts`: the one session access rule (free sessions, credits, membership, daily/turn/time limits, refund rules). Pure, no imports; shared with the website.
 
 ## Conventions

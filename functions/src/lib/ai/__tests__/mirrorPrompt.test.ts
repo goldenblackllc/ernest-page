@@ -39,6 +39,7 @@ describe('prompt caching', () => {
         expect(prompt).not.toContain('[CURRENT TIME]');
         expect(buildMirrorTimeBlock('Tuesday, July 1, 2025 2:31 PM')).toBe('[CURRENT TIME]\nTuesday, July 1, 2025 2:31 PM');
         expect(buildMirrorTimeBlock(undefined)).toBe('[CURRENT TIME]\nUnknown');
+        expect(buildMirrorTimeBlock('Tuesday 11:02 PM', 'In bed, reading')).toBe('[CURRENT TIME]\nTuesday 11:02 PM\n\n[WHERE YOU ARE]\nIn bed, reading');
     });
 
     it('builds the same prompt on every turn of a session', () => {

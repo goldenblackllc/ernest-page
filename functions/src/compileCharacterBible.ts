@@ -7,6 +7,7 @@ import { generateWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.
 import { REALITY_RULES } from './lib/constants/realityRules.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 import { errorMessage } from './lib/utils/errors.js';
+import { WEEK_DAYS, type CharacterStyle, type Situation, type WeekBlock } from './lib/character/situations.js';
 
 // --- SAFETY SETTINGS ---
 const SAFETY_SETTINGS = [
@@ -73,7 +74,7 @@ const PHASE1_SCHEMA = z.object({
 const PROMPT_IDEAL_BIBLE = `Build a Character Bible from the following inputs. Output exactly 7 sections. Each section must contain multiple subsections using **Subheading:** format. Expand beyond the inputs: invent logical details that fit the character. Use sensory language. Do not include dates — use ages or durations. Do not mention "Core Beliefs" or "Manifesto."
 
 Sections:
-1. "Style & Presence" — Wardrobe (specific items and brands), grooming, physicality, travel style
+1. "Style & Presence" — Wardrobe for each setting of their life (specific items and brands), grooming, physicality, travel style
 2. "Daily Life & Habits" — Morning ritual, work, weekends, passions
 3. "People & Connections" — Each person gets their OWN **Name:** subsection. End with **Communication Style:** and **Social Energy:**
 4. "The Inner Mind" — Emotions, pressure, self-talk, relationship with reality
@@ -105,11 +106,89 @@ const IDEAL_BIBLE_SCHEMA = z.object({
     The_Inner_Mind: z.string().describe("How they process emotions, crisis, and reality"),
     Quirks_and_Details: z.string().describe("Pets, diet, languages, unique variables"),
     Order_and_Sanctuary: z.string().describe("Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace"),
-    The_World_I_Love: z.string().describe("The cultural identity — specific artists, shows, movies, books, food, music, games, sports, and the named things that define their taste. Use real names, not abstractions.")
+    The_World_I_Love: z.string().describe("The cultural identity — specific artists, shows, movies, books, food, music, games, sports, and the named things that define their taste. Use real names, not abstractions."),
 });
 
 /** A section shorter than this means the model skipped it (good sections run 2,000+ chars). */
 const MIN_SECTION_CHARS = 300;
+// --- PHASES 3 & 4: the character's week, then how it looks in each place of it ---
+const PROMPT_WEEK = `Here is your Character Bible.
+
+{BIBLE}
+
+Write your typical week, Sunday to Saturday, as time blocks that cover every hour. For each block: the days, the hour it starts (0 to 23), and where you are and what you're doing. A block lasts until the next one starts. Write in English.`;
+
+const WEEK_SCHEMA = z.object({
+    places: z.array(z.object({
+        id: z.string().describe("Short lowercase slug"),
+        label: z.string().describe("Where you are and what you're doing, in a few words"),
+    })).describe("Each place in your week, once"),
+    week: z.array(z.object({
+        days: z.array(z.enum(WEEK_DAYS)),
+        from: z.number().describe("Hour the block starts, 0-23"),
+        place: z.string().describe("A place id"),
+    })),
+});
+
+const PROMPT_LOOKS = `Here is your Character Bible.
+
+{BIBLE}
+
+These are the places in your week:
+{PLACES}
+
+For each place, describe how you look there: chest-up, looking into the camera. Clothes (with brands), grooming (including hair), posture, expression, background. 40 to 100 words, in English, third person. Don't restate age, skin, eye or hair color. Choose one as your main portrait.`;
+
+const LOOKS_SCHEMA = z.object({
+    looks: z.array(z.object({
+        place: z.string().describe("A place id"),
+        portrait: z.string(),
+    })),
+    main: z.string().describe("The place id of your main portrait"),
+});
+
+/** A portrait shorter than this is too thin to draw from. */
+const MIN_PORTRAIT_CHARS = 60;
+const MIN_SITUATIONS = 2;
+
+const slug = (text: string) => (text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+/**
+ * Join the week and the looks into bible.style: one situation per place that
+ * has a usable portrait, the main portrait first, and the blocks that point to
+ * one. Throws when too little is left to draw avatars from, so the existing
+ * bible is kept and the task retries.
+ */
+export function cleanStyle(week: z.infer<typeof WEEK_SCHEMA>, looks: z.infer<typeof LOOKS_SCHEMA>): CharacterStyle {
+    const portraits = new Map((looks.looks || []).map(l => [slug(l.place), (l.portrait || '').trim()]));
+    const situations: Situation[] = [];
+    for (const place of week.places || []) {
+        const id = slug(place.id);
+        const label = (place.label || '').trim();
+        const portrait = portraits.get(id) || '';
+        if (!id || !label || portrait.length < MIN_PORTRAIT_CHARS) continue;
+        if (situations.some(x => x.id === id)) continue;
+        situations.push({ id, label, portrait });
+    }
+    if (situations.length < MIN_SITUATIONS) {
+        throw new Error(`Bible style has ${situations.length} usable situations`);
+    }
+    const mainIndex = situations.findIndex(x => x.id === slug(looks.main));
+    if (mainIndex > 0) situations.unshift(...situations.splice(mainIndex, 1));
+
+    const ids = new Set(situations.map(x => x.id));
+    const blocks: WeekBlock[] = [];
+    for (const b of week.week || []) {
+        const situation = slug(b.place);
+        const days = (b.days || []).filter(d => (WEEK_DAYS as readonly string[]).includes(d));
+        const from = Math.floor(Number(b.from));
+        if (!ids.has(situation) || days.length === 0 || !(from >= 0 && from <= 23)) continue;
+        blocks.push({ days, from, situation });
+    }
+    if (blocks.length === 0) throw new Error('Bible style has no usable week');
+
+    return { situations, week: blocks };
+}
 
 const PROVIDER_OPTIONS = {
     google: { safetySettings: SAFETY_SETTINGS },
@@ -247,6 +326,35 @@ async function generateIdealSections(
     ];
 }
 
+// ─── PHASES 3 & 4: the character's week, then how it looks in each place ───
+async function generateStyle(sections: { heading: string; content: string }[]): Promise<CharacterStyle> {
+    const bibleText = sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n');
+
+    console.log(`[BibleCompile] Phase 3: Writing the week...`);
+    const weekResult = await generateWithFallback({
+        primaryModelId: OPUS_MODEL,
+        abortSignal: AbortSignal.timeout(360_000),
+        providerOptions: PROVIDER_OPTIONS,
+        system: SYSTEM_PROMPT,
+        prompt: PROMPT_WEEK.replace('{BIBLE}', () => bibleText),
+        schema: WEEK_SCHEMA,
+    });
+    const week = weekResult.object as z.infer<typeof WEEK_SCHEMA>;
+    const places = (week.places || []).map(p => `${p.id}: ${p.label}`).join('\n');
+
+    console.log(`[BibleCompile] Phase 4: Writing the looks for ${week.places?.length ?? 0} places...`);
+    const looksResult = await generateWithFallback({
+        primaryModelId: OPUS_MODEL,
+        abortSignal: AbortSignal.timeout(360_000),
+        providerOptions: PROVIDER_OPTIONS,
+        system: SYSTEM_PROMPT,
+        prompt: PROMPT_LOOKS.replace('{BIBLE}', () => bibleText).replace('{PLACES}', () => places),
+        schema: LOOKS_SCHEMA,
+    });
+
+    return cleanStyle(week, looksResult.object as z.infer<typeof LOOKS_SCHEMA>);
+}
+
 /** The user's chosen name, or a generated first name that fits their defining words. */
 async function resolveCharacterName(data: FirebaseFirestore.DocumentData, definingWords: string): Promise<string> {
     const userProvidedName = data?.name || '';
@@ -318,7 +426,9 @@ async function findDefaultVoice(data: FirebaseFirestore.DocumentData): Promise<{
  * their character name, a default voice, and a pending avatar status.
  *
  * Phase 1 rewrites the aspirational My Life inputs as present-tense facts;
- * Phase 2 writes the seven bible sections from those facts. Called by the
+ * Phase 2 writes the seven bible sections from those facts; Phase 3 has the
+ * character write its typical week from the bible, and Phase 4 how it looks in
+ * each place of that week (its avatars are drawn from these). Called by the
  * buildCharacter task (characterBuild.ts).
  */
 export async function compileCharacterBibleForUser(uid: string): Promise<{ success: boolean; ideal?: { heading: string; content: string }[]; error?: string }> {
@@ -337,6 +447,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
 
     const phase1 = await compilePresentTenseFacts(inputs);
     const idealSections = await generateIdealSections(inputs, phase1, userLocale);
+    const style = await generateStyle(idealSections);
 
     // Save back to Firestore
     if (userDoc.exists) {
@@ -360,6 +471,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
         await userDocRef.set({
             bible: {
                 sections: idealSections,
+                style,
                 status: 'ready',
                 last_updated: Date.now()
             },

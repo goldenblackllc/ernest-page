@@ -1,5 +1,6 @@
 import type { Timestamp } from "firebase/firestore";
 import type { AccessState } from "@functions/lib/access/sessionAccess";
+import type { CharacterStyle } from "@functions/lib/character/situations";
 
 /** A person in the user's life */
 export interface ProfilePerson {
@@ -20,6 +21,7 @@ export interface WantItem {
 /** Compiled character bible — system-generated output */
 export interface Bible {
     sections?: Array<{ heading: string; content: string }>;
+    style?: CharacterStyle;               // the character's situations and weekly routine
     status?: 'stable' | 'compiling' | 'ready' | 'failed';
     fail_reason?: string;
     last_updated?: number;
@@ -33,6 +35,7 @@ interface Avatar {
     last_attempt?: number;
     attempt_count?: number;
     error?: string | null;
+    situations?: Record<string, string>;  // situation id → avatar URL
 }
 
 /** Voice — system-assigned or user-selected */

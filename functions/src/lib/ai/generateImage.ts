@@ -1,10 +1,9 @@
 /**
- * Centralized image generation using Nano Banana 2 (Gemini 3.1 Flash Image).
+ * Centralized image generation using Nano Banana 2.1 (IMAGE_MODEL in models.ts).
  *
- * Upgraded from Flash-Lite to Flash for character consistency:
  * - Supports reference image inputs (up to 14) for identity anchoring
  * - Multi-turn editing and subject consistency via visual references
- * - Higher quality output at the cost of ~$0.045–0.067 per image (vs ~$0.00003 for Lite)
+ * - About $0.034 per 1K image ($0.017 through the Batch API)
  *
  * Uses the @google/genai SDK to support the new AQ.-format API keys.
  */
@@ -14,7 +13,7 @@ import { IMAGE_MODEL } from './models.js';
 import { errorMessage, isQuotaError, quotaError } from '../utils/errors.js';
 
 export type ImageAspectRatio = '1:1' | '9:16' | '16:9' | '4:3' | '3:4' | '4:5';
-export type ReferenceMode = 'full' | 'face-only';
+export type ReferenceMode = 'full' | 'face-only' | 'identity';
 
 interface GenerateImageOptions {
     prompt: string;
@@ -37,6 +36,8 @@ interface GenerateImageOptions {
      *   follow the text prompt instead. Used for early storyboard beats
      *   where the character's current physical state may differ from the
      *   aspirational avatar (transformation arc).
+     * - 'identity': Anchor on face, build and hair; clothing and scene come
+     *   from the text prompt. Used for situation avatars.
      */
     referenceMode?: ReferenceMode;
 }
@@ -50,6 +51,7 @@ interface GenerateImageResult {
 
 const REFERENCE_PREFIX: Record<ReferenceMode, string> = {
     'face-only': 'Use the reference image ONLY to maintain the character\'s face, hair, and ethnic features. Do NOT copy the body type, weight, build, or physique from the reference image — follow the body description in the text prompt below instead. Keep their facial identity consistent but let the scene dictate their physical state.\n\n',
+    'identity': 'Use the reference image ONLY to keep the character\'s identity: their face, build and hair. Dress them and set the scene exactly as described below, not as in the reference image.\n\n',
     'full': 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n',
 };
 
@@ -95,7 +97,7 @@ export function buildImageRequestParts(options: {
 }
 
 /**
- * Generate an image using Nano Banana 2 (Gemini 3.1 Flash Image).
+ * Generate an image with IMAGE_MODEL.
  * Returns the image buffer and MIME type, or null on failure.
  *
  * When `referenceImages` are provided, they are included as inlineData
