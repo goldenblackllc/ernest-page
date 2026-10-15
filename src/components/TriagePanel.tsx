@@ -27,6 +27,7 @@ import { authFetch } from "@/lib/auth/authFetch";
 import { PurchasePanel } from "./payments/PurchasePanel";
 import type { AccessSummary } from "@functions/lib/access/sessionAccess";
 import { toSessionRouting, type SessionRouting } from "@/types/chat";
+import { useCharacterNow } from "@/hooks/useCharacterNow";
 
 
 
@@ -54,6 +55,7 @@ export function TriagePanel() {
     // Data for Mirror Chat & My Life drawers
     const [bible, setBible] = useState<Bible | null>(null);
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
+    const { avatarUrl: characterAvatarUrl } = useCharacterNow(profile);
     const [defaultPostRouting, setDefaultPostRouting] = useState<SessionRouting>('private');
 
     // Onboarding state (triggered when FAB tapped without character bible)
@@ -370,12 +372,13 @@ export function TriagePanel() {
                         <span className="text-[10px] font-medium">Home</span>
                     </Link>
 
-                    {/* FAB — centered in nav bar */}
+                    {/* FAB — centered in nav bar. Shows the character itself (its
+                        avatar for right now) once there is one, with a chat badge. */}
                     <button
                         onClick={attemptStartSession}
                         disabled={!isBibleReady && !needsOnboarding}
                         className={cn(
-                            "w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black -mt-6",
+                            "relative w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 ring-4 ring-black -mt-6",
                             (!isBibleReady && !needsOnboarding)
                                 ? "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
                                 : "bg-white text-black hover:scale-110 active:scale-95"
@@ -388,7 +391,23 @@ export function TriagePanel() {
                                     : t('triagePanel.openChat')
                         }
                     >
-                        <MessageCircle className={cn("w-7 h-7", !isBibleReady && !needsOnboarding && "animate-pulse")} />
+                        {characterAvatarUrl && !needsOnboarding ? (
+                            <>
+                                <img
+                                    src={characterAvatarUrl}
+                                    alt=""
+                                    className={cn(
+                                        "w-full h-full rounded-full object-cover border-2 border-white",
+                                        !isBibleReady && "grayscale animate-pulse"
+                                    )}
+                                />
+                                <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-white text-black ring-2 ring-black flex items-center justify-center">
+                                    <MessageCircle className="w-3 h-3" />
+                                </span>
+                            </>
+                        ) : (
+                            <MessageCircle className={cn("w-7 h-7", !isBibleReady && !needsOnboarding && "animate-pulse")} />
+                        )}
                     </button>
 
                     <Link href="/profile" className={cn("p-2 transition-colors flex flex-col items-center gap-0.5", pathname === "/profile" ? "text-white" : "text-zinc-500 hover:text-white")}>

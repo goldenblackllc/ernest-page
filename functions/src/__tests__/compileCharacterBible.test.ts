@@ -110,6 +110,7 @@ describe('compileCharacterBibleForUser', () => {
         await compileCharacterBibleForUser('u1');
         const [, , weekCall, looksCall] = h.generateWithFallback.mock.calls.map(c => c[0].prompt as string);
         expect(weekCall).toContain('## Style & Presence\nA Barbour Bedale');
+        expect(weekCall).toContain('Write in English.');
         expect(looksCall).toContain('A Barbour Bedale');
         expect(looksCall).toContain('office: At the office');
     });

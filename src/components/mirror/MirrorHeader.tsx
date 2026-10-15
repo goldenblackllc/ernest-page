@@ -12,6 +12,8 @@ interface MirrorHeaderProps {
     characterName: string | null;
     characterArchetype: string | null;
     avatarUrl?: string;
+    /** What the character is doing right now (its current situation) */
+    status?: string;
     showExchangeCount: boolean;
     exchangeCount: number;
     hasVoice: boolean;
@@ -22,7 +24,7 @@ interface MirrorHeaderProps {
 }
 
 export function MirrorHeader({
-    headerRef, displayName, characterName, characterArchetype, avatarUrl,
+    headerRef, displayName, characterName, characterArchetype, avatarUrl, status,
     showExchangeCount, exchangeCount, hasVoice, autoSpeak, isSpeaking, onToggleAutoSpeak, onClose,
 }: MirrorHeaderProps) {
     const t = useTranslations();
@@ -33,11 +35,11 @@ export function MirrorHeader({
             className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-zinc-800/50 bg-zinc-950 pt-[max(12px,env(safe-area-inset-top))]"
         >
             {/* Avatar — prominent face */}
-            <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden flex items-center justify-center shrink-0">
+            <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden flex items-center justify-center shrink-0">
                 {avatarUrl ? (
                     <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
-                    <span className="text-2xl font-bold text-zinc-400 select-none">
+                    <span className="text-3xl font-bold text-zinc-400 select-none">
                         {displayName.charAt(0).toUpperCase()}
                     </span>
                 )}
@@ -49,7 +51,9 @@ export function MirrorHeader({
                     {displayName}
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 </h3>
-                {characterArchetype && characterName && (
+                {status ? (
+                    <p className="text-sm text-zinc-400 leading-snug line-clamp-2 mt-0.5">{status}</p>
+                ) : characterArchetype && characterName && (
                     <p className="text-xs text-zinc-500 font-medium truncate mt-0.5">{characterArchetype}</p>
                 )}
             </div>

@@ -116,12 +116,12 @@ const PROMPT_WEEK = `Here is your Character Bible.
 
 {BIBLE}
 
-Write your typical week, Sunday to Saturday, as time blocks that cover every hour. For each block: the days, the hour it starts (0 to 23), and where you are and what you're doing. A block lasts until the next one starts. Write in English.`;
+Write your typical week, Sunday to Saturday, as time blocks that cover every hour. For each block: the days, the hour it starts (0 to 23), and where you are and what you're doing. A block lasts until the next one starts. Write in {LANGUAGE}.`;
 
 const WEEK_SCHEMA = z.object({
     places: z.array(z.object({
         id: z.string().describe("Short lowercase slug"),
-        label: z.string().describe("Where you are and what you're doing, in a few words"),
+        label: z.string().describe("Where you are and what you're doing, in a few words; shown to the user as your status"),
     })).describe("Each place in your week, once"),
     week: z.array(z.object({
         days: z.array(z.enum(WEEK_DAYS)),
@@ -150,6 +150,9 @@ const LOOKS_SCHEMA = z.object({
 /** A portrait shorter than this is too thin to draw from. */
 const MIN_PORTRAIT_CHARS = 60;
 const MIN_SITUATIONS = 2;
+
+const LANGUAGE_NAMES: Record<string, string> = { es: 'Spanish', pt: 'Portuguese', fr: 'French', de: 'German' };
+const languageName = (locale: string) => LANGUAGE_NAMES[locale] || 'English';
 
 const slug = (text: string) => (text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
@@ -289,7 +292,7 @@ async function generateIdealSections(
         .replace('{PRESENT_FACTS}', phase1.character_facts)
         .replace('{PRESENT_PEOPLE}', presentPeopleString)
         .replace('{THINGS_I_LOVE}', inputs.interests)
-        + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${userLocale === 'es' ? 'Spanish' : userLocale === 'pt' ? 'Portuguese' : userLocale === 'fr' ? 'French' : userLocale === 'de' ? 'German' : 'English'}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
+        + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${languageName(userLocale)}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
 
     const idealResult = await generateWithFallback({
         primaryModelId: OPUS_MODEL,
@@ -327,7 +330,7 @@ async function generateIdealSections(
 }
 
 // ─── PHASES 3 & 4: the character's week, then how it looks in each place ───
-async function generateStyle(sections: { heading: string; content: string }[]): Promise<CharacterStyle> {
+async function generateStyle(sections: { heading: string; content: string }[], userLocale: string): Promise<CharacterStyle> {
     const bibleText = sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n');
 
     console.log(`[BibleCompile] Phase 3: Writing the week...`);
@@ -336,7 +339,7 @@ async function generateStyle(sections: { heading: string; content: string }[]): 
         abortSignal: AbortSignal.timeout(360_000),
         providerOptions: PROVIDER_OPTIONS,
         system: SYSTEM_PROMPT,
-        prompt: PROMPT_WEEK.replace('{BIBLE}', () => bibleText),
+        prompt: PROMPT_WEEK.replace('{BIBLE}', () => bibleText).replace('{LANGUAGE}', languageName(userLocale)),
         schema: WEEK_SCHEMA,
     });
     const week = weekResult.object as z.infer<typeof WEEK_SCHEMA>;
@@ -447,7 +450,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
 
     const phase1 = await compilePresentTenseFacts(inputs);
     const idealSections = await generateIdealSections(inputs, phase1, userLocale);
-    const style = await generateStyle(idealSections);
+    const style = await generateStyle(idealSections, userLocale);
 
     // Save back to Firestore
     if (userDoc.exists) {
