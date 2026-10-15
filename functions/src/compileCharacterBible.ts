@@ -74,7 +74,7 @@ const PHASE1_SCHEMA = z.object({
 const PROMPT_IDEAL_BIBLE = `Build a Character Bible from the following inputs. Output exactly 7 sections. Each section must contain multiple subsections using **Subheading:** format. Expand beyond the inputs: invent logical details that fit the character. Use sensory language. Do not include dates — use ages or durations. Do not mention "Core Beliefs" or "Manifesto."
 
 Sections:
-1. "Style & Presence" — Wardrobe for each setting of their life (specific items and brands), grooming, physicality, travel style
+1. "Style & Presence" — Wardrobe for each setting of their life (specific items and brands), grooming (including haircut), physicality, travel style
 2. "Daily Life & Habits" — Morning ritual, work, weekends, passions
 3. "People & Connections" — Each person gets their OWN **Name:** subsection. End with **Communication Style:** and **Social Energy:**
 4. "The Inner Mind" — Emotions, pressure, self-talk, relationship with reality
