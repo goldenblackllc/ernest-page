@@ -15,20 +15,29 @@ declare global {
 interface TurnstileProps {
     onVerify: (token: string) => void;
     onExpire?: () => void;
+    /** Called with true when Cloudflare shows its checkbox, false once it's done. */
+    onInteractive?: (shown: boolean) => void;
     theme?: 'light' | 'dark' | 'auto';
+    /** Our locale (en, es, pt, fr, de); the widget's own text follows it. */
+    locale?: string;
     className?: string;
 }
 
-export default function Turnstile({ onVerify, onExpire, theme = 'auto', className }: TurnstileProps) {
+// Turnstile's language codes, where they differ from our locales
+const TURNSTILE_LANGUAGE: Record<string, string> = { pt: 'pt-br' };
+
+export default function Turnstile({ onVerify, onExpire, onInteractive, theme = 'auto', locale, className }: TurnstileProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
     const onVerifyRef = useRef(onVerify);
     const onExpireRef = useRef(onExpire);
+    const onInteractiveRef = useRef(onInteractive);
 
     // Keep callback refs current without re-triggering the effect
     useEffect(() => {
         onVerifyRef.current = onVerify;
         onExpireRef.current = onExpire;
+        onInteractiveRef.current = onInteractive;
     });
 
     const renderWidget = useCallback(() => {
@@ -40,11 +49,14 @@ export default function Turnstile({ onVerify, onExpire, theme = 'auto', classNam
             sitekey: siteKey,
             callback: (token: string) => onVerifyRef.current(token),
             'expired-callback': () => onExpireRef.current?.(),
+            'before-interactive-callback': () => onInteractiveRef.current?.(true),
+            'after-interactive-callback': () => onInteractiveRef.current?.(false),
             theme,
+            language: locale ? (TURNSTILE_LANGUAGE[locale] ?? locale) : 'auto',
             size: 'flexible',
             appearance: 'interaction-only',
         });
-    }, [theme]);
+    }, [theme, locale]);
 
     useEffect(() => {
         // If Turnstile script already loaded, render immediately

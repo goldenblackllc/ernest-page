@@ -22,6 +22,10 @@
       "errorNoPhone": "Por favor, introduce un número de teléfono.",
       "errorSendFailed": "Error al enviar el código. Por favor, inténtalo de nuevo.",
       "errorVerifyFailed": "Código no válido. Por favor, inténtalo de nuevo.",
+      "securityHint": "Toca la casilla de arriba para confirmar que no eres un robot.",
+      "errorSecurityFailed": "No pudimos confirmar que eres una persona. Toca la casilla otra vez e inténtalo de nuevo.",
+      "errorTooMany": "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.",
+      "errorInvalidPhone": "Ese número de teléfono no parece correcto. Revísalo e inténtalo de nuevo.",
       "byContinuing": "Al continuar, aceptas nuestros",
       "and": "y"
     },
@@ -768,5 +772,10 @@
     "balanceRenews": "Las sesiones gratuitas se renuevan el {date}",
     "memberComp": "Cortesía",
     "memberCompNote": "Membresía de cortesía. Hasta 5 sesiones al día, sin costo. Nada que renovar ni cancelar."
+  },
+  "cookieConsent": {
+    "message": "Usamos cookies esenciales para el inicio de sesión y la seguridad. Sin rastreo ni anuncios.",
+    "privacyLink": "Lee nuestra Política de Privacidad",
+    "accept": "Entendido"
   }
 }

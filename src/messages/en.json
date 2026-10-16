@@ -22,6 +22,10 @@
       "errorNoPhone": "Please enter a phone number.",
       "errorSendFailed": "Failed to send code. Please try again.",
       "errorVerifyFailed": "Invalid code. Please try again.",
+      "securityHint": "Tap the box above to show you're not a robot.",
+      "errorSecurityFailed": "We couldn't confirm you're a person. Tap the box again, then try again.",
+      "errorTooMany": "Too many tries. Please wait 15 minutes and try again.",
+      "errorInvalidPhone": "That phone number doesn't look right. Check it and try again.",
       "byContinuing": "By continuing, you agree to our",
       "and": "and"
     },
@@ -768,5 +772,10 @@
     "balanceRenews": "Free sessions renew {date}",
     "memberComp": "Complimentary",
     "memberCompNote": "Complimentary membership. Up to 5 sessions a day, at no charge. Nothing to renew or cancel."
+  },
+  "cookieConsent": {
+    "message": "We use essential cookies for authentication and security. No tracking, no ads.",
+    "privacyLink": "Read our Privacy Policy",
+    "accept": "Got it"
   }
 }

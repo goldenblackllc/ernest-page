@@ -6,7 +6,7 @@ import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { Link, useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { CountryCodeSelect } from '@/components/auth/CountryCodeSelect';
 import { useEffect } from 'react';
@@ -67,6 +67,7 @@ const sectionFade = {
 // ─── Component ─────────────────────────────────────────────────────
 export function LandingPage() {
     const t = useTranslations();
+    const locale = useLocale();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
@@ -76,6 +77,14 @@ export function LandingPage() {
     const [loading, setLoading] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState('US'); // Fallback for SSR
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    // A token works once, so every send needs a fresh check; bumping the key remounts the widget
+    const [turnstileKey, setTurnstileKey] = useState(0);
+    const [turnstileChallenge, setTurnstileChallenge] = useState(false);
+    const resetTurnstile = () => {
+        setTurnstileToken(null);
+        setTurnstileChallenge(false);
+        setTurnstileKey((k) => k + 1);
+    };
 
     useEffect(() => {
         // Detect timezone-based country after hydration to avoid SSR mismatch
@@ -115,18 +124,22 @@ export function LandingPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: normalized, turnstileToken }),
             });
-            const data = await res.json();
             if (!res.ok) {
-                setError(data.error || t('landing.auth.errorSendFailed'));
-                setTurnstileToken(null);
+                // The server's messages are English; show our own by status
+                setError(
+                    res.status === 403 ? t('landing.auth.errorSecurityFailed')
+                    : res.status === 429 ? t('landing.auth.errorTooMany')
+                    : res.status === 400 ? t('landing.auth.errorInvalidPhone')
+                    : t('landing.auth.errorSendFailed')
+                );
                 return;
             }
             setStep('INPUT_CODE');
         } catch (err) {
             console.error('Error sending code:', err);
             setError(t('landing.auth.errorSendFailed'));
-            setTurnstileToken(null);
         } finally {
+            resetTurnstile();
             setLoading(false);
         }
     };
@@ -144,7 +157,7 @@ export function LandingPage() {
             });
             const data = await res.json();
             if (!res.ok) {
-                setError(data.error || t('landing.auth.errorVerifyFailed'));
+                setError(res.status === 429 ? t('landing.auth.errorTooMany') : t('landing.auth.errorVerifyFailed'));
                 return;
             }
             await signInWithCustomToken(auth, data.token);
@@ -297,10 +310,18 @@ export function LandingPage() {
                                         />
                                     </div>
                                     <Turnstile
+                                        key={turnstileKey}
                                         onVerify={setTurnstileToken}
                                         onExpire={() => setTurnstileToken(null)}
+                                        onInteractive={setTurnstileChallenge}
                                         theme="dark"
+                                        locale={locale}
                                     />
+                                    {turnstileChallenge && !turnstileToken && (
+                                        <p className="text-sm text-zinc-300 text-center">
+                                            {t('landing.auth.securityHint')}
+                                        </p>
+                                    )}
                                     <button
                                         onClick={handleSendCode}
                                         disabled={loading || !turnstileToken}

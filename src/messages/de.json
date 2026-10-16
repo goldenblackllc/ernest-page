@@ -22,6 +22,10 @@
       "errorNoPhone": "Bitte gib eine Telefonnummer ein.",
       "errorSendFailed": "Code konnte nicht gesendet werden. Bitte versuche es erneut.",
       "errorVerifyFailed": "Ungültiger Code. Bitte versuche es erneut.",
+      "securityHint": "Tippe auf das Kästchen oben, um zu bestätigen, dass du kein Roboter bist.",
+      "errorSecurityFailed": "Wir konnten nicht bestätigen, dass du ein Mensch bist. Tippe noch einmal auf das Kästchen und versuche es erneut.",
+      "errorTooMany": "Zu viele Versuche. Bitte warte 15 Minuten und versuche es erneut.",
+      "errorInvalidPhone": "Diese Telefonnummer scheint nicht zu stimmen. Bitte prüfe sie und versuche es erneut.",
       "byContinuing": "Indem du fortfährst, stimmst du unseren",
       "and": "und"
     },
@@ -768,5 +772,10 @@
     "balanceRenews": "Kostenlose Sitzungen erneuern sich am {date}",
     "memberComp": "Geschenkt",
     "memberCompNote": "Geschenkte Mitgliedschaft. Bis zu 5 Sitzungen am Tag, kostenlos. Nichts zu verlängern oder zu kündigen."
+  },
+  "cookieConsent": {
+    "message": "Wir verwenden nur notwendige Cookies für Anmeldung und Sicherheit. Kein Tracking, keine Werbung.",
+    "privacyLink": "Lies unsere Datenschutzerklärung",
+    "accept": "Verstanden"
   }
 }

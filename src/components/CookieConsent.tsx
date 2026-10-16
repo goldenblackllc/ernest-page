@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
 /**
@@ -9,6 +10,7 @@ import { Link } from '@/i18n/navigation';
  * Non-blocking — essential cookies only (auth).
  */
 export function CookieConsent() {
+    const t = useTranslations('cookieConsent');
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
@@ -36,20 +38,20 @@ export function CookieConsent() {
                 <div className="flex items-start gap-4">
                     <div className="flex-1">
                         <p className="text-sm text-zinc-300 leading-relaxed">
-                            We use essential cookies for authentication and security. No tracking, no ads.
+                            {t('message')}
                         </p>
                         <Link
                             href="/privacy"
                             className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors mt-1 inline-block"
                         >
-                            Read our Privacy Policy →
+                            {t('privacyLink')} →
                         </Link>
                     </div>
                     <button
                         onClick={handleAccept}
                         className="shrink-0 rounded-full bg-white text-black px-5 py-2 text-xs font-bold tracking-wide hover:bg-zinc-200 active:scale-[0.97] transition-all duration-150"
                     >
-                        Got it
+                        {t('accept')}
                     </button>
                 </div>
             </div>

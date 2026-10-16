@@ -22,6 +22,10 @@
       "errorNoPhone": "Veuillez entrer un numéro de téléphone.",
       "errorSendFailed": "Échec de l'envoi du code. Veuillez réessayer.",
       "errorVerifyFailed": "Code invalide. Veuillez réessayer.",
+      "securityHint": "Touchez la case ci-dessus pour confirmer que vous n'êtes pas un robot.",
+      "errorSecurityFailed": "Nous n'avons pas pu confirmer que vous êtes une personne. Touchez de nouveau la case, puis réessayez.",
+      "errorTooMany": "Trop de tentatives. Veuillez patienter 15 minutes, puis réessayer.",
+      "errorInvalidPhone": "Ce numéro de téléphone ne semble pas correct. Vérifiez-le et réessayez.",
       "byContinuing": "En continuant, vous acceptez nos",
       "and": "et"
     },
@@ -768,5 +772,10 @@
     "balanceRenews": "Les sessions offertes se renouvellent le {date}",
     "memberComp": "Offert",
     "memberCompNote": "Abonnement offert. Jusqu'à 5 sessions par jour, gratuitement. Rien à renouveler ni à résilier."
+  },
+  "cookieConsent": {
+    "message": "Nous utilisons des cookies essentiels pour la connexion et la sécurité. Pas de suivi, pas de publicité.",
+    "privacyLink": "Lire notre Politique de confidentialité",
+    "accept": "J'ai compris"
   }
 }
