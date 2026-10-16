@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
 
 const config: MirrorPromptConfig = {
-    compiledBible: [{ heading: 'Style & Presence', content: 'Calm.' }],
+    bibleText: '## Style & Presence\n\nCalm.',
     languageInstruction: '\n[LANGUAGE MANDATE]\nYou MUST respond entirely in ENGLISH.',
     toneDirective: '',
     engagementContract: '[ENGAGEMENT]',

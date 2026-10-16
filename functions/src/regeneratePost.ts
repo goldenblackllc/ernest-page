@@ -12,7 +12,7 @@ import { REGION } from './lib/config/region.js';
 import { processPostContent } from './lib/ai/processPostContent.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 import { deletePostMediaFiles, generateImagesForPost, isPostExposed, NO_MEDIA_FIELDS } from './lib/postMedia.js';
-import { getCompiledBible } from './lib/bible.js';
+import { getBibleText } from './lib/bible.js';
 import { errorMessage } from './lib/utils/errors.js';
 
 export const regeneratePost = onCall<{ postId: string }>(
@@ -58,7 +58,7 @@ export const regeneratePost = onCall<{ postId: string }>(
             transcript,
             uid,
             postId,
-            compiledBible: getCompiledBible(userData),
+            bibleText: getBibleText(userData),
             demographicHint,
             characterVoiceId: userData.voice?.id || userData.character_bible?.voice_id,
             gender,

@@ -15,6 +15,7 @@ import ReactMarkdown from "react-markdown";
 import { VoiceBrowser } from "./VoiceBrowser";
 
 import { parseMarkdownToSections } from "@/lib/utils/parseContent";
+import { splitBibleText } from "@functions/lib/character/bibleText";
 import { IdentityForm, IdentityFormData } from "./IdentityForm";
 import { PostList } from "./PostList";
 
@@ -81,7 +82,7 @@ export function ProfileView() {
     if (!profile) return null;
 
     const displayTitle = profile?.defining_words?.join(', ') || t('unknownCharacter');
-    const displaySections = bible?.sections;
+    const displaySections = splitBibleText(bible?.text || '');
 
     return (
         <>

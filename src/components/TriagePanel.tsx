@@ -121,7 +121,7 @@ export function TriagePanel() {
         return () => window.removeEventListener('open-identity-editor', handleIdentityEditor);
     }, []);
 
-    const isBibleReady = bible != null && (bible.sections?.length ?? 0) > 0;
+    const isBibleReady = !!bible?.text;
 
 
 

@@ -16,7 +16,6 @@
 import { generateCondensedTranscript, type ThumbnailBrief } from './condensedTranscript.js';
 import { generateMessageImagePrompts } from './generatePostImage.js';
 import { generateConversationAudio, resolveConversationVoices, type MessageBoundary, type WordTimestamp } from './postTTS.js';
-import type { BibleSection } from '../bible.js';
 import { generateThumbnail } from './generateThumbnail.js';
 
 /** Audio fields spread into a post document. */
@@ -34,8 +33,8 @@ export interface ProcessPostInput {
     uid: string;
     /** Post document ID (used for TTS file naming) */
     postId: string;
-    /** Compiled character bible sections */
-    compiledBible?: BibleSection[];
+    /** The Character Bible (Markdown) */
+    bibleText?: string;
     /** Demographic appearance hint for image prompts */
     demographicHint: string;
     /** User's cloned voice ID for TTS */
@@ -102,7 +101,7 @@ export async function processPostContent(
         transcript,
         uid,
         postId,
-        compiledBible,
+        bibleText,
         demographicHint,
         characterVoiceId,
         singleVoice,
@@ -149,7 +148,7 @@ export async function processPostContent(
     // A private post gets only its thumbnail: media files are public URLs, so
     // the rest is made when the author shares it (see postExposure.ts).
     const { imagePrompts, audioFields, thumbnailUrl } = await generatePostMedia({
-        messages, title, language, uid, postId, compiledBible, demographicHint,
+        messages, title, language, uid, postId, bibleText, demographicHint,
         characterVoiceId, singleVoice, locale: opts.locale, logPrefix,
         thumbnailBrief: thumbnail,
         audioAndImages: (opts.media ?? 'full') === 'full',
@@ -177,7 +176,7 @@ export interface PostMediaInput {
     language: string | null;
     uid: string;
     postId: string;
-    compiledBible?: BibleSection[];
+    bibleText?: string;
     demographicHint: string;
     characterVoiceId?: string;
     singleVoice?: boolean;
@@ -200,12 +199,12 @@ export interface PostMedia {
 /** Image prompts, TTS audio and thumbnail for a condensed conversation (in parallel). */
 export async function generatePostMedia(input: PostMediaInput): Promise<PostMedia> {
     const {
-        messages, title, language, uid, postId, compiledBible, demographicHint, characterVoiceId, singleVoice, locale,
+        messages, title, language, uid, postId, bibleText, demographicHint, characterVoiceId, singleVoice, locale,
         thumbnailBrief, thumbnail = true, audioAndImages = true, logPrefix = 'ProcessPost',
     } = input;
 
     const imagePromptsPromise = audioAndImages
-        ? generateMessageImagePrompts({ messages, compiledBible, demographicHint })
+        ? generateMessageImagePrompts({ messages, bibleText, demographicHint })
         : Promise.resolve([]);
 
     const audioFields: PostAudioFields = {};

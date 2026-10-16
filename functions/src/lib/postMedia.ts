@@ -13,7 +13,7 @@ import { generatePostMedia } from './ai/processPostContent.js';
 import { generateCondensedTranscript } from './ai/condensedTranscript.js';
 import { generateMessageImages } from './ai/generatePostImage.js';
 import { loadUserReferenceImage } from './ai/loadUserReferenceImage.js';
-import { getCompiledBible } from './bible.js';
+import { getBibleText } from './bible.js';
 import { getPostAuthorId, savePostImages } from './posts.js';
 import { computeAge } from './utils/parseBirthDate.js';
 import { errorMessage } from './utils/errors.js';
@@ -155,7 +155,7 @@ export async function generateMediaForPost(postId: string, post: PostData): Prom
         language: post.language || null,
         uid,
         postId,
-        compiledBible: getCompiledBible(userData),
+        bibleText: getBibleText(userData),
         demographicHint: buildDemographicHint(userData),
         characterVoiceId: userData.voice?.id || userData.character_bible?.voice_id,
         locale: userData.preferred_locale || 'en',

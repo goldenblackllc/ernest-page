@@ -1,13 +1,14 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { z } from 'zod';
-import { db } from './lib/firebase/admin.js';
+import { db, FieldValue } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { enqueueBuildCharacter } from './characterBuild.js';
-import { generateWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.js';
+import { generateWithFallback, generateTextWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.js';
 import { REALITY_RULES } from './lib/constants/realityRules.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 import { errorMessage } from './lib/utils/errors.js';
 import { WEEK_DAYS, type CharacterStyle, type Situation, type WeekBlock } from './lib/character/situations.js';
+import { BIBLE_HEADINGS, joinBibleSections, splitBibleText } from './lib/character/bibleText.js';
 
 // --- SAFETY SETTINGS ---
 const SAFETY_SETTINGS = [
@@ -71,7 +72,7 @@ const PHASE1_SCHEMA = z.object({
     })).describe("Each person rewritten as a present-tense, loving relationship fact"),
 });
 
-const PROMPT_IDEAL_BIBLE = `Build a Character Bible from the following inputs. Output exactly 7 sections. Each section must contain multiple subsections using **Subheading:** format. Expand beyond the inputs: invent logical details that fit the character. Use sensory language. Do not include dates — use ages or durations. Do not mention "Core Beliefs" or "Manifesto."
+const PROMPT_IDEAL_BIBLE = `Build a Character Bible from the following inputs. Write it as a document with exactly 7 sections, in the order below. Start each section with its name as a heading line, "## " followed by the name exactly as written (e.g. "## Style & Presence"). Each section must contain multiple subsections using **Subheading:** format. Expand beyond the inputs: invent logical details that fit the character. Use sensory language. Do not include dates — use ages or durations. Do not mention "Core Beliefs" or "Manifesto." Output only the document.
 
 Sections:
 1. "Style & Presence" — Wardrobe for each setting of their life (specific items and brands), grooming, physicality, travel style
@@ -98,16 +99,6 @@ People:
 {PRESENT_PEOPLE}
 
 Things They Love: {THINGS_I_LOVE}`;
-
-const IDEAL_BIBLE_SCHEMA = z.object({
-    Style_and_Presence: z.string().describe("Aesthetics, Wardrobe, Physicality"),
-    Daily_Life_and_Habits: z.string().describe("Routines, Occupations, Passions"),
-    People_and_Connections: z.string().describe("Relationships, Communication, Social Interaction"),
-    The_Inner_Mind: z.string().describe("How they process emotions, crisis, and reality"),
-    Quirks_and_Details: z.string().describe("Pets, diet, languages, unique variables"),
-    Order_and_Sanctuary: z.string().describe("Cleanliness, organization, mise-en-place, how they maintain their home/car/workspace"),
-    The_World_I_Love: z.string().describe("The cultural identity — specific artists, shows, movies, books, food, music, games, sports, and the named things that define their taste. Use real names, not abstractions."),
-});
 
 /** A section shorter than this means the model skipped it (good sections run 2,000+ chars). */
 const MIN_SECTION_CHARS = 300;
@@ -273,65 +264,57 @@ async function compilePresentTenseFacts(inputs: CompileInputs): Promise<z.infer<
     return phase1;
 }
 
-// ─── PHASE 2: Generate Character Bible from pre-translated facts ───
-async function generateIdealSections(
+// ─── PHASE 2: Write the Character Bible from pre-translated facts ───
+async function generateIdealBible(
     inputs: CompileInputs,
     phase1: z.infer<typeof PHASE1_SCHEMA>,
     userLocale: string,
-): Promise<{ heading: string; content: string }[]> {
+): Promise<string> {
     // Format Phase 1 people output for Phase 2
     const presentPeopleString = phase1.people.length > 0
         ? phase1.people.map(p => `**${p.name}** (${p.relationship}): ${p.description}`).join('\n\n')
         : 'None';
 
+    const language = languageName(userLocale);
     const idealPrompt = PROMPT_IDEAL_BIBLE
-        .replace('{DEFINING_WORDS}', inputs.definingWords)
-        .replace('{PRESENT_LIVING}', phase1.living_situation)
-        .replace('{PRESENT_FINANCIAL}', phase1.financial_reality)
-        .replace('{PRESENT_PHYSICAL}', phase1.physical_profile)
-        .replace('{PRESENT_FACTS}', phase1.character_facts)
-        .replace('{PRESENT_PEOPLE}', presentPeopleString)
-        .replace('{THINGS_I_LOVE}', inputs.interests)
-        + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${languageName(userLocale)}. All section content must be in this language. Section headings may remain in English for parsing.` : '');
+        .replace('{DEFINING_WORDS}', () => inputs.definingWords)
+        .replace('{PRESENT_LIVING}', () => phase1.living_situation)
+        .replace('{PRESENT_FINANCIAL}', () => phase1.financial_reality)
+        .replace('{PRESENT_PHYSICAL}', () => phase1.physical_profile)
+        .replace('{PRESENT_FACTS}', () => phase1.character_facts)
+        .replace('{PRESENT_PEOPLE}', () => presentPeopleString)
+        .replace('{THINGS_I_LOVE}', () => inputs.interests)
+        + (userLocale !== 'en' ? `\n\nCRITICAL LANGUAGE INSTRUCTION: Write the ENTIRE character bible in ${language}. Keep the "## " section headings exactly as written above, in English; write everything else, including subheadings, in ${language}.` : '');
 
-    const idealResult = await generateWithFallback({
+    const idealResult = await generateTextWithFallback({
         primaryModelId: OPUS_MODEL,
         abortSignal: AbortSignal.timeout(1_080_000), // 18 min — buildCharacter allows 30
         providerOptions: PROVIDER_OPTIONS,
         system: SYSTEM_PROMPT,
         prompt: idealPrompt,
-        schema: IDEAL_BIBLE_SCHEMA,
     });
 
-    const rawObj = idealResult.object;
+    const written = splitBibleText(idealResult.text);
+    const sections = BIBLE_HEADINGS.map(heading => ({
+        heading,
+        content: written.find(s => s.heading === heading)?.content || '',
+    }));
 
-    // Debug: log each section's content length
-    const sectionKeys = ['Style_and_Presence', 'Daily_Life_and_Habits', 'People_and_Connections', 'The_Inner_Mind', 'Quirks_and_Details', 'Order_and_Sanctuary', 'The_World_I_Love'] as const;
-    const sectionLengths = sectionKeys.map(k => `${k}=${(rawObj[k] || '').length}`).join(', ');
-    console.log(`[BibleCompile] Model output lengths: ${sectionLengths}`);
+    console.log(`[BibleCompile] Model output lengths: ${sections.map(s => `${s.heading}=${s.content.length}`).join(', ')}`);
     console.log(`[BibleCompile] Phase 2 ${idealResult.response.modelId}: finish=${idealResult.finishReason}, output=${idealResult.usage.outputTokens} tokens (thinking ${idealResult.usage.outputTokenDetails?.reasoningTokens ?? 0})`);
 
-    // The model sometimes returns a valid object with sections left empty.
+    // A missing or near-empty section means the model skipped it.
     // Throw so the existing bible is kept and the task retries.
-    const thinSections = sectionKeys.filter(k => (rawObj[k] || '').trim().length < MIN_SECTION_CHARS);
+    const thinSections = sections.filter(s => s.content.length < MIN_SECTION_CHARS).map(s => s.heading);
     if (thinSections.length > 0) {
-        throw new Error(`Bible sections empty or too short: ${thinSections.join(', ')}`);
+        throw new Error(`Bible sections missing or too short: ${thinSections.join(', ')}`);
     }
 
-    return [
-        { heading: "Style & Presence", content: rawObj.Style_and_Presence },
-        { heading: "Daily Life & Habits", content: rawObj.Daily_Life_and_Habits },
-        { heading: "People & Connections", content: rawObj.People_and_Connections },
-        { heading: "The Inner Mind", content: rawObj.The_Inner_Mind },
-        { heading: "Quirks & Details", content: rawObj.Quirks_and_Details },
-        { heading: "Order & Sanctuary", content: rawObj.Order_and_Sanctuary },
-        { heading: "The World I Love", content: rawObj.The_World_I_Love },
-    ];
+    return joinBibleSections(sections);
 }
 
 // ─── PHASES 3 & 4: the character's week, then how it looks in each place ───
-async function generateStyle(sections: { heading: string; content: string }[], userLocale: string): Promise<CharacterStyle> {
-    const bibleText = sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n');
+async function generateStyle(bibleText: string, userLocale: string): Promise<CharacterStyle> {
 
     console.log(`[BibleCompile] Phase 3: Writing the week...`);
     const weekResult = await generateWithFallback({
@@ -434,7 +417,7 @@ async function findDefaultVoice(data: FirebaseFirestore.DocumentData): Promise<{
  * each place of that week (its avatars are drawn from these). Called by the
  * buildCharacter task (characterBuild.ts).
  */
-export async function compileCharacterBibleForUser(uid: string): Promise<{ success: boolean; ideal?: { heading: string; content: string }[]; error?: string }> {
+export async function compileCharacterBibleForUser(uid: string): Promise<{ success: boolean; error?: string }> {
     const userDocRef = db.collection('users').doc(uid);
     const userDoc = await userDocRef.get();
     const data = userDoc.data();
@@ -449,8 +432,8 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
     console.log(`[BibleCompile] Inputs for ${uid}: defining_words=${inputs.definingWords.substring(0, 50)}, wants=${inputs.counts.wants}, people=${inputs.counts.people}, interests=${inputs.counts.interests}`);
 
     const phase1 = await compilePresentTenseFacts(inputs);
-    const idealSections = await generateIdealSections(inputs, phase1, userLocale);
-    const style = await generateStyle(idealSections, userLocale);
+    const bibleText = await generateIdealBible(inputs, phase1, userLocale);
+    const style = await generateStyle(bibleText, userLocale);
 
     // Save back to Firestore
     if (userDoc.exists) {
@@ -473,7 +456,8 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
         // Save bible
         await userDocRef.set({
             bible: {
-                sections: idealSections,
+                text: bibleText,
+                sections: FieldValue.delete(), // replaced by text
                 style,
                 status: 'ready',
                 last_updated: Date.now()
@@ -492,7 +476,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
         }, { merge: true });
     }
 
-    return { success: true, ideal: idealSections };
+    return { success: true };
 }
 
 /**

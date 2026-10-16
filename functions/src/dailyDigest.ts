@@ -20,7 +20,8 @@ import { computeAge } from './lib/utils/parseBirthDate.js';
 import { processPostContent, type PostAudioFields } from './lib/ai/processPostContent.js';
 import { generateMessageImages } from './lib/ai/generatePostImage.js';
 import { loadUserReferenceImage } from './lib/ai/loadUserReferenceImage.js';
-import { getCompiledBible, type BibleSection } from './lib/bible.js';
+import { getBibleText } from './lib/bible.js';
+import { splitBibleText, splitSubsections } from './lib/character/bibleText.js';
 import { localDateKey } from './lib/utils/relativeDates.js';
 import { errorMessage } from './lib/utils/errors.js';
 
@@ -51,7 +52,7 @@ export const dailyDigest = onSchedule(
         let enqueued = 0;
         for (const userDoc of usersSnapshot.docs) {
             const userData = userDoc.data();
-            if (!getDigestBible(userData)) continue;
+            if (!getBibleText(userData)) continue;
 
             // Only users active yesterday. A calendar-date match (not elapsed hours)
             // means each active day earns exactly one card.
@@ -106,44 +107,17 @@ export const dailyDigestUser = onTaskDispatched<DigestTask>(
 
 // ─── Card generation ────────────────────────────────────────────────────────
 
-/** The user's compiled bible, or null when there is nothing to build a card from. */
-function getDigestBible(userData: FirebaseFirestore.DocumentData | undefined): BibleSection[] | null {
-    const compiledBible = getCompiledBible(userData);
-    return Array.isArray(compiledBible) && compiledBible.length > 0 ? compiledBible : null;
-}
-
-/** Split each bible category into its bolded subsections. */
-function getSubsections(compiledBible: BibleSection[]): { title: string; content: string }[] {
+/** The bible's bolded subsections; a section without any counts as one. */
+function getSubsections(bibleText: string): { title: string; content: string }[] {
     const subsections: { title: string; content: string }[] = [];
-
-    for (const entry of compiledBible) {
-        if (typeof entry !== 'object' || entry === null) continue;
-
-        let rawContent = '';
-        if (entry.heading && entry.content && typeof entry.content === 'string') {
-            rawContent = entry.content;
-        } else {
-            for (const [, value] of Object.entries(entry)) {
-                if (typeof value === 'string' && value.length > 10) {
-                    rawContent = value;
-                    break;
-                }
-            }
-        }
-        if (!rawContent) continue;
-
-        const parts = rawContent.split(/\*\*([^*]+):\*\*/);
-        if (parts.length >= 3) {
-            for (let i = 1; i < parts.length; i += 2) {
-                const subTitle = parts[i].trim();
-                const subContent = (parts[i + 1] || '').trim();
-                if (subContent.length > 20) subsections.push({ title: subTitle, content: subContent });
-            }
-        } else if (rawContent.length > 20) {
-            subsections.push({ title: entry.heading || 'Reflection', content: rawContent });
+    for (const section of splitBibleText(bibleText)) {
+        const parts = splitSubsections(section.content);
+        if (parts.length > 0) {
+            subsections.push(...parts.filter(p => p.content.length > 20));
+        } else if (section.content.length > 20) {
+            subsections.push({ title: section.heading, content: section.content });
         }
     }
-
     return subsections;
 }
 
@@ -163,9 +137,8 @@ async function generateDigestCard(uid: string, date: string): Promise<void> {
     const userDoc = await ref.get();
     const userData = userDoc.data();
 
-    const compiledBible = getDigestBible(userData);
-    if (!compiledBible) return;
-    const subsections = getSubsections(compiledBible);
+    const bibleText = getBibleText(userData);
+    const subsections = getSubsections(bibleText);
     if (subsections.length === 0) return;
 
     const voiceId: string | null = userData?.voice?.id || userData?.character_bible?.voice_id || null;
@@ -217,7 +190,7 @@ async function generateDigestCard(uid: string, date: string): Promise<void> {
             transcript: '', // unused — preCondensed provides messages
             uid,
             postId: `digest_${uid}_${Date.now()}`,
-            compiledBible,
+            bibleText,
             demographicHint: buildDemographicHint(userData),
             characterVoiceId: voiceId || undefined,
             singleVoice: true, // digest is a monologue — same voice for both roles

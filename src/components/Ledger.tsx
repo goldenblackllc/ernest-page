@@ -234,7 +234,7 @@ export function Ledger() {
     // IMPORTANT: These hooks must be ABOVE all early returns to satisfy Rules of Hooks
     const bibleStatus = profile?.bible?.status;
     const hasBuiltCharacter = !!profile?.avatar?.url
-        || (profile?.bible?.sections?.length ?? 0) > 0;
+        || !!profile?.bible?.text;
     // Treat "not built yet" the same as "compiling" to avoid premature empty-state CTA
     const isAwaitingBuild = !bibleStatus && !hasBuiltCharacter && !!profile?.onboarding_complete;
     const showBibleCompiling = bibleStatus === 'compiling' || isAwaitingBuild;

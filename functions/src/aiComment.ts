@@ -12,7 +12,8 @@ import { db, FieldValue } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { generateTextWithFallback, OPUS_MODEL } from './lib/ai/models.js';
 import { getPostText } from './lib/getPostText.js';
-import { getCompiledBible } from './lib/bible.js';
+import { getBibleText } from './lib/bible.js';
+import { splitBibleText } from './lib/character/bibleText.js';
 import { getPostAuthorId } from './lib/posts.js';
 
 export const generateAIComment = onDocumentCreated(
@@ -45,10 +46,9 @@ async function commentAsCharacter(commenterUid: string): Promise<void> {
     const avatarUrl = userData.avatar?.url || null;
 
     // Build a character voice excerpt from the bible
-    const sections = getCompiledBible(userData);
-    const bibleExcerpt = sections
-        ?.slice(0, 2)
-        .map(s => s.content?.substring(0, 200))
+    const bibleExcerpt = splitBibleText(getBibleText(userData))
+        .slice(0, 2)
+        .map(s => s.content.substring(0, 200))
         .join('\n') || identity?.dream_self || '';
 
     // 2. Find a random recent public post (not by the commenter)

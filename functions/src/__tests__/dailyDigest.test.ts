@@ -64,7 +64,7 @@ beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     h.state.taskIds = new Set();
     h.state.users = {
-        [UID]: { bible: { sections: [{ heading: 'Work', content: 'Builds things slowly and with care.' }] } },
+        [UID]: { bible: { text: '## Work\n\nBuilds things slowly and with care.' } },
     };
 });
 
@@ -94,9 +94,9 @@ describe('dailyDigest scheduler', () => {
     it('skips users with no bible, no activity, or a stale or invalid date', async () => {
         h.state.users = {
             noBible: { last_active_date: '2026-10-08' },
-            neverActive: { bible: { sections: [{ content: 'x'.repeat(30) }] } },
-            stale: { bible: { sections: [{ content: 'x'.repeat(30) }] }, last_active_date: '2026-10-07' },
-            invalid: { bible: { sections: [{ content: 'x'.repeat(30) }] }, last_active_date: 'not a date' },
+            neverActive: { bible: { text: '## Work\n\n' + 'x'.repeat(30) } },
+            stale: { bible: { text: '## Work\n\n' + 'x'.repeat(30) }, last_active_date: '2026-10-07' },
+            invalid: { bible: { text: '## Work\n\n' + 'x'.repeat(30) }, last_active_date: 'not a date' },
         };
         await runAt('2026-10-09');
         expect(h.enqueue).not.toHaveBeenCalled();

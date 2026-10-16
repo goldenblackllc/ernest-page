@@ -14,7 +14,7 @@ import { generateCondensedTranscript, type CondensedTranscript } from './lib/ai/
 import { processPostContent, type ProcessPostResult } from './lib/ai/processPostContent.js';
 import { VISUAL_STYLES } from './lib/ai/visualStyles.js';
 import { buildDemographicHint } from './lib/postMedia.js';
-import { getCompiledBible } from './lib/bible.js';
+import { getBibleText } from './lib/bible.js';
 import { REGION } from './lib/config/region.js';
 import { sendAdminEmail, buildNewPostEmail } from './lib/email/adminEmail.js';
 import { closeDecision, failureUpdate, MAX_PROCESS_ATTEMPTS } from './lib/chatRetry.js';
@@ -112,7 +112,7 @@ export const processChat = onDocumentUpdated(
                         transcript,
                         uid,
                         postId: postDocRef.id,
-                        compiledBible: getCompiledBible(userData),
+                        bibleText: getBibleText(userData),
                         demographicHint: buildDemographicHint(userData),
                         characterVoiceId: userData?.voice?.id || userData?.character_bible?.voice_id,
                         gender,

@@ -12,7 +12,7 @@ import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { generateTextWithFallback, OPUS_MODEL, LIVE_FALLBACK } from './lib/ai/models.js';
 import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } from './lib/ai/mirrorPrompt.js';
-import { getCompiledBible } from './lib/bible.js';
+import { getBibleText } from './lib/bible.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
 import { currentSituation, localDayHour, type CharacterStyle } from './lib/character/situations.js';
@@ -88,7 +88,7 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
 
     return buildMirrorSystemPrompt({
         negativeInventory: pickNegativeInventory(sessionId),
-        compiledBible: getCompiledBible(userData),
+        bibleText: getBibleText(userData),
         languageInstruction,
         // Tone directive removed — the Conversation Spine provides structural flow,
         // and the character's own bible voice dictates tone.

@@ -20,7 +20,7 @@ export interface WantItem {
 
 /** Compiled character bible — system-generated output */
 export interface Bible {
-    sections?: Array<{ heading: string; content: string }>;
+    text?: string;                        // the bible document (Markdown), see @functions/lib/character/bibleText
     style?: CharacterStyle;               // the character's situations and weekly routine
     status?: 'stable' | 'compiling' | 'ready' | 'failed';
     fail_reason?: string;

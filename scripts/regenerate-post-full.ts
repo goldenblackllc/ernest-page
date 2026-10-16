@@ -64,7 +64,7 @@ async function main() {
     if (!userData) { console.error(`❌ User data not found for ${uid}`); process.exit(1); }
 
     const characterVoiceId = userData?.character_bible?.voice_id || userData?.voice?.id;
-    const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
+    const bibleText = userData?.bible?.text || '';
     const identity = userData?.identity;
     const gender = identity?.gender || '';
 
@@ -93,7 +93,7 @@ async function main() {
         transcript,
         uid,
         postId,
-        compiledBible,
+        bibleText,
         demographicHint,
         characterVoiceId,
         gender,

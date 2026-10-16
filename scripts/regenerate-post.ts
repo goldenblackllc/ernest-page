@@ -68,7 +68,7 @@ async function main() {
     }
 
     const characterVoiceId = userData?.character_bible?.voice_id;
-    const compiledBible = userData?.character_bible?.compiled_output?.ideal || [];
+    const bibleText = userData?.bible?.text || '';
     const identity = userData?.identity;
     const gender = identity?.gender || '';
 
@@ -91,7 +91,7 @@ async function main() {
         transcript,
         uid,
         postId,
-        compiledBible,
+        bibleText,
         demographicHint,
         characterVoiceId,
         gender,

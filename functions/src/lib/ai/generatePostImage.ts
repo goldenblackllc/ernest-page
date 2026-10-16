@@ -15,7 +15,6 @@ import { generateImage } from './generateImage.js';
 import { validateGeneratedImage } from './validateImage.js';
 import { generateWithFallback, OPUS_MODEL } from './models.js';
 import { buildBatchRequest, type BatchRequestEntry } from './batchImageGeneration.js';
-import type { BibleSection } from '../bible.js';
 import { errorMessage, isQuotaError } from '../utils/errors.js';
 
 
@@ -114,8 +113,8 @@ export async function uploadImageBuffer(buffer: Buffer, fileId: string): Promise
 export interface MessageImagePromptOptions {
     /** Condensed transcript messages (role + text) */
     messages: Array<{ role: 'user' | 'ideal_self'; text: string }>;
-    /** Compiled character bible sections */
-    compiledBible?: BibleSection[];
+    /** The Character Bible (Markdown) */
+    bibleText?: string;
     /** Demographic appearance hint */
     demographicHint: string;
 }
@@ -133,14 +132,14 @@ export interface MessageImagePromptOptions {
 export async function generateMessageImagePrompts(
     opts: MessageImagePromptOptions
 ): Promise<string[]> {
-    const { messages, compiledBible, demographicHint } = opts;
+    const { messages, bibleText, demographicHint } = opts;
     const numMessages = messages.length;
 
     const conversationText = messages
         .map((m, i) => `[${i + 1}] ${m.role === 'user' ? 'PERSON' : 'CONSULTANT'}: ${m.text}`)
         .join('\n\n');
 
-    const bibleContext = compiledBible ? JSON.stringify(compiledBible) : '';
+    const bibleContext = bibleText || '';
 
     const directorPrompt = `You are a Visual Director for an advice column called Earnest Page.
 You're designing one photograph per message in this conversation.

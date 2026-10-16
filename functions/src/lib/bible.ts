@@ -1,14 +1,8 @@
-/** A compiled bible section. Legacy entries may carry other fields instead of heading/content. */
-export interface BibleSection {
-    heading?: string;
-    content?: string;
-    [key: string]: unknown;
-}
-
 /**
- * A user's compiled Character Bible sections: the current `bible.sections`,
- * or the legacy `character_bible.compiled_output.ideal`. Empty when neither exists.
+ * A user's Character Bible as one Markdown document (`bible.text`, see
+ * lib/character/bibleText.ts). Empty when there is none.
  */
-export function getCompiledBible(userData: FirebaseFirestore.DocumentData | undefined): BibleSection[] {
-    return userData?.bible?.sections || userData?.character_bible?.compiled_output?.ideal || [];
+export function getBibleText(userData: FirebaseFirestore.DocumentData | undefined): string {
+    const text = userData?.bible?.text;
+    return typeof text === 'string' ? text : '';
 }

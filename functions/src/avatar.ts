@@ -16,6 +16,8 @@ import { getFunctions } from 'firebase-admin/functions';
 import sharp from 'sharp';
 import { db, storage, FieldValue } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
+import { getBibleText } from './lib/bible.js';
+import { splitBibleText } from './lib/character/bibleText.js';
 import { generateImage } from './lib/ai/generateImage.js';
 import { validateGeneratedImage } from './lib/ai/validateImage.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
@@ -70,10 +72,8 @@ function buildAvatarPrompt(data: FirebaseFirestore.DocumentData, portrait?: stri
         hairParts ? `${hairParts} hair` : '',
     ].filter(Boolean).join(' ');
 
-    const styleSection = (data.bible?.sections || []).find(
-        (s: { heading: string }) => s.heading === 'Style & Presence'
-    );
-    const legacyStyle = typeof styleSection?.content === 'string' ? styleSection.content.substring(0, 500) : '';
+    const styleSection = splitBibleText(getBibleText(data)).find(s => s.heading === 'Style & Presence');
+    const legacyStyle = styleSection?.content.substring(0, 500) || '';
 
     return [
         'TIGHT HEADSHOT PORTRAIT framed from the chest up. Square 1:1 aspect ratio.',
