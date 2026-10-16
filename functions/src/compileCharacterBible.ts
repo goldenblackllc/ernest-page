@@ -128,7 +128,7 @@ const PROMPT_LOOKS = `Here is your Character Bible.
 These are the places in your week:
 {PLACES}
 
-For each place, describe how you look there: chest-up, looking into the camera. Clothes (with brands), grooming (including hair), posture, expression, background. 40 to 100 words, in English, third person. Don't restate age, skin, eye or hair color. Choose one as your main portrait.`;
+For each place, describe yourself there: what you're doing, what you're wearing (with brands), grooming (including hair), your expression, and what's around you. 40 to 100 words, in English, third person. Don't restate age, skin, eye or hair color. Choose one as your main portrait.`;
 
 const LOOKS_SCHEMA = z.object({
     looks: z.array(z.object({

@@ -75,18 +75,17 @@ function buildAvatarPrompt(data: FirebaseFirestore.DocumentData, portrait?: stri
     const styleSection = splitBibleText(getBibleText(data)).find(s => s.heading === 'Style & Presence');
     const legacyStyle = styleSection?.content.substring(0, 500) || '';
 
+    // Three labeled parts so the image model reads the character's description
+    // as the setting of the photo, not as the action to draw.
     return [
-        'TIGHT HEADSHOT PORTRAIT framed from the chest up. Square 1:1 aspect ratio.',
-        'The subject looks straight into the camera. Shot with a standard portrait lens: natural perspective, no wide-angle or fisheye distortion.',
-        `A ${physicalParts}.`,
-        portrait || (legacyStyle ? `The character's chosen style and presentation: ${legacyStyle}` : ''),
-        'Instagram-quality sharpness and color saturation.',
-        'Face and upper chest fill the frame.',
-        'Full-bleed composition. No borders, no frames, no margins, no white space around the subject.',
+        `A portrait photograph of this person: a ${physicalParts}.`,
+        portrait
+            ? `THE MOMENT — their own description of where they are right now. Use it for the place, their clothes, hair and grooming, and the people and things around them:\n"${portrait}"`
+            : legacyStyle ? `Their chosen style and presentation: ${legacyStyle}` : '',
+        'THE PORTRAIT — a professional lifestyle photographer steps into this moment. The person is awake and poses for the camera, chest up, looking straight into the lens. The photographer stands a few feet away at eye level with an 85mm lens, and the setting shows behind them. Square 1:1.',
         !ethnicity ? 'Do not default to any racial or ethnic stereotype. Use ambiguous, diverse features unless background is specified.' : '',
-        'No text, no watermarks, no logos.',
-        "Do NOT show the subject's waist, hips, legs, or feet. Do NOT zoom out to show the full body. Keep the camera tight on the face and upper chest only.",
-    ].filter(Boolean).join(' ');
+        'No text, watermarks or logos. No borders or margins. Nothing below the chest.',
+    ].filter(Boolean).join('\n\n');
 }
 
 async function markFailed(uid: string, error: string) {
