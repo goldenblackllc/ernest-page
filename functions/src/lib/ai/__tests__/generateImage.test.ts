@@ -40,6 +40,12 @@ describe('buildImageRequestParts: reference images', () => {
         expect(text).not.toMatch(/personal style/);
     });
 
+    it("'self' mode introduces the reference as the character's own photo", () => {
+        const text = textOf(buildImageRequestParts({ prompt: PROMPT, referenceImages: [ref], referenceMode: 'self', aspectRatio: '1:1' }));
+        expect(text.startsWith('This is me (the photo above).')).toBe(true);
+        expect(text.endsWith(PROMPT)).toBe(true);
+    });
+
     it("an unknown mode falls back to 'full'", () => {
         const full = textOf(buildImageRequestParts({ prompt: PROMPT, referenceImages: [ref], referenceMode: 'full' }));
         const unknown = textOf(buildImageRequestParts({ prompt: PROMPT, referenceImages: [ref], referenceMode: 'weird' as ReferenceMode }));

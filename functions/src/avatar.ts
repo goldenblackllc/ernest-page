@@ -65,7 +65,7 @@ function buildAvatarPrompt(data: FirebaseFirestore.DocumentData, portrait?: stri
 
     const physicalParts = [
         ageStr,
-        gender,
+        gender.toLowerCase(),
         ethnicity ? `of ${ethnicity} heritage` : '',
         skinTone ? `with ${skinTone.toLowerCase()} skin` : '',
         eyeColor ? `${eyeColor.toLowerCase()} eyes` : '',
@@ -75,16 +75,16 @@ function buildAvatarPrompt(data: FirebaseFirestore.DocumentData, portrait?: stri
     const styleSection = splitBibleText(getBibleText(data)).find(s => s.heading === 'Style & Presence');
     const legacyStyle = styleSection?.content.substring(0, 500) || '';
 
-    // Three labeled parts so the image model reads the character's description
-    // as the setting of the photo, not as the action to draw.
+    // The character's own request for its portrait, in first person: where it
+    // is right now in its own words, then a photographer comes in and it poses.
     return [
-        `A portrait photograph of this person: a ${physicalParts}.`,
+        `Please make a portrait photograph of me. I'm a ${physicalParts}.`,
         portrait
-            ? `THE MOMENT — their own description of where they are right now. Use it for the place, their clothes, hair and grooming, and the people and things around them:\n"${portrait}"`
-            : legacyStyle ? `Their chosen style and presentation: ${legacyStyle}` : '',
-        'THE PORTRAIT — a professional lifestyle photographer steps into this moment. The person is awake and poses for the camera, chest up, looking straight into the lens. The photographer stands a few feet away at eye level with an 85mm lens, and the setting shows behind them. Square 1:1.',
+            ? `Where I am right now, in my own words:\n"${portrait}"`
+            : legacyStyle ? `My chosen style and presentation, in my own words:\n"${legacyStyle}"` : '',
+        'A professional lifestyle photographer comes in, and I pause and pose for a portrait: chest up, looking straight into the lens. The photographer stands a few feet away at eye level with an 85mm lens, with the setting behind me. Square 1:1.',
         !ethnicity ? 'Do not default to any racial or ethnic stereotype. Use ambiguous, diverse features unless background is specified.' : '',
-        'No text, watermarks or logos. No borders or margins. Nothing below the chest.',
+        'No text, watermarks or logos. No borders or margins. Nothing below my chest.',
     ].filter(Boolean).join('\n\n');
 }
 
@@ -116,7 +116,7 @@ async function generateAvatarImage(prompt: string, logLabel: string, referenceIm
             prompt,
             aspectRatio: '1:1',
             logPrefix: 'Avatar',
-            ...(referenceImage ? { referenceImages: [referenceImage], referenceMode: 'identity' as const } : {}),
+            ...(referenceImage ? { referenceImages: [referenceImage], referenceMode: 'self' as const } : {}),
         });
 
         if (!imageResult) {

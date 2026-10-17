@@ -13,7 +13,7 @@ import { IMAGE_MODEL } from './models.js';
 import { errorMessage, isQuotaError, quotaError } from '../utils/errors.js';
 
 export type ImageAspectRatio = '1:1' | '9:16' | '16:9' | '4:3' | '3:4' | '4:5';
-export type ReferenceMode = 'full' | 'face-only' | 'identity';
+export type ReferenceMode = 'full' | 'face-only' | 'self';
 
 interface GenerateImageOptions {
     prompt: string;
@@ -36,8 +36,9 @@ interface GenerateImageOptions {
      *   follow the text prompt instead. Used for early storyboard beats
      *   where the character's current physical state may differ from the
      *   aspirational avatar (transformation arc).
-     * - 'identity': Anchor on face, build and hair; clothing and scene come
-     *   from the text prompt. Used for situation avatars.
+     * - 'self': The reference is the character's own photo ("This is me");
+     *   the prompt is the character's first-person request. Used for
+     *   situation avatars.
      */
     referenceMode?: ReferenceMode;
 }
@@ -51,7 +52,7 @@ interface GenerateImageResult {
 
 const REFERENCE_PREFIX: Record<ReferenceMode, string> = {
     'face-only': 'Use the reference image ONLY to maintain the character\'s face, hair, and ethnic features. Do NOT copy the body type, weight, build, or physique from the reference image — follow the body description in the text prompt below instead. Keep their facial identity consistent but let the scene dictate their physical state.\n\n',
-    'identity': 'Use the reference image ONLY to keep the character\'s identity: their face, build and hair. Dress them and set the scene exactly as described below, not as in the reference image.\n\n',
+    'self': 'This is me (the photo above).\n\n',
     'full': 'Use the reference image to maintain the character\'s identity — their face, build, hair, and personal style. Keep their clothing style consistent BUT remove any activity-specific gear (goggles, helmets, sports equipment) that does not fit the scene described below.\n\n',
 };
 
