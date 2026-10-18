@@ -211,7 +211,10 @@
     "replyTooLong": "This conversation is too long to continue. Close to start a new session.",
     "sessionRoutingSettings": "Session routing settings",
     "removePhoto": "Remove photo",
-    "send": "Send"
+    "send": "Send",
+    "seeCharacterNow": "See {name} right now",
+    "rightNow": "Right now",
+    "throughTheWeek": "Through the week"
   },
   "triagePanel": {
     "buildingCharacter": "Building your character...",

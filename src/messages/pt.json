@@ -158,7 +158,10 @@
     "replyTooLong": "Esta conversa ficou longa demais para continuar. Feche para iniciar uma nova sessão.",
     "sessionRoutingSettings": "Configurações de roteamento de sessão",
     "removePhoto": "Remover foto",
-    "send": "Enviar"
+    "send": "Enviar",
+    "seeCharacterNow": "Ver {name} agora",
+    "rightNow": "Agora",
+    "throughTheWeek": "Ao longo da semana"
   },
   "triagePanel": {
     "buildingCharacter": "Construindo seu personagem...",

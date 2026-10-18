@@ -167,7 +167,7 @@ export const mirrorReply = onCall<MirrorReplyData>(
                         providerOptions: { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } },
                     },
                     // After the cache breakpoint: changes every turn.
-                    { role: 'system', content: buildMirrorTimeBlock(localTime, situation?.label) },
+                    { role: 'system', content: buildMirrorTimeBlock(localTime, situation) },
                     ...messages,
                 ],
                 abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),

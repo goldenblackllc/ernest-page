@@ -14,6 +14,7 @@ import { useMirrorSession, MAX_EXCHANGES, MAX_SESSION_HOURS } from "@/hooks/useM
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useCharacterTTS } from "@/hooks/useCharacterTTS";
 import { MirrorHeader } from "@/components/mirror/MirrorHeader";
+import { CharacterNowSheet } from "@/components/mirror/CharacterNowSheet";
 import { MirrorMessageList } from "@/components/mirror/MirrorMessageList";
 import { RoutingMenu } from "@/components/mirror/RoutingMenu";
 import { MirrorInputBar } from "@/components/mirror/MirrorInputBar";
@@ -153,6 +154,13 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
     const characterArchetype = profile?.defining_words?.join(', ') || null;
     const displayName = characterName || characterArchetype || "Your Ideal Self";
     const { situation, avatarUrl } = useCharacterNow(profile);
+    const [isCharacterNowOpen, setIsCharacterNowOpen] = useState(false);
+
+    const openCharacterNow = () => {
+        // Put the keyboard away so the sheet has the whole screen
+        (document.activeElement as HTMLElement | null)?.blur();
+        setIsCharacterNowOpen(true);
+    };
 
     const handleSelectRouting = (option: SessionRouting) => {
         setSessionRouting(option);
@@ -225,6 +233,16 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
                         isSpeaking={tts.isSpeaking}
                         onToggleAutoSpeak={tts.toggleAutoSpeak}
                         onClose={handleClose}
+                        onAvatarClick={openCharacterNow}
+                    />
+                    <CharacterNowSheet
+                        isOpen={isCharacterNowOpen}
+                        onClose={() => setIsCharacterNowOpen(false)}
+                        displayName={displayName}
+                        current={situation}
+                        situations={profile?.bible?.style?.situations || []}
+                        situationAvatars={profile?.avatar?.situations || {}}
+                        fallbackAvatarUrl={profile?.avatar?.url}
                     />
 
                     {/* ═══ ZONE 2: MESSAGES — fills space between header and input ═══ */}

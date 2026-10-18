@@ -158,7 +158,10 @@
     "replyTooLong": "Dieses Gespräch ist zu lang, um weiterzumachen. Schließe, um eine neue Sitzung zu beginnen.",
     "sessionRoutingSettings": "Sitzungs-Routing-Einstellungen",
     "removePhoto": "Foto entfernen",
-    "send": "Senden"
+    "send": "Senden",
+    "seeCharacterNow": "{name} gerade jetzt ansehen",
+    "rightNow": "Gerade jetzt",
+    "throughTheWeek": "Durch die Woche"
   },
   "triagePanel": {
     "buildingCharacter": "Deinen Charakter erstellen...",
