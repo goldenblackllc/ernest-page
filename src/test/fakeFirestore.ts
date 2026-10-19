@@ -86,8 +86,17 @@ class FakeDb {
         };
     }
 
-    async getAll(...refs: { path: string }[]): Promise<FakeSnapshot[]> {
-        return refs.map((ref) => this.snapshot(ref.path));
+    /** Like Firestore's getAll(); a trailing { fieldMask } keeps only those fields (top level, or one level down as "a.b"). */
+    async getAll(...args: ({ path: string } | { fieldMask?: string[] })[]): Promise<FakeSnapshot[]> {
+        const last = args[args.length - 1];
+        const mask = last && "fieldMask" in last ? last.fieldMask : undefined;
+        const refs = (mask ? args.slice(0, -1) : args) as { path: string }[];
+        return refs.map((ref) => {
+            const snap = this.snapshot(ref.path);
+            if (!mask) return snap;
+            const data = snap.data();
+            return { ...snap, data: () => data && maskFields(data, mask) };
+        });
     }
 
     nextId() {
@@ -155,9 +164,24 @@ class FakeTransaction {
     }
 }
 
+function maskFields(data: DocData, mask: string[]): DocData {
+    const out: DocData = {};
+    for (const path of mask) {
+        const [top, sub] = path.split(".");
+        if (!(top in data)) continue;
+        if (!sub) { out[top] = data[top]; continue; }
+        const inner = data[top] as DocData | undefined;
+        if (inner && typeof inner === "object" && sub in inner) {
+            out[top] = { ...(out[top] as DocData | undefined), [sub]: inner[sub] };
+        }
+    }
+    return out;
+}
+
 class FakeQuery {
     private filters: [string, unknown][] = [];
     private max = Infinity;
+    private fields: string[] | null = null;
 
     constructor(private db: FakeDb, private path: string) {}
 
@@ -171,9 +195,18 @@ class FakeQuery {
         return ref;
     }
 
+    // Like Firestore, each builder call returns a new query and leaves this one as it is
+    private clone(change: (q: FakeQuery) => void) {
+        const q = new FakeQuery(this.db, this.path);
+        q.filters = [...this.filters];
+        q.max = this.max;
+        q.fields = this.fields;
+        change(q);
+        return q;
+    }
+
     where(field: string, op: string, value: unknown) {
-        if (op === "==") this.filters.push([field, value]);
-        return this;
+        return this.clone((q) => { if (op === "==") q.filters.push([field, value]); });
     }
 
     orderBy() {
@@ -185,8 +218,12 @@ class FakeQuery {
     }
 
     limit(n: number) {
-        this.max = n;
-        return this;
+        return this.clone((q) => { q.max = n; });
+    }
+
+    /** Like Firestore's select(): returned documents carry only these top-level fields. */
+    select(...fields: string[]) {
+        return this.clone((q) => { q.fields = fields; });
     }
 
     async get() {
@@ -195,8 +232,18 @@ class FakeQuery {
             .filter((p) => p.startsWith(`${this.path}/`) && p.split("/").length === depth)
             .filter((p) => this.filters.every(([f, v]) => this.db.docs.get(p)![f] === v))
             .slice(0, this.max)
-            .map((p) => this.db.snapshot(p));
+            .map((p) => this.project(this.db.snapshot(p)));
         return { empty: docs.length === 0, size: docs.length, docs };
+    }
+
+    private project(snap: FakeSnapshot): FakeSnapshot {
+        const fields = this.fields;
+        if (!fields) return snap;
+        const data = snap.data();
+        return {
+            ...snap,
+            data: () => data && maskFields(data, fields),
+        };
     }
 }
 

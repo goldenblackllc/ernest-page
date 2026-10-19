@@ -5,6 +5,7 @@ import { getPostText } from '@functions/lib/getPostText';
 import { useAuth } from "@/context/AuthContext";
 import { useFeedAudio } from "@/hooks/useFeedAudio";
 import { usePostComments } from "@/hooks/usePostComments";
+import { usePostWordTimestamps } from "@/hooks/usePostWordTimestamps";
 import type { Post } from "@/types/post";
 import { getPostAudio, getPostImages, getLetterRatio } from "@/components/feed/postFields";
 import { buildSubtitleTrack } from "@/components/feed/subtitles";
@@ -47,7 +48,8 @@ function FeedPostCardBody({ post, followingMap, onFollowClick, onRequestDelete, 
 
     // Text and audio
     const { letter: letterText, response: responseText } = getPostText(post);
-    const { unifiedAudioUrl, wordTimestamps, hasAudio } = getPostAudio(post);
+    const timedPost = usePostWordTimestamps(post, cardRef, getPostAudio(post).hasAudio);
+    const { unifiedAudioUrl, wordTimestamps, hasAudio } = getPostAudio(timedPost);
     const letterRatio = getLetterRatio(post, letterText, responseText);
 
     const audio = useFeedAudio({

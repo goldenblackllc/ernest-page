@@ -39,4 +39,21 @@ describe("GET /api/posts/feed", () => {
         fakeDb.seed("posts/theirs", privatePost("someone-else"));
         expect(await feedIds()).not.toContain("theirs");
     });
+
+    it("sends only the fields a card shows, without word timestamps or prompts", async () => {
+        fakeDb.seed("posts/pub", {
+            uid: "someone-else", authorId: "someone-else", is_public: true, visibility: "public",
+            title: "A public post", letter: "Dear Earnest", response: "Hello", created_at,
+            audio_url: "https://storage.googleapis.com/b/audio/p.mp3",
+            audio_word_timestamps: [{ word: "Dear", start: 0, end: 0.3 }],
+            short_audio_word_timestamps: [{ word: "Dear", start: 0, end: 0.3 }],
+            image_prompts: ["a long prompt"],
+        });
+        const res = await GET(makeRequest("http://localhost/api/posts/feed?page=0", { method: "GET", token: VALID_TOKEN }));
+        const post = (await res.json()).posts.find((p: { id: string }) => p.id === "pub");
+        expect(post).toMatchObject({ title: "A public post", letter: "Dear Earnest", audio_url: expect.any(String) });
+        expect(post).not.toHaveProperty("audio_word_timestamps");
+        expect(post).not.toHaveProperty("short_audio_word_timestamps");
+        expect(post).not.toHaveProperty("image_prompts");
+    });
 });

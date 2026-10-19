@@ -44,6 +44,7 @@ const AUTH_ROUTES: [string, string, () => Promise<Record<string, unknown>>][] = 
     ["posts/like", "POST", () => import("../posts/like/route")],
     ["posts/mine", "GET", () => import("../posts/mine/route")],
     ["posts/saved", "GET", () => import("../posts/saved/route")],
+    ["posts/timestamps", "GET", () => import("../posts/timestamps/route")],
     ["share", "POST", () => import("../share/route")],
     ["share", "DELETE", () => import("../share/route")],
     ["tts", "POST", () => import("../tts/route")],
