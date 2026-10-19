@@ -128,9 +128,12 @@ const PROMPT_LOOKS = `Here is your Character Bible.
 These are the places in your week:
 {PLACES}
 
-For each place, describe yourself there: what you're doing, what you're wearing (with brands), grooming (including hair), your expression, and what's around you. 40 to 100 words, in {LANGUAGE}. Don't restate age, skin, eye or hair color. Choose one as your main portrait.`;
+For each place, describe yourself there: what you're doing, what you're wearing (with brands), grooming (including hair), your expression, and what's around you. 40 to 100 words, in {LANGUAGE}. Don't restate age, skin, eye or hair color. Choose one as your main portrait.
+
+Also write what stays the same about how you look in every place: your haircut (length, cut, color), your beard if you have one, and anything you always wear. Not how you style it on a given day. One or two sentences, in first person, in {LANGUAGE}.`;
 
 const LOOKS_SCHEMA = z.object({
+    look: z.string().describe("What stays the same about how you look in every place"),
     looks: z.array(z.object({
         place: z.string().describe("A place id"),
         portrait: z.string(),
@@ -181,7 +184,8 @@ export function cleanStyle(week: z.infer<typeof WEEK_SCHEMA>, looks: z.infer<typ
     }
     if (blocks.length === 0) throw new Error('Bible style has no usable week');
 
-    return { situations, week: blocks };
+    const look = (looks.look || '').trim();
+    return { ...(look && { look }), situations, week: blocks };
 }
 
 const PROVIDER_OPTIONS = {
@@ -334,7 +338,7 @@ async function generateStyle(bibleText: string, userLocale: string): Promise<Cha
         abortSignal: AbortSignal.timeout(360_000),
         providerOptions: PROVIDER_OPTIONS,
         system: SYSTEM_PROMPT,
-        prompt: PROMPT_LOOKS.replace('{BIBLE}', () => bibleText).replace('{PLACES}', () => places).replace('{LANGUAGE}', languageName(userLocale)),
+        prompt: PROMPT_LOOKS.replace('{BIBLE}', () => bibleText).replace('{PLACES}', () => places).replaceAll('{LANGUAGE}', languageName(userLocale)),
         schema: LOOKS_SCHEMA,
     });
 

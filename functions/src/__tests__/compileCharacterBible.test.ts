@@ -65,6 +65,7 @@ const WEEK = {
     ],
 };
 const LOOKS = {
+    look: 'I keep a short side-parted cut and a close beard, and always wear my Reverso.',
     looks: [
         { place: 'study', portrait: brief('A charcoal three-piece suit with a navy silk tie') },
         { place: 'office', portrait: brief('A navy Kiton suit, white shirt and burgundy tie') },
@@ -104,6 +105,7 @@ describe('compileCharacterBibleForUser', () => {
         const style = h.userSet.mock.calls[0][0].bible.style;
         expect(style.situations.map((x: { id: string }) => x.id)).toEqual(['office', 'study', 'bed']);
         expect(style.week).toHaveLength(3);
+        expect(style.look).toBe(LOOKS.look);
     });
 
     it('gives the week and looks calls the finished bible', async () => {
@@ -113,6 +115,7 @@ describe('compileCharacterBibleForUser', () => {
         expect(weekCall).toContain('## Style & Presence\n\nA Barbour Bedale');
         expect(weekCall).toContain('Write in English.');
         expect(looksCall).toContain('40 to 100 words, in English.');
+        expect(looksCall).not.toContain('{LANGUAGE}');
         expect(looksCall).toContain('A Barbour Bedale');
         expect(looksCall).toContain('office: At the office');
     });
@@ -174,5 +177,9 @@ describe('cleanStyle', () => {
 
     it('throws without a usable week', () => {
         expect(() => cleanStyle({ ...WEEK, week: [] }, LOOKS)).toThrow(/week/);
+    });
+
+    it('leaves out an empty standing look', () => {
+        expect(cleanStyle(WEEK, { ...LOOKS, look: '  ' })).not.toHaveProperty('look');
     });
 });

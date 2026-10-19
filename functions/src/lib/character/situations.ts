@@ -27,6 +27,8 @@ export interface WeekBlock {
 }
 
 export interface CharacterStyle {
+    /** What stays the same about how the character looks everywhere (haircut, beard, constant accessories), first person */
+    look?: string;
     /** The first is the character's main portrait: the main avatar and reference image. */
     situations: Situation[];
     week: WeekBlock[];

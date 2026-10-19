@@ -72,13 +72,16 @@ function buildAvatarPrompt(data: FirebaseFirestore.DocumentData, portrait?: stri
         hairParts ? `${hairParts} hair` : '',
     ].filter(Boolean).join(' ');
 
+    const look: string = data.bible?.style?.look || '';
     const styleSection = splitBibleText(getBibleText(data)).find(s => s.heading === 'Style & Presence');
     const legacyStyle = styleSection?.content.substring(0, 500) || '';
 
-    // The character's own request for its portrait, in first person: where it
-    // is right now in its own words, then a photographer comes in and it poses.
+    // The character's own request for its portrait, in first person: how it
+    // always looks (haircut, beard), where it is right now in its own words, then
+    // a photographer comes in and it poses.
     return [
         `Please make a portrait photograph of me. I'm a ${physicalParts}.`,
+        look ? `How I always look, in my own words:\n"${look}"` : '',
         portrait
             ? `Where I am right now, in my own words:\n"${portrait}"`
             : legacyStyle ? `My chosen style and presentation, in my own words:\n"${legacyStyle}"` : '',
