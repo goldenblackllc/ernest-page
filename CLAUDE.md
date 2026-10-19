@@ -55,6 +55,14 @@ Rules:
   All three are written by `savePostImages`. About 70 older posts have only `imagen_url(s)`, so readers must fall back to them.
 - No UI string is hardcoded. Add it to all five locale files.
 
+## Code quality
+
+Keep the code clean, solid, stable, clear and up to date.
+- **Clean and clear:** simple code that reads like the code around it. Remove dead code, unused exports and stale comments as you go (`node scripts/find-dead-code.mjs`). Don't leave work half-done or duplicated.
+- **Solid and stable:** typecheck, lint and tests green before every commit. A new behavior gets a test. Fix the cause, not the symptom.
+- **Up to date:** take patch and minor dependency updates promptly. Plan major updates deliberately, as a change of their own, never mixed into feature work.
+- **Releases:** production always matches `main`. Deploy only committed code from `main`. The functions build runs before every deploy (`predeploy` in `firebase.json`).
+
 ## Sessions and payments
 
 Model and reasons are in MANIFESTO.md §8. In code:
