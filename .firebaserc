@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "earnest-page"
+    "default": "earnest-page",
+    "beta": "earnest-page-beta"
   }
 }

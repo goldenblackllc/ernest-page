@@ -63,6 +63,13 @@ Keep the code clean, solid, stable, clear and up to date.
 - **Up to date:** take patch and minor dependency updates promptly. Plan major updates deliberately, as a change of their own, never mixed into feature work.
 - **Releases:** production always matches `main`. Deploy only committed code from `main`. The functions build runs before every deploy (`predeploy` in `firebase.json`).
 
+## Beta (testing before release)
+
+- **A separate copy of the app.** Firebase project `earnest-page-beta` (alias `beta` in `.firebaserc`) and the website's `beta` branch at https://beta.earnestpage.com. It has its own database, storage, sign-in and functions; nothing in beta reaches live.
+- **Deploying.** Add `-P beta`, e.g. `firebase deploy -P beta --only functions:mirrorReply`. Plain `firebase deploy` still targets live.
+- **Settings.** `functions/.env.earnest-page-beta` overrides `functions/.env` for the beta functions (admin email is off). The website's beta variables are in Vercel (Preview, branch `beta`). `.env.beta.local` holds the beta service-account key for scripts. All gitignored.
+- **Data.** `node scripts/copy-to-beta.mjs <+phone> [--posts N]` replaces that user's beta record with a fresh copy of their live data: no billing, a complimentary membership instead. One way only.
+
 ## Sessions and payments
 
 Model and reasons are in MANIFESTO.md §8. In code:
