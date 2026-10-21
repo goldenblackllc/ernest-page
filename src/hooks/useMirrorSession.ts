@@ -281,6 +281,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         isLoading,
         setIsLoading,
         sessionId,
+        sessionStartedAt,
         postPhotoUrl,
         creditConsumed,
         exchangeCount,

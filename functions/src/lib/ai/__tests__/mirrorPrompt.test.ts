@@ -41,9 +41,13 @@ describe('prompt caching', () => {
         expect(prompt).not.toContain('[CURRENT TIME]');
         expect(buildMirrorTimeBlock('Tuesday, July 1, 2025 2:31 PM')).toBe('[CURRENT TIME]\nTuesday, July 1, 2025 2:31 PM');
         expect(buildMirrorTimeBlock(undefined)).toBe('[CURRENT TIME]\nUnknown');
-        expect(buildMirrorTimeBlock('Tuesday 11:02 PM', { label: 'In bed, reading' })).toBe('[CURRENT TIME]\nTuesday 11:02 PM\n\n[WHERE YOU ARE]\nIn bed, reading');
-        expect(buildMirrorTimeBlock('Tuesday 11:02 PM', { label: 'In bed, reading', portrait: 'Navy cotton pajamas, a hardback open on my chest.' }))
-            .toBe('[CURRENT TIME]\nTuesday 11:02 PM\n\n[WHERE YOU ARE]\nIn bed, reading\n\nNavy cotton pajamas, a hardback open on my chest.');
+    });
+
+    it("puts the session's location in the cached prompt", () => {
+        expect(buildMirrorSystemPrompt(config)).not.toContain('[WHERE YOU ARE]');
+        expect(buildMirrorSystemPrompt({ ...config, situation: { label: 'In bed, reading' } })).toMatch(/\[WHERE YOU ARE\]\nIn bed, reading$/);
+        expect(buildMirrorSystemPrompt({ ...config, situation: { label: 'In bed, reading', portrait: 'Navy cotton pajamas, a hardback open on my chest.' } }))
+            .toMatch(/\[WHERE YOU ARE\]\nIn bed, reading\n\nNavy cotton pajamas, a hardback open on my chest\.$/);
     });
 
     it('builds the same prompt on every turn of a session', () => {
