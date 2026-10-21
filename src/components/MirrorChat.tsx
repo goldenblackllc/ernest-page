@@ -153,7 +153,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
     const characterName = profile?.name || null;
     const characterArchetype = profile?.defining_words?.join(', ') || null;
     const displayName = characterName || characterArchetype || "Your Ideal Self";
-    const { situation, avatarUrl } = useCharacterNow(profile);
+    const { situation, avatarUrl } = useCharacterNow(profile, session.sessionStartedAt);
     const [isCharacterNowOpen, setIsCharacterNowOpen] = useState(false);
 
     const openCharacterNow = () => {

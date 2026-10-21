@@ -7,6 +7,7 @@
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import type { LanguageModelUsage } from 'ai';
 import { randomUUID } from 'crypto';
 import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
@@ -15,7 +16,7 @@ import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } 
 import { getBibleText } from './lib/bible.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
-import { currentSituation, localDayHour, type CharacterStyle } from './lib/character/situations.js';
+import { currentSituation, localDayHour, type CharacterStyle, type Situation } from './lib/character/situations.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 
 const MAX_MESSAGE_LENGTH = 5000;
@@ -53,9 +54,13 @@ async function requireSessionAccess(uid: string, sessionId: unknown, messages: C
     const chat = (await db.collection('users').doc(uid).collection('active_chats').doc(sessionId).get()).data();
     const check = checkReply(chat?.access as SessionGrant | undefined, messages, Date.now());
     if (!check.ok) throw new HttpsError('permission-denied', 'This session has ended', { reason: check.reason });
+    return chat;
 }
 
-function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined, sessionId: string, locale: string | undefined, timeZone: string): string {
+/** Marks the end of a prompt prefix for Anthropic's prompt cache; held for an hour, since turns are often minutes apart. */
+const CACHE_BREAKPOINT = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const;
+
+function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined, sessionId: string, locale: string | undefined, timeZone: string, situation: Situation | undefined): string {
     const now = new Date();
     const todayKey = localDateKey(now, timeZone);
     const dossier = annotateDates(userData?.dossier || userData?.identity?.dossier || '', todayKey);
@@ -103,8 +108,25 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
 - If you detect limiting beliefs, do not confront them aggressively. Let what they don't prefer exist and deliver its message — once it has been heard, it has no need to stay — then put your attention on the possibility.
 - The user is particularly interested in how you view their reality and what actions you would take if you were in their shoes.
 - If the person asks why you don't remember something from a previous session, don't apologize. Forgetting is deliberate: you'd rather hear where their story is now than hold them to the version they told last time. Say this in your own words, briefly.`,
+        situation,
         dynamicFilterText: `STEP B - THE DYNAMIC FILTER: Check the "Relationships" node. The character is an equal and a peer. Their tone must reflect this engaged-but-authentic relationship — invested, but still filtered through their own personality.`,
     });
+}
+
+/** One line per reply, to check in Cloud Logging that the prompt cache hits. */
+function logCacheUsage(sessionId: string, messageCount: number, result: { response: { modelId: string }; usage: LanguageModelUsage }) {
+    const { inputTokenDetails, outputTokenDetails, outputTokens } = result.usage;
+    console.log(JSON.stringify({
+        event: 'mirror_usage',
+        sessionId,
+        messageCount,
+        model: result.response.modelId,
+        cacheRead: inputTokenDetails.cacheReadTokens ?? 0,
+        cacheWrite: inputTokenDetails.cacheWriteTokens ?? 0,
+        uncached: inputTokenDetails.noCacheTokens ?? 0,
+        output: outputTokens ?? 0,
+        thinking: outputTokenDetails.reasoningTokens ?? 0,
+    }));
 }
 
 // ─── Chat reply ─────────────────────────────────────────────────────────────
@@ -131,16 +153,20 @@ export const mirrorReply = onCall<MirrorReplyData>(
             throw new HttpsError('invalid-argument', 'Message is too long. Please keep it under 5,000 characters.');
         }
 
-        await requireSessionAccess(uid, sessionId, messages);
+        const chat = await requireSessionAccess(uid, sessionId, messages);
+        // /api/consume-session sets createdAt when the session starts; it never changes after that
+        const startedAt: number = chat?.createdAt ?? Date.now();
 
         const userDoc = await db.collection('users').doc(uid).get();
         if (!userDoc.exists) throw new HttpsError('not-found', 'User not found');
         const userData = userDoc.data();
 
-        const systemPrompt = buildSystemPrompt(userData, sessionId, locale, timeZone);
-        // Where the character is right now, by its own weekly routine (the Mirror header shows the matching avatar)
-        const { day, hour } = localDayHour(new Date(), timeZone);
+        // Where the character is, by its weekly routine at the session's start. It stays
+        // there for the whole session, like the Mirror header's avatar, and keeps the
+        // system prompt identical on every turn so it stays cached.
+        const { day, hour } = localDayHour(new Date(startedAt), timeZone);
         const situation = currentSituation(userData?.bible?.style as CharacterStyle | undefined, day, hour);
+        const systemPrompt = buildSystemPrompt(userData, sessionId, locale, timeZone, situation);
 
         // Save the user's message immediately so the client shows "generating"
         const activeChatRef = db.collection('users').doc(uid).collection('active_chats').doc(sessionId);
@@ -151,7 +177,7 @@ export const mirrorReply = onCall<MirrorReplyData>(
             timeZone, // processChat dates the session recap in the user's time zone
             status: 'generating',
             updatedAt: Date.now(),
-            ...(messages.length === 1 ? { createdAt: Date.now() } : {}),
+            ...(chat?.createdAt ? {} : { createdAt: startedAt }),
         }, { merge: true });
 
         let result;
@@ -161,14 +187,16 @@ export const mirrorReply = onCall<MirrorReplyData>(
                 fallbackModelId: LIVE_FALLBACK,
                 messages: [
                     // Cached: identical on every turn of the session.
-                    {
-                        role: 'system',
-                        content: systemPrompt,
-                        providerOptions: { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } },
-                    },
-                    // After the cache breakpoint: changes every turn.
-                    { role: 'system', content: buildMirrorTimeBlock(localTime, situation) },
-                    ...messages,
+                    { role: 'system', content: systemPrompt, providerOptions: CACHE_BREAKPOINT },
+                    // Cached up to the latest message, so the next turn reads the whole
+                    // conversation so far from the cache and pays full price only for what's new.
+                    ...messages.map(({ role, content }, i) => (
+                        i === messages.length - 1
+                            ? { role, content, providerOptions: CACHE_BREAKPOINT }
+                            : { role, content }
+                    )),
+                    // After every breakpoint: the only part that changes between turns.
+                    { role: 'system', content: buildMirrorTimeBlock(localTime) },
                 ],
                 abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
             });
@@ -177,6 +205,8 @@ export const mirrorReply = onCall<MirrorReplyData>(
             await activeChatRef.set({ status: 'idle', updatedAt: Date.now() }, { merge: true }); // user can retry
             throw new HttpsError('unavailable', 'The reply could not be generated. Please try again.');
         }
+
+        logCacheUsage(sessionId, messages.length, result);
 
         await activeChatRef.set({
             messages: [...messages, { role: 'assistant', content: result.text, id: randomUUID() }],

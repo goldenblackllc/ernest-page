@@ -192,6 +192,8 @@ export interface MirrorPromptConfig {
     mandatePostlude: string;
     /** Step B dynamic filter description */
     dynamicFilterText: string;
+    /** Where the character is for this session (chosen at its start, so it stays put) */
+    situation?: { label: string; portrait?: string };
 }
 
 /**
@@ -205,15 +207,18 @@ export function pickNegativeInventory(sessionId: string): boolean {
 }
 
 /**
- * The per-turn part of the system prompt. It goes in a separate system block
- * AFTER the cached one: anything that changes between turns must stay out of
- * buildMirrorSystemPrompt, or the prompt cache never hits.
+ * The only per-turn part of the prompt. It goes after the latest message, past
+ * every cache breakpoint: anything that changes between turns must stay out of
+ * buildMirrorSystemPrompt and the conversation, or the prompt cache never hits.
  */
-export function buildMirrorTimeBlock(localTime: string | undefined, situation?: { label: string; portrait?: string }): string {
-    const time = `[CURRENT TIME]\n${localTime || 'Unknown'}`;
-    if (!situation?.label) return time;
+export function buildMirrorTimeBlock(localTime: string | undefined): string {
+    return `[CURRENT TIME]\n${localTime || 'Unknown'}`;
+}
+
+function situationBlock(situation: MirrorPromptConfig['situation']): string {
+    if (!situation?.label) return '';
     const where = [situation.label, situation.portrait?.trim()].filter(Boolean).join('\n\n');
-    return `${time}\n\n[WHERE YOU ARE]\n${where}`;
+    return `\n\n[WHERE YOU ARE]\n${where}`;
 }
 
 /**
@@ -235,6 +240,7 @@ export function buildMirrorSystemPrompt(config: MirrorPromptConfig): string {
         mandatePrelude,
         mandatePostlude,
         dynamicFilterText,
+        situation,
     } = config;
 
     const characterIdentityBlock = (characterAge || characterGender)
@@ -288,5 +294,5 @@ ${WANTING_PATH}
 
 ${OUTPUT_RULES}
 
-${languageInstruction}`;
+${languageInstruction}${situationBlock(situation)}`;
 }
