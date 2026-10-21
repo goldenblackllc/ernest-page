@@ -70,6 +70,8 @@ await Promise.all(oldPosts.docs.map((d) => d.ref.delete()));
 
 const user = userSnap.data();
 for (const field of SKIPPED_FIELDS) delete user[field];
+// A build in progress on live never finishes in beta; keep the last finished Bible.
+if (user.bible?.status === "compiling") user.bible.status = "stable";
 user.access = {
     membership: {
         status: "active",
