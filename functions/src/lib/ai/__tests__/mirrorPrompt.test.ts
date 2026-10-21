@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
+import { wayInSuffix, WAYS_IN, WAY_IN_IDS } from '../waysIn.js';
+import { buildSessionLogPrompt } from '../sessionLogPrompt.js';
 
 const config: MirrorPromptConfig = {
     bibleText: '## Style & Presence\n\nCalm.',
@@ -58,5 +60,34 @@ describe('prompt caching', () => {
         expect(share).toBeLessThan(0.25);
         expect(buildMirrorSystemPrompt({ ...config, negativeInventory: true })).toContain('[SURFACING VARIANT');
         expect(buildMirrorSystemPrompt({ ...config, negativeInventory: false })).not.toContain('[SURFACING VARIANT');
+    });
+});
+
+describe('ways in', () => {
+    const prompt = buildMirrorSystemPrompt(config);
+
+    it('offers every way in, chosen by fit and then least recent use', () => {
+        expect(prompt).toContain('CHOOSE THE WAY IN');
+        expect(prompt).toContain('choose the one used least recently');
+        for (const id of ['feel_it_now', 'preferred_you_replay', 'role_model', 'two_sets_of_actions', 'act_as_if', 'magic_lamp', 'excitement_scan'] as const) {
+            expect(prompt).toContain(WAYS_IN[id].toUpperCase());
+        }
+    });
+
+    it('drops the doors that are not from the books', () => {
+        expect(prompt).not.toContain('Advice to a friend');
+        expect(prompt).not.toContain('Memory recall');
+        expect(prompt).not.toContain('Feeling Bridge');
+    });
+
+    it('labels a recap with its way in, and ignores unknown values', () => {
+        expect(wayInSuffix('magic_lamp')).toBe(' [Way in: Magic lamp]');
+        expect(wayInSuffix(undefined)).toBe('');
+        expect(wayInSuffix('door_c')).toBe('');
+    });
+
+    it('asks the session log for every way in', () => {
+        const logPrompt = buildSessionLogPrompt('user: hi');
+        for (const id of WAY_IN_IDS) expect(logPrompt).toContain(`- ${id}:`);
     });
 });

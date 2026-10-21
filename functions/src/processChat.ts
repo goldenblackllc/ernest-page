@@ -9,6 +9,7 @@ import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt, DOSSIER_WORD_LIMIT } from './lib/ai/dossierPrompt.js';
 import { safeTimeZone, localDateKey } from './lib/utils/relativeDates.js';
 import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
+import { WAY_IN_IDS, type WayIn } from './lib/ai/waysIn.js';
 import { generateCondensedTranscript, type CondensedTranscript } from './lib/ai/condensedTranscript.js';
 
 import { processPostContent, type ProcessPostResult } from './lib/ai/processPostContent.js';
@@ -96,7 +97,7 @@ export const processChat = onDocumentUpdated(
             // Saved once: a retry after a later failure must not add a second
             // recap or count the session twice.
             const dossierPromise = (userData && recap && !after.metadataSaved)
-                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, rewrittenDossier, today, sessionStartedAt: after.createdAt || now, sessionCount })
+                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, wayIn: recap.way_in, rewrittenDossier, today, sessionStartedAt: after.createdAt || now, sessionCount })
                     .then(() => event.data?.after.ref.update({ metadataSaved: true }))
                 : Promise.resolve();
 
@@ -197,7 +198,7 @@ function getAuthorTitle(userData: FirebaseFirestore.DocumentData): string {
 async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcript: string, today: string): Promise<{
     condensed: CondensedTranscript;
     rewrittenDossier: string | undefined;
-    recap: { session_recap: string } | undefined;
+    recap: { session_recap: string; way_in: WayIn } | undefined;
 }> {
     const dossierPrompt = buildDossierPrompt(userData?.dossier || userData?.identity?.dossier || '', transcript, today);
     const sessionLogPrompt = buildSessionLogPrompt(transcript);
@@ -218,6 +219,7 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
             primaryModelId: OPUS_MODEL,
             schema: z.object({
                 session_recap: z.string().describe("2-3 sentence factual log of this session"),
+                way_in: z.enum(WAY_IN_IDS).describe("How the session got into the new belief, or which path it took instead"),
             }),
             prompt: sessionLogPrompt,
         }),
@@ -235,14 +237,15 @@ async function saveSessionMetadata(opts: {
     userData: FirebaseFirestore.DocumentData;
     uid: string;
     sessionRecap: string;
+    wayIn: WayIn;
     rewrittenDossier: string | undefined;
     today: string;
     sessionStartedAt: number;
     sessionCount: number;
 }): Promise<void> {
-    const { userRef, userData, uid, sessionRecap, today, sessionStartedAt, sessionCount } = opts;
+    const { userRef, userData, uid, sessionRecap, wayIn, today, sessionStartedAt, sessionCount } = opts;
     const existingRecaps = userData?.session_recaps || [];
-    const newRecap = { date: today, at: sessionStartedAt, recap: sessionRecap };
+    const newRecap = { date: today, at: sessionStartedAt, recap: sessionRecap, way_in: wayIn };
     const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
 
     // No second condense pass: each rewrite prunes to the section budgets, so a
