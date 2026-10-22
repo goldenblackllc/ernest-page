@@ -74,7 +74,7 @@ Keep the code clean, solid, stable, clear and up to date.
   2. Test on beta: push it to the `beta` branch (rebuilds the beta site) and deploy changed functions with `-P beta` from a checkout of `beta`. Copy `functions/.env` and `functions/.env.earnest-page-beta` into that checkout first; they're gitignored. Rules and indexes too if they changed. Refresh test data with `copy-to-beta.mjs` if needed.
   3. Check it at https://beta.earnestpage.com.
   4. Release: merge into `main`, push (updates the live site), and deploy the same functions to live from `main`.
-  5. Reset beta to match live: `git push --force origin main:beta`.
+  5. Reset beta to match live: `git push --force origin main:beta`. First check `git log --oneline main..origin/beta`: if beta holds commits that aren't on `main`, another change is still being tested there, so leave beta alone.
 
 ## Sessions and payments
 
