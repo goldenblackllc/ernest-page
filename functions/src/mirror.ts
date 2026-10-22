@@ -12,6 +12,7 @@ import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { generateTextWithFallback, OPUS_MODEL, LIVE_FALLBACK } from './lib/ai/models.js';
 import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } from './lib/ai/mirrorPrompt.js';
+import { wayInSuffix } from './lib/ai/waysIn.js';
 import { getBibleText } from './lib/bible.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
@@ -59,7 +60,7 @@ function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined,
     const now = new Date();
     const todayKey = localDateKey(now, timeZone);
     const dossier = annotateDates(userData?.dossier || userData?.identity?.dossier || '', todayKey);
-    const sessionRecaps: { date: string; at?: number; recap: string }[] = userData?.session_recaps || [];
+    const sessionRecaps: { date: string; at?: number; recap: string; way_in?: string }[] = userData?.session_recaps || [];
     const preferredLocale = userData?.preferred_locale || locale || 'en';
 
     const localeNames: Record<string, string> = { es: 'SPANISH', fr: 'FRENCH', de: 'GERMAN', pt: 'PORTUGUESE' };
@@ -83,7 +84,7 @@ If the most recent session ended with an action the person chose, ask about it e
 
 If they say nothing has changed, or they slipped back into the old pattern, do not let them judge it. That is the old self testing the new decision, not evidence against it — and noticing the slip proves they are already standing somewhere new. They cannot backslide. In your own words: so what? Is that who you are now?
 
-${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : relativeDayLabel(r.date, todayKey)} (${r.date}): ${r.recap}`).join('\n\n')}`;
+${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : relativeDayLabel(r.date, todayKey)} (${r.date}): ${r.recap}${wayInSuffix(r.way_in)}`).join('\n\n')}`;
     }
 
     return buildMirrorSystemPrompt({
