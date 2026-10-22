@@ -8,7 +8,9 @@
 // Copies the user document (Bible, situations, dossier, recaps, people, wants,
 // voice, avatar) and their most recent posts. Not copied: billing (`access`,
 // credit_lots, paid_sessions) and open chats. The beta account gets a
-// complimentary membership instead, so test sessions cost nothing. Images and
+// complimentary membership instead, so test sessions cost nothing. The avatar
+// files (main, reference and situation avatars) are copied to beta Storage,
+// because beta's image functions draw the character from them. Post images and
 // audio stay in live Storage; beta reads them by URL.
 //
 // Needs FIREBASE_SERVICE_ACCOUNT_KEY in .env.local (live) and in
@@ -18,6 +20,7 @@ import { readFileSync } from "fs";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 const BETA_PROJECT = "earnest-page-beta";
 // Fields that are billing, test settings, or would queue a Bible recompile in beta.
@@ -93,4 +96,20 @@ const posts = postLimit === 0 ? [] : (await liveDb.collection("posts")
     .get()).docs;
 await Promise.all(posts.map((d) => betaDb.collection("posts").doc(d.id).set(d.data())));
 
-console.log(`Copied ${uid} to ${BETA_PROJECT}: user record, ${posts.length} posts, complimentary membership.`);
+// Avatars: avatars/{uid}.jpg, avatars/{uid}_reference.jpg and avatars/{uid}/{situation}.jpg.
+const isAvatar = (name) => name === `avatars/${uid}.jpg` || name === `avatars/${uid}_reference.jpg` || name.startsWith(`avatars/${uid}/`);
+const liveBucket = getStorage(live).bucket(`${liveKey.project_id}.firebasestorage.app`);
+const betaBucket = getStorage(beta).bucket(`${BETA_PROJECT}.firebasestorage.app`);
+const [oldAvatars] = await betaBucket.getFiles({ prefix: `avatars/${uid}` });
+await Promise.all(oldAvatars.filter((f) => isAvatar(f.name)).map((f) => f.delete()));
+const [avatars] = await liveBucket.getFiles({ prefix: `avatars/${uid}` });
+const copied = avatars.filter((f) => isAvatar(f.name));
+await Promise.all(copied.map(async (f) => {
+    const [data] = await f.download();
+    await betaBucket.file(f.name).save(data, {
+        contentType: f.metadata.contentType,
+        metadata: { metadata: f.metadata.metadata },
+    });
+}));
+
+console.log(`Copied ${uid} to ${BETA_PROJECT}: user record, ${posts.length} posts, ${copied.length} avatar files, complimentary membership.`);
