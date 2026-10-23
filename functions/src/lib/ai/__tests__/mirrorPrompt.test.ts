@@ -43,11 +43,13 @@ describe('prompt caching', () => {
         expect(buildMirrorTimeBlock(undefined)).toBe('[CURRENT TIME]\nUnknown');
     });
 
-    it("puts the session's location in the cached prompt", () => {
+    it("puts the session's location in the cached prompt, in the background", () => {
         expect(buildMirrorSystemPrompt(config)).not.toContain('[WHERE YOU ARE]');
-        expect(buildMirrorSystemPrompt({ ...config, situation: { label: 'In bed, reading' } })).toMatch(/\[WHERE YOU ARE\]\nIn bed, reading$/);
-        expect(buildMirrorSystemPrompt({ ...config, situation: { label: 'In bed, reading', portrait: 'Navy cotton pajamas, a hardback open on my chest.' } }))
-            .toMatch(/\[WHERE YOU ARE\]\nIn bed, reading\n\nNavy cotton pajamas, a hardback open on my chest\.$/);
+        const prompt = buildMirrorSystemPrompt({ ...config, situation: { label: 'In bed, reading', portrait: 'Navy cotton pajamas, a hardback open on my chest.' } });
+        expect(prompt).toContain('[WHERE YOU ARE]\nIn bed, reading\n\nNavy cotton pajamas, a hardback open on my chest.\n\nThis is where you happen to be');
+        expect(prompt).toMatch(/do not describe it, narrate what you are doing/);
+        expect(prompt.indexOf('[WHERE YOU ARE]')).toBeLessThan(prompt.indexOf('[REALITY RULES'));
+        expect(buildMirrorSystemPrompt({ ...config, situation: { label: 'In bed, reading' } })).toContain('[WHERE YOU ARE]\nIn bed, reading\n\nThis is where');
     });
 
     it('builds the same prompt on every turn of a session', () => {
