@@ -182,7 +182,6 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         }
 
         // Wipe local state
-        const finalMessages = [...messages];
         session.resetSession();
         setInput("");
         setIsRoutingOpen(false);
@@ -190,14 +189,6 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         hasManuallySetRouting.current = false;
 
         unsuppressAutoPlay();
-
-        // Trigger a delayed feed refresh so the new post appears without waiting for 15-min poll.
-        // processChat Cloud Function needs a few seconds to create the post.
-        if (sessionRouting !== 'burn' && finalMessages.filter(m => m.role === 'user').length > 0) {
-            setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('ledger-refresh'));
-            }, 8000);
-        }
 
         onClose();
     };

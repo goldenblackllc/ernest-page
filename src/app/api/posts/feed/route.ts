@@ -1,11 +1,11 @@
-import type { DocumentData } from "firebase-admin/firestore";
+import type { DocumentData, QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
 
 export const maxDuration = 30;
 
 const PAGE_SIZE = 20;
-const MAX_PAGES = 10;
+const MAX_OFFSET = 200;
 
 // The queries read many candidate posts to fill one page, so they read only the fields
 // the filters and the sort need. The page's own posts are then read with the fields a
@@ -32,6 +32,15 @@ const AUTHOR_FIELDS = ["counsel", "rant", "conversation_messages", "content_raw"
 /** Firestore's error when a query needs an index that isn't deployed yet. */
 const isMissingIndex = (err: unknown) => (err as { code?: number } | null)?.code === 9;
 
+/** Hide my posts still processing images or with no images or no thumbnail.
+ *  A private post (media_status set) has no images until it's shared, only its thumbnail. */
+const isMyPostReady = (data: DocumentData) => {
+    if (data.images_complete === false) return false;
+    if (!data.media_status && !data.imagen_url && (!data.imagen_urls || data.imagen_urls.length === 0)) return false;
+    if (!data.thumbnail_url && (data.thumbnail_retries || 0) < 3) return false;
+    return true;
+};
+
 export async function GET(req: Request) {
     try {
         // 1. Authenticate
@@ -42,73 +51,37 @@ export async function GET(req: Request) {
         const url = new URL(req.url);
         const newerThan = url.searchParams.get("newer_than"); // ISO timestamp
         const newerThanDate = newerThan ? new Date(newerThan) : null;
-        const pageParam = parseInt(url.searchParams.get("page") || '0', 10);
-        const page = Math.min(Math.max(pageParam, 0), MAX_PAGES - 1);
-        const fetchLimit = PAGE_SIZE * (page + 1) * 4; // overfetch to compensate for post-fetch filtering
+        // offset: how many posts the client already has; limit: how many it wants next (at most a page)
+        const offset = Math.min(Math.max(parseInt(url.searchParams.get("offset") || "0", 10) || 0, 0), MAX_OFFSET);
+        const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") || "0", 10) || PAGE_SIZE, 1), PAGE_SIZE);
+        const fetchLimit = (offset + limit) * 4; // overfetch to compensate for post-fetch filtering
 
-        // 3. Fetch user profile
-        const userDoc = await db.collection("users").doc(uid).get();
-        const userData = userDoc.data() || {};
-        const followingMap: Record<string, string> = userData.following || {};
-        const followedIds = Object.keys(followingMap);
-
-        // 4. Chronological feed: fetch from all buckets, merge, sort newest-first
         const postsRef = db.collection("posts");
-        const seenIds = new Set<string>();
-        const allPosts: Array<{ id: string } & DocumentData> = [];
+        const isNewEnough = (data: DocumentData) =>
+            !newerThanDate || (data.created_at?.toMillis?.() || 0) > newerThanDate.getTime();
 
-        const addPosts = (docs: FirebaseFirestore.QueryDocumentSnapshot[]) => {
-            docs.forEach((doc) => {
-                if (!seenIds.has(doc.id)) {
-                    seenIds.add(doc.id);
-                    allPosts.push({ id: doc.id, ...doc.data() });
-                }
-            });
-        };
+        // 3. Read the user profile and every bucket at once. Only the following bucket
+        //    needs the profile, so it starts as soon as the profile arrives.
 
         // Bucket A: My posts (all of them, but only if images are ready)
-        try {
-            let queryA = postsRef
-                .where("authorId", "==", uid)
-                .orderBy("created_at", "desc")
-                .select(...CANDIDATE_FIELDS);
-            if (newerThanDate) queryA = queryA.where("created_at", ">", newerThanDate);
-            const snapA = await queryA.limit(fetchLimit).get();
-            snapA.docs.forEach(doc => {
-                const data = doc.data();
-                // Hide posts still processing images or with no images or no thumbnail.
-                // A private post (media_status set) has no images until it's shared, only its thumbnail.
-                if (data.images_complete === false) return;
-                if (!data.media_status && !data.imagen_url && (!data.imagen_urls || data.imagen_urls.length === 0)) return;
-                if (!data.thumbnail_url && (data.thumbnail_retries || 0) < 3) return;
-                if (!seenIds.has(doc.id)) {
-                    seenIds.add(doc.id);
-                    allPosts.push({ id: doc.id, ...data });
-                }
-            });
-        } catch (indexErr) {
-            console.warn("Bucket A index missing, using fallback:", indexErr);
-            const snapA = await postsRef.where("authorId", "==", uid).select(...CANDIDATE_FIELDS).get();
-            snapA.docs.forEach(doc => {
-                const data = doc.data();
-                // Hide posts still processing images or with no images or no thumbnail.
-                // A private post (media_status set) has no images until it's shared, only its thumbnail.
-                if (data.images_complete === false) return;
-                if (!data.media_status && !data.imagen_url && (!data.imagen_urls || data.imagen_urls.length === 0)) return;
-                if (!data.thumbnail_url && (data.thumbnail_retries || 0) < 3) return;
-                const time = data.created_at?.toMillis?.() || 0;
-                if (!newerThanDate || time > newerThanDate.getTime()) {
-                    if (!seenIds.has(doc.id)) {
-                        seenIds.add(doc.id);
-                        allPosts.push({ id: doc.id, ...data });
-                    }
-                }
-            });
-        }
+        const myPosts = async (): Promise<QueryDocumentSnapshot[]> => {
+            try {
+                let queryA = postsRef
+                    .where("authorId", "==", uid)
+                    .orderBy("created_at", "desc")
+                    .select(...CANDIDATE_FIELDS);
+                if (newerThanDate) queryA = queryA.where("created_at", ">", newerThanDate);
+                const snapA = await queryA.limit(fetchLimit).get();
+                return snapA.docs.filter((doc) => isMyPostReady(doc.data()));
+            } catch (indexErr) {
+                console.warn("Bucket A index missing, using fallback:", indexErr);
+                const snapA = await postsRef.where("authorId", "==", uid).select(...CANDIDATE_FIELDS).get();
+                return snapA.docs.filter((doc) => isMyPostReady(doc.data()) && isNewEnough(doc.data()));
+            }
+        };
 
         // Bucket B: Following (chunked, Firestore 'in' limited to 30)
-        for (let i = 0; i < followedIds.length; i += 10) {
-            const chunk = followedIds.slice(i, i + 10);
+        const followedPosts = async (chunk: string[]): Promise<QueryDocumentSnapshot[]> => {
             try {
                 let queryB = postsRef
                     .where("authorId", "in", chunk)
@@ -116,23 +89,13 @@ export async function GET(req: Request) {
                     .orderBy("created_at", "desc")
                     .select(...CANDIDATE_FIELDS);
                 if (newerThanDate) queryB = queryB.where("created_at", ">", newerThanDate);
-                const snapB = await queryB.limit(fetchLimit).get();
-                addPosts(snapB.docs);
+                return (await queryB.limit(fetchLimit).get()).docs;
             } catch {
                 const snapB = await postsRef.where("authorId", "in", chunk).select(...CANDIDATE_FIELDS).get();
-                snapB.docs.forEach(doc => {
-                    const data = doc.data();
-                    if (data.is_public !== true) return; // skip private posts
-                    const time = data.created_at?.toMillis?.() || 0;
-                    if (!newerThanDate || time > newerThanDate.getTime()) {
-                        if (!seenIds.has(doc.id)) {
-                            seenIds.add(doc.id);
-                            allPosts.push({ id: doc.id, ...data });
-                        }
-                    }
-                });
+                // skip private posts
+                return snapB.docs.filter((doc) => doc.data().is_public === true && isNewEnough(doc.data()));
             }
-        }
+        };
 
         // Bucket C: Discovery (public, not me, not following). Only public posts are read;
         // without the is_public + created_at index it reads recent posts and filters here.
@@ -142,14 +105,41 @@ export async function GET(req: Request) {
             if (newerThanDate) q = q.where("created_at", ">", newerThanDate);
             return q.select(...CANDIDATE_FIELDS);
         };
-        let snapC;
-        try {
-            snapC = await discoveryQuery(true).limit(fetchLimit * 2).get();
-        } catch (err) {
-            if (!isMissingIndex(err)) throw err;
-            console.warn("Discovery index missing, using fallback:", err);
-            snapC = await discoveryQuery(false).limit(fetchLimit * 5).get();
-        }
+        const discoveryPosts = async () => {
+            try {
+                return await discoveryQuery(true).limit(fetchLimit * 2).get();
+            } catch (err) {
+                if (!isMissingIndex(err)) throw err;
+                console.warn("Discovery index missing, using fallback:", err);
+                return discoveryQuery(false).limit(fetchLimit * 5).get();
+            }
+        };
+
+        const profile = db.collection("users").doc(uid).get().then((userDoc) => {
+            const followingMap: Record<string, string> = userDoc.data()?.following || {};
+            return { followingMap, followedIds: Object.keys(followingMap) };
+        });
+        const following = profile.then(async ({ followedIds }) => {
+            const chunks: string[][] = [];
+            for (let i = 0; i < followedIds.length; i += 10) chunks.push(followedIds.slice(i, i + 10));
+            return (await Promise.all(chunks.map(followedPosts))).flat();
+        });
+        const [{ followingMap, followedIds }, docsA, docsB, snapC] =
+            await Promise.all([profile, myPosts(), following, discoveryPosts()]);
+
+        // 4. Chronological feed: merge the buckets, sort newest-first
+        const seenIds = new Set<string>();
+        const allPosts: Array<{ id: string } & DocumentData> = [];
+        const addPosts = (docs: QueryDocumentSnapshot[]) => {
+            docs.forEach((doc) => {
+                if (!seenIds.has(doc.id)) {
+                    seenIds.add(doc.id);
+                    allPosts.push({ id: doc.id, ...doc.data() });
+                }
+            });
+        };
+        addPosts(docsA);
+        addPosts(docsB);
         const discoveryDocs = snapC.docs.filter((doc) => {
             const data = doc.data();
             if (data.is_public !== true) return false; // skip private posts
@@ -173,10 +163,9 @@ export async function GET(req: Request) {
             return p.audio_url || p.short_audio_url || (p.letter_audio_url && p.response_audio_url);
         });
 
-        // 7. Paginate: slice to the requested page
-        const startIdx = page * PAGE_SIZE;
-        const pageSlice = complete.slice(startIdx, startIdx + PAGE_SIZE);
-        const hasMore = complete.length > startIdx + PAGE_SIZE;
+        // 7. Paginate: slice to the requested posts
+        const pageSlice = complete.slice(offset, offset + limit);
+        const hasMore = complete.length > offset + limit;
 
         // 8. If this is a newer_than check, return just the count (lightweight)
         if (newerThanDate) {
@@ -185,26 +174,19 @@ export async function GET(req: Request) {
             });
         }
 
-        // 9. Read the card fields for this page's posts only
+        // 9. Read this page's card fields, its authors' avatars and identity titles, and
+        //    which of its posts the user liked, all at once
         const isMine = (p: DocumentData) => p.authorId === uid || p.uid === uid;
         const readCards = async (posts: typeof pageSlice, fieldMask: string[]) =>
             posts.length ? db.getAll(...posts.map((p) => postsRef.doc(p.id)), { fieldMask }) : [];
-        const [myDocs, otherDocs] = await Promise.all([
-            readCards(pageSlice.filter(isMine), [...CARD_FIELDS, ...AUTHOR_FIELDS]),
-            readCards(pageSlice.filter((p) => !isMine(p)), CARD_FIELDS),
-        ]);
-        const cardData = new Map([...myDocs, ...otherDocs].filter((d) => d.exists).map((d) => [d.id, d.data()!]));
-        const cards = pageSlice
-            .filter((p) => cardData.has(p.id))
-            .map((p) => ({ id: p.id, ...cardData.get(p.id) } as { id: string } & DocumentData));
 
-        // 10. Batch-fetch author avatars and identity titles
-        const uniqueAuthorIds = [...new Set(cards.map(p => p.authorId || p.uid).filter(Boolean))];
-        const avatarMap: Record<string, string> = {};
-        const titleMap: Record<string, string> = {};
-        if (uniqueAuthorIds.length > 0) {
-            const authorRefs = uniqueAuthorIds.map(id => db.collection('users').doc(id));
+        const readAuthors = async () => {
+            const avatarMap: Record<string, string> = {};
+            const titleMap: Record<string, string> = {};
+            const uniqueAuthorIds = [...new Set(pageSlice.map(p => p.authorId || p.uid).filter(Boolean))];
+            if (uniqueAuthorIds.length === 0) return { avatarMap, titleMap };
             try {
+                const authorRefs = uniqueAuthorIds.map(id => db.collection('users').doc(id));
                 const authorDocs = await db.getAll(...authorRefs, { fieldMask: ["avatar.url", "identity.title"] });
                 authorDocs.forEach((doc) => {
                     if (doc.exists) {
@@ -222,18 +204,29 @@ export async function GET(req: Request) {
             } catch (err) {
                 console.warn('Failed to batch-fetch author data:', err);
             }
-        }
+            return { avatarMap, titleMap };
+        };
 
-        // 11. Batch-check which posts the user has liked (subcollection lookup)
-        const likedRef = db.collection("users").doc(uid).collection("liked_posts");
-        const likedRefs = cards.map((post) => likedRef.doc(post.id));
-        let likedSet = new Set<string>();
-        if (likedRefs.length > 0) {
-            const likedDocs = await db.getAll(...likedRefs);
-            likedSet = new Set(likedDocs.filter(d => d.exists).map(d => d.id));
-        }
+        // Batch-check which posts the user has liked (subcollection lookup)
+        const readLiked = async () => {
+            if (pageSlice.length === 0) return new Set<string>();
+            const likedRef = db.collection("users").doc(uid).collection("liked_posts");
+            const likedDocs = await db.getAll(...pageSlice.map((post) => likedRef.doc(post.id)));
+            return new Set(likedDocs.filter(d => d.exists).map(d => d.id));
+        };
 
-        // 12. Sanitize
+        const [myDocs, otherDocs, { avatarMap, titleMap }, likedSet] = await Promise.all([
+            readCards(pageSlice.filter(isMine), [...CARD_FIELDS, ...AUTHOR_FIELDS]),
+            readCards(pageSlice.filter((p) => !isMine(p)), CARD_FIELDS),
+            readAuthors(),
+            readLiked(),
+        ]);
+        const cardData = new Map([...myDocs, ...otherDocs].filter((d) => d.exists).map((d) => [d.id, d.data()!]));
+        const cards = pageSlice
+            .filter((p) => cardData.has(p.id))
+            .map((p) => ({ id: p.id, ...cardData.get(p.id) } as { id: string } & DocumentData));
+
+        // 10. Sanitize
         const sanitized = cards.map((post) => {
             const isLikedByMe = likedSet.has(post.id);
 

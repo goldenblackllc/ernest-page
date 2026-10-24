@@ -67,7 +67,7 @@ export function PostAuthorOverlay({ post, isFullscreen, displayName, isAuthor, c
             <div className="flex items-center gap-2.5">
                 <div className={`rounded-full bg-zinc-800 border border-white/20 overflow-hidden flex items-center justify-center shrink-0 ${isFullscreen ? 'w-12 h-12' : 'w-8 h-8'}`}>
                     {post.author_avatar_url ? (
-                        <img src={post.author_avatar_url} alt="" className="w-full h-full object-cover" />
+                        <img src={post.author_avatar_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                     ) : (
                         <User className={`text-zinc-400 ${isFullscreen ? 'w-6 h-6' : 'w-4 h-4'}`} />
                     )}

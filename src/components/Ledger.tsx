@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useState, useCallback, useRef } from "react";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/context/AuthContext";
@@ -17,12 +17,40 @@ import { useTranslations } from "next-intl";
 import { authFetch } from "@/lib/auth/authFetch";
 import { reviveCreatedAt, timestampToDate } from "@/lib/posts/timestamps";
 import type { Post } from "@/types/post";
+import type { User } from "firebase/auth";
 import { getFeedCache, setFeedCache, clearFeedCache } from "@/lib/feedCache";
+import { newerPosts, appendPosts } from "@/lib/posts/feedList";
 import { accessSummary } from "@functions/lib/access/sessionAccess";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const FIRST_BATCH = 5; // a phone shows 2–3 cards, so the first posts come in a small, quick batch
+const BATCH = 20;
 const CHECKIN_INTERVAL_MS = 28 * 24 * 60 * 60 * 1000; // 28 days
 const CHECKIN_WINDOW_MS = 35 * 24 * 60 * 60 * 1000; // 35 days (7-day window to act)
+
+/** One batch of the feed, starting after the `offset` posts the server has already sent. */
+async function loadFeedBatch(user: User, offset: number, limit: number) {
+    const res = await authFetch(user, `/api/posts/feed?offset=${offset}&limit=${limit}`, {
+        cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`Feed API returned ${res.status}`);
+    const data = await res.json();
+    const sent: Post[] = data.posts || [];
+    return {
+        posts: sent
+            .filter((post) => post.images_complete !== false) // hide posts still generating images
+            .map(reviveCreatedAt),
+        sent: sent.length,
+        hasMore: Boolean(data.hasMore),
+        following: (data.following || {}) as Record<string, string>,
+    };
+}
+
+/** When the newest of these posts was created, or the fallback if there are none. */
+function newestTime(posts: Post[], fallback: string | null) {
+    const date = posts.length > 0 ? timestampToDate(posts[0].created_at) : null;
+    return date ? date.toISOString() : fallback;
+}
 
 export function Ledger() {
     const { user } = useAuth();
@@ -42,12 +70,32 @@ export function Ledger() {
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
-    const currentPageRef = useRef(0);
     const sentinelRef = useRef<HTMLDivElement>(null);
     const fetchingRef = useRef(false);
+    // How many posts the server has sent so far: where the next batch starts
+    const serverOffsetRef = useRef(0);
+    // Scroll position before new posts were added on top, so what the user is reading stays put
+    const prependAnchorRef = useRef<{ scrollY: number; height: number } | null>(null);
 
     const newestPostTimeRef = useRef<string | null>(cache.newestPostTime);
+    const hadCacheRef = useRef(cache.entries !== null);
     const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Keep the module-level cache current for instant re-mount
+    const entriesRef = useRef(entries);
+    useEffect(() => {
+        entriesRef.current = entries;
+        if (!loading) setFeedCache(entries, followingMap, newestPostTimeRef.current);
+    }, [entries, followingMap, loading]);
+
+    // New posts added on top: keep the posts the user is looking at where they were
+    // (unless the browser's own scroll anchoring already did).
+    useLayoutEffect(() => {
+        const anchor = prependAnchorRef.current;
+        prependAnchorRef.current = null;
+        if (!anchor || anchor.scrollY <= 0 || window.scrollY !== anchor.scrollY) return;
+        window.scrollBy(0, document.documentElement.scrollHeight - anchor.height);
+    }, [entries]);
 
     // Track previous user to detect account switches and clear stale data
     const prevUserUidRef = useRef<string | null>(user?.uid ?? null);
@@ -60,6 +108,7 @@ export function Ledger() {
             setFollowingMap({});
             setLoading(true);
             newestPostTimeRef.current = null;
+            hadCacheRef.current = false;
         }
         prevUserUidRef.current = currentUid;
     }, [user?.uid]);
@@ -85,53 +134,46 @@ export function Ledger() {
         return () => unsub();
     }, [user]);
 
-    // Fetch feed (supports pagination via page param)
-    const fetchFeed = useCallback(async (page: number = 0) => {
+    /**
+     * Load the feed.
+     * - first: nothing on screen yet. A few posts first, then the rest of the batch behind them.
+     * - refresh: posts already on screen (from the cache). Replaced in place once the new batch is in.
+     * - more: the next batch, for infinite scroll.
+     * - newer: posts newer than the newest shown, added on top; the rest of the list stays.
+     */
+    const fetchFeed = useCallback(async (mode: 'first' | 'refresh' | 'more' | 'newer') => {
         if (!user) return;
         if (fetchingRef.current) return;
         fetchingRef.current = true;
 
         try {
-            const res = await authFetch(user, `/api/posts/feed?page=${page}`, {
-                cache: 'no-store',
-            });
-
-            if (!res.ok) throw new Error(`Feed API returned ${res.status}`);
-
-            const data = await res.json();
-
-            const posts: Post[] = (data.posts || [])
-                .filter((post: Post) => post.images_complete !== false) // hide posts still generating images
-                .map(reviveCreatedAt);
-
-            if (page === 0) {
-                setEntries(posts);
-            } else {
-                setEntries(prev => {
-                    const existingIds = new Set(prev.map(p => p.id));
-                    const newPosts = posts.filter(p => !existingIds.has(p.id));
-                    return [...prev, ...newPosts];
-                });
+            if (mode === 'newer') {
+                const batch = await loadFeedBatch(user, 0, BATCH);
+                const fresh = newerPosts(entriesRef.current, batch.posts, newestPostTimeRef.current);
+                if (fresh.length === 0) return;
+                serverOffsetRef.current += fresh.length;
+                newestPostTimeRef.current = newestTime(batch.posts, newestPostTimeRef.current);
+                prependAnchorRef.current = { scrollY: window.scrollY, height: document.documentElement.scrollHeight };
+                setEntries(prev => [...fresh, ...prev]);
+                setFollowingMap(batch.following);
+                return;
             }
 
-            setHasMore(data.hasMore ?? false);
-            currentPageRef.current = page;
-
-            if (page === 0) {
-                setFollowingMap(data.following || {});
-
-                // Persist to module-level cache for instant re-mount
-                const newNewest = posts.length > 0
-                    ? (() => {
-                        const newest = posts[0];
-                        const date = timestampToDate(newest.created_at);
-                        return date ? date.toISOString() : newestPostTimeRef.current;
-                    })()
-                    : newestPostTimeRef.current;
-                newestPostTimeRef.current = newNewest;
-                setFeedCache(posts, data.following || {}, newNewest);
+            if (mode === 'first' || mode === 'refresh') {
+                const first = await loadFeedBatch(user, 0, mode === 'first' ? FIRST_BATCH : BATCH);
+                serverOffsetRef.current = first.sent;
+                newestPostTimeRef.current = newestTime(first.posts, newestPostTimeRef.current);
+                setEntries(first.posts);
+                setFollowingMap(first.following);
+                setHasMore(first.hasMore);
+                setLoading(false);
+                if (mode === 'refresh' || !first.hasMore) return;
             }
 
+            const batch = await loadFeedBatch(user, serverOffsetRef.current, BATCH);
+            serverOffsetRef.current += batch.sent;
+            setEntries(prev => appendPosts(prev, batch.posts));
+            setHasMore(batch.hasMore);
         } catch (error) {
             console.error("Failed to fetch feed:", error);
         } finally {
@@ -141,13 +183,10 @@ export function Ledger() {
         }
     }, [user]);
 
-    // Initial load + stale-while-revalidate
-    // When we have cached data, render it instantly but always fetch fresh data.
+    // Initial load. Cached posts show at once and are refreshed in place.
     useEffect(() => {
         if (!user) return;
-        currentPageRef.current = 0;
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch; fetchFeed only sets state after its await
-        fetchFeed(0);
+        fetchFeed(hadCacheRef.current ? 'refresh' : 'first');
     }, [user, fetchFeed]);
 
     // Infinite scroll — load next page when sentinel becomes visible
@@ -158,7 +197,7 @@ export function Ledger() {
             (entries) => {
                 if (entries[0].isIntersecting && hasMore && !fetchingRef.current) {
                     setLoadingMore(true);
-                    fetchFeed(currentPageRef.current + 1);
+                    fetchFeed('more');
                 }
             },
             { rootMargin: '400px' }
@@ -186,7 +225,7 @@ export function Ledger() {
                 if (res.ok) {
                     const data = await res.json();
                     if (data.newPostCount > 0) {
-                        fetchFeed();
+                        fetchFeed('newer');
                     }
                 }
             } catch {
@@ -218,12 +257,11 @@ export function Ledger() {
         };
     }, [user, fetchFeed]);
 
-    // Listen for pull-to-refresh / post-close refresh trigger
+    // Listen for pull-to-refresh
     useEffect(() => {
         const handleRefresh = () => {
-            currentPageRef.current = 0;
             setLoading(true);
-            fetchFeed(0);
+            fetchFeed('first');
         };
 
         window.addEventListener('ledger-refresh', handleRefresh);

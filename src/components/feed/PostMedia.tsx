@@ -48,7 +48,11 @@ export function PostMedia({ post, isPlaying, audioCurrentTime }: PostMediaProps)
         ? messageImageIndex
         : (imageUrls.length > 0 ? carouselIndex % imageUrls.length : 0);
     const currentImageUrl = imageUrls[currentImageIndex] || heroUrl;
+    // The next image loads hidden so it is ready when its turn comes. Per-message images
+    // stop at the last message; the timer carousel wraps around.
+    const nextImageIndex = isPerMessage ? currentImageIndex + 1 : (currentImageIndex + 1) % imageUrls.length;
 
+    // Every image loads lazily: a card's pictures download only as it comes near the screen.
     return (
         <>
             {/* Thumbnail poster — shown before playback starts */}
@@ -56,48 +60,40 @@ export function PostMedia({ post, isPlaying, audioCurrentTime }: PostMediaProps)
                 <img
                     src={post.thumbnail_url}
                     alt=""
+                    loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover z-[1] transition-opacity duration-500"
                     style={{ opacity: 1 }}
                 />
             )}
-            {isPerMessage ? (
-                /* Per-message: only render current + next for lazy loading */
+            {isPerMessage || imageUrls.length > 1 ? (
+                /* Only the current and next image, so a post's other images aren't downloaded up front */
                 <>
                     {imageUrls[currentImageIndex] && (
                         <img
-                            key={`msg-${currentImageIndex}`}
+                            key={`img-${currentImageIndex}`}
                             src={imageUrls[currentImageIndex]}
                             alt=""
+                            loading="lazy"
                             className="absolute inset-0 w-full h-full object-contain transition-opacity duration-500"
                             style={{ opacity: 1 }}
                         />
                     )}
-                    {imageUrls[currentImageIndex + 1] && currentImageIndex + 1 < imageUrls.length && (
+                    {nextImageIndex !== currentImageIndex && imageUrls[nextImageIndex] && (
                         <img
-                            key={`msg-${currentImageIndex + 1}`}
-                            src={imageUrls[currentImageIndex + 1]}
+                            key={`img-${nextImageIndex}`}
+                            src={imageUrls[nextImageIndex]}
                             alt=""
+                            loading="lazy"
                             className="absolute inset-0 w-full h-full object-contain"
                             style={{ opacity: 0 }}
                         />
                     )}
                 </>
-            ) : imageUrls.length > 1 ? (
-                <>
-                    {imageUrls.map((url, i) => (
-                        <img
-                            key={url}
-                            src={url}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
-                            style={{ opacity: i === currentImageIndex ? 1 : 0 }}
-                        />
-                    ))}
-                </>
             ) : (
                 <img
                     src={currentImageUrl}
                     alt=""
+                    loading="lazy"
                     className="absolute inset-0 w-full h-full object-contain"
                 />
             )}
