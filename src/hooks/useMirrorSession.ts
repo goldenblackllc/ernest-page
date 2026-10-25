@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase/config";
@@ -55,6 +55,10 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
     const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
     const [isSessionExpired, setIsSessionExpired] = useState(false);
     const [replyError, setReplyError] = useState<ReplyError | null>(null);
+
+    // The message the user just sent, shown before mirrorReply saves it. Until a
+    // snapshot of the active chat contains it, snapshots don't replace the messages.
+    const pendingMessageId = useRef<string | null>(null);
 
     // Derive exchange count from messages
     const exchangeCount = messages.filter(m => m.role === 'user').length;
@@ -158,25 +162,35 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         }
     };
 
+    /**
+     * Show the user's message at once, start the session if this is its first
+     * message, then ask for the reply. Returns false when access was refused: the
+     * message is taken back and the chat has been closed.
+     */
+    const sendMessage = async (content: string): Promise<boolean> => {
+        const userMessage: Message = { id: Date.now().toString(), role: 'user', content };
+        const newMessages = [...messages, userMessage];
+
+        pendingMessageId.current = userMessage.id;
+        setMessages(newMessages);
+        setIsLoading(true);
+
+        if (messages.length === 0 && !creditConsumed && !(await consumeSession())) {
+            pendingMessageId.current = null;
+            setMessages(messages);
+            setIsLoading(false);
+            return false;
+        }
+
+        await sendReply(newMessages);
+        return true;
+    };
+
     // Auto-submit initial context from Signal card CTA
     useEffect(() => {
         if (!initialContext || !isOpen || !sessionId || messages.length > 0 || isLoading) return;
-
-        const autoSubmit = async () => {
-            const userMessage: Message = {
-                id: Date.now().toString(),
-                role: 'user',
-                content: initialContext,
-            };
-            const newMessages = [userMessage];
-
-            if (!creditConsumed && !(await consumeSession())) return;
-
-            setMessages(newMessages);
-            await sendReply(newMessages);
-        };
-
-        autoSubmit();
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sends the context once when the chat opens, showing it right away like a typed message
+        sendMessage(initialContext);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- submit once per context and session; the guards above read the latest state
     }, [initialContext, isOpen, sessionId]);
 
@@ -185,21 +199,23 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
         if (!uid || !isOpen || !sessionId) return;
 
         const unsubscribe = subscribeToActiveChat(uid, (chat) => {
-            if (chat) {
-                setMessages(chat.messages || []);
-                setIsLoading(chat.status === "generating");
-                if (chat.user_photo_url) {
-                    setPostPhotoUrl(chat.user_photo_url);
-                }
-                // Restore session start time from Firestore so the session timer
-                // survives close/reopen without resetting.
-                if (chat.createdAt) {
-                    setSessionStartedAt(prev => prev ?? chat.createdAt);
-                }
-            } else {
-                setMessages([]);
-                setIsLoading(false);
+            if (chat?.user_photo_url) {
+                setPostPhotoUrl(chat.user_photo_url);
             }
+            // Restore session start time from Firestore so the session timer
+            // survives close/reopen without resetting.
+            if (chat?.createdAt) {
+                setSessionStartedAt(prev => prev ?? chat.createdAt);
+            }
+
+            // Writes made before mirrorReply saves the sent message (starting the
+            // session, for one) would otherwise take it off the screen.
+            const pendingId = pendingMessageId.current;
+            if (pendingId && !chat?.messages?.some(m => m.id === pendingId)) return;
+            pendingMessageId.current = null;
+
+            setMessages(chat?.messages || []);
+            setIsLoading(chat?.status === "generating");
         }, sessionId);
 
         return () => unsubscribe();
@@ -265,6 +281,7 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
     };
 
     const resetSession = () => {
+        pendingMessageId.current = null;
         setSessionId(null);
         setMessages([]);
         setIsLoading(false);
@@ -277,19 +294,15 @@ export function useMirrorSession({ uid, isOpen, authUser, locale, initialContext
 
     return {
         messages,
-        setMessages,
         isLoading,
-        setIsLoading,
         sessionId,
         sessionStartedAt,
         postPhotoUrl,
-        creditConsumed,
         exchangeCount,
         isAtExchangeLimit,
         isSessionLimited,
         replyError,
-        consumeSession,
-        sendReply,
+        sendMessage,
         stop,
         reload,
         removePhoto,

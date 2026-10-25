@@ -7,7 +7,7 @@ import { updateCharacterProfile } from "@/lib/firebase/character";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslations, useLocale } from 'next-intl';
 import { useAudioMute } from "@/context/AudioMuteContext";
-import type { Message, SessionRouting } from "@/types/chat";
+import type { SessionRouting } from "@/types/chat";
 import type { CharacterProfile } from "@/types/character";
 import { useCharacterNow } from "@/hooks/useCharacterNow";
 import { useMirrorSession, MAX_EXCHANGES, MAX_SESSION_HOURS } from "@/hooks/useMirrorSession";
@@ -77,7 +77,7 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
     }, [defaultPostRouting]);
 
     const session = useMirrorSession({ uid, isOpen, authUser, locale, initialContext, sessionRouting, onClose });
-    const { messages, setMessages, isLoading, setIsLoading, isSessionLimited } = session;
+    const { messages, isLoading, isSessionLimited } = session;
 
     // Prevent background scrolling when chamber is active (no body jump)
     useEffect(() => {
@@ -120,33 +120,20 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
     };
 
     const handleSubmit = async () => {
-        if (!input.trim() || isLoading || isSessionLimited) return;
+        const text = input.trim();
+        if (!text || isLoading || isSessionLimited) return;
 
-        const userMessage: Message = {
-            id: Date.now().toString(),
-            role: "user",
-            content: input.trim()
-        };
-
-        const newMessages = [...messages, userMessage];
-        const isFirstMessage = messages.length === 0;
-
-        if (isFirstMessage && !session.creditConsumed && !(await session.consumeSession())) return;
-
-        await tts.prepareAudioForReply();
-
-        // Optimistic update
-        setMessages(newMessages);
-        setInput("");
-        setIsLoading(true);
-
+        // Unlock audio while the tap still counts as a user gesture
+        tts.prepareAudioForReply();
         tts.expectVoiceReply();
 
+        setInput("");
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
         }
 
-        await session.sendReply(newMessages);
+        // Refused: the chat closes; keep the text in case it's reopened
+        if (!(await session.sendMessage(text))) setInput(text);
     };
 
     // Character name: user-chosen or AI-generated name is primary; archetype roles are subtitle
