@@ -17,6 +17,7 @@ import { wayInSuffix } from './lib/ai/waysIn.js';
 import { getBibleText } from './lib/bible.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
+import type { Choice } from './lib/choices.js';
 import { currentSituation, localDayHour, type CharacterStyle, type Situation } from './lib/character/situations.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 
@@ -90,6 +91,16 @@ If the most recent session ended with an action the person chose, ask about it e
 If they say nothing has changed, or they slipped back into the old pattern, do not let them judge it. That is the old self testing the new decision, not evidence against it — and noticing the slip proves they are already standing somewhere new. They cannot backslide. In your own words: so what? Is that who you are now?
 
 ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : relativeDayLabel(r.date, todayKey)} (${r.date}): ${r.recap}${wayInSuffix(r.way_in)}`).join('\n\n')}`;
+    }
+
+    const choices: Choice[] = userData?.choices || [];
+    if (choices.length > 0) {
+        engagementContract += `\n\n[THEIR CHOICES — FROM EARLIER SESSIONS]
+These are the actions the person chose in earlier sessions. They keep them as a checklist on their home page and tick one off when they have done it. Each is labeled with when it was chosen, and a ticked one with when they ticked it.
+
+A tick means they did it: do not ask whether they did, ask what came of it. Each tick is them living as the person they are choosing to be; when it fits, let them feel that. An open choice is not a debt: never present the list as a to-do list or a reminder.
+
+${choices.map(c => `- [${c.done_at ? 'x' : ' '}] ${c.text} (chosen ${relativeDayLabel(c.chosen_on, todayKey)}${c.done_at ? `, ticked ${relativeMomentLabel(c.done_at, now, timeZone)}` : ''})`).join('\n')}`;
     }
 
     return buildMirrorSystemPrompt({

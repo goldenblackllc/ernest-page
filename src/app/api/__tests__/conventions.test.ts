@@ -25,6 +25,8 @@ const AUTH_ROUTES: [string, string, () => Promise<Record<string, unknown>>][] = 
     ["account/delete", "DELETE", () => import("../account/delete/route")],
     ["account/export", "POST", () => import("../account/export/route")],
     ["check-session-access", "POST", () => import("../check-session-access/route")],
+    ["choices", "PATCH", () => import("../choices/route")],
+    ["choices", "DELETE", () => import("../choices/route")],
     ["consume-session", "POST", () => import("../consume-session/route")],
     ["onboarding/process", "POST", () => import("../onboarding/process/route")],
     ["payments/email", "POST", () => import("../payments/email/route")],

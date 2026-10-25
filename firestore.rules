@@ -9,9 +9,10 @@ service cloud.firestore {
 
       // Server-managed fields. `access` holds everything about sessions and
       // billing: credits, free sessions, daily counts, membership, Stripe ids
-      // (functions/src/lib/access/sessionAccess.ts).
+      // (functions/src/lib/access/sessionAccess.ts). `choices` are the actions
+      // chosen in sessions, ticked through /api/choices (functions/src/lib/choices.ts).
       function serverManagedUserFields() {
-        return ['access', 'created_at', 'daily_digest', 'session_recaps'];
+        return ['access', 'choices', 'created_at', 'daily_digest', 'session_recaps'];
       }
 
       // Users can create their own document, without server-managed fields

@@ -13,7 +13,7 @@ People talk with their "ideal self", an AI character built from their own Charac
 
 Rules:
 - **New heavy or background work goes in `functions/`.** Vercel times out and drops work after the response is sent.
-- **The AI/post pipeline exists only in `functions/src/lib/`.** The website imports the few shared files through the `@functions/*` alias (`@functions/lib/ai/models`, `@functions/lib/getPostText`, `@functions/lib/access/sessionAccess`, `@functions/lib/character/situations`, `@functions/lib/character/bibleText`). Never copy them into `src/lib`.
+- **The AI/post pipeline exists only in `functions/src/lib/`.** The website imports the few shared files through the `@functions/*` alias (`@functions/lib/ai/models`, `@functions/lib/getPostText`, `@functions/lib/access/sessionAccess`, `@functions/lib/character/situations`, `@functions/lib/character/bibleText`, `@functions/lib/choices`). Never copy them into `src/lib`.
 - **Every package a shared file imports must also be in the root `package.json`.** Vercel installs only the root packages. Locally those imports silently resolve from `functions/node_modules`, so a missing one only fails on Vercel. To check, build with `functions/node_modules` moved aside.
 - `firebase/admin.ts` is deliberately separate per side: the website uses a service-account key, Functions use default credentials.
 - Don't rename or remove an exported Cloud Function without checking callers. Deployed names are URLs. For example, `src/app/api/onboarding/process` calls `compileCharacterBible` by URL.
@@ -40,6 +40,7 @@ Rules:
 - `lib/character/situations.ts`: the character's situations (settings with their own look and avatar) and weekly routine, from `bible.style`. Pure, no imports; shared with the website (Mirror header).
 - `lib/character/bibleText.ts`: the Character Bible as one Markdown document (`users/{uid}.bible.text`): the seven `## ` headings and how to split it into sections and `**Subheading:**` subsections. Pure, no imports; shared with the website (Profile). Read it with `getBibleText` from `lib/bible.ts`.
 - `lib/access/sessionAccess.ts`: the one session access rule (free sessions, credits, membership, daily/turn/time limits, refund rules). Pure, no imports; shared with the website.
+- `lib/choices.ts`: the person's choices (`users/{uid}.choices`), the actions chosen in sessions: how each session replaces the list. Extracted in `processChat`, given to the Mirror, shown at the top of the feed (`components/feed/ChoicesCard`), ticked and deleted through `/api/choices`. Pure, no imports; shared with the website.
 
 ## Conventions
 

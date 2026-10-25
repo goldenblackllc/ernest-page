@@ -776,6 +776,13 @@
     "memberComp": "Cortesia",
     "memberCompNote": "Assinatura cortesia. Até 5 sessões por dia, sem custo. Nada para renovar ou cancelar."
   },
+  "choices": {
+    "title": "Suas escolhas",
+    "chosenOn": "Escolhido em {date}",
+    "markDone": "Marcar como feito",
+    "markOpen": "Marcar como não feito",
+    "remove": "Remover"
+  },
   "cookieConsent": {
     "message": "Usamos cookies essenciais para login e segurança. Sem rastreamento, sem anúncios.",
     "privacyLink": "Leia nossa Política de Privacidade",

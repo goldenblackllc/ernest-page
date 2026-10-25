@@ -776,6 +776,13 @@
     "memberComp": "Offert",
     "memberCompNote": "Abonnement offert. Jusqu'à 5 sessions par jour, gratuitement. Rien à renouveler ni à résilier."
   },
+  "choices": {
+    "title": "Vos choix",
+    "chosenOn": "Choisi le {date}",
+    "markDone": "Marquer comme fait",
+    "markOpen": "Marquer comme non fait",
+    "remove": "Retirer"
+  },
   "cookieConsent": {
     "message": "Nous utilisons des cookies essentiels pour la connexion et la sécurité. Pas de suivi, pas de publicité.",
     "privacyLink": "Lire notre Politique de confidentialité",

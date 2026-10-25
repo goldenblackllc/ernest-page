@@ -776,6 +776,13 @@
     "memberComp": "Complimentary",
     "memberCompNote": "Complimentary membership. Up to 5 sessions a day, at no charge. Nothing to renew or cancel."
   },
+  "choices": {
+    "title": "Your choices",
+    "chosenOn": "Chosen {date}",
+    "markDone": "Mark as done",
+    "markOpen": "Mark as not done",
+    "remove": "Remove"
+  },
   "cookieConsent": {
     "message": "We use essential cookies for authentication and security. No tracking, no ads.",
     "privacyLink": "Read our Privacy Policy",

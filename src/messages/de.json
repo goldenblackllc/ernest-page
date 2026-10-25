@@ -776,6 +776,13 @@
     "memberComp": "Geschenkt",
     "memberCompNote": "Geschenkte Mitgliedschaft. Bis zu 5 Sitzungen am Tag, kostenlos. Nichts zu verlängern oder zu kündigen."
   },
+  "choices": {
+    "title": "Deine Entscheidungen",
+    "chosenOn": "Gewählt am {date}",
+    "markDone": "Als erledigt markieren",
+    "markOpen": "Als nicht erledigt markieren",
+    "remove": "Entfernen"
+  },
   "cookieConsent": {
     "message": "Wir verwenden nur notwendige Cookies für Anmeldung und Sicherheit. Kein Tracking, keine Werbung.",
     "privacyLink": "Lies unsere Datenschutzerklärung",

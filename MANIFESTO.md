@@ -57,6 +57,7 @@ The conversational AI interface. Users talk to a simulation of their "Ideal Self
 The core profile, stored at `users/{uid}`.
 *   **Identity:** Title (archetype), Vision (dream_self), Gender, Age, Key People, What You Love, Wants, Dream. People and interests are edited only by the user.
 *   **Dossier:** AI-maintained file of present-tense facts, rewritten after every session. Stable facts plus clearly marked transient to-dos. No commentary or analysis of the user's beliefs.
+*   **Choices:** The actions the person chose in their sessions, taken from the conversation itself (no button to generate them) and kept as a private checklist at the top of their feed. Not a productivity list: they are choices the person makes because acting as the person they want to be pleases them. The list reminds them of those choices, and ticking one off reinforces that they are being that person. Each shows the date it was chosen. Open choices never expire; the person ticks or deletes them. Each session replaces the list: open choices carry over, done ones leave, new ones are added. The character sees the list, ticks included, at the start of every session.
 *   **Compiled Output:** AI-generated character sections and avatar, compiled from the source identity by Cloud Functions (`buildCharacter`, rebuilt automatically after the user edits).
 
 ### C. The Social Feed ("Dear Earnest" Column)

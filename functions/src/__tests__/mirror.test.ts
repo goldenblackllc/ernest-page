@@ -143,3 +143,22 @@ describe('mirrorReply prompt caching', () => {
         });
     });
 });
+
+describe("mirrorReply and the person's choices", () => {
+    const conversation = [{ role: 'user' as const, content: 'Hi' }];
+
+    it('lists open and ticked choices with when each was chosen and ticked', async () => {
+        h.state.user.choices = [
+            { id: 'a', text: 'Call Dad on Sunday', chosen_on: '2026-10-17' },
+            { id: 'b', text: 'Run by breath', chosen_on: '2026-10-18', done_at: Date.UTC(2026, 9, 19, 8) },
+        ];
+        const system = (await sent(conversation))[0].content;
+        expect(system).toContain('[THEIR CHOICES — FROM EARLIER SESSIONS]');
+        expect(system).toContain('- [ ] Call Dad on Sunday (chosen 2 days ago)\n- [x] Run by breath (chosen yesterday, ticked this morning)');
+    });
+
+    it('leaves the section out when there are no choices', async () => {
+        const system = (await sent(conversation))[0].content;
+        expect(system).not.toContain('THEIR CHOICES');
+    });
+});

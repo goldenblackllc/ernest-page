@@ -776,6 +776,13 @@
     "memberComp": "Cortesía",
     "memberCompNote": "Membresía de cortesía. Hasta 5 sesiones al día, sin costo. Nada que renovar ni cancelar."
   },
+  "choices": {
+    "title": "Tus elecciones",
+    "chosenOn": "Elegido el {date}",
+    "markDone": "Marcar como hecho",
+    "markOpen": "Marcar como no hecho",
+    "remove": "Quitar"
+  },
   "cookieConsent": {
     "message": "Usamos cookies esenciales para el inicio de sesión y la seguridad. Sin rastreo ni anuncios.",
     "privacyLink": "Lee nuestra Política de Privacidad",
