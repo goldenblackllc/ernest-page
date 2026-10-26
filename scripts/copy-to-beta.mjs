@@ -65,9 +65,11 @@ try {
     await betaAuth.createUser({ uid, phoneNumber: phone });
 }
 
-// Fresh snapshot: clear the beta user's record and posts first.
+// Fresh snapshot: clear the beta user's subcollections and posts first. The
+// user document itself is replaced in one write below, never deleted: a signed-in
+// beta tab that saw it missing would open onboarding (TriagePanel).
 const betaUserRef = betaDb.collection("users").doc(uid);
-await betaDb.recursiveDelete(betaUserRef);
+for (const sub of await betaUserRef.listCollections()) await betaDb.recursiveDelete(sub);
 const oldPosts = await betaDb.collection("posts").where("authorId", "==", uid).get();
 await Promise.all(oldPosts.docs.map((d) => d.ref.delete()));
 
