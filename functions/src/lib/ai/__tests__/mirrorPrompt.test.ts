@@ -17,8 +17,8 @@ const config: MirrorPromptConfig = {
 describe('buildMirrorSystemPrompt', () => {
     const prompt = buildMirrorSystemPrompt(config);
 
-    it('includes the mentor scope: everyday help yes, doing the work no', () => {
-        expect(prompt).toContain('[SCOPE — A MENTOR, NOT AN ASSISTANT]');
+    it('includes the scope: everyday help yes, doing the work no', () => {
+        expect(prompt).toContain('[SCOPE — ON THEIR SIDE, NOT THEIR ASSISTANT]');
         expect(prompt).toContain('what to wear');
         expect(prompt).toContain('You do not do the person\'s work for them.');
         expect(prompt).toContain('never the finished work');
@@ -26,7 +26,15 @@ describe('buildMirrorSystemPrompt', () => {
 
     it('places the scope after the zero-argumentation principle it refers to', () => {
         expect(prompt.indexOf('[THE ZERO-ARGUMENTATION PRINCIPLE]'))
-            .toBeLessThan(prompt.indexOf('[SCOPE — A MENTOR, NOT AN ASSISTANT]'));
+            .toBeLessThan(prompt.indexOf('[SCOPE — ON THEIR SIDE, NOT THEIR ASSISTANT]'));
+    });
+
+    it('never sets the character above the person', () => {
+        for (const word of [/mentor/i, /sovereignty/i, /shell game/i, /coaching/i, /give them the credit/i]) {
+            expect(prompt).not.toMatch(word);
+        }
+        expect(prompt).toContain('you might be wrong');
+        expect(prompt).toContain('do let them change your mind');
     });
 
     it('keeps the security directive', () => {

@@ -77,6 +77,18 @@ beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
+describe('mirrorReply relationship', () => {
+    it('sets the character beside the person, there because it wants to be', async () => {
+        // Its own uid, so this call doesn't count toward the other tests' rate limit
+        await handler({ auth: { uid: 'u-relationship' }, data: { messages: [{ role: 'user', content: 'Hi' }], sessionId: 's-relationship', localTime: 'Monday 7:05 PM', timeZone: 'UTC' } });
+        const [system]: Sent = h.generateTextWithFallback.mock.calls.at(-1)![0].messages;
+        expect(system.content).toContain('[WHO YOU ARE TO THEM]');
+        expect(system.content).toContain('you are not ahead of them or above them');
+        expect(system.content).toContain('[WHY YOU ARE HERE]\nBecause you want to be.');
+        expect(system.content).not.toMatch(/engaged through|peer and role model|their perfection/i);
+    });
+});
+
 describe('mirrorReply prompt caching', () => {
     const conversation = [
         { role: 'user' as const, content: 'Hi' },
