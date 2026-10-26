@@ -162,8 +162,9 @@ export function EditableList<T>({
                 />
             </form>
 
-            {/* Scrollable list */}
-            <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+            {/* Scrollable list; the bottom edge fades so a cut-off item reads as "more below",
+                and the bottom padding lets the last item scroll clear of the fade */}
+            <div className="flex-1 overflow-y-auto min-h-0 pr-1 pb-6 [mask-image:linear-gradient(to_bottom,black_calc(100%-1.5rem),transparent)]">
                 {items.length === 0 ? (
                     <div className="py-8 text-center text-sm text-zinc-500">
                         {emptyText}
@@ -176,7 +177,7 @@ export function EditableList<T>({
                         return (
                             <div
                                 key={key}
-                                className="flex items-center justify-between gap-2 py-2.5 px-1 border-b border-zinc-800/50 group"
+                                className="flex items-center justify-between gap-2 py-1 px-1 group"
                             >
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                     {renderLeading?.(item, index)}
@@ -190,7 +191,7 @@ export function EditableList<T>({
                                             onBlur={handleSaveEdit}
                                             className={cn(
                                                 "flex-1 bg-zinc-800/80 text-white text-sm sm:text-base",
-                                                "px-2.5 py-1 rounded border border-zinc-700",
+                                                "px-2 py-0 -my-px rounded border border-zinc-700",
                                                 focusRing,
                                                 "transition-colors"
                                             )}
@@ -199,7 +200,7 @@ export function EditableList<T>({
                                         <span
                                             onClick={() => handleStartEdit(item)}
                                             className={cn(
-                                                "flex-1 text-sm sm:text-base break-words cursor-pointer select-none py-1 transition-colors",
+                                                "flex-1 text-sm sm:text-base break-words cursor-pointer select-none transition-colors",
                                                 itemTextClassName ? itemTextClassName(item) : "text-white hover:text-zinc-200"
                                             )}
                                             title={editTitle}
@@ -209,10 +210,11 @@ export function EditableList<T>({
                                     )}
                                 </div>
 
+                                {/* The ::after extends the tap area into the gap between rows */}
                                 <button
                                     type="button"
                                     onClick={() => handleDelete(item)}
-                                    className="shrink-0 p-1 text-zinc-600 hover:text-red-400 transition-colors rounded focus:outline-none"
+                                    className="relative shrink-0 p-0.5 text-zinc-600 hover:text-red-400 transition-colors rounded focus:outline-none after:absolute after:-inset-2"
                                     aria-label={deleteAriaLabel(text)}
                                     title={deleteTitle}
                                 >

@@ -33,7 +33,7 @@ export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
             items={entries}
             getKey={(entry) => entry.key}
             getText={(entry) => entry.text}
-            onAdd={(text) => onSave([...interests, text])}
+            onAdd={(text) => onSave([text, ...interests])}
             onEdit={(entry, text) => onSave(interests.map((v, idx) => (idx === entry.index ? text : v)))}
             onDelete={(entry) => onSave(interests.filter((_, idx) => idx !== entry.index))}
             title={t("title")}
@@ -43,8 +43,8 @@ export function LovesEditor({ interests = [], onSave }: LovesEditorProps) {
             editTitle={t("clickToEdit")}
             deleteAriaLabel={(text) => t("deleteItem", { text })}
             deleteTitle={t("deleteTitle")}
-            renderLeading={(_, index) => (
-                <span className="text-xs text-zinc-500 font-mono shrink-0 w-5 text-right">{index + 1}.</span>
+            renderLeading={() => (
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 shrink-0 mx-1" aria-hidden="true" />
             )}
         />
     );

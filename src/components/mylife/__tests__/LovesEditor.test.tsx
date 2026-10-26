@@ -29,7 +29,7 @@ describe('LovesEditor', () => {
         expect(onSave).toHaveBeenCalledWith(['Tea']);
     });
 
-    it('adds a new interest on submit and clears input', () => {
+    it('adds a new interest at the top on submit and clears input', () => {
         const interests = ['Reading'];
         const onSave = vi.fn();
 
@@ -39,7 +39,7 @@ describe('LovesEditor', () => {
         fireEvent.change(input, { target: { value: 'Trail Running' } });
         fireEvent.submit(input.closest('form')!);
 
-        expect(onSave).toHaveBeenCalledWith(['Reading', 'Trail Running']);
+        expect(onSave).toHaveBeenCalledWith(['Trail Running', 'Reading']);
         expect((input as HTMLInputElement).value).toBe('');
     });
 

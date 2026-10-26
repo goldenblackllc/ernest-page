@@ -357,8 +357,12 @@ export function TriagePanel() {
                 {renderDrawerContent()}
             </MyLifeDrawer>
 
-            {/* BOTTOM NAV AREA — Pill Bar + Nav Bar */}
-            <div className="fixed bottom-0 left-0 w-full z-40 bg-black/90 backdrop-blur-md border-t border-zinc-800 pb-safe">
+            {/* BOTTOM NAV AREA — Pill Bar + Nav Bar. Above the My Life drawer while it is
+                open, so its pills stay visible to switch sections. */}
+            <div className={cn(
+                "fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-md border-t border-zinc-800 pb-safe",
+                activeSection !== null ? "z-[47]" : "z-40"
+            )}>
                 {/* Pill Bar */}
                 <PillBar
                     activeSection={activeSection}

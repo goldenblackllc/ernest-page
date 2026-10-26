@@ -41,7 +41,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
             completed: false,
             created_at: Date.now(),
         };
-        onSave([...list, newItem]);
+        onSave([newItem, ...list]);
     };
 
     return (
@@ -64,7 +64,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                 <button
                     type="button"
                     onClick={() => handleToggle(item.id)}
-                    className="shrink-0 p-0.5 text-zinc-400 hover:text-white transition-colors focus:outline-none"
+                    className="relative shrink-0 text-zinc-400 hover:text-white transition-colors focus:outline-none after:absolute after:-inset-2"
                     aria-label={item.completed ? t("markIncomplete", { text: item.text }) : t("markComplete", { text: item.text })}
                 >
                     {item.completed ? (

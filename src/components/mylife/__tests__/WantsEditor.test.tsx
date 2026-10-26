@@ -63,7 +63,7 @@ describe("WantsEditor", () => {
         expect(updated.length).toBe(2);
     });
 
-    it("adds a new item on submit and clears input", () => {
+    it("adds a new item at the top on submit and clears input", () => {
         const onSave = vi.fn();
         render(<WantsEditor wants={mockWants} onSave={onSave} />);
 
@@ -76,7 +76,7 @@ describe("WantsEditor", () => {
         expect(onSave).toHaveBeenCalledTimes(1);
         const updated = onSave.mock.calls[0][0];
         expect(updated.length).toBe(4);
-        const newItem = updated[3];
+        const newItem = updated[0];
         expect(newItem.text).toBe("Visit Japan");
         expect(newItem.completed).toBe(false);
         expect(typeof newItem.id).toBe("string");
