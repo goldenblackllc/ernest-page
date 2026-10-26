@@ -4,7 +4,8 @@
     "close": "Schließen",
     "back": "Zurück",
     "submit": "Absenden",
-    "brand": "Earnest Page"
+    "brand": "Earnest Page",
+    "betaMarker": "Beta"
   },
   "landing": {
     "nav": {
@@ -777,8 +778,7 @@
     "memberCompNote": "Geschenkte Mitgliedschaft. Bis zu 5 Sitzungen am Tag, kostenlos. Nichts zu verlängern oder zu kündigen."
   },
   "choices": {
-    "title": "Deine Entscheidungen",
-    "chosenOn": "Gewählt am {date}",
+    "title": "Meine Aktionen",
     "markDone": "Als erledigt markieren",
     "markOpen": "Als nicht erledigt markieren",
     "remove": "Entfernen"

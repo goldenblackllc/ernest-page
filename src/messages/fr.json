@@ -4,7 +4,8 @@
     "close": "Fermer",
     "back": "Retour",
     "submit": "Soumettre",
-    "brand": "Earnest Page"
+    "brand": "Earnest Page",
+    "betaMarker": "Bêta"
   },
   "landing": {
     "nav": {
@@ -777,8 +778,7 @@
     "memberCompNote": "Abonnement offert. Jusqu'à 5 sessions par jour, gratuitement. Rien à renouveler ni à résilier."
   },
   "choices": {
-    "title": "Vos choix",
-    "chosenOn": "Choisi le {date}",
+    "title": "Mes actions",
     "markDone": "Marquer comme fait",
     "markOpen": "Marquer comme non fait",
     "remove": "Retirer"

@@ -68,11 +68,12 @@ Keep the code clean, solid, stable, clear and up to date.
 
 - **A separate copy of the app.** Firebase project `earnest-page-beta` (alias `beta` in `.firebaserc`) and the website's `beta` branch at https://beta.earnestpage.com. It has its own database, storage, sign-in and functions; nothing in beta reaches live.
 - **Deploying.** Add `-P beta`, e.g. `firebase deploy -P beta --only functions:mirrorReply`. Plain `firebase deploy` still targets live.
-- **Settings.** `functions/.env.earnest-page-beta` overrides `functions/.env` for the beta functions (admin email is off). The website's beta variables are in Vercel (Preview, branch `beta`). `.env.beta.local` holds the beta service-account key for scripts. All gitignored.
+- **Settings.** `functions/.env.earnest-page-beta` overrides `functions/.env` for the beta functions (admin email is off). The website's beta variables are in Vercel (Preview, branch `beta`). `.env.beta.local` holds the beta service-account key (for scripts) plus the beta web config and `COMPILE_FUNCTION_URL` (for `npm run dev:beta`). All gitignored.
+- **Local website against beta.** `npm run dev:beta` (`scripts/dev-beta.mjs`) runs the local website on beta's sign-in, database, storage and functions instead of live; `npm run dev` stays on live. It refuses to start unless every Firebase setting in `.env.beta.local` points at beta. A "Beta" pill beside the brand (`components/BetaMarker`) shows on any page that talks to beta, here and on beta.earnestpage.com. Website changes show on save with no push. Function changes still need `firebase deploy -P beta --only functions:<name>`, because functions only run on Google.
 - **Data.** `node scripts/copy-to-beta.mjs <+phone> [--posts N]` replaces that user's beta record with a fresh copy of their live data: no billing, a complimentary membership instead. One way only.
 - **Release flow.** Live only ever gets code from `main`; the `beta` branch is disposable.
   1. Build the change on its own branch.
-  2. Test on beta: push it to the `beta` branch (rebuilds the beta site) and deploy changed functions with `-P beta` from a checkout of `beta`. Copy `functions/.env` and `functions/.env.earnest-page-beta` into that checkout first; they're gitignored. Rules and indexes too if they changed. Refresh test data with `copy-to-beta.mjs` if needed.
+  2. Test on beta. While building, `npm run dev:beta` is enough for website changes. To share it or check it on a phone, push it to the `beta` branch (rebuilds the beta site) and deploy changed functions with `-P beta` from a checkout of `beta`. Copy `functions/.env` and `functions/.env.earnest-page-beta` into that checkout first; they're gitignored. Rules and indexes too if they changed. Refresh test data with `copy-to-beta.mjs` if needed.
   3. Check it at https://beta.earnestpage.com.
   4. Release: merge into `main`, push (updates the live site), and deploy the same functions to live from `main`.
   5. Reset beta to match live: `git push --force origin main:beta`. First check `git log --oneline main..origin/beta`: if beta holds commits that aren't on `main`, another change is still being tested there, so leave beta alone.
@@ -94,7 +95,8 @@ The dossier (rewritten after each session in `functions/src/processChat.ts`) hol
 ## Commands
 
 ```bash
-npm run dev                         # website on http://localhost:3000
+npm run dev                         # website on http://localhost:3000, against live
+npm run dev:beta                    # the same, against beta (earnest-page-beta)
 npm run typecheck                   # tsc for src/ (also checks imported functions code)
 npm test                            # vitest
 npm run lint                        # eslint

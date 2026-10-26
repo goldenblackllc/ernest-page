@@ -20,10 +20,11 @@ beforeEach(() => {
 });
 
 describe("ChoicesCard", () => {
-    it("shows each choice with its date and whether it's ticked", () => {
+    it("shows each choice and whether it's ticked, without its date", () => {
         render(<ChoicesCard user={user} choices={choices} />);
-        expect(screen.getByText("Your choices")).toBeInTheDocument();
-        expect(screen.getByText("Chosen Oct 20")).toBeInTheDocument();
+        expect(screen.getByText("My Actions")).toBeInTheDocument();
+        expect(screen.getByText("Call Dad on Sunday")).toBeInTheDocument();
+        expect(screen.queryByText(/Oct/)).not.toBeInTheDocument();
         const boxes = screen.getAllByRole("checkbox");
         expect(boxes.map(b => b.getAttribute("aria-checked"))).toEqual(["false", "true"]);
     });

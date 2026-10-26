@@ -4,7 +4,8 @@
     "close": "Fechar",
     "back": "Voltar",
     "submit": "Enviar",
-    "brand": "Earnest Page"
+    "brand": "Earnest Page",
+    "betaMarker": "Beta"
   },
   "landing": {
     "nav": {
@@ -777,8 +778,7 @@
     "memberCompNote": "Assinatura cortesia. Até 5 sessões por dia, sem custo. Nada para renovar ou cancelar."
   },
   "choices": {
-    "title": "Suas escolhas",
-    "chosenOn": "Escolhido em {date}",
+    "title": "Minhas ações",
     "markDone": "Marcar como feito",
     "markOpen": "Marcar como não feito",
     "remove": "Remover"
