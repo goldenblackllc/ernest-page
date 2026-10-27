@@ -32,7 +32,7 @@ You get the current list and the newest conversation. Report:
 
 Every other current action stays as it is. Never leave one out because it is old or was not mentioned.
 
-Write each action in the first person, in the language of the conversation, as one short line, specific enough that the person will know when it is done.
+Write each action as a line on a checklist, in the language of the conversation: start with the verb, with no "I" or other subject, the way people write their own lists in that language. One short line, specific enough that the person will know when it is done.
 
 CURRENT LIST:
 ${current}
