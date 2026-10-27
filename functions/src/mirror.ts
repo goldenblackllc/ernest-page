@@ -12,9 +12,10 @@ import { randomUUID } from 'crypto';
 import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { generateTextWithFallback, OPUS_MODEL, LIVE_FALLBACK } from './lib/ai/models.js';
-import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory } from './lib/ai/mirrorPrompt.js';
+import { buildMirrorSystemPrompt, buildMirrorNowBlock, pickNegativeInventory } from './lib/ai/mirrorPrompt.js';
 import { wayInSuffix } from './lib/ai/waysIn.js';
 import { getBibleText } from './lib/bible.js';
+import { currentWeather } from './lib/weather.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
 import { currentSituation, localDayHour, type CharacterStyle, type Situation } from './lib/character/situations.js';
@@ -167,7 +168,10 @@ export const mirrorReply = onCall<MirrorReplyData>(
         // /api/consume-session sets createdAt when the session starts; it never changes after that
         const startedAt: number = chat?.createdAt ?? Date.now();
 
-        const userDoc = await db.collection('users').doc(uid).get();
+        const [userDoc, weather] = await Promise.all([
+            db.collection('users').doc(uid).get(),
+            currentWeather(chat?.place, chat?.weather),
+        ]);
         if (!userDoc.exists) throw new HttpsError('not-found', 'User not found');
         const userData = userDoc.data();
 
@@ -185,6 +189,7 @@ export const mirrorReply = onCall<MirrorReplyData>(
             uid,
             messages,
             timeZone, // processChat dates the session recap in the user's time zone
+            ...(weather && weather !== chat?.weather ? { weather } : {}),
             status: 'generating',
             updatedAt: Date.now(),
             ...(chat?.createdAt ? {} : { createdAt: startedAt }),
@@ -206,7 +211,7 @@ export const mirrorReply = onCall<MirrorReplyData>(
                             : { role, content }
                     )),
                     // After every breakpoint: the only part that changes between turns.
-                    { role: 'system', content: buildMirrorTimeBlock(localTime) },
+                    { role: 'system', content: buildMirrorNowBlock(localTime, weather?.summary) },
                 ],
                 abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
             });

@@ -99,6 +99,19 @@ describe("POST /api/consume-session", () => {
         expect(doc(USER)?.access).toMatchObject({ free_used: 1, sessions_today: 1 });
     });
 
+    it("records roughly where the user is, from Vercel's IP location", async () => {
+        fakeDb.seed(USER, { created_at: SIGNUP });
+        const { POST } = await import("../consume-session/route");
+        const req = post("consume-session", { sessionId: "session-0001" });
+        req.headers.set("x-vercel-ip-latitude", "38.7223");
+        req.headers.set("x-vercel-ip-longitude", "-9.1393");
+        await POST(req);
+        expect(doc(`${USER}/active_chats/session-0001`)?.place).toEqual({ lat: 38.7, lon: -9.1 });
+
+        await POST(post("consume-session", { sessionId: "session-0002" }));
+        expect(doc(`${USER}/active_chats/session-0002`)).not.toHaveProperty("place");
+    });
+
     it("doesn't charge twice for the same session", async () => {
         fakeDb.seed(USER, { created_at: SIGNUP });
         const { POST } = await import("../consume-session/route");

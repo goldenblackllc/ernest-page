@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
+import { buildMirrorSystemPrompt, buildMirrorNowBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
 import { wayInSuffix, WAYS_IN, WAY_IN_IDS } from '../waysIn.js';
 import { buildSessionLogPrompt } from '../sessionLogPrompt.js';
 import { REALITY_RULES } from '../../constants/realityRules.js';
@@ -60,8 +60,16 @@ describe('prompt caching', () => {
     it('keeps the current time out of the cached prompt', () => {
         const prompt = buildMirrorSystemPrompt(config);
         expect(prompt).not.toContain('[CURRENT TIME]');
-        expect(buildMirrorTimeBlock('Tuesday, July 1, 2025 2:31 PM')).toBe('[CURRENT TIME]\nTuesday, July 1, 2025 2:31 PM');
-        expect(buildMirrorTimeBlock(undefined)).toBe('[CURRENT TIME]\nUnknown');
+        expect(buildMirrorNowBlock('Tuesday, July 1, 2025 2:31 PM')).toBe('[CURRENT TIME]\nTuesday, July 1, 2025 2:31 PM');
+        expect(buildMirrorNowBlock(undefined)).toBe('[CURRENT TIME]\nUnknown');
+    });
+
+    it('keeps the weather out of the cached prompt, with a standing rule to keep it in the background', () => {
+        const prompt = buildMirrorSystemPrompt(config);
+        expect(prompt).toContain('[THEIR WEATHER]\nA [THEIR WEATHER] note may follow');
+        expect(prompt).toContain('Never name, guess or ask where they are.');
+        expect(buildMirrorNowBlock('Monday 7:05 PM', '9°C (48°F), light rain')).toBe('[CURRENT TIME]\nMonday 7:05 PM\n\n[THEIR WEATHER]\n9°C (48°F), light rain');
+        expect(buildMirrorNowBlock('Monday 7:05 PM', '')).toBe('[CURRENT TIME]\nMonday 7:05 PM');
     });
 
     it("puts the session's location in the cached prompt, in the background", () => {

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const h = vi.hoisted(() => {
     const state: { user: Record<string, unknown>; chat: Record<string, unknown> | undefined } = { user: {}, chat: undefined };
@@ -153,5 +153,54 @@ describe('mirrorReply prompt caching', () => {
             event: 'mirror_usage', sessionId: 's-3', messageCount: 3, model: 'primary',
             cacheRead: 22_000, cacheWrite: 1_200, uncached: 200, output: 2_000, thinking: 1_500,
         });
+    });
+});
+
+describe('mirrorReply weather', () => {
+    const PLACE = { lat: 38.7, lon: -9.1 };
+    const conversation = [{ role: 'user' as const, content: 'Hi' }];
+    const fetchMock = vi.fn();
+    // Its own uid, so these calls don't count toward the other tests' rate limit
+    async function sent(messages: { role: 'user' | 'assistant'; content: string }[], localTime = 'Monday 7:05 PM'): Promise<Sent> {
+        await handler({ auth: { uid: 'u-weather' }, data: { messages, sessionId: 's-weather', localTime, timeZone: 'UTC' } });
+        return h.generateTextWithFallback.mock.calls.at(-1)![0].messages;
+    }
+
+    beforeEach(() => {
+        fetchMock.mockReset().mockResolvedValue({
+            ok: true,
+            json: async () => ({ current: { temperature_2m: 9, apparent_temperature: 8, weather_code: 61, wind_speed_10m: 10, is_day: 1 } }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('puts the weather in the per-turn block and saves it on the chat', async () => {
+        h.state.chat = { ...h.state.chat, place: PLACE };
+        const messages = await sent(conversation, 'Monday 7:05 PM');
+        expect(messages.at(-1)).toEqual({ role: 'system', content: '[CURRENT TIME]\nMonday 7:05 PM\n\n[THEIR WEATHER]\n9°C (48°F), light rain' });
+        expect(messages[0].content).not.toContain('light rain');
+        expect(String(fetchMock.mock.calls[0][0])).toContain('latitude=38.7&longitude=-9.1');
+        expect(h.chatSet.mock.calls[0][0]).toMatchObject({ weather: { summary: '9°C (48°F), light rain', at: NOW } });
+    });
+
+    it('reuses a reading under an hour old', async () => {
+        h.state.chat = { ...h.state.chat, place: PLACE, weather: { summary: 'clear sky', at: NOW - 30 * 60_000 } };
+        const messages = await sent(conversation);
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(messages.at(-1)!.content).toContain('[THEIR WEATHER]\nclear sky');
+        expect(h.chatSet.mock.calls[0][0]).not.toHaveProperty('weather');
+    });
+
+    it('leaves the weather out when the place is unknown or the fetch fails', async () => {
+        expect((await sent(conversation)).at(-1)!.content).not.toContain('[THEIR WEATHER]');
+        expect(fetchMock).not.toHaveBeenCalled();
+
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        fetchMock.mockRejectedValue(new Error('timeout'));
+        h.state.chat = { ...h.state.chat, place: PLACE };
+        expect((await sent(conversation)).at(-1)!.content).not.toContain('[THEIR WEATHER]');
+        // Cached as a failed reading, so the next turns don't wait on it again
+        expect(h.chatSet.mock.calls.at(-2)![0]).toMatchObject({ weather: { summary: '', at: NOW } });
     });
 });

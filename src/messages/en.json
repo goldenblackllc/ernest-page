@@ -443,7 +443,7 @@
       "strong2": "never visible to any user other than you",
       "p6": ". “Burn on Close” sessions are deleted immediately with zero data retention.",
       "t4": "2.4 Location Data",
-      "p7": "If you grant browser geolocation permission, your approximate coordinates (latitude and longitude) are used for the Proximity Blind Spot feature, which filters posts from within a 200-mile radius to protect your anonymity. You may also manually set a location anchor via zip code. Your precise coordinates are never displayed to other users or included in API responses.",
+      "p7": "If you grant browser geolocation permission, your approximate coordinates (latitude and longitude) are used for the Proximity Blind Spot feature, which filters posts from within a 200-mile radius to protect your anonymity. You may also manually set a location anchor via zip code. Your precise coordinates are never displayed to other users or included in API responses. When you start a conversation, we also note your approximate location (rounded to about 10 km) from your internet connection, so your character knows the weather where you are. The location is sent only to our weather provider, Open-Meteo, is never shown to your character or anyone else, and is deleted with the session.",
       "t5": "2.5 Usage & Payment Data",
       "p8": "We may collect anonymous usage metrics to improve service quality. When you buy sessions or a membership, card payments are processed by Stripe; we never see or store your full card number. We keep a Stripe customer ID, your purchase, session and refund records, your saved cards' brand, last four digits and expiry date, and the email address you give for receipts, which we use only for receipts and membership notices."
     },

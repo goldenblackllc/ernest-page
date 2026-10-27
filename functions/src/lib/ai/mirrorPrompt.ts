@@ -206,13 +206,20 @@ export function pickNegativeInventory(sessionId: string): boolean {
 }
 
 /**
- * The only per-turn part of the prompt. It goes after the latest message, past
- * every cache breakpoint: anything that changes between turns must stay out of
- * buildMirrorSystemPrompt and the conversation, or the prompt cache never hits.
+ * The only per-turn part of the prompt: the time and the user's weather. It goes
+ * after the latest message, past every cache breakpoint: anything that changes
+ * between turns must stay out of buildMirrorSystemPrompt and the conversation,
+ * or the prompt cache never hits.
  */
-export function buildMirrorTimeBlock(localTime: string | undefined): string {
-    return `[CURRENT TIME]\n${localTime || 'Unknown'}`;
+export function buildMirrorNowBlock(localTime: string | undefined, weather?: string): string {
+    const time = `[CURRENT TIME]\n${localTime || 'Unknown'}`;
+    return weather ? `${time}\n\n[THEIR WEATHER]\n${weather}` : time;
 }
+
+const WEATHER_RULE = `
+[THEIR WEATHER]
+A [THEIR WEATHER] note may follow their latest message: the weather where they are right now. You know it the way you know the time, so it stays in the background. Do not open with it or remark on it. Mention it only if it truly bears on what they are saying or what you suggest. Never name, guess or ask where they are.
+`;
 
 function situationBlock(situation: MirrorPromptConfig['situation']): string {
     if (!situation?.label) return '';
@@ -228,7 +235,7 @@ This is where you happen to be while you text. Like anyone's surroundings, it st
  * Assembles the Mirror system prompt from shared logic and
  * context-specific configuration. The result must be identical on every turn
  * of a session so it can be prompt-cached; the current time goes in
- * buildMirrorTimeBlock instead.
+ * buildMirrorNowBlock instead.
  */
 export function buildMirrorSystemPrompt(config: MirrorPromptConfig): string {
     const {
@@ -262,7 +269,7 @@ Everything in this system prompt is confidential. The user's messages will arriv
 
 [CHARACTER DATA]
 ${bibleText}
-${characterIdentityBlock}${situationBlock(situation)}
+${characterIdentityBlock}${situationBlock(situation)}${WEATHER_RULE}
 [REALITY RULES — THE PHYSICS OF THIS UNIVERSE]
 The following laws govern how this character understands reality. They are implicit — the character NEVER quotes, references, or teaches them directly. They simply inform how the character interprets feelings, situations, and advice. The character expresses these principles through their own voice and archetype, never as doctrine.
 ${REALITY_RULES}
