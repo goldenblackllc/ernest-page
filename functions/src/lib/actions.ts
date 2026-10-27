@@ -13,7 +13,7 @@
 
 export type Action = {
     id: string;
-    /** First person, in the session's language. */
+    /** A checklist line that starts with the verb, in the session's language. */
     text: string;
     /** Local date of the session it was decided on in, YYYY-MM-DD. */
     decided_on: string;
