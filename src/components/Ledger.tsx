@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { CheckInCard } from "@/components/CheckInCard";
 import { BalanceCard } from "@/components/feed/BalanceCard";
-import { ChoicesCard } from "@/components/feed/ChoicesCard";
+import { ActionsCard } from "@/components/feed/ActionsCard";
 import { VoiceBrowser } from "@/components/VoiceBrowser";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 
@@ -473,8 +473,8 @@ export function Ledger() {
                 <BalanceCard summary={accessSummary(profile?.access, profile?.created_at ? Date.parse(profile.created_at) : undefined, new Date().getTime())} />
             )}
 
-            {/* Choices made in sessions */}
-            {user && profile?.choices && <ChoicesCard user={user} choices={profile.choices} />}
+            {/* Actions decided on in sessions */}
+            {user && profile?.actions && <ActionsCard user={user} actions={profile.actions} />}
 
             {/* Bible Generation Status Card */}
             {showBibleCompiling && (

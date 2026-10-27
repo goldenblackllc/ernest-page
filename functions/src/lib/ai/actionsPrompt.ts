@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { Choice, SessionChoices } from '../choices.js';
+import type { Action, SessionActions } from '../actions.js';
 
 /** The extraction refers to open actions by their number on the list, which the model copies more reliably than ids. */
-export const ChoicesSchema = z.object({
+export const ActionsSchema = z.object({
     done: z.array(z.number()).describe('Numbers of current actions the person says in this conversation they have already done'),
     changed: z.array(z.object({
         number: z.number(),
@@ -13,13 +13,13 @@ export const ChoicesSchema = z.object({
 
 /**
  * Builds the prompt that reads a finished session for the actions the person
- * decided to take (functions/src/lib/choices.ts), given the ones still open.
+ * decided to take (functions/src/lib/actions.ts), given the ones still open.
  * It records what the person said they will do, everyday actions included,
  * without judging which ones matter.
  */
-export function buildChoicesPrompt(open: Choice[], transcript: string): string {
+export function buildActionsPrompt(open: Action[], transcript: string): string {
     const current = open.length
-        ? open.map((c, i) => `${i + 1}. ${c.text} (decided ${c.chosen_on})`).join('\n')
+        ? open.map((c, i) => `${i + 1}. ${c.text} (decided ${c.decided_on})`).join('\n')
         : '(empty)';
     return `You keep a person's list of actions from their conversations with their ideal self on Earnest Page.
 
@@ -42,7 +42,7 @@ ${transcript}`;
 }
 
 /** Maps the numbers in the extraction back to the open actions' ids, dropping any that don't exist. */
-export function toSessionChoices(result: z.infer<typeof ChoicesSchema>, open: Choice[]): SessionChoices {
+export function toSessionActions(result: z.infer<typeof ActionsSchema>, open: Action[]): SessionActions {
     const idOf = (n: number) => open[n - 1]?.id;
     return {
         done: result.done.map(idOf).filter((id): id is string => !!id),
@@ -50,6 +50,6 @@ export function toSessionChoices(result: z.infer<typeof ChoicesSchema>, open: Ch
             const id = idOf(c.number);
             return id ? [{ id, text: c.text }] : [];
         }),
-        new_choices: result.new_actions,
+        new_actions: result.new_actions,
     };
 }

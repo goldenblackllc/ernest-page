@@ -12,8 +12,8 @@ import { safeTimeZone, localDateKey } from './lib/utils/relativeDates.js';
 import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
 import { WAY_IN_IDS, type WayIn } from './lib/ai/waysIn.js';
 import { generateCondensedTranscript, type CondensedTranscript } from './lib/ai/condensedTranscript.js';
-import { buildChoicesPrompt, ChoicesSchema, toSessionChoices } from './lib/ai/choicesPrompt.js';
-import { applySessionChoices, openChoices, type Choice, type SessionChoices } from './lib/choices.js';
+import { buildActionsPrompt, ActionsSchema, toSessionActions } from './lib/ai/actionsPrompt.js';
+import { applySessionActions, openActions, type Action, type SessionActions } from './lib/actions.js';
 
 import { processPostContent, type ProcessPostResult } from './lib/ai/processPostContent.js';
 import { VISUAL_STYLES } from './lib/ai/visualStyles.js';
@@ -92,7 +92,7 @@ export const processChat = onDocumentUpdated(
         const today = localDateKey(new Date(), safeTimeZone(after.timeZone));
 
         try {
-            const { condensed, rewrittenDossier, recap, choices } = await analyzeSession(userData, transcript, today);
+            const { condensed, rewrittenDossier, recap, actions } = await analyzeSession(userData, transcript, today);
 
             console.log(`[ProcessChat] AI calls complete. is_publishable=${condensed?.is_publishable} title="${condensed?.title}" dossier_changed=${!!rewrittenDossier}`);
 
@@ -100,7 +100,7 @@ export const processChat = onDocumentUpdated(
             // Saved once: a retry after a later failure must not add a second
             // recap or count the session twice.
             const dossierPromise = (userData && recap && !after.metadataSaved)
-                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, wayIn: recap.way_in, rewrittenDossier, choices, today, sessionStartedAt: after.createdAt || now, sessionCount })
+                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, wayIn: recap.way_in, rewrittenDossier, actions, today, sessionStartedAt: after.createdAt || now, sessionCount })
                     .then(() => event.data?.after.ref.update({ metadataSaved: true }))
                 : Promise.resolve();
 
@@ -193,23 +193,23 @@ function getAuthorTitle(userData: FirebaseFirestore.DocumentData): string {
 
 /**
  * Run the four session AI calls in parallel: condensed transcript, dossier
- * rewrite, session log entry, and the person's choices (lib/choices.ts).
+ * rewrite, session log entry, and the person's actions (lib/actions.ts).
  *
- * Sessions only update the dossier, recaps, choices, and session count. People, interests, and the
+ * Sessions only update the dossier, recaps, actions, and session count. People, interests, and the
  * Character Bible are owned by the user via the My Life drawers and are never touched here.
  */
 async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcript: string, today: string): Promise<{
     condensed: CondensedTranscript;
     rewrittenDossier: string | undefined;
     recap: { session_recap: string; way_in: WayIn } | undefined;
-    choices: SessionChoices | undefined;
+    actions: SessionActions | undefined;
 }> {
     const dossierPrompt = buildDossierPrompt(userData?.dossier || userData?.identity?.dossier || '', transcript, today);
     const sessionLogPrompt = buildSessionLogPrompt(transcript);
-    const open = openChoices(userData?.choices || []);
+    const open = openActions(userData?.actions || []);
 
-    console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + log + choices)...`);
-    const [condensed, dossierResult, recapResult, choicesResult] = await Promise.all([
+    console.log(`[ProcessChat] Starting parallel AI calls (condensed + dossier + log + actions)...`);
+    const [condensed, dossierResult, recapResult, actionsResult] = await Promise.all([
         generateCondensedTranscript(transcript, { rewrite: false }),
         // Dossier rewrite — Opus
         generateWithFallback({
@@ -228,11 +228,11 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
             }),
             prompt: sessionLogPrompt,
         }),
-        // Choices — Opus
+        // Actions — Opus
         generateWithFallback({
             primaryModelId: OPUS_MODEL,
-            schema: ChoicesSchema,
-            prompt: buildChoicesPrompt(open, transcript),
+            schema: ActionsSchema,
+            prompt: buildActionsPrompt(open, transcript),
         }),
     ]);
 
@@ -240,7 +240,7 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
         condensed,
         rewrittenDossier: dossierResult.object?.rewritten_dossier,
         recap: recapResult.object,
-        choices: choicesResult.object ? toSessionChoices(choicesResult.object, open) : undefined,
+        actions: actionsResult.object ? toSessionActions(actionsResult.object, open) : undefined,
     };
 }
 
@@ -251,12 +251,12 @@ async function saveSessionMetadata(opts: {
     sessionRecap: string;
     wayIn: WayIn;
     rewrittenDossier: string | undefined;
-    choices: SessionChoices | undefined;
+    actions: SessionActions | undefined;
     today: string;
     sessionStartedAt: number;
     sessionCount: number;
 }): Promise<void> {
-    const { userRef, userData, uid, sessionRecap, wayIn, choices, today, sessionStartedAt, sessionCount } = opts;
+    const { userRef, userData, uid, sessionRecap, wayIn, actions, today, sessionStartedAt, sessionCount } = opts;
     const existingRecaps = userData?.session_recaps || [];
     const newRecap = { date: today, at: sessionStartedAt, recap: sessionRecap, way_in: wayIn };
     const updatedRecaps = [newRecap, ...existingRecaps].slice(0, 5);
@@ -268,10 +268,10 @@ async function saveSessionMetadata(opts: {
 
     // In a transaction, so a tick or delete made while the session was processing isn't lost.
     await db.runTransaction(async (tx) => {
-        const current: Choice[] = (await tx.get(userRef)).data()?.choices || [];
+        const current: Action[] = (await tx.get(userRef)).data()?.actions || [];
         tx.set(userRef, {
             ...(dossierBody ? { dossier: `DOSSIER\nUpdated: ${today} | Sessions: ${sessionCount}\n\n${dossierBody}` } : {}),
-            ...(choices ? { choices: applySessionChoices(current, choices, today, randomUUID) } : {}),
+            ...(actions ? { actions: applySessionActions(current, actions, today, randomUUID) } : {}),
             dossier_updated_at: FieldValue.serverTimestamp(),
             session_count: sessionCount,
             session_recaps: updatedRecaps,

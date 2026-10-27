@@ -5,21 +5,21 @@ import { useTranslations } from "next-intl";
 import { Check, X } from "lucide-react";
 import type { User } from "firebase/auth";
 import { authFetch } from "@/lib/auth/authFetch";
-import type { Choice } from "@functions/lib/choices";
+import type { Action } from "@functions/lib/actions";
 
 type Pending = { done: boolean } | "removed";
 
 /**
- * Top of the feed: the choices the person made in their sessions
- * (functions/src/lib/choices.ts). Ticking one marks it done; it stays ticked
+ * Top of the feed: the actions the person decided on in their sessions
+ * (functions/src/lib/actions.ts). Ticking one marks it done; it stays ticked
  * until the next session ends. Changes show at once and are sent to
- * /api/choices; the profile subscription brings back what was saved.
+ * /api/actions; the profile subscription brings back what was saved.
  */
-export function ChoicesCard({ user, choices }: { user: User; choices: Choice[] }) {
-    const t = useTranslations("choices");
+export function ActionsCard({ user, actions }: { user: User; actions: Action[] }) {
+    const t = useTranslations("actions");
     const [pending, setPending] = useState<Record<string, Pending>>({});
 
-    const shown = choices.flatMap(c => {
+    const shown = actions.flatMap(c => {
         const p = pending[c.id];
         if (p === "removed") return [];
         return [{ ...c, done: p ? p.done : !!c.done_at }];
@@ -29,14 +29,14 @@ export function ChoicesCard({ user, choices }: { user: User; choices: Choice[] }
     async function send(id: string, change: Pending) {
         setPending(prev => ({ ...prev, [id]: change }));
         try {
-            const res = await authFetch(user, "/api/choices", {
+            const res = await authFetch(user, "/api/actions", {
                 method: change === "removed" ? "DELETE" : "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(change === "removed" ? { id } : { id, done: change.done }),
             });
-            if (!res.ok) throw new Error(`Choices API returned ${res.status}`);
+            if (!res.ok) throw new Error(`Actions API returned ${res.status}`);
         } catch (error) {
-            console.error("Choice update failed:", error);
+            console.error("Action update failed:", error);
         } finally {
             // Saved or not, the subscription's copy is the truth again.
             setPending(prev => {

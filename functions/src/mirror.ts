@@ -18,7 +18,7 @@ import { getBibleText } from './lib/bible.js';
 import { currentWeather } from './lib/weather.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
-import type { Choice } from './lib/choices.js';
+import type { Action } from './lib/actions.js';
 import { currentSituation, localDayHour, type CharacterStyle, type Situation } from './lib/character/situations.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
@@ -104,14 +104,14 @@ If they say nothing has changed, or they slipped back into the old pattern, do n
 ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : relativeDayLabel(r.date, todayKey)} (${r.date}): ${r.recap}${wayInSuffix(r.way_in)}`).join('\n\n')}`;
     }
 
-    const choices: Choice[] = userData?.choices || [];
-    if (choices.length > 0) {
+    const actions: Action[] = userData?.actions || [];
+    if (actions.length > 0) {
         engagementContract += `\n\n[THEIR ACTIONS — FROM EARLIER SESSIONS]
 These are the actions the person decided to take in earlier sessions. They keep them as a checklist on their home page and tick one off when they have done it. Each is labeled with when they decided on it, and a ticked one with when they ticked it.
 
 A tick means they did it: do not ask whether they did, ask what came of it. A choice is made real through action, so each tick is them living as the person they are choosing to be; when it fits, let them feel that. An open action is not a debt: never present the list as a to-do list or a reminder.
 
-${choices.map(c => `- [${c.done_at ? 'x' : ' '}] ${c.text} (decided ${relativeDayLabel(c.chosen_on, todayKey)}${c.done_at ? `, ticked ${relativeMomentLabel(c.done_at, now, timeZone)}` : ''})`).join('\n')}`;
+${actions.map(c => `- [${c.done_at ? 'x' : ' '}] ${c.text} (decided ${relativeDayLabel(c.decided_on, todayKey)}${c.done_at ? `, ticked ${relativeMomentLabel(c.done_at, now, timeZone)}` : ''})`).join('\n')}`;
     }
 
     return buildMirrorSystemPrompt({

@@ -777,7 +777,7 @@
     "memberComp": "Cortesía",
     "memberCompNote": "Membresía de cortesía. Hasta 5 sesiones al día, sin costo. Nada que renovar ni cancelar."
   },
-  "choices": {
+  "actions": {
     "title": "Mis acciones",
     "markDone": "Marcar como hecho",
     "markOpen": "Marcar como no hecho",

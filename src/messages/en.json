@@ -777,7 +777,7 @@
     "memberComp": "Complimentary",
     "memberCompNote": "Complimentary membership. Up to 5 sessions a day, at no charge. Nothing to renew or cancel."
   },
-  "choices": {
+  "actions": {
     "title": "My Actions",
     "markDone": "Mark as done",
     "markOpen": "Mark as not done",

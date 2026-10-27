@@ -777,7 +777,7 @@
     "memberComp": "Cortesia",
     "memberCompNote": "Assinatura cortesia. Até 5 sessões por dia, sem custo. Nada para renovar ou cancelar."
   },
-  "choices": {
+  "actions": {
     "title": "Minhas ações",
     "markDone": "Marcar como feito",
     "markOpen": "Marcar como não feito",

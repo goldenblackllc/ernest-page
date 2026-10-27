@@ -777,7 +777,7 @@
     "memberComp": "Offert",
     "memberCompNote": "Abonnement offert. Jusqu'à 5 sessions par jour, gratuitement. Rien à renouveler ni à résilier."
   },
-  "choices": {
+  "actions": {
     "title": "Mes actions",
     "markDone": "Marquer comme fait",
     "markOpen": "Marquer comme non fait",

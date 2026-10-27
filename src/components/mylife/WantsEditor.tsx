@@ -61,7 +61,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                     className="relative shrink-0 text-zinc-400 hover:text-white transition-colors focus:outline-none after:absolute after:-inset-2"
                     aria-label={item.completed ? t("markIncomplete", { text: item.text }) : t("markComplete", { text: item.text })}
                 >
-                    {/* The same tick as the feed's My Actions card (ChoicesCard) */}
+                    {/* The same tick as the feed's My Actions card (ActionsCard) */}
                     {item.completed ? (
                         <span className="w-5 h-5 rounded-full bg-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0">
                             <Check className="w-3 h-3 text-black" strokeWidth={3} />

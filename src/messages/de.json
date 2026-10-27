@@ -777,7 +777,7 @@
     "memberComp": "Geschenkt",
     "memberCompNote": "Geschenkte Mitgliedschaft. Bis zu 5 Sitzungen am Tag, kostenlos. Nichts zu verlängern oder zu kündigen."
   },
-  "choices": {
+  "actions": {
     "title": "Meine Aktionen",
     "markDone": "Als erledigt markieren",
     "markOpen": "Als nicht erledigt markieren",
