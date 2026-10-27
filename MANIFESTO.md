@@ -116,7 +116,7 @@ The rules live in one place, `functions/src/lib/access/sessionAccess.ts`, used b
 
 ### Abuse Prevention
 *   **Phone authentication:** One phone number = one account.
-*   **Mentor, not assistant:** The character helps with the person's life, including everyday choices, but does not do their work for them (code, essays, homework, long documents). It turns the conversation back to the person instead.
+*   **On their side, not an assistant:** The character helps with the person's life, including everyday choices, but does not do their work for them (code, essays, homework, long documents). It turns the conversation back to the person instead.
 *   **Rate limiting** on AI and auth endpoints.
 *   **Acceptable Use Policy:** Prohibits bots, scrapers, and circumvention of platform features.
 

@@ -1,8 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
+import { buildMirrorSystemPrompt, buildMirrorNowBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
 import { wayInSuffix, WAYS_IN, WAY_IN_IDS } from '../waysIn.js';
 import { buildSessionLogPrompt } from '../sessionLogPrompt.js';
+import { REALITY_RULES } from '../../constants/realityRules.js';
 
 const config: MirrorPromptConfig = {
     bibleText: '## Style & Presence\n\nCalm.',
@@ -17,8 +18,8 @@ const config: MirrorPromptConfig = {
 describe('buildMirrorSystemPrompt', () => {
     const prompt = buildMirrorSystemPrompt(config);
 
-    it('includes the mentor scope: everyday help yes, doing the work no', () => {
-        expect(prompt).toContain('[SCOPE — A MENTOR, NOT AN ASSISTANT]');
+    it('includes the scope: everyday help yes, doing the work no', () => {
+        expect(prompt).toContain('[SCOPE — ON THEIR SIDE, NOT THEIR ASSISTANT]');
         expect(prompt).toContain('what to wear');
         expect(prompt).toContain('You do not do the person\'s work for them.');
         expect(prompt).toContain('never the finished work');
@@ -26,7 +27,20 @@ describe('buildMirrorSystemPrompt', () => {
 
     it('places the scope after the zero-argumentation principle it refers to', () => {
         expect(prompt.indexOf('[THE ZERO-ARGUMENTATION PRINCIPLE]'))
-            .toBeLessThan(prompt.indexOf('[SCOPE — A MENTOR, NOT AN ASSISTANT]'));
+            .toBeLessThan(prompt.indexOf('[SCOPE — ON THEIR SIDE, NOT THEIR ASSISTANT]'));
+    });
+
+    it('never sets the character above the person', () => {
+        for (const word of [/mentor/i, /sovereignty/i, /shell game/i, /coaching/i, /give them the credit/i]) {
+            expect(prompt).not.toMatch(word);
+        }
+        expect(prompt).toContain('you might be wrong');
+        expect(prompt).toContain('do let them change your mind');
+    });
+
+    it('gives no lines to say, only names of bible nodes in quotes (the Reality Rules are their own text)', () => {
+        const quoted = new Set(prompt.replace(REALITY_RULES, '').match(/"[^"]+"/g));
+        expect([...quoted].sort()).toEqual(['"Communication_Style"', '"Fits"', '"Inner_World"', '"Social_Interaction"']);
     });
 
     it('keeps the security directive', () => {
@@ -46,8 +60,16 @@ describe('prompt caching', () => {
     it('keeps the current time out of the cached prompt', () => {
         const prompt = buildMirrorSystemPrompt(config);
         expect(prompt).not.toContain('[CURRENT TIME]');
-        expect(buildMirrorTimeBlock('Tuesday, July 1, 2025 2:31 PM')).toBe('[CURRENT TIME]\nTuesday, July 1, 2025 2:31 PM');
-        expect(buildMirrorTimeBlock(undefined)).toBe('[CURRENT TIME]\nUnknown');
+        expect(buildMirrorNowBlock('Tuesday, July 1, 2025 2:31 PM')).toBe('[CURRENT TIME]\nTuesday, July 1, 2025 2:31 PM');
+        expect(buildMirrorNowBlock(undefined)).toBe('[CURRENT TIME]\nUnknown');
+    });
+
+    it('keeps the weather out of the cached prompt, with a standing rule to keep it in the background', () => {
+        const prompt = buildMirrorSystemPrompt(config);
+        expect(prompt).toContain('[THEIR WEATHER]\nA [THEIR WEATHER] note may follow');
+        expect(prompt).toContain('Never name, guess or ask where they are.');
+        expect(buildMirrorNowBlock('Monday 7:05 PM', '9°C (48°F), light rain')).toBe('[CURRENT TIME]\nMonday 7:05 PM\n\n[THEIR WEATHER]\n9°C (48°F), light rain');
+        expect(buildMirrorNowBlock('Monday 7:05 PM', '')).toBe('[CURRENT TIME]\nMonday 7:05 PM');
     });
 
     it("puts the session's location in the cached prompt, in the background", () => {

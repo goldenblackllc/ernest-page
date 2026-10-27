@@ -69,12 +69,15 @@ export type StartResult =
     | { granted: true; source: SessionSource; resumed: boolean }
     | { granted: false; reason: StartRefusal };
 
+/** Roughly where the user is (rounded to about 10 km), for the weather in mirrorReply. */
+export type Place = { lat: number; lon: number };
+
 /**
  * Start a session: apply the access rule, use up a free session, membership day
- * or credit, and record the grant on the active chat. Calling it again for a
- * session that already started changes nothing.
+ * or credit, and record the grant (and the user's place, if known) on the active
+ * chat. Calling it again for a session that already started changes nothing.
  */
-export async function startSession(uid: string, sessionId: string, now = Date.now()): Promise<StartResult> {
+export async function startSession(uid: string, sessionId: string, { place, now = Date.now() }: { place?: Place; now?: number } = {}): Promise<StartResult> {
     const uRef = userRef(uid);
     const chatRef = uRef.collection('active_chats').doc(sessionId);
 
@@ -108,7 +111,7 @@ export async function startSession(uid: string, sessionId: string, now = Date.no
         }
 
         tx.set(uRef, { access: newAccess }, { merge: true });
-        tx.set(chatRef, { id: sessionId, uid, access: grant, createdAt: now, updatedAt: now }, { merge: true });
+        tx.set(chatRef, { id: sessionId, uid, access: grant, createdAt: now, updatedAt: now, ...(place ? { place } : {}) }, { merge: true });
         return { granted: true, source: decision.source, resumed: false };
     });
 }
