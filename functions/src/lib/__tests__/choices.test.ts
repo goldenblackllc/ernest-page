@@ -44,12 +44,12 @@ describe('the choices extraction', () => {
 
     it('numbers only the open choices', () => {
         const prompt = buildChoicesPrompt(open, 'user: hi');
-        expect(prompt).toContain('1. Call Dad on Sunday (chosen 2026-10-01)\n2. Run by breath (chosen 2026-10-20)');
+        expect(prompt).toContain('1. Call Dad on Sunday (decided 2026-10-01)\n2. Run by breath (decided 2026-10-20)');
         expect(prompt).not.toContain('Order the notebook');
     });
 
     it('maps numbers back to ids and drops numbers that are not on the list', () => {
-        expect(toSessionChoices({ done: [2, 7], changed: [{ number: 1, text: 'Call Dad Saturday' }, { number: 0, text: 'x' }], new_choices: ['New'] }, open))
+        expect(toSessionChoices({ done: [2, 7], changed: [{ number: 1, text: 'Call Dad Saturday' }, { number: 0, text: 'x' }], new_actions: ['New'] }, open))
             .toEqual({ done: ['b'], changed: [{ id: 'a', text: 'Call Dad Saturday' }], new_choices: ['New'] });
     });
 });

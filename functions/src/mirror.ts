@@ -95,12 +95,12 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
 
     const choices: Choice[] = userData?.choices || [];
     if (choices.length > 0) {
-        engagementContract += `\n\n[THEIR CHOICES — FROM EARLIER SESSIONS]
-These are the actions the person chose in earlier sessions. They keep them as a checklist on their home page and tick one off when they have done it. Each is labeled with when it was chosen, and a ticked one with when they ticked it.
+        engagementContract += `\n\n[THEIR ACTIONS — FROM EARLIER SESSIONS]
+These are the actions the person decided to take in earlier sessions. They keep them as a checklist on their home page and tick one off when they have done it. Each is labeled with when they decided on it, and a ticked one with when they ticked it.
 
-A tick means they did it: do not ask whether they did, ask what came of it. Each tick is them living as the person they are choosing to be; when it fits, let them feel that. An open choice is not a debt: never present the list as a to-do list or a reminder.
+A tick means they did it: do not ask whether they did, ask what came of it. A choice is made real through action, so each tick is them living as the person they are choosing to be; when it fits, let them feel that. An open action is not a debt: never present the list as a to-do list or a reminder.
 
-${choices.map(c => `- [${c.done_at ? 'x' : ' '}] ${c.text} (chosen ${relativeDayLabel(c.chosen_on, todayKey)}${c.done_at ? `, ticked ${relativeMomentLabel(c.done_at, now, timeZone)}` : ''})`).join('\n')}`;
+${choices.map(c => `- [${c.done_at ? 'x' : ' '}] ${c.text} (decided ${relativeDayLabel(c.chosen_on, todayKey)}${c.done_at ? `, ticked ${relativeMomentLabel(c.done_at, now, timeZone)}` : ''})`).join('\n')}`;
     }
 
     return buildMirrorSystemPrompt({

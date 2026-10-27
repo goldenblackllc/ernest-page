@@ -153,12 +153,12 @@ describe("mirrorReply and the person's choices", () => {
             { id: 'b', text: 'Run by breath', chosen_on: '2026-10-18', done_at: Date.UTC(2026, 9, 19, 8) },
         ];
         const system = (await sent(conversation))[0].content;
-        expect(system).toContain('[THEIR CHOICES — FROM EARLIER SESSIONS]');
-        expect(system).toContain('- [ ] Call Dad on Sunday (chosen 2 days ago)\n- [x] Run by breath (chosen yesterday, ticked this morning)');
+        expect(system).toContain('[THEIR ACTIONS — FROM EARLIER SESSIONS]');
+        expect(system).toContain('- [ ] Call Dad on Sunday (decided 2 days ago)\n- [x] Run by breath (decided yesterday, ticked this morning)');
     });
 
     it('leaves the section out when there are no choices', async () => {
         const system = (await sent(conversation))[0].content;
-        expect(system).not.toContain('THEIR CHOICES');
+        expect(system).not.toContain('THEIR ACTIONS');
     });
 });
