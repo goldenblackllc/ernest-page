@@ -4,7 +4,8 @@
     "close": "Close",
     "back": "Back",
     "submit": "Submit",
-    "brand": "Earnest Page Beta"
+    "brand": "Earnest Page Beta",
+    "betaMarker": "Beta"
   },
   "landing": {
     "nav": {
@@ -775,6 +776,12 @@
     "balanceRenews": "Free sessions renew {date}",
     "memberComp": "Complimentary",
     "memberCompNote": "Complimentary membership. Up to 5 sessions a day, at no charge. Nothing to renew or cancel."
+  },
+  "choices": {
+    "title": "My Actions",
+    "markDone": "Mark as done",
+    "markOpen": "Mark as not done",
+    "remove": "Remove"
   },
   "cookieConsent": {
     "message": "We use essential cookies for authentication and security. No tracking, no ads.",

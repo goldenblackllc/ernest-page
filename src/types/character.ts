@@ -1,6 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
 import type { AccessState } from "@functions/lib/access/sessionAccess";
 import type { CharacterStyle } from "@functions/lib/character/situations";
+import type { Choice } from "@functions/lib/choices";
 
 /** A person in the user's life */
 export interface ProfilePerson {
@@ -101,6 +102,8 @@ export interface CharacterProfile {
     created_at?: string;
     /** Server-managed: credits, free sessions, daily count, membership */
     access?: AccessState;
+    /** Server-managed: actions chosen in sessions, ticked through /api/choices */
+    choices?: Choice[];
     daily_digest?: {
         title: string;
         content: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { Check, Circle } from 'lucide-react';
 import { WantItem } from '@/types/character';
 import { useTranslations } from 'next-intl';
 import { EditableList } from './EditableList';
@@ -14,19 +14,13 @@ export interface WantsEditorProps {
 
 /**
  * Checklist editor for "What I Want".
- * Displays wants items with completed items sorted to the bottom,
- * allows toggling completion status, deleting items, and adding new items.
+ * Items stay in the order they were added: a ticked want stays where it is,
+ * dimmed, so it doesn't seem to vanish and everything received stays in view.
+ * Allows toggling completion status, deleting items, and adding new items.
  */
 export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps) {
     const t = useTranslations("mylife.wants");
     const list = useMemo(() => (Array.isArray(wants) ? wants : []), [wants]);
-
-    // Unchecked items show first, then checked items at bottom
-    const sortedWants = useMemo(() => {
-        const unchecked = list.filter((item) => !item.completed);
-        const checked = list.filter((item) => item.completed);
-        return [...unchecked, ...checked];
-    }, [list]);
 
     const handleToggle = (id: string) => {
         onSave(list.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)));
@@ -46,7 +40,7 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
 
     return (
         <EditableList
-            items={sortedWants}
+            items={list}
             getKey={(item) => item.id}
             getText={(item) => item.text}
             onAdd={handleAdd}
@@ -67,14 +61,17 @@ export function WantsEditor({ wants = [], onSave, className }: WantsEditorProps)
                     className="relative shrink-0 text-zinc-400 hover:text-white transition-colors focus:outline-none after:absolute after:-inset-2"
                     aria-label={item.completed ? t("markIncomplete", { text: item.text }) : t("markComplete", { text: item.text })}
                 >
+                    {/* The same tick as the feed's My Actions card (ChoicesCard) */}
                     {item.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
+                        <span className="w-5 h-5 rounded-full bg-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0">
+                            <Check className="w-3 h-3 text-black" strokeWidth={3} />
+                        </span>
                     ) : (
                         <Circle className="w-5 h-5 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0" />
                     )}
                 </button>
             )}
-            itemTextClassName={(item) => (item.completed ? "text-zinc-500 line-through" : "text-white hover:text-zinc-200")}
+            itemTextClassName={(item) => (item.completed ? "text-zinc-400" : "text-white hover:text-zinc-200")}
         />
     );
 }

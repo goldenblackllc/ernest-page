@@ -13,6 +13,7 @@ import { RolodexModal } from "@/components/RolodexModal";
 import { SupportChat } from "@/components/SupportChat";
 import { SecurityVault } from "@/components/SecurityVault";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { BetaMarker } from "@/components/BetaMarker";
 
 export function DashboardHeader() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -47,9 +48,12 @@ export function DashboardHeader() {
                 <nav className="w-full relative">
                     <div className="container mx-auto flex justify-between items-center w-full px-4 py-3">
                         {/* Brand */}
-                        <Link href="/" className="pointer-events-auto text-sm font-bold tracking-widest uppercase flex items-center gap-1 hover:opacity-80 transition-opacity text-white">
-                            {t('common.brand')}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                            <Link href="/" className="pointer-events-auto text-sm font-bold tracking-widest uppercase flex items-center gap-1 hover:opacity-80 transition-opacity text-white">
+                                {t('common.brand')}
+                            </Link>
+                            <BetaMarker />
+                        </div>
 
                         {/* Right Side Actions */}
                         <div className="relative flex items-center gap-2 pointer-events-auto">

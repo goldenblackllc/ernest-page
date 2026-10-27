@@ -15,6 +15,7 @@ import { detectCountryFromTimezone } from '@/lib/constants/countryCodes';
 import { PublicFeed } from '@/components/PublicFeed';
 import { parsePhoneNumber, type CountryCode as PhoneCountryCode } from 'libphonenumber-js';
 import Turnstile from '@/components/auth/Turnstile';
+import { BetaMarker } from '@/components/BetaMarker';
 
 /**
  * Parses any phone input into E.164 format using libphonenumber-js.
@@ -187,7 +188,10 @@ export function LandingPage() {
             {/* ── STICKY TOP NAV ── */}
             <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/80 border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
-                    <span className="font-bold text-lg text-zinc-100 tracking-tight">{t('common.brand')}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg text-zinc-100 tracking-tight">{t('common.brand')}</span>
+                        <BetaMarker />
+                    </div>
                     <div className="flex items-center gap-3 sm:gap-4">
                         <LocaleSwitcher className="w-20 sm:w-24 border-none bg-transparent hover:bg-white/5" />
                         <button

@@ -85,7 +85,9 @@ export function TriagePanel() {
     const [prevNeedsOnboarding, setPrevNeedsOnboarding] = useState(needsOnboarding);
     if (needsOnboarding !== prevNeedsOnboarding) {
         setPrevNeedsOnboarding(needsOnboarding);
-        if (needsOnboarding) setShowOnboarding(true);
+        // Both ways: a moment without the record (a stale cached copy, or the
+        // document being replaced) must not leave the overlay open once it's back.
+        setShowOnboarding(needsOnboarding);
     }
 
     // Dev preview: ?onboarding=preview opens the overlay with existing data (no reset needed)

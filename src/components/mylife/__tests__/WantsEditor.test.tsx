@@ -19,19 +19,17 @@ describe("WantsEditor", () => {
         expect(title.className).toContain("font-bold");
     });
 
-    it("sorts unchecked items first, checked items at bottom", () => {
+    it("keeps items in the order they were added, ticked ones included", () => {
         render(<WantsEditor wants={mockWants} onSave={vi.fn()} />);
         const items = screen.getAllByText(/Buy a sailboat|Run a marathon|Learn Spanish/);
-        expect(items[0].textContent).toBe("Buy a sailboat");
-        expect(items[1].textContent).toBe("Run a marathon");
-        expect(items[2].textContent).toBe("Learn Spanish");
+        expect(items.map((item) => item.textContent)).toEqual(["Learn Spanish", "Buy a sailboat", "Run a marathon"]);
     });
 
-    it("applies correct styling for checked and unchecked items", () => {
+    it("dims a ticked item without striking it through", () => {
         render(<WantsEditor wants={mockWants} onSave={vi.fn()} />);
         const checkedText = screen.getByText("Learn Spanish");
-        expect(checkedText.className).toContain("text-zinc-500");
-        expect(checkedText.className).toContain("line-through");
+        expect(checkedText.className).toContain("text-zinc-400");
+        expect(checkedText.className).not.toContain("line-through");
 
         const uncheckedText = screen.getByText("Buy a sailboat");
         expect(uncheckedText.className).toContain("text-white");
