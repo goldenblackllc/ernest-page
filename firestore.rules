@@ -11,10 +11,8 @@ service cloud.firestore {
       // billing: credits, free sessions, daily counts, membership, Stripe ids
       // (functions/src/lib/access/sessionAccess.ts). `actions` are the actions
       // decided on in sessions, ticked through /api/actions (functions/src/lib/actions.ts).
-      // `choices` is their old name, until scripts/migrate-choices-to-actions.mjs
-      // has run on live; then remove it here along with the script.
       function serverManagedUserFields() {
-        return ['access', 'actions', 'choices', 'created_at', 'daily_digest', 'session_recaps'];
+        return ['access', 'actions', 'created_at', 'daily_digest', 'session_recaps'];
       }
 
       // Users can create their own document, without server-managed fields
