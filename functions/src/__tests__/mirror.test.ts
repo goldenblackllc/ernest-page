@@ -84,7 +84,7 @@ describe('mirrorReply relationship', () => {
         const [system]: Sent = h.generateTextWithFallback.mock.calls.at(-1)![0].messages;
         expect(system.content).toContain('[WHO YOU ARE TO THEM]');
         expect(system.content).toContain('you are not ahead of them or above them');
-        expect(system.content).toContain('[WHY YOU ARE HERE]\nBecause you want to be.');
+        expect(system.content).toContain('[WHY YOU ARE HERE]\nBecause you love them, completely and unconditionally');
         expect(system.content).not.toMatch(/engaged through|peer and role model|their perfection/i);
     });
 });

@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { buildMirrorSystemPrompt, buildMirrorTimeBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
 import { wayInSuffix, WAYS_IN, WAY_IN_IDS } from '../waysIn.js';
 import { buildSessionLogPrompt } from '../sessionLogPrompt.js';
+import { REALITY_RULES } from '../../constants/realityRules.js';
 
 const config: MirrorPromptConfig = {
     bibleText: '## Style & Presence\n\nCalm.',
@@ -35,6 +36,11 @@ describe('buildMirrorSystemPrompt', () => {
         }
         expect(prompt).toContain('you might be wrong');
         expect(prompt).toContain('do let them change your mind');
+    });
+
+    it('gives no lines to say, only names of bible nodes in quotes (the Reality Rules are their own text)', () => {
+        const quoted = new Set(prompt.replace(REALITY_RULES, '').match(/"[^"]+"/g));
+        expect([...quoted].sort()).toEqual(['"Communication_Style"', '"Fits"', '"Inner_World"', '"Social_Interaction"']);
     });
 
     it('keeps the security directive', () => {
