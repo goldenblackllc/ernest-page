@@ -204,3 +204,24 @@ describe('mirrorReply weather', () => {
         expect(h.chatSet.mock.calls.at(-2)![0]).toMatchObject({ weather: { summary: '', at: NOW } });
     });
 });
+
+describe('mirrorReply character age', () => {
+    // Its own uid, so these calls don't count toward the other tests' rate limit
+    async function system(): Promise<string> {
+        await handler({ auth: { uid: 'u-age' }, data: { messages: [{ role: 'user', content: 'Hi' }], sessionId: 's-age', localTime: 'Monday 7:05 PM', timeZone: 'UTC' } });
+        return h.generateTextWithFallback.mock.calls.at(-1)![0].messages[0].content;
+    }
+
+    it('gives the character its age in years, not the birthdate', async () => {
+        h.state.user = { ...h.state.user, birthdate: '1985-12-01' };
+        const prompt = await system();
+        expect(prompt).toContain('Age: 40');
+        expect(prompt).toContain('a generic 40-year-old');
+        expect(prompt).not.toContain('1985');
+    });
+
+    it('leaves the age out when the birthdate cannot be read', async () => {
+        h.state.user = { ...h.state.user, birthdate: 'someday' };
+        expect(await system()).not.toContain('Age:');
+    });
+});

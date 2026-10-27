@@ -177,8 +177,8 @@ export interface MirrorPromptConfig {
     languageInstruction: string;
     /** Tone directive string from ENGAGEMENT_TONES */
     toneDirective: string;
-    /** Optional character age for identity block */
-    characterAge?: string;
+    /** Optional character age in whole years, for the identity block */
+    characterAge?: number;
     /** Optional character gender for identity block */
     characterGender?: string;
     /** Extra items to protect in the security directive, e.g. ", the Dossier" */

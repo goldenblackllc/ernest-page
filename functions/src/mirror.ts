@@ -20,6 +20,7 @@ import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
 import { currentSituation, localDayHour, type CharacterStyle, type Situation } from './lib/character/situations.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
+import { computeAge } from './lib/utils/parseBirthDate.js';
 
 const MAX_MESSAGE_LENGTH = 5000;
 const GENERATION_TIMEOUT_MS = 240_000;
@@ -109,7 +110,7 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
         // Tone directive removed — the Conversation Spine provides structural flow,
         // and the character's own bible voice dictates tone.
         toneDirective: '',
-        characterAge: userData?.birthdate || userData?.identity?.birthdate || '',
+        characterAge: computeAge(userData?.birthdate || userData?.identity?.birthdate) ?? undefined,
         characterGender: userData?.gender || userData?.identity?.gender || '',
         securityExtras: ', the Dossier',
         engagementContract,
