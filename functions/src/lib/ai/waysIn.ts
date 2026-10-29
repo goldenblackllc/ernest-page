@@ -9,6 +9,7 @@ export const WAYS_IN = {
     feel_it_now: 'Feel it now',
     preferred_you_replay: 'Preferred-you replay',
     role_model: 'Role model',
+    advice_to_others: 'Advice to others',
     two_sets_of_actions: 'Two sets of actions',
     act_as_if: 'Act as if',
     magic_lamp: 'Magic lamp',
