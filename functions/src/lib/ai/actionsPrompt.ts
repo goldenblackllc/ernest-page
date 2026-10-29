@@ -23,7 +23,7 @@ export function buildActionsPrompt(open: Action[], transcript: string): string {
         : '(empty)';
     return `You keep a person's list of actions from their conversations with their ideal self on Earnest Page.
 
-An action is something specific the person said they will do: one they named themselves, or one the ideal self offered that they accepted. Include every one, everyday ones too. Leave out ideas the person did not take up.
+An action is something specific the person said they will do: one they named themselves, or one the ideal self offered that they accepted. Include every one, everyday ones too, however they put it. A plan for their day counts even when they describe it while imagining or playing along, as long as it is what they are actually going to do. So does a way of acting the person said they want to live by, in their own words or ones the ideal self gave back to them, even when it came up as a description of who they want to be: write it as the move someone could see and the moment it is for. Leave out ideas the person did not take up and anything they only said they might do.
 
 You get the current list and the newest conversation. Report:
 - done: current actions the person says in this conversation that they have already done.
