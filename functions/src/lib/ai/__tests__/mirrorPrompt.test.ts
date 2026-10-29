@@ -104,13 +104,35 @@ describe('ways in', () => {
     it('offers every way in, chosen by fit and then least recent use', () => {
         expect(prompt).toContain('CHOOSE THE WAY IN');
         expect(prompt).toContain('choose the one used least recently');
-        for (const id of ['feel_it_now', 'preferred_you_replay', 'role_model', 'two_sets_of_actions', 'act_as_if', 'magic_lamp', 'excitement_scan'] as const) {
+        for (const id of ['feel_it_now', 'preferred_you_replay', 'role_model', 'advice_to_others', 'two_sets_of_actions', 'act_as_if', 'magic_lamp', 'excitement_scan'] as const) {
             expect(prompt).toContain(WAYS_IN[id].toUpperCase());
         }
     });
 
-    it('drops the doors that are not from the books', () => {
-        expect(prompt).not.toContain('Advice to a friend');
+    it('skips feel it now when the want is itself a feeling', () => {
+        expect(prompt).toContain('When the want is itself a feeling');
+        expect(prompt).toContain('skip FEEL IT NOW');
+    });
+
+    it('invites focus once and does the hard part itself when they cannot or will not', () => {
+        expect(prompt).toContain('helps only when they are able and willing');
+        expect(prompt).toContain('do not ask again in another form');
+        expect(prompt).not.toContain('one simpler try is fine');
+    });
+
+    it('offers options and lets them choose', () => {
+        expect(prompt).toContain('offer a handful from what you know of their day');
+        expect(prompt).not.toContain('Do not list options for them');
+        expect(prompt).not.toContain('they generate the options, not you');
+    });
+
+    it('asks for a commitment, tied to a moment, and names it in the close', () => {
+        expect(prompt).toContain('ask for the commitment plainly');
+        expect(prompt).toContain('Then they maintain the decision.');
+        expect(prompt).toContain('Name the specific actions they committed to, and when');
+    });
+
+    it('drops the doors that are not wanted', () => {
         expect(prompt).not.toContain('Memory recall');
         expect(prompt).not.toContain('Feeling Bridge');
     });
