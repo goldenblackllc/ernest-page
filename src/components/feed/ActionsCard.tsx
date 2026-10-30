@@ -9,15 +9,29 @@ import type { Action } from "@functions/lib/actions";
 
 type Pending = { done: boolean } | "removed";
 
+/** Whether the saved list already shows the change. */
+function isSaved(actions: Action[], id: string, change: Pending): boolean {
+    const saved = actions.find(c => c.id === id);
+    return change === "removed" ? !saved : !!saved && !!saved.done_at === change.done;
+}
+
 /**
  * Top of the feed: the actions the person decided on in their sessions
  * (functions/src/lib/actions.ts). Ticking one marks it done; it stays ticked
  * until the next session ends. Changes show at once and are sent to
- * /api/actions; the profile subscription brings back what was saved.
+ * /api/actions. Each one is shown until the profile subscription brings back
+ * the saved list with it, so nothing flickers back in between.
  */
 export function ActionsCard({ user, actions }: { user: User; actions: Action[] }) {
     const t = useTranslations("actions");
     const [pending, setPending] = useState<Record<string, Pending>>({});
+
+    // The saved list changed: drop the changes it now shows.
+    const [savedActions, setSavedActions] = useState(actions);
+    if (actions !== savedActions) {
+        setSavedActions(actions);
+        setPending(prev => Object.fromEntries(Object.entries(prev).filter(([id, change]) => !isSaved(actions, id, change))));
+    }
 
     const shown = actions.flatMap(c => {
         const p = pending[c.id];
@@ -37,9 +51,9 @@ export function ActionsCard({ user, actions }: { user: User; actions: Action[] }
             if (!res.ok) throw new Error(`Actions API returned ${res.status}`);
         } catch (error) {
             console.error("Action update failed:", error);
-        } finally {
-            // Saved or not, the subscription's copy is the truth again.
+            // Not saved: show the saved list again, unless a newer change to this action is waiting.
             setPending(prev => {
+                if (prev[id] !== change) return prev;
                 const { [id]: _, ...rest } = prev;
                 return rest;
             });

@@ -60,6 +60,36 @@ describe("ActionsCard", () => {
         finish(new Response("{}", { status: 200 }));
     });
 
+    it("keeps a removed action hidden until the saved list drops it", async () => {
+        const { rerender } = render(<ActionsCard user={user} actions={actions} />);
+        fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]);
+        // The delete is saved, but the subscription hasn't brought the new list yet
+        await waitFor(() => expect(authFetch).toHaveBeenCalled());
+        await Promise.resolve();
+        expect(screen.queryByText("Call Dad on Sunday")).not.toBeInTheDocument();
+
+        rerender(<ActionsCard user={user} actions={actions.slice(1)} />);
+        expect(screen.queryByText("Call Dad on Sunday")).not.toBeInTheDocument();
+        // Once saved, the subscription is the truth again
+        rerender(<ActionsCard user={user} actions={actions} />);
+        expect(screen.getByText("Call Dad on Sunday")).toBeInTheDocument();
+    });
+
+    it("keeps a tick until the saved list shows it", async () => {
+        const { rerender } = render(<ActionsCard user={user} actions={actions} />);
+        fireEvent.click(screen.getAllByRole("checkbox")[0]);
+        await waitFor(() => expect(authFetch).toHaveBeenCalled());
+        await Promise.resolve();
+        // An update without the tick yet (another field changed) doesn't undo it
+        rerender(<ActionsCard user={user} actions={[...actions]} />);
+        expect(screen.getAllByRole("checkbox")[0]).toHaveAttribute("aria-checked", "true");
+
+        const ticked = [{ ...actions[0], done_at: 9 }, actions[1]];
+        rerender(<ActionsCard user={user} actions={ticked} />);
+        rerender(<ActionsCard user={user} actions={actions} />);
+        expect(screen.getAllByRole("checkbox")[0]).toHaveAttribute("aria-checked", "false");
+    });
+
     it("goes back to the saved state when the request fails", async () => {
         vi.spyOn(console, "error").mockImplementation(() => {});
         authFetch.mockResolvedValue(new Response("{}", { status: 500 }));
