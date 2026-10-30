@@ -118,6 +118,17 @@ describe('ways in', () => {
         expect(prompt).toContain('helps only when they are able and willing');
         expect(prompt).toContain('do not ask again in another form');
         expect(prompt).not.toContain('one simpler try is fine');
+        expect(prompt).toContain('A correction is not resistance');
+    });
+
+    it('lets them pick the person for advice to others', () => {
+        expect(prompt).toContain('never pick for them. They say what they would tell that person.');
+        expect(prompt).not.toContain('you name one from what you know of their people');
+    });
+
+    it('counts only actions that express the new belief, and reads no pull as a sign of tactics', () => {
+        expect(prompt).toContain('would do for its own sake, not a way to manage the old feeling');
+        expect(prompt).toContain('If none of them pull at them');
     });
 
     it('offers options and lets them choose', () => {
