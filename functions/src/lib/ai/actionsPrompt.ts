@@ -8,7 +8,7 @@ export const ActionsSchema = z.object({
     done: z.array(z.number()).describe('Numbers of current actions the person says in this conversation they have done: a once action at any time, a daily action today'),
     changed: z.array(z.object({ number: z.number(), ...line })).describe('Current actions the person changed in this conversation, with the new wording'),
     new_actions: z.array(z.object(line)).describe('Actions the person decided on in this conversation that are not on the current list'),
-    rewritten: z.array(z.object({ numbers: z.array(z.number()), ...line })).describe('Current actions to rewrite as one line: two or more that say the same thing, or one with far more words than it needs or the wrong kind'),
+    rewritten: z.array(z.object({ numbers: z.array(z.number()), ...line })).describe('Current actions to rewrite as one line: two or more that are one action, or one with far more words than it needs or the wrong kind'),
 });
 
 /**
@@ -30,11 +30,13 @@ Each action is one of two kinds:
 - daily: a way of being they live by, a trait or a routine they can do again every day.
 - once: a specific thing to do one time.
 
+Two actions are one action when they say the same thing in other words. Two ways of being are also one when they live the same trait or routine in different situations. Different traits, and different things to do, stay separate.
+
 You get today's date, the current list and the newest conversation. Report:
 - done: current actions the person says in this conversation they have done: a once action done at any time, a daily action done today.
 - changed: current actions the person changed in this conversation (a different time, place or form). Give the new wording and its kind.
-- new_actions: actions the person decided on in this conversation, each with its kind. Leave out any that a current action already says, even in other words.
-- rewritten: current actions to rewrite as one line, each with the line and its kind. Either two or more that say the same thing in other words, merged into one, or a single one with far more words than it needs or the wrong kind. Merge only actions that mean the same thing; related but different actions stay separate.
+- new_actions: actions the person decided on in this conversation, each with its kind. Leave out any that are one action with a current one.
+- rewritten: current actions to rewrite as one line, each with the line and its kind. Either two or more that are one action, merged into a line that covers them all, or a single one with far more words than it needs or the wrong kind.
 
 Every current action stays on the list unless it is merged. Never leave one out because it is old, done or was not mentioned.
 

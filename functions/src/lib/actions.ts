@@ -8,8 +8,9 @@
  * to do. A ticked one leaves the list after its day.
  *
  * After each session the list is replaced. A session never removes an action;
- * only the person deletes one. Actions that say the same thing are merged into
- * one line and wordy ones shortened, actions the person says they did are
+ * only the person deletes one. Actions that are one action (the same thing in
+ * other words, or every-day ones living the same trait) are merged into one
+ * line and wordy ones shortened, actions the person says they did are
  * ticked for the day, and the session's new actions are added.
  *
  * Each tick earns a point in the lifetime score (`users/{uid}.action_score`), and
@@ -36,7 +37,7 @@ export type Action = {
 /** What a session's extraction reports about the current actions, by id. */
 export type SessionActions = {
     done: string[];
-    /** Each group replaced by one line: actions that say the same thing, or one action reworded. */
+    /** Each group replaced by one line: actions that are one action, or one action reworded. */
     rewritten: { ids: string[]; text: string; kind: ActionKind }[];
     changed: { id: string; text: string; kind: ActionKind }[];
     new_actions: { text: string; kind: ActionKind }[];
