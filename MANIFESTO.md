@@ -7,7 +7,7 @@
 *   **The Ethical North Star:** Our metric for success is NOT "Time on App," but "User Empowerment." We win when the user feels happier, stronger, and more capable *offline*.
 
 ## 2. The Philosophical Engine: Reality Rules
-The AI does not improvise a worldview. It operates within a strict set of 24 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat and Ghost-Writing.
+The AI does not improvise a worldview. It operates within a strict set of 23 "Universal Laws of Reality" — the physics engine of the character simulation. These rules govern every AI response across Mirror Chat and Ghost-Writing.
 
 **Key principles:**
 *   All feelings come from beliefs, never from external circumstances. The world provides circumstances; the character provides the meaning.
