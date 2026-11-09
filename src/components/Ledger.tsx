@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { CheckInCard } from "@/components/CheckInCard";
 import { BalanceCard } from "@/components/feed/BalanceCard";
-import { ActionsCard } from "@/components/feed/ActionsCard";
 import { VoiceBrowser } from "@/components/VoiceBrowser";
 import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
 
@@ -367,7 +366,7 @@ export function Ledger() {
                     {badgeText}
                 </p>
                 <h2 className="text-2xl font-black tracking-tight text-white mb-3">
-                    {profile?.defining_words?.join(', ') || t('idealSelfDefault')}
+                    {profile?.identity?.title || t('idealSelfDefault')}
                 </h2>
                 <p className="text-sm text-zinc-400 max-w-xs mx-auto leading-relaxed mb-8">
                     {t('firstSessionSub')}
@@ -404,7 +403,7 @@ export function Ledger() {
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-white mb-0.5">{t('bibleReadyTitle')}</p>
-                                <p className="text-base font-bold text-white">{profile?.defining_words?.join(', ') || t('idealSelfDefault')}</p>
+                                <p className="text-base font-bold text-white">{profile?.identity?.title || t('idealSelfDefault')}</p>
                                 <p className="text-xs text-zinc-500 mt-0.5">{t('bibleReadySub')}</p>
                             </div>
                         </div>
@@ -469,12 +468,11 @@ export function Ledger() {
         <section className="flex flex-col gap-6 pt-2">
 
             {/* Sessions available (not for members) */}
-            {profileLoaded && (profile?.onboarding_complete || !!profile?.defining_words?.length) && (
+            {profileLoaded && profile?.onboarding_complete && (
                 <BalanceCard summary={accessSummary(profile?.access, profile?.created_at ? Date.parse(profile.created_at) : undefined, new Date().getTime())} />
             )}
 
             {/* Actions decided on in sessions */}
-            {user && profile?.actions && <ActionsCard user={user} actions={profile.actions} />}
 
             {/* Bible Generation Status Card */}
             {showBibleCompiling && (
@@ -526,7 +524,7 @@ export function Ledger() {
                 if (elapsed > CHECKIN_WINDOW_MS) return null; // Auto-hide after 7-day window
                 return (
                     <CheckInCard
-                        characterTitle={profile?.defining_words?.join(', ') || t('idealSelfDefault')}
+                        characterTitle={profile?.identity?.title || t('idealSelfDefault')}
                         avatarUrl={profile?.avatar?.url}
                     />
                 );

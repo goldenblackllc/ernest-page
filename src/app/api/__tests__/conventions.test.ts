@@ -28,6 +28,7 @@ const AUTH_ROUTES: [string, string, () => Promise<Record<string, unknown>>][] = 
     ["actions", "PATCH", () => import("../actions/route")],
     ["actions", "DELETE", () => import("../actions/route")],
     ["consume-session", "POST", () => import("../consume-session/route")],
+    ["identity", "POST", () => import("../identity/route")],
     ["onboarding/process", "POST", () => import("../onboarding/process/route")],
     ["payments/email", "POST", () => import("../payments/email/route")],
     ["payments/history", "GET", () => import("../payments/history/route")],
@@ -112,6 +113,7 @@ describe("internal errors", () => {
         ["voice/select", "POST", () => import("../voice/select/route"), { voiceId: "voice-id-1234567", voiceName: "V" }],
         ["account/export", "POST", () => import("../account/export/route"), {}],
         ["consume-session", "POST", () => import("../consume-session/route"), { sessionId: "session-0001" }],
+        ["identity", "POST", () => import("../identity/route"), { text: "I am calm." }],
         ["payments/status", "GET", () => import("../payments/status/route"), undefined],
         ["payments/refund", "POST", () => import("../payments/refund/route"), { kind: "credits", lotId: "pi_1" }],
     ];
@@ -158,6 +160,20 @@ describe("rate limits", () => {
         expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
         expect(statuses[10]).toBe(429);
         expect(fakeDb.writes.filter((w) => w.op === "add")).toHaveLength(10);
+    });
+
+    it("identity allows 10 saves per 10 minutes, then returns 429", async () => {
+        const { POST } = await import("../identity/route");
+        const statuses = await hit(POST, "identity", { text: "I am calm." }, 11);
+        expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
+        expect(statuses[10]).toBe(429);
+    });
+
+    it("onboarding/process allows 5 calls per 10 minutes, then returns 429", async () => {
+        const { POST } = await import("../onboarding/process/route");
+        const statuses = await hit(POST, "onboarding/process", { defining_words: [] }, 6);
+        expect(statuses.slice(0, 5).every((s) => s !== 429)).toBe(true);
+        expect(statuses[5]).toBe(429);
     });
 
     it("a 429 carries Retry-After and a JSON error", async () => {

@@ -4,55 +4,64 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CloudSun } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useTranslations } from 'next-intl';
+import { IDENTITY_MAX_LENGTH, type Identity } from '@functions/lib/identity';
 
 export interface DreamEditorProps {
-    definingWords: string[];   // max 3 strings
+    identity?: Identity;
     dreamLiving: string;
     dreamFinancial: string;
-    onSave: (updates: { defining_words?: string[]; dream_living?: string; dream_financial?: string }) => void;
+    onSave: (updates: { dream_living?: string; dream_financial?: string }) => void;
+    /** Saves who they are; a new title is made from it */
+    onSaveIdentity: (text: string) => void;
     className?: string;
 }
 
+const fieldClass = cn(
+    "w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 px-3 py-2.5",
+    "text-white text-sm resize-none placeholder:text-zinc-500",
+    "focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30",
+    "transition-colors"
+);
 
 /**
  * DreamEditor provides an interface for editing "My Dream":
- * - Three defining words
+ * - Who they are: who the person decided to be, with its title (their byline) under it
  * - Dream living situation (freeform textarea)
  * - Dream financial situation (freeform textarea)
  *
- * Uses local state with a 1-second debounce before auto-saving.
- * Flushes any pending changes when unmounted.
+ * Living and financial save after a 1-second pause. Who they are saves when the
+ * person leaves the field, since each save makes a new title. Anything unsaved
+ * is saved when unmounted.
  */
 export function DreamEditor({
-    definingWords = [],
+    identity,
     dreamLiving = '',
     dreamFinancial = '',
     onSave,
+    onSaveIdentity,
     className,
 }: DreamEditorProps) {
     const t = useTranslations('mylife.dream');
     // Initialize local state once from props on mount (not continuously synced)
-    const [words, setWords] = useState<string[]>(() => [
-        definingWords[0] || '',
-        definingWords[1] || '',
-        definingWords[2] || '',
-    ]);
+    const [identityText, setIdentityText] = useState<string>(() => identity?.text || '');
     const [living, setLiving] = useState<string>(() => dreamLiving || '');
     const [financial, setFinancial] = useState<string>(() => dreamFinancial || '');
 
     // Synchronous refs to avoid stale closures in timeouts and cleanup
-    const wordsRef = useRef(words);
+    const identityRef = useRef(identityText);
+    const savedIdentityRef = useRef(identity?.text || '');
     const livingRef = useRef(living);
     const financialRef = useRef(financial);
     const onSaveRef = useRef(onSave);
+    const onSaveIdentityRef = useRef(onSaveIdentity);
 
     // Keep refs updated inside effect (outside render phase)
     useEffect(() => {
-        wordsRef.current = words;
         livingRef.current = living;
         financialRef.current = financial;
         onSaveRef.current = onSave;
-    }, [words, living, financial, onSave]);
+        onSaveIdentityRef.current = onSaveIdentity;
+    }, [living, financial, onSave, onSaveIdentity]);
 
     // Track pending/unsaved changes and timer ID
     const isDirtyRef = useRef(false);
@@ -69,10 +78,16 @@ export function DreamEditor({
 
         isDirtyRef.current = false;
         onSaveRef.current({
-            defining_words: wordsRef.current,
             dream_living: livingRef.current,
             dream_financial: financialRef.current,
         });
+    };
+
+    const saveIdentity = () => {
+        const text = identityRef.current.trim();
+        if (text === savedIdentityRef.current) return;
+        savedIdentityRef.current = text;
+        onSaveIdentityRef.current(text);
     };
 
     // Trigger or reset 1-second debounce timer
@@ -92,16 +107,14 @@ export function DreamEditor({
     useEffect(() => {
         return () => {
             savePendingChanges();
+            saveIdentity();
         };
     }, []);
 
     // Handlers
-    const handleWordChange = (index: number, value: string) => {
-        const nextWords = [...wordsRef.current];
-        nextWords[index] = value;
-        setWords(nextWords);
-        wordsRef.current = nextWords;
-        triggerSave();
+    const handleIdentityChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setIdentityText(e.target.value);
+        identityRef.current = e.target.value;
     };
 
     const handleLivingChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -126,28 +139,24 @@ export function DreamEditor({
                 <h2 className="text-xl font-bold text-white">{t("title")}</h2>
             </div>
 
-            {/* Section 1: Defining Words */}
+            {/* Section 1: Who they are */}
             <div className="space-y-2">
-                <label className="text-sm text-zinc-400 block">
-                    {t("definingWordsLabel")}
+                <label htmlFor="dream-identity" className="text-sm text-zinc-400 block">
+                    {t("identityLabel")}
                 </label>
-                <div className="space-y-2">
-                    {[t("wordPlaceholder1"), t("wordPlaceholder2"), t("wordPlaceholder3")].map((placeholder, index) => (
-                        <input
-                            key={index}
-                            type="text"
-                            value={words[index]}
-                            onChange={(e) => handleWordChange(index, e.target.value)}
-                            placeholder={placeholder}
-                            className={cn(
-                                "w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 px-3 py-2.5",
-                                "text-white text-sm placeholder:text-zinc-500",
-                                "focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30",
-                                "transition-colors"
-                            )}
-                        />
-                    ))}
-                </div>
+                <textarea
+                    id="dream-identity"
+                    value={identityText}
+                    onChange={handleIdentityChange}
+                    onBlur={saveIdentity}
+                    placeholder={t("identityPlaceholder")}
+                    maxLength={IDENTITY_MAX_LENGTH}
+                    rows={3}
+                    className={fieldClass}
+                />
+                {identity?.title && (
+                    <p className="text-xs text-zinc-500">{t("identityTitle", { title: identity.title })}</p>
+                )}
             </div>
 
             {/* Section 2: Living Situation */}
@@ -160,12 +169,7 @@ export function DreamEditor({
                     onChange={handleLivingChange}
                     placeholder={t("livingPlaceholder")}
                     rows={4}
-                    className={cn(
-                        "w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 px-3 py-2.5",
-                        "text-white text-sm resize-none min-h-[100px] placeholder:text-zinc-500",
-                        "focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30",
-                        "transition-colors"
-                    )}
+                    className={cn(fieldClass, "min-h-[100px]")}
                 />
             </div>
 
@@ -179,12 +183,7 @@ export function DreamEditor({
                     onChange={handleFinancialChange}
                     placeholder={t("financialPlaceholder")}
                     rows={4}
-                    className={cn(
-                        "w-full bg-zinc-800/50 rounded-lg border border-zinc-700/50 px-3 py-2.5",
-                        "text-white text-sm resize-none min-h-[100px] placeholder:text-zinc-500",
-                        "focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30",
-                        "transition-colors"
-                    )}
+                    className={cn(fieldClass, "min-h-[100px]")}
                 />
             </div>
         </div>

@@ -633,10 +633,9 @@
     },
     "dream": {
       "title": "Mon Rêve",
-      "definingWordsLabel": "Trois mots qui vous définissent",
-      "wordPlaceholder1": "ex. Gentleman",
-      "wordPlaceholder2": "ex. Accessible",
-      "wordPlaceholder3": "ex. Épanoui",
+      "identityLabel": "Qui êtes-vous ?",
+      "identityPlaceholder": "Je suis…",
+      "identityTitle": "Sur vos publications : {title}",
       "livingLabel": "Situation De Vie",
       "livingPlaceholder": "Décrivez votre situation de vie de rêve...",
       "financialLabel": "Situation Financière",
@@ -781,7 +780,14 @@
     "title": "Mes actions",
     "markDone": "Marquer comme fait",
     "markOpen": "Marquer comme non fait",
-    "remove": "Retirer"
+    "remove": "Retirer",
+    "pill": "Soyez",
+    "open": "Mes actions, {count, plural, one {# point} other {# points}}",
+    "points": "{count, plural, one {# point} other {# points}}",
+    "today": "+{count} aujourd'hui",
+    "daily": "Chaque jour",
+    "once": "Une fois",
+    "empty": "Les actions que vous décidez pendant vos sessions apparaissent ici."
   },
   "cookieConsent": {
     "message": "Nous utilisons des cookies essentiels pour la connexion et la sécurité. Pas de suivi, pas de publicité.",

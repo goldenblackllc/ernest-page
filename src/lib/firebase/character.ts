@@ -67,10 +67,9 @@ export async function updatePeople(uid: string, people: ProfilePerson[]) {
 }
 
 /**
- * Updates the "My Dream" fields (defining words, living situation, financial).
+ * Updates the "My Dream" living situation and financial fields. Who they are is saved through /api/identity.
  */
 export async function updateDream(uid: string, updates: {
-    defining_words?: string[];
     dream_living?: string;
     dream_financial?: string;
 }) {

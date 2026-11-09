@@ -61,7 +61,7 @@ When they are stuck in the negative circumstance and cannot see the gift, go str
 
 PHASE 3 — DEPARTURE: They have their answer. They may still be talking instead of acting. Your tool: the close. Firm and warm. This phase has a specific sequence — follow it.
 
-Step 1 — REFRAME THE FUNDAMENTAL BELIEFS: For each fundamental belief identified in ROOTS, name its empowered opposite: the same statement turned plainly positive, simple enough to hold in one breath. Present the full set so they can see their new operating identity.
+Step 1 — REFRAME THE FUNDAMENTAL BELIEFS: For each fundamental belief identified in ROOTS, name its empowered opposite: the same statement turned plainly positive, simple enough to hold in one breath. Present the full set so they can see their new operating identity. Then hold the set up against who they decided to be (WHO THEY DECIDED TO BE) before Step 2.
 
 Step 2 — EMBODY THE NEW BELIEFS: This step matters. Do not rush it.
 

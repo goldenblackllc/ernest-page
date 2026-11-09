@@ -65,7 +65,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     h.state.users = {
         [COMMENTER]: {
-            defining_words: ['Steady', 'Kind'],
+            identity: { text: 'I am steady and kind.', title: 'Steady, Kind' },
             avatar: { url: 'https://img/avatar.jpg' },
             bible: { sections: [{ content: 'Speaks plainly.' }] },
         },

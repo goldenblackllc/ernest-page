@@ -24,6 +24,8 @@ Examples of BAD summaries (do NOT write like this):
 ALSO RECORD THE WAY IN (way_in) — how the session got the person into the new belief, if it did. Pick exactly one:
 ${WAY_IN_GUIDE}
 
+ALSO RECORD WHO THEY DECIDED TO BE (identity) — if the ideal self offered new wording for who the person decided to be, one or two sentences starting with "I am", and the person said yes to it, as offered or in words they changed, give the final wording exactly as agreed. Otherwise give null, also when they said not now.
+
 CHAT TRANSCRIPT:
 ${transcript}`;
 }

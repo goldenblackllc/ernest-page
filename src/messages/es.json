@@ -633,10 +633,9 @@
     },
     "dream": {
       "title": "El Sueño",
-      "definingWordsLabel": "Tres palabras que te definen",
-      "wordPlaceholder1": "ej. Caballero",
-      "wordPlaceholder2": "ej. Accesible",
-      "wordPlaceholder3": "ej. Exitoso",
+      "identityLabel": "¿Quién eres?",
+      "identityPlaceholder": "Soy…",
+      "identityTitle": "En tus publicaciones: {title}",
       "livingLabel": "Situación de vivienda",
       "livingPlaceholder": "Describe tu situación de vivienda soñada...",
       "financialLabel": "Financiera",
@@ -781,7 +780,14 @@
     "title": "Mis acciones",
     "markDone": "Marcar como hecho",
     "markOpen": "Marcar como no hecho",
-    "remove": "Quitar"
+    "remove": "Quitar",
+    "pill": "Sé",
+    "open": "Mis acciones, {count, plural, one {# punto} other {# puntos}}",
+    "points": "{count, plural, one {# punto} other {# puntos}}",
+    "today": "+{count} hoy",
+    "daily": "Cada día",
+    "once": "Una vez",
+    "empty": "Aquí aparecen las acciones que decides en tus sesiones."
   },
   "cookieConsent": {
     "message": "Usamos cookies esenciales para el inicio de sesión y la seguridad. Sin rastreo ni anuncios.",

@@ -167,7 +167,7 @@ export async function generateAvatarForUser(uid: string): Promise<{ success: boo
         if (!userDoc.exists) return { success: false, error: 'User not found' };
 
         const data = userDoc.data()!;
-        if (!data.defining_words) return { success: false, error: 'No identity found — complete onboarding first' };
+        if (!data.onboarding_complete) return { success: false, error: 'Onboarding not complete' };
 
         const situations: Situation[] = data.bible?.style?.situations || [];
         const [mainSituation, ...others] = situations;
@@ -276,7 +276,7 @@ export const retryAvatars = onSchedule(
             const avatar = data.avatar || {};
             if ((avatar.attempt_count || 0) >= 5) continue;                     // max retries reached
             if (avatar.last_attempt && avatar.last_attempt > oneHourAgo) continue; // tried recently
-            if (!data.onboarding_complete && !data.defining_words) continue;      // onboarding incomplete
+            if (!data.onboarding_complete) continue;                            // onboarding incomplete
 
             try {
                 await enqueueAvatar(doc.id);

@@ -85,7 +85,7 @@ Sections:
 
 --- CHARACTER INPUTS ---
 
-Identity: {DEFINING_WORDS}
+Identity: {IDENTITY}
 
 Living Situation: {PRESENT_LIVING}
 
@@ -194,8 +194,8 @@ const PROVIDER_OPTIONS = {
 
 /** Raw My Life inputs, formatted for the Phase 1 and Phase 2 prompts. */
 interface CompileInputs {
-    /** Defining words (passed through to Phase 2 unchanged) */
-    definingWords: string;
+    /** Who the person decided to be (passed through to Phase 2 unchanged) */
+    identity: string;
     /** Interests/loves (passed through to Phase 2 unchanged) */
     interests: string;
     // Translated by Phase 1:
@@ -210,7 +210,6 @@ interface CompileInputs {
 
 // ─── Assemble raw inputs from My Life data ───
 function buildCompileInputs(data: FirebaseFirestore.DocumentData): CompileInputs {
-    const definingWords = data?.defining_words || [];
     const allWants = (data?.wants || []).map((w: { text: string }) => w.text);
     const unifiedPeople = data?.people || [];
     const unifiedInterests = data?.interests || [];
@@ -229,7 +228,7 @@ function buildCompileInputs(data: FirebaseFirestore.DocumentData): CompileInputs
     if (data.ethnicity) physicalTraits.push(`ethnicity: ${data.ethnicity}`);
 
     return {
-        definingWords: definingWords.length > 0 ? definingWords.join(', ') : 'Not specified',
+        identity: data?.identity?.text || 'Not specified',
         interests: unifiedInterests.length > 0 ? unifiedInterests.join(', ') : 'Not specified.',
         wants: allWants.length > 0 ? allWants.join(', ') : 'None specified',
         dreamLiving: data?.dream_living || 'Not specified',
@@ -281,7 +280,7 @@ async function generateIdealBible(
 
     const language = languageName(userLocale);
     const idealPrompt = PROMPT_IDEAL_BIBLE
-        .replace('{DEFINING_WORDS}', () => inputs.definingWords)
+        .replace('{IDENTITY}', () => inputs.identity)
         .replace('{PRESENT_LIVING}', () => phase1.living_situation)
         .replace('{PRESENT_FINANCIAL}', () => phase1.financial_reality)
         .replace('{PRESENT_PHYSICAL}', () => phase1.physical_profile)
@@ -345,8 +344,8 @@ async function generateStyle(bibleText: string, userLocale: string): Promise<Cha
     return cleanStyle(week, looksResult.object as z.infer<typeof LOOKS_SCHEMA>);
 }
 
-/** The user's chosen name, or a generated first name that fits their defining words. */
-async function resolveCharacterName(data: FirebaseFirestore.DocumentData, definingWords: string): Promise<string> {
+/** The user's chosen name, or a generated first name that fits who they decided to be. */
+async function resolveCharacterName(data: FirebaseFirestore.DocumentData, identity: string): Promise<string> {
     const userProvidedName = data?.name || '';
     if (userProvidedName) return userProvidedName;
 
@@ -354,7 +353,7 @@ async function resolveCharacterName(data: FirebaseFirestore.DocumentData, defini
         const nameResult = await generateWithFallback({
             primaryModelId: OPUS_MODEL,
             abortSignal: AbortSignal.timeout(120_000),
-            prompt: `Based on this character archetype "${definingWords}" generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
+            prompt: `Based on who this character is, "${identity}", generate a single fitting first name for this character. Output ONLY the name, nothing else.`,
             schema: z.object({ name: z.string().describe("A single first name") }),
         });
         return nameResult.object.name || 'The Architect';
@@ -433,7 +432,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
     const userLocale = data?.preferred_locale || 'en';
     const inputs = buildCompileInputs(data);
 
-    console.log(`[BibleCompile] Inputs for ${uid}: defining_words=${inputs.definingWords.substring(0, 50)}, wants=${inputs.counts.wants}, people=${inputs.counts.people}, interests=${inputs.counts.interests}`);
+    console.log(`[BibleCompile] Inputs for ${uid}: identity=${inputs.identity.length} chars, wants=${inputs.counts.wants}, people=${inputs.counts.people}, interests=${inputs.counts.interests}`);
 
     const phase1 = await compilePresentTenseFacts(inputs);
     const bibleText = await generateIdealBible(inputs, phase1, userLocale);
@@ -441,7 +440,7 @@ export async function compileCharacterBibleForUser(uid: string): Promise<{ succe
 
     // Save back to Firestore
     if (userDoc.exists) {
-        const characterName = await resolveCharacterName(data, inputs.definingWords);
+        const characterName = await resolveCharacterName(data, inputs.identity);
 
         // Auto-default voice
         const freshVoiceSnap = await userDocRef.get();

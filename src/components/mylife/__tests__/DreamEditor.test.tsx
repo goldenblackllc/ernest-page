@@ -1,7 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { DreamEditor } from '../DreamEditor';
+import { DreamEditor, type DreamEditorProps } from '../DreamEditor';
+
+const IDENTITY = { text: 'I am a gentleman, a father, and retired.', title: 'Gentleman, Father, Retired' };
+
+function editor(props: Partial<DreamEditorProps> = {}) {
+    const all: DreamEditorProps = {
+        identity: IDENTITY,
+        dreamLiving: '',
+        dreamFinancial: '',
+        onSave: vi.fn(),
+        onSaveIdentity: vi.fn(),
+        ...props,
+    };
+    return { ...render(<DreamEditor {...all} />), props: all };
+}
+
+const living = () => screen.getByPlaceholderText('Describe your dream living situation...');
+const financial = () => screen.getByPlaceholderText('Describe your dream financial situation...');
+const whoAreYou = () => screen.getByLabelText('Who are you?');
 
 describe('DreamEditor', () => {
     beforeEach(() => {
@@ -12,237 +30,152 @@ describe('DreamEditor', () => {
         vi.useRealTimers();
     });
 
-    it('renders title "My Dream" and Sparkles icon', () => {
-        const onSave = vi.fn();
-        render(
-            <DreamEditor
-                definingWords={['Gentleman', 'Approachable', 'Successful']}
-                dreamLiving="A quiet cabin in the mountains"
-                dreamFinancial="Financial freedom with recurring investments"
-                onSave={onSave}
-            />
-        );
-
+    it('renders the title "My Dream"', () => {
+        editor();
         expect(screen.getByText('My Dream')).toBeInTheDocument();
     });
 
-    it('renders all three defining words sections with placeholders and initial values', () => {
-        const onSave = vi.fn();
-        render(
-            <DreamEditor
-                definingWords={['Gentleman', 'Approachable']}
-                dreamLiving=""
-                dreamFinancial=""
-                onSave={onSave}
-            />
-        );
+    it('shows who they are, with the title their posts are signed with under it', () => {
+        editor();
+        expect(whoAreYou()).toHaveValue(IDENTITY.text);
+        expect(screen.getByText('On your posts: Gentleman, Father, Retired')).toBeInTheDocument();
+    });
 
-        expect(screen.getByText('Three words that define you')).toBeInTheDocument();
+    it('starts empty, with an "I am" prompt, when there is no identity yet', () => {
+        editor({ identity: undefined });
+        expect(whoAreYou()).toHaveValue('');
+        expect(screen.getByPlaceholderText('I am…')).toBe(whoAreYou());
+        expect(screen.queryByText(/On your posts/)).not.toBeInTheDocument();
+    });
 
-        const input1 = screen.getByDisplayValue('Gentleman');
-        const input2 = screen.getByDisplayValue('Approachable');
-        const input3 = screen.getByPlaceholderText('e.g. Successful');
+    it('saves who they are when they leave the field, trimmed, and only when it changed', () => {
+        const { props } = editor();
+        fireEvent.blur(whoAreYou());
+        expect(props.onSaveIdentity).not.toHaveBeenCalled();
 
-        expect(input1).toBeInTheDocument();
-        expect(input2).toBeInTheDocument();
-        expect(input3).toBeInTheDocument();
-        expect((input3 as HTMLInputElement).value).toBe('');
+        fireEvent.change(whoAreYou(), { target: { value: ' I am calm and generous. ' } });
+        act(() => {
+            vi.advanceTimersByTime(5000);
+        });
+        // Not while typing: each save makes a new title
+        expect(props.onSaveIdentity).not.toHaveBeenCalled();
+        fireEvent.blur(whoAreYou());
+        expect(props.onSaveIdentity).toHaveBeenCalledWith('I am calm and generous.');
+        fireEvent.blur(whoAreYou());
+        expect(props.onSaveIdentity).toHaveBeenCalledTimes(1);
+        expect(props.onSave).not.toHaveBeenCalled();
+    });
+
+    it('saves who they are on unmount if it changed', () => {
+        const { props, unmount } = editor();
+        fireEvent.change(whoAreYou(), { target: { value: 'I am calm.' } });
+        act(() => {
+            unmount();
+        });
+        expect(props.onSaveIdentity).toHaveBeenCalledWith('I am calm.');
     });
 
     it('renders living situation and financial situation textareas with initial values', () => {
-        const onSave = vi.fn();
-        render(
-            <DreamEditor
-                definingWords={[]}
-                dreamLiving="Living by the beach"
-                dreamFinancial="No debt, high net worth"
-                onSave={onSave}
-            />
-        );
+        editor({ dreamLiving: 'Living by the beach', dreamFinancial: 'No debt, high net worth' });
 
         expect(screen.getByText('Living Situation')).toBeInTheDocument();
         expect(screen.getByText('Financial')).toBeInTheDocument();
-
-        const livingTextarea = screen.getByPlaceholderText('Describe your dream living situation...');
-        const financialTextarea = screen.getByPlaceholderText('Describe your dream financial situation...');
-
-        expect((livingTextarea as HTMLTextAreaElement).value).toBe('Living by the beach');
-        expect((financialTextarea as HTMLTextAreaElement).value).toBe('No debt, high net worth');
+        expect(living()).toHaveValue('Living by the beach');
+        expect(financial()).toHaveValue('No debt, high net worth');
     });
 
     it('debounces saving for 1 second on input changes', () => {
-        const onSave = vi.fn();
-        render(
-            <DreamEditor
-                definingWords={['Leader', '', '']}
-                dreamLiving=""
-                dreamFinancial=""
-                onSave={onSave}
-            />
-        );
-
-        const input2 = screen.getByPlaceholderText('e.g. Approachable');
-        fireEvent.change(input2, { target: { value: 'Kind' } });
+        const { props } = editor();
+        fireEvent.change(financial(), { target: { value: 'Abundant' } });
 
         // Shouldn't be called immediately
-        expect(onSave).not.toHaveBeenCalled();
+        expect(props.onSave).not.toHaveBeenCalled();
 
         // Advance 500ms - still not called
         act(() => {
             vi.advanceTimersByTime(500);
         });
-        expect(onSave).not.toHaveBeenCalled();
+        expect(props.onSave).not.toHaveBeenCalled();
 
         // Advance another 500ms (1000ms total)
         act(() => {
             vi.advanceTimersByTime(500);
         });
-        expect(onSave).toHaveBeenCalledTimes(1);
-        expect(onSave).toHaveBeenCalledWith({
-            defining_words: ['Leader', 'Kind', ''],
-            dream_living: '',
-            dream_financial: '',
-        });
+        expect(props.onSave).toHaveBeenCalledTimes(1);
+        expect(props.onSave).toHaveBeenCalledWith({ dream_living: '', dream_financial: 'Abundant' });
     });
 
     it('resets the debounce timer on consecutive keystrokes', () => {
-        const onSave = vi.fn();
-        render(
-            <DreamEditor
-                definingWords={['', '', '']}
-                dreamLiving=""
-                dreamFinancial=""
-                onSave={onSave}
-            />
-        );
+        const { props } = editor();
 
-        const livingTextarea = screen.getByPlaceholderText('Describe your dream living situation...');
-
-        fireEvent.change(livingTextarea, { target: { value: 'Penthouse' } });
-
+        fireEvent.change(living(), { target: { value: 'Penthouse' } });
         act(() => {
             vi.advanceTimersByTime(600);
         });
-        expect(onSave).not.toHaveBeenCalled();
+        expect(props.onSave).not.toHaveBeenCalled();
 
         // Type again before 1 second expires
-        fireEvent.change(livingTextarea, { target: { value: 'Penthouse in NYC' } });
-
+        fireEvent.change(living(), { target: { value: 'Penthouse in NYC' } });
         act(() => {
             vi.advanceTimersByTime(600);
         });
         // Still not called because timer was reset
-        expect(onSave).not.toHaveBeenCalled();
+        expect(props.onSave).not.toHaveBeenCalled();
 
         act(() => {
             vi.advanceTimersByTime(400);
         });
         // Now reached 1000ms after second change
-        expect(onSave).toHaveBeenCalledTimes(1);
-        expect(onSave).toHaveBeenCalledWith({
-            defining_words: ['', '', ''],
-            dream_living: 'Penthouse in NYC',
-            dream_financial: '',
-        });
+        expect(props.onSave).toHaveBeenCalledTimes(1);
+        expect(props.onSave).toHaveBeenCalledWith({ dream_living: 'Penthouse in NYC', dream_financial: '' });
     });
 
     it('saves pending changes on unmount if dirty', () => {
-        const onSave = vi.fn();
-        const { unmount } = render(
-            <DreamEditor
-                definingWords={['Alpha', 'Beta', 'Gamma']}
-                dreamLiving=""
-                dreamFinancial=""
-                onSave={onSave}
-            />
-        );
-
-        const financialTextarea = screen.getByPlaceholderText('Describe your dream financial situation...');
-        fireEvent.change(financialTextarea, { target: { value: 'Independent wealth' } });
+        const { props, unmount } = editor();
+        fireEvent.change(financial(), { target: { value: 'Independent wealth' } });
 
         // Unmount before the 1-second timer fires
         act(() => {
             unmount();
         });
 
-        expect(onSave).toHaveBeenCalledTimes(1);
-        expect(onSave).toHaveBeenCalledWith({
-            defining_words: ['Alpha', 'Beta', 'Gamma'],
-            dream_living: '',
-            dream_financial: 'Independent wealth',
-        });
+        expect(props.onSave).toHaveBeenCalledTimes(1);
+        expect(props.onSave).toHaveBeenCalledWith({ dream_living: '', dream_financial: 'Independent wealth' });
+        expect(props.onSaveIdentity).not.toHaveBeenCalled();
     });
 
     it('does not save on unmount if there were no changes', () => {
-        const onSave = vi.fn();
-        const { unmount } = render(
-            <DreamEditor
-                definingWords={['Alpha', 'Beta', 'Gamma']}
-                dreamLiving="Cabin"
-                dreamFinancial="Abundant"
-                onSave={onSave}
-            />
-        );
-
+        const { props, unmount } = editor({ dreamLiving: 'Cabin', dreamFinancial: 'Abundant' });
         act(() => {
             unmount();
         });
-
-        expect(onSave).not.toHaveBeenCalled();
+        expect(props.onSave).not.toHaveBeenCalled();
+        expect(props.onSaveIdentity).not.toHaveBeenCalled();
     });
 
     it('does not save twice on unmount if timeout already fired', () => {
-        const onSave = vi.fn();
-        const { unmount } = render(
-            <DreamEditor
-                definingWords={['Alpha', 'Beta', 'Gamma']}
-                dreamLiving=""
-                dreamFinancial=""
-                onSave={onSave}
-            />
-        );
-
-        const livingTextarea = screen.getByPlaceholderText('Describe your dream living situation...');
-        fireEvent.change(livingTextarea, { target: { value: 'Lake house' } });
+        const { props, unmount } = editor();
+        fireEvent.change(living(), { target: { value: 'Lake house' } });
 
         act(() => {
             vi.advanceTimersByTime(1000);
         });
-
-        expect(onSave).toHaveBeenCalledTimes(1);
+        expect(props.onSave).toHaveBeenCalledTimes(1);
 
         act(() => {
             unmount();
         });
-
         // Still called only once
-        expect(onSave).toHaveBeenCalledTimes(1);
+        expect(props.onSave).toHaveBeenCalledTimes(1);
     });
 
     it('does not overwrite user typing when parent re-renders with old props', () => {
-        const onSave = vi.fn();
-        const { rerender } = render(
-            <DreamEditor
-                definingWords={['Old1', 'Old2', 'Old3']}
-                dreamLiving="Old living"
-                dreamFinancial="Old financial"
-                onSave={onSave}
-            />
-        );
-
-        const livingTextarea = screen.getByPlaceholderText('Describe your dream living situation...');
-        fireEvent.change(livingTextarea, { target: { value: 'New typing in progress...' } });
+        const { props, rerender } = editor({ dreamLiving: 'Old living', dreamFinancial: 'Old financial' });
+        fireEvent.change(living(), { target: { value: 'New typing in progress...' } });
 
         // Parent rerenders with original props (e.g. before save completed)
-        rerender(
-            <DreamEditor
-                definingWords={['Old1', 'Old2', 'Old3']}
-                dreamLiving="Old living"
-                dreamFinancial="Old financial"
-                onSave={onSave}
-            />
-        );
+        rerender(<DreamEditor {...props} />);
 
-        expect((screen.getByPlaceholderText('Describe your dream living situation...') as HTMLTextAreaElement).value).toBe('New typing in progress...');
+        expect(living()).toHaveValue('New typing in progress...');
     });
 });
