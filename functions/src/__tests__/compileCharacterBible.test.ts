@@ -28,7 +28,6 @@ vi.mock('../lib/ai/models.js', () => ({
     generateWithFallback: h.generateWithFallback,
     generateTextWithFallback: h.generateTextWithFallback,
     OPUS_MODEL: 'opus',
-    SONNET_MODEL: 'sonnet',
 }));
 
 import { compileCharacterBibleForUser, cleanStyle } from '../compileCharacterBible.js';
@@ -106,6 +105,13 @@ describe('compileCharacterBibleForUser', () => {
         expect(style.situations.map((x: { id: string }) => x.id)).toEqual(['office', 'study', 'bed']);
         expect(style.week).toHaveLength(3);
         expect(style.look).toBe(LOOKS.look);
+    });
+
+    it('runs every phase on Opus', async () => {
+        mockModel(bible());
+        await compileCharacterBibleForUser('u1');
+        const calls = [...h.generateWithFallback.mock.calls, ...h.generateTextWithFallback.mock.calls];
+        expect(calls.map(([options]) => options.primaryModelId)).toEqual(['opus', 'opus', 'opus', 'opus']);
     });
 
     it('gives the week and looks calls the finished bible', async () => {

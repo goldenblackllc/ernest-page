@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db, FieldValue } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
 import { enqueueBuildCharacter } from './characterBuild.js';
-import { generateWithFallback, generateTextWithFallback, OPUS_MODEL, SONNET_MODEL } from './lib/ai/models.js';
+import { generateWithFallback, generateTextWithFallback, OPUS_MODEL } from './lib/ai/models.js';
 import { REALITY_RULES } from './lib/constants/realityRules.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
 import { errorMessage } from './lib/utils/errors.js';
@@ -254,8 +254,8 @@ async function compilePresentTenseFacts(inputs: CompileInputs): Promise<z.infer<
 
     console.log(`[BibleCompile] Phase 1: Translating inputs to present-tense facts...`);
     const phase1Result = await generateWithFallback({
-        primaryModelId: SONNET_MODEL,
-        abortSignal: AbortSignal.timeout(480_000), // 8 min — max effort thinks at length, even on a small task
+        primaryModelId: OPUS_MODEL,
+        abortSignal: AbortSignal.timeout(480_000), // 8 min — Opus thinks at length, even on a small task
         providerOptions: PROVIDER_OPTIONS,
         system: PHASE1_SYSTEM_PROMPT,
         prompt: phase1Prompt,
