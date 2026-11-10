@@ -105,15 +105,15 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
     }
 
     const identity: string | undefined = userData?.identity?.text;
-    const offer = `say the decision in full: one or two sentences that start with "I am", in the present tense, positive, short enough to hold in mind. They can take it, change the words, or leave it for now; whatever they choose is fine, and you never press.`;
+    const offer = `say the decision in full: one or two sentences that start with "I am", in the present tense, positive, short enough to hold in mind. They can take it, change the words, or leave it for now; whatever they choose is fine, and you never press. Give the offer a turn of its own: end your message with it, ask nothing else, and go on to the way in once they have answered.`;
     engagementContract += identity
         ? `\n\n[WHO THEY DECIDED TO BE]
 In their own words, this is who the person has decided to be:
 ${identity}
 
-This is their decision, and remembering it is how they live it. When the session names their empowered beliefs (DEPARTURE Step 1), hold them up against it before you go on. If it already holds a belief, remind them they already decided this, and let them feel it is theirs. If a belief adds something it doesn't hold yet, offer once to fold it in and ${offer} Offer a change only for something new that matters to them: a decision that keeps shifting makes life feel random. Then carry on with the way in.`
+This is their decision, and remembering it is how they live it. When the session names their empowered beliefs (DEPARTURE Step 1), hold them up against it before you go on. If it already holds a belief, remind them they already decided this, and let them feel it is theirs. If a belief adds something it doesn't hold yet, offer once to fold it in and ${offer} Offer a change only for something new that matters to them: a decision that keeps shifting makes life feel random. When there is nothing to offer, carry on with the way in.`
         : `\n\n[WHO THEY DECIDED TO BE]
-The person has not put who they decided to be into words yet. When the session names their empowered beliefs (DEPARTURE Step 1), offer once to make them their decision and ${offer} Then carry on with the way in.`;
+The person has not put who they decided to be into words yet. When the session names their empowered beliefs (DEPARTURE Step 1), offer once to make them their decision and ${offer}`;
 
     const actions: Action[] = userData?.actions || [];
     if (actions.length > 0) {

@@ -239,6 +239,17 @@ describe('mirrorReply and who the person decided to be', () => {
         expect(prompt).toContain('[WHO THEY DECIDED TO BE]\nIn their own words, this is who the person has decided to be:\nI am a gentleman, a father, and retired.');
         expect(prompt).toContain('remind them they already decided this');
         expect(prompt).toContain('offer once to fold it in');
+        expect(prompt).toContain('When there is nothing to offer, carry on with the way in.');
+    });
+
+    // An offer that shared a message with the way in went unanswered (beta, 2026-11-09)
+    it('gives an offer a turn of its own, so the way in waits for their answer', async () => {
+        for (const identity of [{ text: 'I am calm.', title: 'Calm' }, undefined]) {
+            h.state.user.identity = identity;
+            const prompt = await system();
+            expect(prompt).toContain('Give the offer a turn of its own: end your message with it, ask nothing else, and go on to the way in once they have answered.');
+            expect(prompt).not.toContain('Then carry on with the way in');
+        }
     });
 
     it('offers a first one when they have none yet', async () => {
