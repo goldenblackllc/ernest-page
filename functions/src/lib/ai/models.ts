@@ -11,8 +11,7 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY,
 });
 
-export const OPUS_MODEL = 'claude-opus-5-5'; // Primary — Deep Reasoning Engine (all features)
-export const SONNET_MODEL = 'claude-sonnet-5'; // Lightweight — list management, consolidation
+export const OPUS_MODEL = 'claude-opus-5-5'; // Every Claude call
 
 /**
  * Backup model for live calls only (Mirror chat, support chat), where a user is
