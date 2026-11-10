@@ -633,10 +633,9 @@
     },
     "dream": {
       "title": "Meu Sonho",
-      "definingWordsLabel": "Três palavras que te definem",
-      "wordPlaceholder1": "ex. Cavalheiro",
-      "wordPlaceholder2": "ex. Acessível",
-      "wordPlaceholder3": "ex. Bem-sucedido",
+      "identityLabel": "Quem é você?",
+      "identityPlaceholder": "Eu sou…",
+      "identityTitle": "Nas suas publicações: {title}",
       "livingLabel": "Situação de Moradia",
       "livingPlaceholder": "Descreva a situação de moradia dos seus sonhos...",
       "financialLabel": "Financeiro",
@@ -781,7 +780,14 @@
     "title": "Minhas ações",
     "markDone": "Marcar como feito",
     "markOpen": "Marcar como não feito",
-    "remove": "Remover"
+    "remove": "Remover",
+    "pill": "Seja",
+    "open": "Minhas ações, {count, plural, one {# ponto} other {# pontos}}",
+    "points": "{count, plural, one {# ponto} other {# pontos}}",
+    "today": "+{count} hoje",
+    "daily": "Todo dia",
+    "once": "Uma vez",
+    "empty": "As ações que você decide nas suas sessões aparecem aqui."
   },
   "cookieConsent": {
     "message": "Usamos cookies essenciais para login e segurança. Sem rastreamento, sem anúncios.",

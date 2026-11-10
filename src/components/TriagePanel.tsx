@@ -72,10 +72,7 @@ export function TriagePanel() {
             setProfile(data || null);
             setDefaultPostRouting(toSessionRouting(data.default_post_routing));
 
-            // Check if user needs onboarding (no completed onboarding)
-            const isLegacyComplete = !!data.defining_words;
-            const hasCompletedOnboarding = data.onboarding_complete || isLegacyComplete;
-            setNeedsOnboarding(!hasCompletedOnboarding);
+            setNeedsOnboarding(!data.onboarding_complete);
         });
         return () => unsubscribe();
     }, [user]);
@@ -161,17 +158,6 @@ export function TriagePanel() {
             }
         });
 
-        // --- Merge defining_words: update in place, keep extras ---
-        const existingWords: string[] = existing.defining_words || [];
-        const mergedWords = [...existingWords];
-        data.defining_words.forEach((val, i) => {
-            if (i < mergedWords.length) {
-                mergedWords[i] = val;
-            } else {
-                mergedWords.push(val);
-            }
-        });
-
         // --- Merge people: update in place, keep extras ---
         const existingPeople: ProfilePerson[] = existing.people || [];
         const mergedPeople = [...existingPeople];
@@ -187,7 +173,6 @@ export function TriagePanel() {
         // Write merged data to Firestore
         await setDoc(doc(db, 'users', user.uid), {
             name: data.name.trim(),
-            defining_words: mergedWords,
             wants: mergedWants,
             interests: mergedInterests,
             people: mergedPeople,
@@ -205,7 +190,7 @@ export function TriagePanel() {
             bible: { status: 'compiling', last_updated: Date.now() },
         }, { merge: true });
 
-        // Trigger bible compile + initial dossier in the background
+        // Write who they are from their words, then build the bible and the first dossier, in the background
         try {
             authFetch(user, '/api/onboarding/process', {
                 method: 'POST',
@@ -304,9 +289,20 @@ export function TriagePanel() {
         updatePeople(user.uid, people);
     }, [user]);
 
-    const handleSaveDream = useCallback((updates: { defining_words?: string[]; dream_living?: string; dream_financial?: string }) => {
+    const handleSaveDream = useCallback((updates: { dream_living?: string; dream_financial?: string }) => {
         if (!user) return;
         updateDream(user.uid, updates);
+    }, [user]);
+
+    const handleSaveIdentity = useCallback((text: string) => {
+        if (!user) return;
+        authFetch(user, '/api/identity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+        })
+            .then(res => { if (!res.ok) throw new Error(`Identity API returned ${res.status}`); })
+            .catch(err => console.error('[Dream] Identity save failed:', err));
     }, [user]);
 
     // Render the active drawer's editor content
@@ -337,10 +333,11 @@ export function TriagePanel() {
                 return (
                     <DreamEditor
                         key="dream"
-                        definingWords={profile?.defining_words || []}
+                        identity={profile?.identity}
                         dreamLiving={profile?.dream_living || ''}
                         dreamFinancial={profile?.dream_financial || ''}
                         onSave={handleSaveDream}
+                        onSaveIdentity={handleSaveIdentity}
                     />
                 );
             default:
@@ -478,7 +475,7 @@ export function TriagePanel() {
                             onSubmit={handleOnboardingSubmit}
                             initialValues={profile ? {
                                 name: profile.name || '',
-                                defining_words: profile.defining_words || [],
+                                defining_words: [],
                                 wants: (profile.wants || []).map((w) => w.text || ''),
                                 interests: profile.interests || [],
                                 people: (profile.people || []).map((p) => ({

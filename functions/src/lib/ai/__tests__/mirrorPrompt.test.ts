@@ -25,9 +25,25 @@ describe('buildMirrorSystemPrompt', () => {
         expect(prompt).toContain('never the finished work');
     });
 
-    it('places the scope after the zero-argumentation principle it refers to', () => {
-        expect(prompt.indexOf('[THE ZERO-ARGUMENTATION PRINCIPLE]'))
-            .toBeLessThan(prompt.indexOf('[SCOPE — ON THEIR SIDE, NOT THEIR ASSISTANT]'));
+    it('lets the character disagree with love and stand by the Reality Rules', () => {
+        expect(prompt).toContain('[DISAGREEING WITH LOVE]');
+        expect(prompt).toContain('The Reality Rules are facts, and you stand by them.');
+        expect(prompt).not.toMatch(/zero-argumentation|you never argue|Do not argue/i);
+    });
+
+    it('presents the Reality Rules as facts the character can teach, not as its bias or a secret', () => {
+        expect(prompt).toContain('They are facts, true for the person as much as for you');
+        expect(prompt).toContain('confidential except the Reality Rules');
+        expect(prompt).not.toContain('NEVER quotes, references, or teaches');
+        expect(prompt).not.toContain('objective truth');
+        expect(prompt).not.toContain('hold it lightly');
+    });
+
+    it('keeps fear and doubt in one rule, with hope turned into intention', () => {
+        expect(REALITY_RULES).toContain('16. Fear and doubt are not a lack of trust');
+        expect(REALITY_RULES).toContain('replace "I hope" with "I intend."');
+        expect(REALITY_RULES).not.toMatch(/^24\./m);
+        expect(prompt).toContain('(Reality Rule 23)');
     });
 
     it('never sets the character above the person', () => {
@@ -114,11 +130,17 @@ describe('ways in', () => {
         expect(prompt).toContain('skip FEEL IT NOW');
     });
 
-    it('invites focus once and does the hard part itself when they cannot or will not', () => {
+    it('explains when they do not understand, and leaves asking again to the character', () => {
         expect(prompt).toContain('helps only when they are able and willing');
-        expect(prompt).toContain('do not ask again in another form');
-        expect(prompt).not.toContain('one simpler try is fine');
+        expect(prompt).toContain('If they do not understand why it matters, explain it');
+        expect(prompt).toContain('what you do next is your call');
+        expect(prompt).not.toContain('do not ask again in another form');
         expect(prompt).toContain('A correction is not resistance');
+    });
+
+    it('picks the most exciting option, never framing excitement as a flicker', () => {
+        expect(prompt).toContain('even slightly more exciting than the others is enough');
+        expect(prompt).not.toMatch(/flicker|less boring|tiniest pull/);
     });
 
     it('lets them pick the person for advice to others', () => {

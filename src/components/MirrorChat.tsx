@@ -136,9 +136,9 @@ export function MirrorChat({ isOpen, onClose, profile, uid, initialContext, defa
         if (!(await session.sendMessage(text))) setInput(text);
     };
 
-    // Character name: user-chosen or AI-generated name is primary; archetype roles are subtitle
+    // Character name: user-chosen or AI-generated name is primary; the identity's title is the subtitle
     const characterName = profile?.name || null;
-    const characterArchetype = profile?.defining_words?.join(', ') || null;
+    const characterArchetype = profile?.identity?.title || null;
     const displayName = characterName || characterArchetype || "Your Ideal Self";
     const { situation, avatarUrl } = useCharacterNow(profile, session.sessionStartedAt);
     const [isCharacterNowOpen, setIsCharacterNowOpen] = useState(false);

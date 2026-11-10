@@ -162,10 +162,9 @@
     },
     "dream": {
       "title": "My Dream",
-      "definingWordsLabel": "Three words that define you",
-      "wordPlaceholder1": "e.g. Gentleman",
-      "wordPlaceholder2": "e.g. Approachable",
-      "wordPlaceholder3": "e.g. Successful",
+      "identityLabel": "Who are you?",
+      "identityPlaceholder": "I am…",
+      "identityTitle": "On your posts: {title}",
       "livingLabel": "Living Situation",
       "livingPlaceholder": "Describe your dream living situation...",
       "financialLabel": "Financial",
@@ -781,7 +780,14 @@
     "title": "My Actions",
     "markDone": "Mark as done",
     "markOpen": "Mark as not done",
-    "remove": "Remove"
+    "remove": "Remove",
+    "pill": "Be",
+    "open": "My Actions, {count, plural, one {# point} other {# points}}",
+    "points": "{count, plural, one {# point} other {# points}}",
+    "today": "+{count} today",
+    "daily": "Every day",
+    "once": "Once",
+    "empty": "The actions you decide on in your sessions show up here."
   },
   "cookieConsent": {
     "message": "We use essential cookies for authentication and security. No tracking, no ads.",

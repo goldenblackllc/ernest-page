@@ -1,8 +1,13 @@
 import { db } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
+import { generateWithFallback } from "@functions/lib/ai/models";
+import { identityFromWords } from "@functions/lib/ai/identity";
 
 export const maxDuration = 60;
+
+const ONBOARDING_LIMIT = { maxRequests: 5, windowMs: 10 * 60_000 };
 
 const DOSSIER_TEMPLATE = `DOSSIER — {TITLE}
 Updated: {DATE} | Sessions: 0
@@ -21,8 +26,13 @@ export async function POST(req: Request) {
         const uid = await verifyAuth(req);
         if (!uid) return unauthorizedResponse();
 
+        const rateCheck = checkRateLimit(`onboarding:${uid}`, ONBOARDING_LIMIT);
+        if (!rateCheck.allowed) return rateLimitResponse(rateCheck.resetMs);
+
         const body = await req.json();
-        const definingWords: string[] = body.defining_words || [];
+        const definingWords: string[] = Array.isArray(body.defining_words)
+            ? body.defining_words.filter((w: unknown): w is string => typeof w === 'string').map((w: string) => w.trim().slice(0, 60)).filter(Boolean).slice(0, 3)
+            : [];
         const name: string = body.name || '';
 
         // Check if user already has an existing dossier (re-edit vs first onboarding)
@@ -47,6 +57,14 @@ export async function POST(req: Request) {
             updates.dossier = dossierText;
             updates.dossier_updated_at = FieldValue.serverTimestamp();
             updates.session_count = 0;
+        }
+
+        // Who they decided to be, written from the words they chose, before the Bible is built from it
+        if (!existingData?.identity && definingWords.length > 0) {
+            updates.identity = await identityFromWords(definingWords, generateWithFallback).catch((error) => {
+                console.error(`[Onboarding] Identity sentence failed for ${uid}:`, error);
+                return { text: title, title };
+            });
         }
 
         if (Object.keys(updates).length > 0) {

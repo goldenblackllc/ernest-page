@@ -13,7 +13,8 @@ People talk with their "ideal self", an AI character built from their own Charac
 
 Rules:
 - **New heavy or background work goes in `functions/`.** Vercel times out and drops work after the response is sent.
-- **The AI/post pipeline exists only in `functions/src/lib/`.** The website imports the few shared files through the `@functions/*` alias (`@functions/lib/ai/models`, `@functions/lib/getPostText`, `@functions/lib/access/sessionAccess`, `@functions/lib/character/situations`, `@functions/lib/character/bibleText`, `@functions/lib/actions`). Never copy them into `src/lib`.
+- **The AI/post pipeline exists only in `functions/src/lib/`.** The website imports the few shared files through the `@functions/*` alias (`@functions/lib/ai/models`, `@functions/lib/getPostText`, `@functions/lib/access/sessionAccess`, `@functions/lib/character/situations`, `@functions/lib/character/bibleText`, `@functions/lib/actions`, `@functions/lib/identity`, `@functions/lib/ai/identity`, `@functions/lib/utils/relativeDates`). Never copy them into `src/lib`.
+- **A shared file can't import another functions file**, except with `import type`. The website's bundler (Turbopack) doesn't map the `.js` extension the Functions need to `.ts`, so the website build fails. Pass in what it needs instead, the way `lib/ai/identity.ts` takes `generateWithFallback`.
 - **Every package a shared file imports must also be in the root `package.json`.** Vercel installs only the root packages. Locally those imports silently resolve from `functions/node_modules`, so a missing one only fails on Vercel. To check, build with `functions/node_modules` moved aside.
 - `firebase/admin.ts` is deliberately separate per side: the website uses a service-account key, Functions use default credentials.
 - Don't rename or remove an exported Cloud Function without checking callers. Deployed names are URLs. For example, `src/app/api/onboarding/process` calls `compileCharacterBible` by URL.
@@ -26,6 +27,7 @@ Rules:
 - `components/`: UI.
   - Mirror chat: `components/mirror/` plus `hooks/useMirrorSession`, `useCharacterTTS` and `useVisualViewport`.
   - Feed post card: `components/feed/` plus `hooks/useFeedAudio` and `usePostComments`. The `Post` type is in `types/post.ts`.
+  - My Actions: the header's score pill and drawer in `components/actions/` plus `hooks/useSeenActions`.
   - Profile editors: `components/mylife/`.
 - `context/`: React providers (`AuthContext`, `AudioMuteContext`). `hooks/`: custom hooks.
 - `lib/auth/`: `serverAuth.ts` (`verifyAuth` for API routes) and `authFetch.ts` (client fetch with the ID token).
@@ -40,7 +42,8 @@ Rules:
 - `lib/character/situations.ts`: the character's situations (settings with their own look and avatar) and weekly routine, from `bible.style`. Pure, no imports; shared with the website (Mirror header).
 - `lib/character/bibleText.ts`: the Character Bible as one Markdown document (`users/{uid}.bible.text`): the seven `## ` headings and how to split it into sections and `**Subheading:**` subsections. Pure, no imports; shared with the website (Profile). Read it with `getBibleText` from `lib/bible.ts`.
 - `lib/access/sessionAccess.ts`: the one session access rule (free sessions, credits, membership, daily/turn/time limits, refund rules). Pure, no imports; shared with the website.
-- `lib/actions.ts`: My Actions (`users/{uid}.actions`), every action the person decided to take in their sessions: how each session replaces the list. Extracted in `processChat` (prompt in `lib/ai/actionsPrompt.ts`), given to the Mirror, shown at the top of the feed (`components/feed/ActionsCard`), ticked and deleted through `/api/actions`. Called actions, not choices: see MANIFESTO.md. Pure, no imports; shared with the website.
+- `lib/actions.ts`: My Actions (`users/{uid}.actions`), every action the person decided to take in their sessions, each every day or once, and the lifetime score (`action_score`, a point per tick): how a tick counts for its day and how each session replaces the list (never removing an action, merging ones that say the same thing). Extracted in `processChat` (prompt in `lib/ai/actionsPrompt.ts`), given to the Mirror, shown in the actions drawer behind the header's score pill (`components/actions/`), ticked and deleted through `/api/actions`. Called actions, not choices: see MANIFESTO.md. Pure, no imports; shared with the website.
+- `lib/identity.ts`: who the person decided to be (`users/{uid}.identity`): one or two "I am" sentences, private, and a title derived from it that is their byline. Written in My Life → Dream (`/api/identity`) or agreed in a session (`processChat`), given to the Mirror, built into the Bible. The title and the first sentence are written in `lib/ai/identity.ts`. Pure, no imports; shared with the website.
 
 ## Conventions
 
@@ -102,6 +105,7 @@ npm test                            # vitest
 npm run lint                        # eslint
 npm run build --prefix functions    # compile Cloud Functions
 node scripts/find-dead-code.mjs     # unreachable files, unused exports, unused translation namespaces
+node scripts/check-deploys.mjs      # what each deployed function runs, against origin/main and the working folder
 ```
 
 Website env vars are in `.env.local`; function secrets are in `functions/.env`.
@@ -124,3 +128,4 @@ Website env vars are in `.env.local`; function secrets are in `functions/.env`.
 - Never commit or push unless the user asks, and each request covers only that one commit or push (see `.agents/workflows/git-rules.md`). Commit with an explicit pathspec, because other agents may have staged files.
 - Before `firebase deploy`, run `git status --short functions/`. If there are uncommitted changes you didn't make, stop and ask: a deploy ships whatever is on disk. Deploy named functions only (`firebase deploy --only functions:<name>`).
 - Firestore rules and indexes deploy separately (`firebase deploy --only firestore:rules,firestore:indexes`).
+- Every function is deployed with its own copy of the source, so deploying one doesn't update the code the others run. Deploy every function that imports a changed file. A change to the Reality Rules or the Bible compile deploys `compileCharacterBible`, `buildCharacter` and `recompileBibles` together (the Bible is compiled in `buildCharacter`). `node scripts/check-deploys.mjs` shows, per function, which of its files differ from `origin/main` and from the working folder.

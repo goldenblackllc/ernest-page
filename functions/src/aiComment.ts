@@ -40,16 +40,16 @@ async function commentAsCharacter(commenterUid: string): Promise<void> {
     const bible = userData.character_bible;
     const identity = userData.identity;
 
-    if (!bible && !identity && !userData.defining_words) return;
+    if (!bible && !identity) return;
 
-    const characterTitle = userData.defining_words?.join(', ') || identity?.title || bible?.source_code?.archetype || 'A thoughtful person';
+    const characterTitle = identity?.title || bible?.source_code?.archetype || 'A thoughtful person';
     const avatarUrl = userData.avatar?.url || null;
 
     // Build a character voice excerpt from the bible
     const bibleExcerpt = splitBibleText(getBibleText(userData))
         .slice(0, 2)
         .map(s => s.content.substring(0, 200))
-        .join('\n') || identity?.dream_self || '';
+        .join('\n');
 
     // 2. Find a random recent public post (not by the commenter)
     const postsSnap = await db.collection('posts')

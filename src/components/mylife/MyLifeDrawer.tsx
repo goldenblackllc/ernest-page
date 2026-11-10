@@ -8,6 +8,8 @@ export interface MyLifeDrawerProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  /** Names the drawer for screen readers */
+  label?: string;
 }
 
 /**
@@ -19,6 +21,7 @@ export function MyLifeDrawer({
   onClose,
   children,
   className,
+  label,
 }: MyLifeDrawerProps) {
   const [visible, setVisible] = useState(false);
 
@@ -81,6 +84,7 @@ export function MyLifeDrawer({
       <div
         role="dialog"
         aria-modal="true"
+        aria-label={label}
         className={cn(
           "fixed bottom-0 left-0 right-0 z-[46]",
           "max-h-[70vh] flex flex-col",

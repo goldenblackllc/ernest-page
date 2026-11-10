@@ -30,7 +30,7 @@ describe("TriagePanel onboarding", () => {
         act(() => h.onProfile({ uid: "u1" }));
         expect(screen.getByText("onboarding form")).toBeInTheDocument();
 
-        act(() => h.onProfile({ uid: "u1", onboarding_complete: true, defining_words: ["Calm"] }));
+        act(() => h.onProfile({ uid: "u1", onboarding_complete: true, identity: { text: "I am calm.", title: "Calm" } }));
         expect(screen.queryByText("onboarding form")).not.toBeInTheDocument();
     });
 

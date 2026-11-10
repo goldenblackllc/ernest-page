@@ -5,7 +5,7 @@ const h = vi.hoisted(() => {
     const userSet = vi.fn().mockResolvedValue(undefined);
     const userData: Record<string, unknown> = {
         name: 'Arthur',
-        defining_words: ['Gentleman'],
+        identity: { text: 'I am a gentleman.', title: 'Gentleman' },
         voice: { id: 'voice-1', name: 'Voice', confirmed: true },
     };
     const db = {

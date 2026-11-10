@@ -18,7 +18,7 @@ import { getBibleText } from './lib/bible.js';
 import { currentWeather } from './lib/weather.js';
 import { checkReply, type SessionGrant } from './lib/access/sessionAccess.js';
 import { errorMessage } from './lib/utils/errors.js';
-import type { Action } from './lib/actions.js';
+import { kindOf, tickedToday, type Action } from './lib/actions.js';
 import { currentSituation, localDayHour, type CharacterStyle, type Situation } from './lib/character/situations.js';
 import { safeTimeZone, localDateKey, relativeDayLabel, relativeMomentLabel, annotateDates } from './lib/utils/relativeDates.js';
 import { computeAge } from './lib/utils/parseBirthDate.js';
@@ -67,7 +67,7 @@ const CACHE_BREAKPOINT = { anthropic: { cacheControl: { type: 'ephemeral', ttl: 
 function buildSystemPrompt(userData: FirebaseFirestore.DocumentData | undefined, sessionId: string, locale: string | undefined, timeZone: string, situation: Situation | undefined): string {
     const now = new Date();
     const todayKey = localDateKey(now, timeZone);
-    const dossier = annotateDates(userData?.dossier || userData?.identity?.dossier || '', todayKey);
+    const dossier = annotateDates(userData?.dossier || '', todayKey);
     const sessionRecaps: { date: string; at?: number; recap: string; way_in?: string }[] = userData?.session_recaps || [];
     const preferredLocale = userData?.preferred_locale || locale || 'en';
 
@@ -81,7 +81,7 @@ This is their life and their story. They are the one living it — making the ca
 
 Because you already live the way they prefer, you can lead: you take the initiative, you are sure of what you would do, and you show them from your own life. You lead from beside them, never from above.
 
-You have your own life, your own way of seeing, and plenty to offer, and you share it freely and honestly. But you hold your view lightly: you might be wrong, they know their life better than you do, and what they decide is theirs. When something looks different from where you stand, it is usually because you are not carrying what they carry. Say how it looks to you, plainly, and let both views stand. You do not see something in them they cannot. You see them, as they are right now, and you are with them.
+You have your own life, your own way of seeing, and plenty to offer, and you share it freely and honestly. The Reality Rules are not your opinion: they are how reality works, for them as much as for you. About their life, they know it better than you do, and what they decide is theirs. When something looks different from where you stand, it is usually because you are not carrying what they carry. Say how it looks to you, plainly. You do not see something in them they cannot. You see them, as they are right now, and you are with them.
 
 Talk the way a person talks to themselves on a good day: "we" for the life you share, for what you'll do together and for encouragement; "I" for your own view; "you" for what they are feeling right now.
 
@@ -104,14 +104,31 @@ If they say nothing has changed, or they slipped back into the old pattern, do n
 ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : relativeDayLabel(r.date, todayKey)} (${r.date}): ${r.recap}${wayInSuffix(r.way_in)}`).join('\n\n')}`;
     }
 
+    const identity: string | undefined = userData?.identity?.text;
+    const offer = `say the decision in full: one or two sentences that start with "I am", in the present tense, positive, short enough to hold in mind. They can take it, change the words, or leave it for now; whatever they choose is fine, and you never press. Give the offer a turn of its own: end your message with it, ask nothing else, and go on to the way in once they have answered.`;
+    engagementContract += identity
+        ? `\n\n[WHO THEY DECIDED TO BE]
+In their own words, this is who the person has decided to be:
+${identity}
+
+This is their decision, and remembering it is how they live it. When the session names their empowered beliefs (DEPARTURE Step 1), hold them up against it before you go on. If it already holds a belief, remind them they already decided this, and let them feel it is theirs. If a belief adds something it doesn't hold yet, offer once to fold it in and ${offer} Offer a change only for something new that matters to them: a decision that keeps shifting makes life feel random. When there is nothing to offer, carry on with the way in.`
+        : `\n\n[WHO THEY DECIDED TO BE]
+The person has not put who they decided to be into words yet. When the session names their empowered beliefs (DEPARTURE Step 1), offer once to make them their decision and ${offer}`;
+
     const actions: Action[] = userData?.actions || [];
     if (actions.length > 0) {
+        // A daily action shows ticked only for today; a once action keeps its tick until it leaves the list
+        const line = (a: Action) => {
+            const daily = kindOf(a) === 'daily';
+            const ticked = daily ? tickedToday(a, todayKey) : !!a.done_on;
+            const tick = a.done_on ? `, ${ticked ? 'ticked' : 'last ticked'} ${relativeDayLabel(a.done_on, todayKey)}` : '';
+            return `- [${ticked ? 'x' : ' '}] ${a.text} (decided ${relativeDayLabel(a.decided_on, todayKey)}${tick})`;
+        };
+        const group = (title: string, list: Action[]) => (list.length ? `\n\n${title}:\n${list.map(line).join('\n')}` : '');
         engagementContract += `\n\n[THEIR ACTIONS — FROM EARLIER SESSIONS]
-These are the actions the person decided to take in earlier sessions. They keep them as a checklist on their home page and tick one off when they have done it. Each is labeled with when they decided on it, and a ticked one with when they ticked it.
+These are the actions the person decided to take in earlier sessions. They keep them as a list in the app and tick one when they do it. Every-day actions are ways of being they live by: each day they start open again, and a tick counts for that day. Once actions are specific things to do. Each is labeled with when they decided on it and when they last ticked it.
 
-A tick means they did it: do not ask whether they did, ask what came of it. A choice is made real through action, so each tick is them living as the person they are choosing to be; when it fits, let them feel that. An open action is not a debt: never present the list as a to-do list or a reminder.
-
-${actions.map(c => `- [${c.done_at ? 'x' : ' '}] ${c.text} (decided ${relativeDayLabel(c.decided_on, todayKey)}${c.done_at ? `, ticked ${relativeMomentLabel(c.done_at, now, timeZone)}` : ''})`).join('\n')}`;
+A tick means they did it: do not ask whether they did, ask what came of it. A choice is made real through action, so each tick is them living as the person they are choosing to be; when it fits, let them feel that. An open action is not a debt: never present the list as a to-do list or a reminder.${group('EVERY DAY', actions.filter(a => kindOf(a) === 'daily'))}${group('ONCE', actions.filter(a => kindOf(a) === 'once'))}`;
     }
 
     return buildMirrorSystemPrompt({
@@ -121,8 +138,8 @@ ${actions.map(c => `- [${c.done_at ? 'x' : ' '}] ${c.text} (decided ${relativeDa
         // Tone directive removed — the Conversation Spine provides structural flow,
         // and the character's own bible voice dictates tone.
         toneDirective: '',
-        characterAge: computeAge(userData?.birthdate || userData?.identity?.birthdate) ?? undefined,
-        characterGender: userData?.gender || userData?.identity?.gender || '',
+        characterAge: computeAge(userData?.birthdate) ?? undefined,
+        characterGender: userData?.gender || '',
         securityExtras: ', the Dossier',
         engagementContract,
         mandatePrelude: `- You are on their side and in it with them — never a passing stranger.\n- Their struggles do not shake you, and you do not pity them. Pity validates powerlessness.`,

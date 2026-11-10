@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         const userData = userDoc.data() || {};
         const identity = userData.identity;
         const bible = userData.character_bible;
-        const authorTitle = userData.defining_words?.join(', ') || identity?.title || bible?.source_code?.archetype || 'Someone';
+        const authorTitle = identity?.title || bible?.source_code?.archetype || 'Someone';
         const authorAvatarUrl = userData.avatar?.url || null;
 
         // 3. Save the user's personal comment (visible only to them)

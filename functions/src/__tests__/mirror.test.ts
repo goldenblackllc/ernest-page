@@ -226,17 +226,51 @@ describe('mirrorReply character age', () => {
     });
 });
 
+describe('mirrorReply and who the person decided to be', () => {
+    // Its own uid, so these calls don't count toward the other tests' rate limit
+    async function system(): Promise<string> {
+        await handler({ auth: { uid: 'u-identity' }, data: { messages: [{ role: 'user', content: 'Hi' }], sessionId: 's-identity', localTime: 'Monday 7:05 PM', timeZone: 'UTC' } });
+        return h.generateTextWithFallback.mock.calls.at(-1)![0].messages[0].content;
+    }
+
+    it('gives the character the identity, to remind them of it or offer to fold new beliefs in', async () => {
+        h.state.user.identity = { text: 'I am a gentleman, a father, and retired.', title: 'Gentleman, Father, Retired' };
+        const prompt = await system();
+        expect(prompt).toContain('[WHO THEY DECIDED TO BE]\nIn their own words, this is who the person has decided to be:\nI am a gentleman, a father, and retired.');
+        expect(prompt).toContain('remind them they already decided this');
+        expect(prompt).toContain('offer once to fold it in');
+        expect(prompt).toContain('When there is nothing to offer, carry on with the way in.');
+    });
+
+    // An offer that shared a message with the way in went unanswered (beta, 2026-11-09)
+    it('gives an offer a turn of its own, so the way in waits for their answer', async () => {
+        for (const identity of [{ text: 'I am calm.', title: 'Calm' }, undefined]) {
+            h.state.user.identity = identity;
+            const prompt = await system();
+            expect(prompt).toContain('Give the offer a turn of its own: end your message with it, ask nothing else, and go on to the way in once they have answered.');
+            expect(prompt).not.toContain('Then carry on with the way in');
+        }
+    });
+
+    it('offers a first one when they have none yet', async () => {
+        expect(await system()).toContain('The person has not put who they decided to be into words yet.');
+    });
+});
+
 describe("mirrorReply and the person's actions", () => {
     const conversation = [{ role: 'user' as const, content: 'Hi' }];
 
-    it('lists open and ticked actions with when each was decided on and ticked', async () => {
+    it('lists every-day and once actions with when each was decided on and last ticked', async () => {
         h.state.user.actions = [
             { id: 'a', text: 'Call Dad on Sunday', decided_on: '2026-10-17' },
-            { id: 'b', text: 'Run by breath', decided_on: '2026-10-18', done_at: Date.UTC(2026, 9, 19, 8) },
+            { id: 'b', text: 'Run by breath', kind: 'daily', decided_on: '2026-10-18', done_on: '2026-10-19' },
+            { id: 'c', text: 'Rest when tired', kind: 'daily', decided_on: '2026-10-12', done_on: '2026-10-18' },
+            { id: 'd', text: 'Order the notebook', kind: 'once', decided_on: '2026-10-17', done_on: '2026-10-18' },
         ];
         const system = (await sent(conversation))[0].content;
         expect(system).toContain('[THEIR ACTIONS — FROM EARLIER SESSIONS]');
-        expect(system).toContain('- [ ] Call Dad on Sunday (decided 2 days ago)\n- [x] Run by breath (decided yesterday, ticked this morning)');
+        expect(system).toContain('EVERY DAY:\n- [x] Run by breath (decided yesterday, ticked today)\n- [ ] Rest when tired (decided 7 days ago, last ticked yesterday)');
+        expect(system).toContain('ONCE:\n- [ ] Call Dad on Sunday (decided 2 days ago)\n- [x] Order the notebook (decided 2 days ago, ticked yesterday)');
     });
 
     it('leaves the section out when there are no actions', async () => {

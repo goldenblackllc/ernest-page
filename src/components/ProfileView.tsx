@@ -81,7 +81,7 @@ export function ProfileView() {
     if (loading) return <div className="h-48 w-full animate-pulse bg-zinc-900/50 rounded-xl mb-6" />;
     if (!profile) return null;
 
-    const displayTitle = profile?.defining_words?.join(', ') || t('unknownCharacter');
+    const displayTitle = profile?.identity?.title || t('unknownCharacter');
     const displaySections = splitBibleText(bible?.text || '');
 
     return (

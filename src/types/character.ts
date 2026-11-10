@@ -2,6 +2,7 @@ import type { Timestamp } from "firebase/firestore";
 import type { AccessState } from "@functions/lib/access/sessionAccess";
 import type { CharacterStyle } from "@functions/lib/character/situations";
 import type { Action } from "@functions/lib/actions";
+import type { Identity } from "@functions/lib/identity";
 
 /** A person in the user's life */
 export interface ProfilePerson {
@@ -52,7 +53,8 @@ export interface CharacterProfile {
 
     // --- User Inputs (top-level, drawer-edited) ---
     name?: string;                        // Ideal Self character name
-    defining_words?: string[];            // 3 words that define the user
+    /** Server-managed: who the person decided to be, and the title derived from it (the byline) */
+    identity?: Identity;
     wants?: WantItem[];                   // "What I Want" checklist
     interests?: string[];                 // Things they love
     people?: ProfilePerson[];             // People in their life
@@ -104,6 +106,8 @@ export interface CharacterProfile {
     access?: AccessState;
     /** Server-managed: actions decided on in sessions, ticked through /api/actions */
     actions?: Action[];
+    /** Server-managed: lifetime score, a point for every tick */
+    action_score?: number;
     daily_digest?: {
         title: string;
         content: string;
