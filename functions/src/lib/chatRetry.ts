@@ -2,6 +2,9 @@
  * Retry rules for processing a closed Mirror chat (users/{uid}/active_chats/{id}).
  *
  * processChat runs on every update to the chat doc, including its own writes.
+ * Each run sees only its own update, so a second update that lands before the
+ * first run's claim passes closeDecision too; a run goes on only once it has
+ * claimed the chat in a transaction (canClaim).
  * A failed run writes { processing: false, lastErrorAt, processAttempts, retryAfter };
  * that write must not start another run, or a chat that always fails retries
  * forever. Retries come only from sweepExpiredChats, once retryAfter has passed.
@@ -46,8 +49,12 @@ export function failureUpdate(after: ChatDoc, error: unknown, now: number) {
     };
 }
 
-/** Whether the sweep should poke a closed chat so processChat runs again. */
-export function sweepShouldRetrigger(chat: ChatDoc, now: number): boolean {
+/**
+ * Whether a run can claim the chat now: closed, with no fresh claim, not
+ * backing off and not out of attempts. processChat checks it in the claim's
+ * transaction, and the sweep pokes the closed chats it holds for.
+ */
+export function canClaim(chat: ChatDoc, now: number): boolean {
     if (!chat || chat.isClosed !== true) return false;
     if ((chat.processAttempts || 0) >= MAX_PROCESS_ATTEMPTS) return false;
     if (chat.retryAfter && chat.retryAfter > now) return false;

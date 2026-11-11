@@ -23,7 +23,7 @@ import { buildDemographicHint } from './lib/postMedia.js';
 import { getBibleText } from './lib/bible.js';
 import { REGION } from './lib/config/region.js';
 import { sendAdminEmail, buildNewPostEmail } from './lib/email/adminEmail.js';
-import { closeDecision, failureUpdate, MAX_PROCESS_ATTEMPTS } from './lib/chatRetry.js';
+import { canClaim, closeDecision, failureUpdate, MAX_PROCESS_ATTEMPTS } from './lib/chatRetry.js';
 
 
 /** A raw Mirror chat message as stored on the active chat document. */
@@ -42,6 +42,7 @@ export const processChat = onDocumentUpdated(
         const after = event.data?.after.data();
         const uid = event.params.uid;
         const sessionId = event.params.sessionId;
+        const ref = db.collection('users').doc(uid).collection('active_chats').doc(sessionId);
 
         // Early exit: this triggers on every chat message update, but we only
         // care when the chat is closed. Skip silently to avoid log spam.
@@ -60,29 +61,41 @@ export const processChat = onDocumentUpdated(
             return;
         }
 
-        // Burn protocol
-        if (after.sessionRouting === 'burn' || after.burnOnClose === true) {
-            console.log(`[ProcessChat] Burn protocol — purging session ${sessionId} for user ${uid}`);
-            await event.data?.after.ref.delete();
+        // Claim the chat so a burst of updates processes it only once: an update
+        // that lands before another run's claim gets this far too. The run then
+        // works from the chat as it claimed it.
+        const chat = await db.runTransaction(async (tx) => {
+            const current = (await tx.get(ref)).data();
+            if (!canClaim(current, now)) return null;
+            tx.update(ref, { processing: true, processingStartedAt: now });
+            return current!;
+        });
+        if (!chat) {
+            console.log(`[ProcessChat] Skipping — another run has it, or it's done`);
             return;
         }
 
-        const messages = after.messages || [];
+        // Burn protocol
+        if (chat.sessionRouting === 'burn' || chat.burnOnClose === true) {
+            console.log(`[ProcessChat] Burn protocol — purging session ${sessionId} for user ${uid}`);
+            await ref.delete();
+            return;
+        }
+
+        const messages = chat.messages || [];
         if (messages.length === 0) {
             console.log(`[ProcessChat] Skipping — no messages`);
-            await event.data?.after.ref.delete();
+            await ref.delete();
             return;
         }
 
         console.log(`[ProcessChat] Processing chat with ${messages.length} messages for user ${uid}`);
 
-        await event.data?.after.ref.update({ processing: true, processingStartedAt: now });
-
         const userDoc = await db.collection('users').doc(uid).get();
         const userData = userDoc.data();
         if (!userData) {
             console.log(`[ProcessChat] Skipping — user data not found for ${uid}`);
-            await event.data?.after.ref.delete();
+            await ref.delete();
             return;
         }
         console.log(`[ProcessChat] User data loaded for ${uid}`);
@@ -90,7 +103,7 @@ export const processChat = onDocumentUpdated(
         const transcript = messages.map((m: RawChatMessage) => `${m.role}: ${m.content}`).join('\n');
 
         const sessionCount = (userData?.session_count || 0) + 1;
-        const today = localDateKey(new Date(), safeTimeZone(after.timeZone));
+        const today = localDateKey(new Date(), safeTimeZone(chat.timeZone));
 
         try {
             const { condensed, rewrittenDossier, recap, actions } = await analyzeSession(userData, transcript, today);
@@ -100,9 +113,9 @@ export const processChat = onDocumentUpdated(
             // Write session metadata + dossier — do NOT touch unified_profile, wants_for_bible, or source_code
             // Saved once: a retry after a later failure must not add a second
             // recap or count the session twice.
-            const dossierPromise = (userData && recap && !after.metadataSaved)
-                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, wayIn: recap.way_in, identity: recap.identity, rewrittenDossier, actions, today, sessionStartedAt: after.createdAt || now, sessionCount })
-                    .then(() => event.data?.after.ref.update({ metadataSaved: true }))
+            const dossierPromise = (userData && recap && !chat.metadataSaved)
+                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, wayIn: recap.way_in, identity: recap.identity, rewrittenDossier, actions, today, sessionStartedAt: chat.createdAt || now, sessionCount })
+                    .then(() => ref.update({ metadataSaved: true }))
                 : Promise.resolve();
 
             // Every post starts private: the raw conversation and a thumbnail. The
@@ -138,7 +151,7 @@ export const processChat = onDocumentUpdated(
                 if (!pipelineResult) {
                     console.log(`[ProcessChat] Pipeline returned null — skipping post creation`);
                     await dossierPromise;
-                    await event.data?.after.ref.delete();
+                    await ref.delete();
                     return;
                 }
                 console.log(`[ProcessChat] Pipeline complete — imagePrompts:${pipelineResult.imagePrompts?.length} audio:${!!pipelineResult.audioFields?.audio_url}`);
@@ -147,7 +160,7 @@ export const processChat = onDocumentUpdated(
                     postRef: postDocRef,
                     uid,
                     userData,
-                    chat: after,
+                    chat,
                     condensed,
                     pipelineResult,
                     transcript,
@@ -157,7 +170,7 @@ export const processChat = onDocumentUpdated(
                     await notifyAdminOfNewPost({
                         postId: postDocRef.id,
                         userData,
-                        chat: after,
+                        chat,
                         messages,
                         condensed,
                         thumbnailUrl: pipelineResult.thumbnailUrl,
@@ -168,19 +181,19 @@ export const processChat = onDocumentUpdated(
                 }
 
                 console.log(`[ProcessChat] ✅ Post ${postDocRef.id} created — ${pipelineResult.imagePrompts.length} image prompts, audio: ${!!pipelineResult.audioFields.audio_url}, images deferred to Phase 2`);
-                await event.data?.after.ref.delete();
+                await ref.delete();
             } else {
                 console.log(`[ProcessChat] Chat NOT publishable — skipping post creation, updating dossier only`);
                 await dossierPromise;
-                await event.data?.after.ref.delete();
+                await ref.delete();
             }
         } catch (error) {
             console.error(`[ProcessChat] Error processing chat for user ${uid}:`, error);
-            const failure = failureUpdate(after, error, Date.now());
+            const failure = failureUpdate(chat, error, Date.now());
             if (failure.processAttempts >= MAX_PROCESS_ATTEMPTS) {
                 console.error(`[ProcessChat] Giving up on session ${sessionId} for user ${uid} after ${failure.processAttempts} attempts`);
             }
-            await event.data?.after.ref.update(failure);
+            await ref.update(failure);
         }
     }
 );

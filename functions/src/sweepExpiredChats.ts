@@ -1,7 +1,7 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db } from './lib/firebase/admin.js';
 import { REGION } from './lib/config/region.js';
-import { sweepShouldRetrigger } from './lib/chatRetry.js';
+import { canClaim } from './lib/chatRetry.js';
 import { IDLE_TIMEOUT_MS } from './lib/access/sessionAccess.js';
 
 export const sweepExpiredChats = onSchedule(
@@ -40,7 +40,7 @@ export const sweepExpiredChats = onSchedule(
                     if (isExpired && !isClosed) {
                         await chatDoc.ref.update({ isClosed: true });
                         count++;
-                    } else if (sweepShouldRetrigger(data, now)) {
+                    } else if (canClaim(data, now)) {
                         await chatDoc.ref.update({ _triggerCron: Date.now() });
                         count++;
                     }

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { closeDecision, failureUpdate, sweepShouldRetrigger, MAX_PROCESS_ATTEMPTS } from '../chatRetry.js';
+import { closeDecision, failureUpdate, canClaim, MAX_PROCESS_ATTEMPTS } from '../chatRetry.js';
 
 const NOW = 1_800_000_000_000;
 const MIN = 60_000;
@@ -50,22 +50,22 @@ describe('failureUpdate', () => {
     });
 });
 
-describe('sweepShouldRetrigger', () => {
-    it('retries closed chats that were never picked up', () => {
-        expect(sweepShouldRetrigger({ isClosed: true }, NOW)).toBe(true);
+describe('canClaim', () => {
+    it('claims a closed chat that no run has picked up', () => {
+        expect(canClaim({ isClosed: true }, NOW)).toBe(true);
     });
 
     it('leaves fresh claims, backoff and exhausted chats alone', () => {
-        expect(sweepShouldRetrigger({ isClosed: true, processing: true, processingStartedAt: NOW - MIN }, NOW)).toBe(false);
-        expect(sweepShouldRetrigger({ isClosed: true, retryAfter: NOW + MIN }, NOW)).toBe(false);
-        expect(sweepShouldRetrigger({ isClosed: true, processAttempts: MAX_PROCESS_ATTEMPTS }, NOW)).toBe(false);
+        expect(canClaim({ isClosed: true, processing: true, processingStartedAt: NOW - MIN }, NOW)).toBe(false);
+        expect(canClaim({ isClosed: true, retryAfter: NOW + MIN }, NOW)).toBe(false);
+        expect(canClaim({ isClosed: true, processAttempts: MAX_PROCESS_ATTEMPTS }, NOW)).toBe(false);
     });
 
     it('recovers a stale claim from a crashed run', () => {
-        expect(sweepShouldRetrigger({ isClosed: true, processing: true, processingStartedAt: NOW - 11 * MIN }, NOW)).toBe(true);
+        expect(canClaim({ isClosed: true, processing: true, processingStartedAt: NOW - 11 * MIN }, NOW)).toBe(true);
     });
 
     it('ignores open chats', () => {
-        expect(sweepShouldRetrigger({ isClosed: false }, NOW)).toBe(false);
+        expect(canClaim({ isClosed: false }, NOW)).toBe(false);
     });
 });

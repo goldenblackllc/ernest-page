@@ -40,6 +40,7 @@ class FakeDb {
     /** When set, every collection() call throws this error. */
     failWith: Error | null = null;
     private autoId = 0;
+    private lastTransaction: Promise<unknown> = Promise.resolve();
 
     seed(path: string, data: DocData) {
         this.docs.set(path, data);
@@ -50,6 +51,7 @@ class FakeDb {
         this.writes = [];
         this.failWith = null;
         this.autoId = 0;
+        this.lastTransaction = Promise.resolve();
     }
 
     collection(path: string) {
@@ -107,11 +109,14 @@ class FakeDb {
     /**
      * Runs fn with a transaction whose writes are applied to the stored documents
      * (set with merge deep-merges maps, like Firestore) and recorded in `writes`.
-     * Unlike plain ref.set/update, which only record.
+     * Unlike plain ref.set/update, which only record. Transactions run one at a
+     * time, so two at once see each other's writes, as in Firestore.
      */
     async runTransaction<T>(fn: (tx: FakeTransaction) => Promise<T>): Promise<T> {
         if (this.failWith) throw this.failWith;
-        return fn(new FakeTransaction(this));
+        const run = this.lastTransaction.then(() => fn(new FakeTransaction(this)));
+        this.lastTransaction = run.catch(() => {});
+        return run;
     }
 
     apply(path: string, data: DocData, merge: boolean) {
