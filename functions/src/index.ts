@@ -11,3 +11,4 @@ export { renderPostVideo } from './postVideo.js';
 export { mirrorReply } from './mirror.js';
 export { regeneratePost } from './regeneratePost.js';
 export { generateAIComment } from './aiComment.js';
+export { polishNowPost } from './now.js';

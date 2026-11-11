@@ -8,7 +8,7 @@ import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
  * Returns all user data in a machine-readable JSON format.
  *
  * Exports: profile, identity, dossier, character bible, posts,
- * active chats, session purchases, subscription history, and daily digest.
+ * active chats, Now posts, session purchases, subscription history, and daily digest.
  */
 export async function POST(req: Request) {
     try {
@@ -75,6 +75,23 @@ export async function POST(req: Request) {
                 messages: d.messages || [],
                 routing: d.sessionRouting || null,
                 created_at: d.createdAt?.toDate?.()?.toISOString?.() || d.createdAt || null,
+            };
+        });
+
+        // 4. Now posts: actions taken and what happened (functions/src/lib/now.ts)
+        const nowSnap = await db.collection('users').doc(uid)
+            .collection('now_posts').get();
+
+        exportData.now_posts = nowSnap.docs.map(doc => {
+            const d = doc.data();
+            return {
+                id: doc.id,
+                action: d.action || '',
+                text: d.raw_text || '',
+                polished_text: d.polished_text || null,
+                photo_url: d.photo_url || null,
+                started_at: d.started_at?.toDate?.()?.toISOString?.() || null,
+                created_at: d.created_at?.toDate?.()?.toISOString?.() || null,
             };
         });
 

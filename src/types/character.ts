@@ -2,6 +2,7 @@ import type { Timestamp } from "firebase/firestore";
 import type { AccessState } from "@functions/lib/access/sessionAccess";
 import type { CharacterStyle } from "@functions/lib/character/situations";
 import type { Action } from "@functions/lib/actions";
+import type { NowState } from "@functions/lib/now";
 import type { Identity } from "@functions/lib/identity";
 
 /** A person in the user's life */
@@ -108,6 +109,8 @@ export interface CharacterProfile {
     actions?: Action[];
     /** Server-managed: lifetime score, a point for every tick */
     action_score?: number;
+    /** Server-managed: the Now action underway and the last Polish choice (functions/src/lib/now.ts) */
+    now?: NowState<Timestamp>;
     daily_digest?: {
         title: string;
         content: string;

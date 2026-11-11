@@ -15,6 +15,7 @@ import { SecurityVault } from "@/components/SecurityVault";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { BetaMarker } from "@/components/BetaMarker";
 import { ActionsPill } from "@/components/actions/ActionsPill";
+import { NowPill } from "@/components/now/NowPill";
 
 export function DashboardHeader() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -60,6 +61,7 @@ export function DashboardHeader() {
                         <div className="relative flex items-center gap-2 pointer-events-auto">
                             <LocaleSwitcher className="w-20 hidden sm:flex mr-1" />
                             {user && profile && <ActionsPill key={user.uid} user={user} profile={profile} />}
+                            {user && profile && <NowPill key={user.uid} user={user} profile={profile} />}
 
                             {/* Hamburger / Menu */}
                             <div className="relative">

@@ -13,9 +13,11 @@ service cloud.firestore {
       // decided on in sessions, ticked through /api/actions, and `action_score` is a
       // point for every tick (functions/src/lib/actions.ts). `identity` is who the
       // person decided to be and the title of their byline, saved through
-      // /api/identity and by sessions (functions/src/lib/identity.ts).
+      // /api/identity and by sessions (functions/src/lib/identity.ts). `now` is the
+      // Now action underway and the last Polish choice, saved through /api/now and
+      // /api/now/posts (functions/src/lib/now.ts).
       function serverManagedUserFields() {
-        return ['access', 'action_score', 'actions', 'created_at', 'daily_digest', 'identity', 'session_recaps'];
+        return ['access', 'action_score', 'actions', 'created_at', 'daily_digest', 'identity', 'now', 'session_recaps'];
       }
 
       // Users can create their own document, without server-managed fields
@@ -39,7 +41,8 @@ service cloud.firestore {
         allow update: if request.auth != null && request.auth.uid == userId
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['access']);
       }
-      // credit_lots and paid_sessions are server-only (default deny below).
+      // credit_lots, paid_sessions and now_posts are server-only (default deny below).
+      // Now posts are read only through the feed and /api/now/posts, by their author.
       // So is the top-level user_keys collection: each user's wrapped data key
       // (functions/src/lib/crypto).
 

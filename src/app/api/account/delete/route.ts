@@ -1,13 +1,14 @@
 import { db } from '@/lib/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth/serverAuth';
+import { deleteAllNowPhotos } from '@/lib/now/nowPhotos';
 
 /**
  * DELETE /api/account/delete
  *
  * Full GDPR/CCPA-compliant account deletion:
  * 1. Deletes all user posts
- * 2. Deletes all active chat sessions
+ * 2. Deletes all active chat sessions, and all Now posts with their photos
  * 3. Deletes the user document (identity, dossier, bible, subscription, etc.)
  * 4. Deletes the Firebase Auth record
  *
@@ -66,6 +67,19 @@ export async function DELETE(req: Request) {
             }
         } catch (err) {
             console.error(`[Account Delete] Failed to delete chats for ${uid}:`, err);
+        }
+
+        // 2b. Delete all Now posts and their photos
+        try {
+            const nowSnap = await db.collection('users').doc(uid).collection('now_posts').get();
+            for (let i = 0; i < nowSnap.docs.length; i += 500) {
+                const batch = db.batch();
+                nowSnap.docs.slice(i, i + 500).forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+            }
+            await deleteAllNowPhotos(uid);
+        } catch (err) {
+            console.error(`[Account Delete] Failed to delete Now posts for ${uid}:`, err);
         }
 
         // 3. Delete user document

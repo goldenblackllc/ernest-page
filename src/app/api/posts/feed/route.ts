@@ -1,6 +1,7 @@
-import type { DocumentData, QueryDocumentSnapshot } from "firebase-admin/firestore";
+import type { DocumentData, Query, QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 import { verifyAuth, unauthorizedResponse } from "@/lib/auth/serverAuth";
+import { serializeNowPost } from "@/lib/posts/serializeNowPost";
 
 export const maxDuration = 30;
 
@@ -28,6 +29,9 @@ const CARD_FIELDS = [
 ];
 // The author's own conversation, read only for their own posts
 const AUTHOR_FIELDS = ["counsel", "rant", "conversation_messages", "content_raw"];
+
+/** A Now post (functions/src/lib/now.ts), read from the user's own now_posts, not from posts. */
+const isNowPost = (p: DocumentData) => p.kind === "now";
 
 /** Firestore's error when a query needs an index that isn't deployed yet. */
 const isMissingIndex = (err: unknown) => (err as { code?: number } | null)?.code === 9;
@@ -115,6 +119,14 @@ export async function GET(req: Request) {
             }
         };
 
+        // Bucket D: my Now posts. Only I ever see them, and only in my own feed. None are
+        // filtered out, so a page needs at most offset + limit of them.
+        const myNowPosts = async (): Promise<QueryDocumentSnapshot[]> => {
+            let queryD: Query = db.collection("users").doc(uid).collection("now_posts").orderBy("created_at", "desc");
+            if (newerThanDate) queryD = queryD.where("created_at", ">", newerThanDate);
+            return (await queryD.limit(offset + limit).get()).docs;
+        };
+
         const profile = db.collection("users").doc(uid).get().then((userDoc) => {
             const followingMap: Record<string, string> = userDoc.data()?.following || {};
             return { followingMap, followedIds: Object.keys(followingMap) };
@@ -124,8 +136,8 @@ export async function GET(req: Request) {
             for (let i = 0; i < followedIds.length; i += 10) chunks.push(followedIds.slice(i, i + 10));
             return (await Promise.all(chunks.map(followedPosts))).flat();
         });
-        const [{ followingMap, followedIds }, docsA, docsB, snapC] =
-            await Promise.all([profile, myPosts(), following, discoveryPosts()]);
+        const [{ followingMap, followedIds }, docsA, docsB, snapC, docsD] =
+            await Promise.all([profile, myPosts(), following, discoveryPosts(), myNowPosts()]);
 
         // 4. Chronological feed: merge the buckets, sort newest-first
         const seenIds = new Set<string>();
@@ -150,6 +162,7 @@ export async function GET(req: Request) {
             return true;
         });
         addPosts(discoveryDocs.slice(0, fetchLimit));
+        docsD.forEach((doc) => allPosts.push({ id: doc.id, ...doc.data(), kind: "now" }));
 
         // 5. Sort all posts chronologically: newest first
         const getPostTime = (p: DocumentData) => p.created_at?.toMillis?.() || (p.created_at?._seconds ? p.created_at._seconds * 1000 : 0);
@@ -159,7 +172,7 @@ export async function GET(req: Request) {
         // Your own posts always show; a private one has only its text and thumbnail
         // (functions/src/lib/postMedia.ts).
         const complete = allPosts.filter(p => {
-            if (p.authorId === uid || p.uid === uid) return true;
+            if (isNowPost(p) || p.authorId === uid || p.uid === uid) return true;
             return p.audio_url || p.short_audio_url || (p.letter_audio_url && p.response_audio_url);
         });
 
@@ -175,15 +188,16 @@ export async function GET(req: Request) {
         }
 
         // 9. Read this page's card fields, its authors' avatars and identity titles, and
-        //    which of its posts the user liked, all at once
+        //    which of its posts the user liked, all at once. Now posts were read whole.
         const isMine = (p: DocumentData) => p.authorId === uid || p.uid === uid;
+        const pagePosts = pageSlice.filter((p) => !isNowPost(p));
         const readCards = async (posts: typeof pageSlice, fieldMask: string[]) =>
             posts.length ? db.getAll(...posts.map((p) => postsRef.doc(p.id)), { fieldMask }) : [];
 
         const readAuthors = async () => {
             const avatarMap: Record<string, string> = {};
             const titleMap: Record<string, string> = {};
-            const uniqueAuthorIds = [...new Set(pageSlice.map(p => p.authorId || p.uid).filter(Boolean))];
+            const uniqueAuthorIds = [...new Set(pagePosts.map(p => p.authorId || p.uid).filter(Boolean))];
             if (uniqueAuthorIds.length === 0) return { avatarMap, titleMap };
             try {
                 const authorRefs = uniqueAuthorIds.map(id => db.collection('users').doc(id));
@@ -209,25 +223,27 @@ export async function GET(req: Request) {
 
         // Batch-check which posts the user has liked (subcollection lookup)
         const readLiked = async () => {
-            if (pageSlice.length === 0) return new Set<string>();
+            if (pagePosts.length === 0) return new Set<string>();
             const likedRef = db.collection("users").doc(uid).collection("liked_posts");
-            const likedDocs = await db.getAll(...pageSlice.map((post) => likedRef.doc(post.id)));
+            const likedDocs = await db.getAll(...pagePosts.map((post) => likedRef.doc(post.id)));
             return new Set(likedDocs.filter(d => d.exists).map(d => d.id));
         };
 
         const [myDocs, otherDocs, { avatarMap, titleMap }, likedSet] = await Promise.all([
-            readCards(pageSlice.filter(isMine), [...CARD_FIELDS, ...AUTHOR_FIELDS]),
-            readCards(pageSlice.filter((p) => !isMine(p)), CARD_FIELDS),
+            readCards(pagePosts.filter(isMine), [...CARD_FIELDS, ...AUTHOR_FIELDS]),
+            readCards(pagePosts.filter((p) => !isMine(p)), CARD_FIELDS),
             readAuthors(),
             readLiked(),
         ]);
         const cardData = new Map([...myDocs, ...otherDocs].filter((d) => d.exists).map((d) => [d.id, d.data()!]));
-        const cards = pageSlice
-            .filter((p) => cardData.has(p.id))
-            .map((p) => ({ id: p.id, ...cardData.get(p.id) } as { id: string } & DocumentData));
+        const cards = pageSlice.flatMap((p) => {
+            if (isNowPost(p)) return [p];
+            return cardData.has(p.id) ? [{ id: p.id, ...cardData.get(p.id) } as { id: string } & DocumentData] : [];
+        });
 
         // 10. Sanitize
         const sanitized = cards.map((post) => {
+            if (isNowPost(post)) return serializeNowPost(post.id, post);
             const isLikedByMe = likedSet.has(post.id);
 
             const clean: DocumentData = { ...post };

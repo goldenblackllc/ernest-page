@@ -92,6 +92,28 @@ export interface Post {
     media_status?: 'deferred' | 'generating' | 'ready' | 'failed';
 }
 
+/**
+ * A Now post as the feed and /api/now/posts serve it: an action the person took
+ * and what happened (functions/src/lib/now.ts). Only its author ever gets one.
+ */
+export interface NowPost {
+    kind: 'now';
+    id: string;
+    action: string;
+    raw_text: string;
+    polished_text: string | null;
+    show_raw: boolean;
+    photo_url: string | null;
+    /** How long it took, or null when the time is left off */
+    minutes: number | null;
+    /** Polish was asked for and its text hasn't arrived yet */
+    polishing: boolean;
+    created_at: Timestamp | SerializedTimestamp | null;
+}
+
+/** What the home feed lists: posts, and the person's own Now posts among them by date. */
+export type FeedEntry = Post | NowPost;
+
 /** A comment as /api/posts/comments returns it. */
 export interface PostComment {
     id: string;
