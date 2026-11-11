@@ -3,6 +3,8 @@ import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/context/AuthContext";
 import { FeedPostCard } from "@/components/FeedPostCard";
+import { NowPostCard } from "@/components/feed/NowPostCard";
+import { NOW_POSTED_EVENT } from "@/components/now/nowSheet";
 import { CheckInCard } from "@/components/CheckInCard";
 import { BalanceCard } from "@/components/feed/BalanceCard";
 import { VoiceBrowser } from "@/components/VoiceBrowser";
@@ -16,10 +18,10 @@ import { useTranslations } from "next-intl";
 
 import { authFetch } from "@/lib/auth/authFetch";
 import { reviveCreatedAt, timestampToDate } from "@/lib/posts/timestamps";
-import type { Post } from "@/types/post";
+import type { FeedEntry, NowPost } from "@/types/post";
 import type { User } from "firebase/auth";
 import { getFeedCache, setFeedCache, clearFeedCache } from "@/lib/feedCache";
-import { newerPosts, appendPosts } from "@/lib/posts/feedList";
+import { newerPosts, appendPosts, isNowPost } from "@/lib/posts/feedList";
 import { accessSummary } from "@functions/lib/access/sessionAccess";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -35,10 +37,10 @@ async function loadFeedBatch(user: User, offset: number, limit: number) {
     });
     if (!res.ok) throw new Error(`Feed API returned ${res.status}`);
     const data = await res.json();
-    const sent: Post[] = data.posts || [];
+    const sent: FeedEntry[] = data.posts || [];
     return {
         posts: sent
-            .filter((post) => post.images_complete !== false) // hide posts still generating images
+            .filter((post) => isNowPost(post) || post.images_complete !== false) // hide posts still generating images
             .map(reviveCreatedAt),
         sent: sent.length,
         hasMore: Boolean(data.hasMore),
@@ -47,7 +49,7 @@ async function loadFeedBatch(user: User, offset: number, limit: number) {
 }
 
 /** When the newest of these posts was created, or the fallback if there are none. */
-function newestTime(posts: Post[], fallback: string | null) {
+function newestTime(posts: FeedEntry[], fallback: string | null) {
     const date = posts.length > 0 ? timestampToDate(posts[0].created_at) : null;
     return date ? date.toISOString() : fallback;
 }
@@ -57,10 +59,11 @@ export function Ledger() {
     const [profile, setProfile] = useState<CharacterProfile | null>(null);
     const [profileLoaded, setProfileLoaded] = useState(false);
     const t = useTranslations('feed');
+    const tNow = useTranslations('now');
 
     // Restore from module-level cache so returning to this tab is instant
     const cache = getFeedCache();
-    const [entries, setEntries] = useState<Post[]>(cache.entries || []);
+    const [entries, setEntries] = useState<FeedEntry[]>(cache.entries || []);
     const [followingMap, setFollowingMap] = useState<Record<string, string>>(cache.followingMap || {});
     const [loading, setLoading] = useState(cache.entries === null); // skip skeleton if cached
     // Reference time for the check-in card window (read once, keeps render pure)
@@ -68,6 +71,7 @@ export function Ledger() {
 
     const [selectedAuthorToFollow, setSelectedAuthorToFollow] = useState<{ id: string, title: string } | null>(null);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
+    const [nowPostToDelete, setNowPostToDelete] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const sentinelRef = useRef<HTMLDivElement>(null);
@@ -123,6 +127,43 @@ export function Ledger() {
         }
         setPostToDelete(null);
     };
+
+    // A Now post's polished words arrived, or the person switched between them and their own
+    const updateNowPost = useCallback((post: NowPost) => {
+        setEntries(prev => prev.map(e => (e.id === post.id ? post : e)));
+    }, []);
+
+    const handleConfirmNowDelete = async () => {
+        const id = nowPostToDelete;
+        setNowPostToDelete(null);
+        if (!id || !user) return;
+        try {
+            const res = await authFetch(user, "/api/now/posts", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id }),
+            });
+            if (!res.ok) throw new Error(`Now post delete returned ${res.status}`);
+            setEntries(prev => prev.filter(e => e.id !== id));
+            serverOffsetRef.current = Math.max(0, serverOffsetRef.current - 1);
+        } catch (error) {
+            console.error("Error deleting Now post:", error);
+        }
+    };
+
+    // A Now post just finished (components/now/NowSheets): show it on top at once
+    useEffect(() => {
+        const handlePosted = (event: Event) => {
+            const post = (event as CustomEvent<NowPost>).detail;
+            if (!post || entriesRef.current.some(e => e.id === post.id)) return;
+            const revived = reviveCreatedAt({ ...post });
+            serverOffsetRef.current += 1;
+            newestPostTimeRef.current = newestTime([revived], newestPostTimeRef.current);
+            setEntries(prev => [revived, ...prev]);
+        };
+        window.addEventListener(NOW_POSTED_EVENT, handlePosted);
+        return () => window.removeEventListener(NOW_POSTED_EVENT, handlePosted);
+    }, []);
 
     // Subscribe to user profile
     useEffect(() => {
@@ -583,12 +624,16 @@ export function Ledger() {
 
             {entries.map((entry) => (
                 <React.Fragment key={entry.id}>
-                    <FeedPostCard
-                        post={entry}
-                        followingMap={followingMap}
-                        onFollowClick={(id) => setSelectedAuthorToFollow({ id, title: entry.author_title || t('idealSelfDefault') })}
-                        onRequestDelete={setPostToDelete}
-                    />
+                    {isNowPost(entry) ? (
+                        <NowPostCard post={entry} onChange={updateNowPost} onRequestDelete={setNowPostToDelete} />
+                    ) : (
+                        <FeedPostCard
+                            post={entry}
+                            followingMap={followingMap}
+                            onFollowClick={(id) => setSelectedAuthorToFollow({ id, title: entry.author_title || t('idealSelfDefault') })}
+                            onRequestDelete={setPostToDelete}
+                        />
+                    )}
                 </React.Fragment>
             ))}
 
@@ -620,6 +665,14 @@ export function Ledger() {
                 isOpen={postToDelete !== null}
                 onClose={() => setPostToDelete(null)}
                 onConfirm={handleConfirmDelete}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={nowPostToDelete !== null}
+                onClose={() => setNowPostToDelete(null)}
+                onConfirm={handleConfirmNowDelete}
+                title={tNow('deleteTitle')}
+                description={tNow('deleteDescription')}
             />
         </section>
     );

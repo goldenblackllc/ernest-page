@@ -88,4 +88,28 @@ describe("GET /api/posts/feed", () => {
             author_avatar_url: "https://a/avatar.jpg", author_title: "The Gardener", isLikedByMe: true,
         });
     });
+
+    it("merges the user's Now posts in by date, sent whole but without the photo's storage path", async () => {
+        const at = (iso: string) => ({ toDate: () => new Date(iso), toMillis: () => Date.parse(iso) });
+        fakeDb.seed("posts/older", { ...privatePost(TEST_UID), created_at: at("2026-10-12T00:00:00Z") });
+        fakeDb.seed("posts/newer", { ...privatePost(TEST_UID), created_at: at("2026-10-14T00:00:00Z") });
+        fakeDb.seed(`users/${TEST_UID}/now_posts/n1`, {
+            action: "Walk the lake", raw_text: "Went round.", polish: false,
+            photo_url: "https://firebasestorage.googleapis.com/n1.jpg", photo_path: `now_posts/${TEST_UID}/n1/a.jpg`,
+            started_at: at("2026-10-12T23:35:00Z"), created_at: at("2026-10-13T00:00:00Z"),
+        });
+        const res = await GET(makeRequest("http://localhost/api/posts/feed", { method: "GET", token: VALID_TOKEN }));
+        const { posts } = await res.json();
+        expect(posts.map((p: { id: string }) => p.id)).toEqual(["newer", "n1", "older"]);
+        expect(posts[1]).toEqual({
+            kind: "now", id: "n1", action: "Walk the lake", raw_text: "Went round.", polished_text: null, show_raw: false,
+            photo_url: "https://firebasestorage.googleapis.com/n1.jpg", minutes: 25, polishing: false,
+            created_at: { _seconds: Date.parse("2026-10-13T00:00:00Z") / 1000, _nanoseconds: 0 },
+        });
+    });
+
+    it("never shows anyone else's Now posts", async () => {
+        fakeDb.seed("users/someone-else/now_posts/theirs", { action: "Their walk", raw_text: "", polish: false, created_at });
+        expect(await feedIds()).not.toContain("theirs");
+    });
 });

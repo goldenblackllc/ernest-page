@@ -19,6 +19,7 @@ import { db } from "@/lib/firebase/config";
 // My Life components
 import { PillBar, MyLifeSection } from "./mylife/PillBar";
 import { MyLifeDrawer } from "./mylife/MyLifeDrawer";
+import { NowCard } from "./now/NowCard";
 import { WantsEditor } from "./mylife/WantsEditor";
 import { LovesEditor } from "./mylife/LovesEditor";
 import { PeopleEditor } from "./mylife/PeopleEditor";
@@ -362,6 +363,9 @@ export function TriagePanel() {
                 "fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-md border-t border-zinc-800 pb-safe",
                 activeSection !== null ? "z-[47]" : "z-40"
             )}>
+                {/* The action underway (Now); hidden while a My Life drawer needs the room */}
+                {profile?.now?.underway && activeSection === null && <NowCard underway={profile.now.underway} />}
+
                 {/* Pill Bar */}
                 <PillBar
                     activeSection={activeSection}

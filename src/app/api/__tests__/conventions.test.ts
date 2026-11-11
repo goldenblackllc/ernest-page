@@ -29,6 +29,12 @@ const AUTH_ROUTES: [string, string, () => Promise<Record<string, unknown>>][] = 
     ["actions", "DELETE", () => import("../actions/route")],
     ["consume-session", "POST", () => import("../consume-session/route")],
     ["identity", "POST", () => import("../identity/route")],
+    ["now", "POST", () => import("../now/route")],
+    ["now", "DELETE", () => import("../now/route")],
+    ["now/posts", "POST", () => import("../now/posts/route")],
+    ["now/posts", "GET", () => import("../now/posts/route")],
+    ["now/posts", "PATCH", () => import("../now/posts/route")],
+    ["now/posts", "DELETE", () => import("../now/posts/route")],
     ["onboarding/process", "POST", () => import("../onboarding/process/route")],
     ["payments/email", "POST", () => import("../payments/email/route")],
     ["payments/history", "GET", () => import("../payments/history/route")],
@@ -114,6 +120,8 @@ describe("internal errors", () => {
         ["account/export", "POST", () => import("../account/export/route"), {}],
         ["consume-session", "POST", () => import("../consume-session/route"), { sessionId: "session-0001" }],
         ["identity", "POST", () => import("../identity/route"), { text: "I am calm." }],
+        ["now", "POST", () => import("../now/route"), { options: ["Walk"], action: "Walk" }],
+        ["now/posts?id=p1", "GET", () => import("../now/posts/route"), undefined],
         ["payments/status", "GET", () => import("../payments/status/route"), undefined],
         ["payments/refund", "POST", () => import("../payments/refund/route"), { kind: "credits", lotId: "pi_1" }],
     ];
@@ -167,6 +175,13 @@ describe("rate limits", () => {
         const statuses = await hit(POST, "identity", { text: "I am calm." }, 11);
         expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
         expect(statuses[10]).toBe(429);
+    });
+
+    it("now/posts allows 30 finishes an hour, then returns 429", async () => {
+        const { POST } = await import("../now/posts/route");
+        const statuses = await hit(POST, "now/posts", { text: "Done" }, 31);
+        expect(statuses.slice(0, 30).every((s) => s !== 429)).toBe(true);
+        expect(statuses[30]).toBe(429);
     });
 
     it("onboarding/process allows 5 calls per 10 minutes, then returns 429", async () => {
