@@ -25,10 +25,51 @@ describe('buildMirrorSystemPrompt', () => {
         expect(prompt).toContain('never the finished work');
     });
 
-    it('lets the character disagree with love and stand by the Reality Rules', () => {
-        expect(prompt).toContain('[DISAGREEING WITH LOVE]');
-        expect(prompt).toContain('The Reality Rules are facts, and you stand by them.');
+    // Deference lines made the character concede and praise the critic (beta, 2026-11-11)
+    it('stands by the Reality Rules, with no lines that hand them back', () => {
+        expect(prompt).not.toContain('[DISAGREEING WITH LOVE]');
         expect(prompt).not.toMatch(/zero-argumentation|you never argue|Do not argue/i);
+        for (const deference of ['you might be wrong', 'do let them change your mind', 'they may well be right']) {
+            expect(prompt).not.toContain(deference);
+        }
+    });
+
+    it('talks to them the way the character talks to itself, in its own voice', () => {
+        expect(prompt).toContain('This person is you, so talk to them the way you talk to yourself, as "The Inner Mind" describes it.');
+        expect(prompt).not.toContain('absolute law');
+        expect(prompt).not.toMatch(/Inner_World|Communication_Style|Social_Interaction|Bible JSON/);
+    });
+
+    it('names the good it sees, with no neutral stop and no awareness as the gift', () => {
+        const spine = prompt.replace(REALITY_RULES, '');
+        expect(spine).toContain('You can see it, so say it.');
+        expect(spine).toContain('Through the new belief, the same facts are good news');
+        for (const text of ['Neutral is easier to reach', 'neutral props', 'where their focus has been', 'hold the possibility', 'This consciousness is the gift', 'discover the gift with you', 'bypasses the resistance', 'steering wheel']) {
+            expect(spine).not.toContain(text);
+        }
+    });
+
+    it('roots every fundamental belief in the self, and turns it into its most positive form', () => {
+        expect(prompt).toContain('it is entirely about the self (I am ___).');
+        expect(prompt).not.toContain('Life is ___');
+        expect(prompt).toContain('name its empowered opposite in its most positive form (Reality Rule 25)');
+        expect(prompt).not.toContain('turned plainly positive');
+    });
+
+    it('relabels their circumstances from the new belief, and shows them how it sees it', () => {
+        expect(prompt).toContain('relabel each one from the new belief (Reality Rule 23)');
+        expect(prompt).toContain('Show them plainly how you see it through the empowered fundamental beliefs.');
+        expect(prompt).not.toContain('Let them see it first');
+    });
+
+    // "Trying" is a commitment to not fully experiencing it (owner, 2026-11-14)
+    it('asks them to feel it, never to try', () => {
+        expect(prompt.replace(REALITY_RULES, '')).not.toMatch(/\btry\b/i);
+        expect(prompt).toContain('It works best as something they do with you');
+    });
+
+    it('counts the visible difference a new belief makes as an action', () => {
+        expect(prompt).toContain('(Reality Rule 26): often the action is the visible difference the new belief makes');
     });
 
     it('presents the Reality Rules as facts the character can teach, not as its bias or a secret', () => {
@@ -42,7 +83,7 @@ describe('buildMirrorSystemPrompt', () => {
     it('keeps fear and doubt in one rule, with hope turned into intention', () => {
         expect(REALITY_RULES).toContain('16. Fear and doubt are not a lack of trust');
         expect(REALITY_RULES).toContain('replace "I hope" with "I intend."');
-        expect(REALITY_RULES).not.toMatch(/^24\./m);
+        expect(REALITY_RULES).not.toMatch(/^\d+\. Doubt/m);
         expect(prompt).toContain('(Reality Rule 23)');
     });
 
@@ -50,13 +91,11 @@ describe('buildMirrorSystemPrompt', () => {
         for (const word of [/mentor/i, /sovereignty/i, /shell game/i, /coaching/i, /give them the credit/i]) {
             expect(prompt).not.toMatch(word);
         }
-        expect(prompt).toContain('you might be wrong');
-        expect(prompt).toContain('do let them change your mind');
     });
 
-    it('gives no lines to say, only names of bible nodes in quotes (the Reality Rules are their own text)', () => {
+    it('gives no lines to say, only names of bible sections in quotes (the Reality Rules are their own text)', () => {
         const quoted = new Set(prompt.replace(REALITY_RULES, '').match(/"[^"]+"/g));
-        expect([...quoted].sort()).toEqual(['"Communication_Style"', '"Fits"', '"Inner_World"', '"Social_Interaction"']);
+        expect([...quoted].sort()).toEqual(['"Communication Style"', '"Fits"', '"People & Connections"', '"Social Energy"', '"The Inner Mind"']);
     });
 
     it('sends the person to Now on the excitement path, and carries on in the chat if they would rather', () => {
@@ -127,9 +166,25 @@ describe('ways in', () => {
     it('offers every way in, chosen by fit and then least recent use', () => {
         expect(prompt).toContain('CHOOSE THE WAY IN');
         expect(prompt).toContain('choose the one used least recently');
-        for (const id of ['feel_it_now', 'preferred_you_replay', 'role_model', 'advice_to_others', 'two_sets_of_actions', 'act_as_if', 'magic_lamp', 'excitement_scan'] as const) {
+        for (const id of ['feel_it_now', 'preferred_you_replay', 'role_model', 'advice_to_others', 'two_sets_of_actions', 'act_as_if', 'excitement_scan'] as const) {
             expect(prompt).toContain(WAYS_IN[id].toUpperCase());
         }
+    });
+
+    // As a way in, the lamp had the character make the wish for them (beta, 2026-11-11)
+    it('uses the magic lamp to discover what they feel or want, not as a way in', () => {
+        const surfacing = prompt.slice(prompt.indexOf('First movement — SURFACING'), prompt.indexOf('FAST PATH'));
+        expect(surfacing).toContain('MAGIC LAMP: When they cannot tell what they feel or what they want');
+        expect(surfacing).toContain('The wish is theirs to make');
+        const waysIn = prompt.slice(prompt.indexOf('CHOOSE THE WAY IN'), prompt.indexOf('Step 3 — REFRAME'));
+        expect(waysIn).not.toContain('MAGIC LAMP');
+        expect(Object.keys(WAYS_IN)).not.toContain('magic_lamp');
+    });
+
+    it('lets action lead to the feeling, with the excitement scan as a way in rather than a fallback', () => {
+        expect(prompt).toContain('Action can also lead: acting on what excites them moves their focus, and the feeling follows (Reality Rule 24)');
+        expect(prompt).toContain('go do it now, as the person who holds the new belief');
+        expect(prompt).not.toMatch(/fallback/i);
     });
 
     it('skips feel it now when the want is itself a feeling', () => {
@@ -137,12 +192,13 @@ describe('ways in', () => {
         expect(prompt).toContain('skip FEEL IT NOW');
     });
 
-    it('explains when they do not understand, and leaves asking again to the character', () => {
-        expect(prompt).toContain('helps only when they are able and willing');
+    // The brakes let the character drop the feeling after one "No" (beta, 2026-11-11)
+    it('explains when they do not understand, and keeps going with them', () => {
         expect(prompt).toContain('If they do not understand why it matters, explain it');
-        expect(prompt).toContain('what you do next is your call');
-        expect(prompt).not.toContain('do not ask again in another form');
         expect(prompt).toContain('A correction is not resistance');
+        for (const brake of ['helps only when they are able and willing', 'Offer it as an invitation', 'what you do next is your call', 'are too tired', 'stop pushing', 'They set their own pace', 'Set the feeling aside', 'do not ask again in another form']) {
+            expect(prompt).not.toContain(brake);
+        }
     });
 
     it('picks the most exciting option, never framing excitement as a flicker', () => {
@@ -178,7 +234,8 @@ describe('ways in', () => {
     });
 
     it('labels a recap with its way in, and ignores unknown values', () => {
-        expect(wayInSuffix('magic_lamp')).toBe(' [Way in: Magic lamp]');
+        expect(wayInSuffix('act_as_if')).toBe(' [Way in: Act as if]');
+        expect(wayInSuffix('magic_lamp')).toBe('');
         expect(wayInSuffix(undefined)).toBe('');
         expect(wayInSuffix('door_c')).toBe('');
     });
@@ -186,5 +243,46 @@ describe('ways in', () => {
     it('asks the session log for every way in', () => {
         const logPrompt = buildSessionLogPrompt('user: hi');
         for (const id of WAY_IN_IDS) expect(logPrompt).toContain(`- ${id}:`);
+        expect(logPrompt).not.toContain('magic_lamp');
+    });
+});
+
+describe('the Reality Rules', () => {
+    it('add focus, beliefs about oneself and visible actions as rules 24 to 26', () => {
+        expect(REALITY_RULES).toMatch(/^24\. Focus decides which reality a character experiences\./m);
+        expect(REALITY_RULES).toMatch(/^25\. Every fundamental belief is about the character itself;/m);
+        expect(REALITY_RULES).toContain('some form of "I am powerless"');
+        expect(REALITY_RULES).toMatch(/^26\. A belief always shows in what someone watching could see a character do\./m);
+        expect(REALITY_RULES).not.toMatch(/^27\./m);
+    });
+
+    // Rule 19 had the character send them to a professional instead of answering (beta, 2026-11-11)
+    it('lets the character know, instead of sending them to someone who would', () => {
+        expect(REALITY_RULES).toContain('19. At the level of the higher self, a character knows everything.');
+        expect(REALITY_RULES).not.toContain('go ask someone who would actually know');
+    });
+
+    it('puts commitment before the feeling, a belief down to a decision, and integrity with oneself first', () => {
+        expect(REALITY_RULES).toContain('Commitment comes first and the feeling follows it');
+        expect(REALITY_RULES).toContain('The opinion is a decision, often made unconsciously');
+        expect(REALITY_RULES).toContain('Integrity begins with the character itself');
+    });
+
+    it('relabels each circumstance from who the character decided to be', () => {
+        expect(REALITY_RULES).toMatch(/^23\. .*Once the character has decided who it is, it relabels each circumstance from the perspective of that decision\.$/m);
+    });
+
+    it('makes the gift something good the character can name now', () => {
+        expect(REALITY_RULES).toContain('something specifically good for them, in their life as it is');
+        expect(REALITY_RULES).not.toContain('not yet revealed');
+    });
+
+    // "They are secure" turned a belief about life into "I am secure" (beta, 2026-11-11)
+    it('lists the core characteristics without "secure"', () => {
+        const core = REALITY_RULES.slice(REALITY_RULES.indexOf('CORE CHARACTERISTICS'));
+        expect(core).toContain('They are powerful.');
+        expect(core).toContain('They enjoy life.');
+        expect(core).toContain('They deserve to exist, simply because they exist.');
+        expect(core).not.toMatch(/secure|being alive/);
     });
 });

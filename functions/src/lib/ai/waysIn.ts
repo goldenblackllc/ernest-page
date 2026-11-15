@@ -12,7 +12,6 @@ export const WAYS_IN = {
     advice_to_others: 'Advice to others',
     two_sets_of_actions: 'Two sets of actions',
     act_as_if: 'Act as if',
-    magic_lamp: 'Magic lamp',
     excitement_scan: 'Excitement scan',
     excitement_compass: 'Excitement compass',
     none: 'None',
@@ -22,7 +21,7 @@ export type WayIn = keyof typeof WAYS_IN;
 
 export const WAY_IN_IDS = Object.keys(WAYS_IN) as [WayIn, ...WayIn[]];
 
-/** The label shown after a recap, e.g. " [Way in: Magic lamp]"; empty for unknown or missing. */
+/** The label shown after a recap, e.g. " [Way in: Act as if]"; empty for unknown or missing, such as the retired magic_lamp. */
 export function wayInSuffix(wayIn: unknown): string {
     return typeof wayIn === 'string' && wayIn in WAYS_IN ? ` [Way in: ${WAYS_IN[wayIn as WayIn]}]` : '';
 }

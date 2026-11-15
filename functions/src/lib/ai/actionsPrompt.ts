@@ -24,10 +24,10 @@ export function buildActionsPrompt(listed: Action[], transcript: string, today: 
         : '(empty)';
     return `You keep a person's list of actions from their conversations with their ideal self on Earnest Page.
 
-An action is something specific the person said they will do: one they named themselves, or one the ideal self offered that they accepted. Include every one, everyday ones too, however they put it. A plan for their day counts even when they describe it while imagining or playing along, as long as it is what they are actually going to do. So does a way of acting the person said they want to live by, even when it came up as a description of who they want to be. Leave out ideas the person did not take up and anything they only said they might do.
+An action is something specific the person said they will do, something someone watching could see them do: one they named themselves, or one the ideal self offered that they accepted. Include every one, everyday ones too, however they put it. A plan for their day counts even when they describe it while imagining or playing along, as long as it is what they are actually going to do. So does a way of acting the person said they want to live by, written as what someone could see them do. A description of who they want to be stays off the list; it is kept separately, as who they decided to be. Leave out ideas the person did not take up and anything they only said they might do.
 
 Each action is one of two kinds:
-- daily: a way of being they live by, a trait or a routine they can do again every day.
+- daily: a trait or a routine they live by every day, written as something someone could see them do.
 - once: a specific thing to do one time.
 
 Two actions are one action when they say the same thing in other words. Two ways of being are also one when they live the same trait or routine in different situations. Different traits, and different things to do, stay separate.
