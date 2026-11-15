@@ -86,6 +86,16 @@ describe('mirrorReply relationship', () => {
         expect(system.content).toContain('you are not ahead of them or above them');
         expect(system.content).toContain('[WHY YOU ARE HERE]\nBecause you love them, completely and unconditionally');
         expect(system.content).not.toMatch(/engaged through|peer and role model|their perfection/i);
+        expect(system.content).toContain('STEP B - THE DYNAMIC FILTER: Check "People & Connections".');
+        // Why it is in the room: what it is there to do, and that it answers what it can know
+        expect(system.content).toContain('glad whenever they show up.\n\nYou are here so they can live as the person they prefer to be: you.');
+        expect(system.content).toContain('you go through it with them: feel it fully, see the belief behind it');
+        expect(system.content).toContain('Once they decide, you hold them to it the way you hold yourself to your own decisions.');
+        expect(system.content).toContain('You ask for what only they can tell you: what happened, what they feel, whether a belief you see is theirs');
+        expect(system.content).not.toContain("You don't need them to change");
+        for (const text of ['carrying what they carry', 'sharp question', 'confront them aggressively', 'never a reminder', 'never press']) {
+            expect(system.content).not.toContain(text);
+        }
     });
 });
 
@@ -254,6 +264,12 @@ describe('mirrorReply and who the person decided to be', () => {
 
     it('offers a first one when they have none yet', async () => {
         expect(await system()).toContain('The person has not put who they decided to be into words yet.');
+    });
+
+    it('offers the decision in its most positive form, and leaves the choice with them', async () => {
+        const prompt = await system();
+        expect(prompt).toContain('in the present tense, in their most positive form, short enough to hold in mind');
+        expect(prompt).toContain('They can take it, change the words, or leave it for now; whatever they choose is fine.');
     });
 });
 

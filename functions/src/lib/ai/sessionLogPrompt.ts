@@ -36,8 +36,7 @@ const WAY_IN_GUIDE = `- feel_it_now: asked what they would feel if the new belie
 - advice_to_others: had them say what they would advise someone in their life facing the same thing, then turned it back to them
 - two_sets_of_actions: laid the old belief's actions beside the new belief's actions, side by side
 - act_as_if: had them act it out — posture, saying "I am…" out loud
-- magic_lamp: asked who they would be if they had a magic lamp
-- excitement_scan: the embodiment did not work, so it fell back to finding the most exciting available option
+- excitement_scan: had them pick the most exciting option available right now and go do it as the person who holds the new belief
 - excitement_compass: no belief work; they listed their options and committed to the most exciting one
 - none: the session never got to any of these
 If several were used, pick the one that worked.`;

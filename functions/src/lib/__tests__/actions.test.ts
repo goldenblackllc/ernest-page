@@ -130,6 +130,14 @@ describe('the actions extraction', () => {
         expect(prompt).toContain('CONVERSATION:\nuser: hi');
     });
 
+    // A description of who the person wants to be was saved as an every-day action (beta, 2026-11-11)
+    it('counts what someone could see them do, and leaves who they want to be to the identity', () => {
+        const prompt = buildActionsPrompt(listed, 'user: hi', TODAY);
+        expect(prompt).toContain('something someone watching could see them do');
+        expect(prompt).toContain('A description of who they want to be stays off the list');
+        expect(prompt).not.toContain('even when it came up as a description of who they want to be');
+    });
+
     it('only tidies the list when there is no conversation', () => {
         expect(buildActionsPrompt(listed, '', TODAY)).toContain('CONVERSATION:\n(none)');
     });
