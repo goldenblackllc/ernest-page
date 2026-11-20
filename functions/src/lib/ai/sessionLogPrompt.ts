@@ -1,3 +1,15 @@
+import { z } from 'zod';
+import { WAY_IN_IDS } from './waysIn.js';
+
+/**
+ * What processChat keeps from a session's log: the recap and the way in. Who
+ * the person decided to be is theirs to write in My Life, so the log never records it.
+ */
+export const SessionLogSchema = z.object({
+    session_recap: z.string().describe("2-3 sentence factual log of this session"),
+    way_in: z.enum(WAY_IN_IDS).describe("How the session got into the new belief, or which path it took instead"),
+});
+
 /**
  * Builds the prompt for generating a session log entry.
  * Purpose: give the character enough context for coherent follow-up conversations.
@@ -23,8 +35,6 @@ Examples of BAD summaries (do NOT write like this):
 
 ALSO RECORD THE WAY IN (way_in) — how the session got the person into the new belief, if it did. Pick exactly one:
 ${WAY_IN_GUIDE}
-
-ALSO RECORD WHO THEY DECIDED TO BE (identity) — if the ideal self offered new wording for who the person decided to be, one or two sentences starting with "I am", and the person said yes to it, as offered or in words they changed, give the final wording exactly as agreed. Otherwise give null, also when they said not now.
 
 CHAT TRANSCRIPT:
 ${transcript}`;

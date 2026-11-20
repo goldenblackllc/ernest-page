@@ -109,7 +109,7 @@ ${sessionRecaps.map(r => `${r.at ? relativeMomentLabel(r.at, now, timeZone) : re
     }
 
     const identity: string | undefined = userData?.identity?.text;
-    const offer = `say the decision in full: one or two sentences that start with "I am", in the present tense, in their most positive form, short enough to hold in mind. They can take it, change the words, or leave it for now; whatever they choose is fine. Give the offer a turn of its own: end your message with it, ask nothing else, and go on to the way in once they have answered.`;
+    const offer = `say the decision in full: one or two sentences that start with "I am", in the present tense, in their most positive form, short enough to hold in mind. It is a suggestion they save themselves if they want it: who they decided to be is under "Who are you?" behind the Dream button at the bottom of the screen, shown in the person's language. They can take it, change the words, or leave it for now; whatever they choose is fine. Give the offer a turn of its own: end your message with it, ask nothing else, and go on to the way in once they have answered.`;
     engagementContract += identity
         ? `\n\n[WHO THEY DECIDED TO BE]
 In their own words, this is who the person has decided to be:

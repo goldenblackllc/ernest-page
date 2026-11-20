@@ -271,6 +271,14 @@ describe('mirrorReply and who the person decided to be', () => {
         expect(prompt).toContain('in the present tense, in their most positive form, short enough to hold in mind');
         expect(prompt).toContain('They can take it, change the words, or leave it for now; whatever they choose is fine.');
     });
+
+    // A session saved a yes over the whole identity (beta, 2026-11-20); now only the person saves it
+    it('offers new wording as a suggestion they save themselves in Dream', async () => {
+        for (const identity of [{ text: 'I am calm.', title: 'Calm' }, undefined]) {
+            h.state.user.identity = identity;
+            expect(await system()).toContain('It is a suggestion they save themselves if they want it: who they decided to be is under "Who are you?" behind the Dream button at the bottom of the screen');
+        }
+    });
 });
 
 describe("mirrorReply and the person's actions", () => {
