@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildMirrorSystemPrompt, buildMirrorNowBlock, pickNegativeInventory, type MirrorPromptConfig } from '../mirrorPrompt.js';
 import { wayInSuffix, WAYS_IN, WAY_IN_IDS } from '../waysIn.js';
-import { buildSessionLogPrompt } from '../sessionLogPrompt.js';
+import { buildSessionLogPrompt, SessionLogSchema } from '../sessionLogPrompt.js';
 import { REALITY_RULES } from '../../constants/realityRules.js';
 
 const config: MirrorPromptConfig = {
@@ -237,6 +237,12 @@ describe('ways in', () => {
         const logPrompt = buildSessionLogPrompt('user: hi');
         for (const id of WAY_IN_IDS) expect(logPrompt).toContain(`- ${id}:`);
         expect(logPrompt).not.toContain('magic_lamp');
+    });
+
+    // A yes to one new line in a session replaced the whole identity (beta, 2026-11-20)
+    it('records no identity from a session: who they decided to be is theirs to write', () => {
+        expect(Object.keys(SessionLogSchema.shape)).toEqual(['session_recap', 'way_in']);
+        expect(buildSessionLogPrompt('user: hi')).not.toMatch(/decided to be|identity/i);
     });
 });
 

@@ -9,13 +9,11 @@ import { hashPhoneNumberServer, normalizePhoneNumberServer } from './lib/securit
 import { geohashForLocation } from 'geofire-common';
 import { buildDossierPrompt, DOSSIER_WORD_LIMIT } from './lib/ai/dossierPrompt.js';
 import { safeTimeZone, localDateKey } from './lib/utils/relativeDates.js';
-import { buildSessionLogPrompt } from './lib/ai/sessionLogPrompt.js';
-import { WAY_IN_IDS, type WayIn } from './lib/ai/waysIn.js';
+import { buildSessionLogPrompt, SessionLogSchema } from './lib/ai/sessionLogPrompt.js';
+import type { WayIn } from './lib/ai/waysIn.js';
 import { generateCondensedTranscript, type CondensedTranscript } from './lib/ai/condensedTranscript.js';
 import { buildActionsPrompt, ActionsSchema, toSessionActions } from './lib/ai/actionsPrompt.js';
 import { applySessionActions, currentActions, type Action, type SessionActions } from './lib/actions.js';
-import { deriveIdentityTitle } from './lib/ai/identity.js';
-import { IDENTITY_MAX_LENGTH, type Identity } from './lib/identity.js';
 
 import { processPostContent, type ProcessPostResult } from './lib/ai/processPostContent.js';
 import { VISUAL_STYLES } from './lib/ai/visualStyles.js';
@@ -101,7 +99,7 @@ export const processChat = onDocumentUpdated(
             // Saved once: a retry after a later failure must not add a second
             // recap or count the session twice.
             const dossierPromise = (userData && recap && !after.metadataSaved)
-                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, wayIn: recap.way_in, identity: recap.identity, rewrittenDossier, actions, today, sessionStartedAt: after.createdAt || now, sessionCount })
+                ? saveSessionMetadata({ userRef: userDoc.ref, userData, uid, sessionRecap: recap.session_recap, wayIn: recap.way_in, rewrittenDossier, actions, today, sessionStartedAt: after.createdAt || now, sessionCount })
                     .then(() => event.data?.after.ref.update({ metadataSaved: true }))
                 : Promise.resolve();
 
@@ -196,13 +194,14 @@ function getAuthorTitle(userData: FirebaseFirestore.DocumentData): string {
  * Run the four session AI calls in parallel: condensed transcript, dossier
  * rewrite, session log entry, and the person's actions (lib/actions.ts).
  *
- * Sessions only update the dossier, recaps, actions, and session count. People, interests, and the
- * Character Bible are owned by the user via the My Life drawers and are never touched here.
+ * Sessions only update the dossier, recaps, actions, and session count. People, interests, who
+ * they decided to be, and the Character Bible are owned by the user via the My Life drawers and
+ * are never touched here.
  */
 async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcript: string, today: string): Promise<{
     condensed: CondensedTranscript;
     rewrittenDossier: string | undefined;
-    recap: { session_recap: string; way_in: WayIn; identity: string | null } | undefined;
+    recap: z.infer<typeof SessionLogSchema> | undefined;
     actions: SessionActions | undefined;
 }> {
     const dossierPrompt = buildDossierPrompt(userData?.dossier || '', transcript, today);
@@ -223,11 +222,7 @@ async function analyzeSession(userData: FirebaseFirestore.DocumentData, transcri
         // Session Log Entry — Opus
         generateWithFallback({
             primaryModelId: OPUS_MODEL,
-            schema: z.object({
-                session_recap: z.string().describe("2-3 sentence factual log of this session"),
-                way_in: z.enum(WAY_IN_IDS).describe("How the session got into the new belief, or which path it took instead"),
-                identity: z.string().nullable().describe("The wording of who they decided to be that the person said yes to in this session, or null"),
-            }),
+            schema: SessionLogSchema,
             prompt: sessionLogPrompt,
         }),
         // Actions — Opus
@@ -252,8 +247,6 @@ async function saveSessionMetadata(opts: {
     uid: string;
     sessionRecap: string;
     wayIn: WayIn;
-    /** Who they decided to be, as the person agreed it in this session */
-    identity: string | null;
     rewrittenDossier: string | undefined;
     actions: SessionActions | undefined;
     today: string;
@@ -270,8 +263,6 @@ async function saveSessionMetadata(opts: {
     const dossierBody: string | undefined = opts.rewrittenDossier?.trim();
     if (dossierBody) console.log(`[ProcessChat] Dossier is ${dossierBody.split(/\s+/).length} words (limit ${DOSSIER_WORD_LIMIT})`);
 
-    const identity = await newIdentity(opts.identity, userData?.identity);
-
     // In a transaction, so a tick or delete made while the session was processing isn't lost.
     await db.runTransaction(async (tx) => {
         const saved = (await tx.get(userRef)).data();
@@ -281,28 +272,12 @@ async function saveSessionMetadata(opts: {
             ...(next ? { actions: next.actions } : {}),
             // A point for each action the session heard was done
             ...(next?.ticks ? { action_score: (saved?.action_score || 0) + next.ticks } : {}),
-            // The Bible is built from who they decided to be, so rebuild it
-            ...(identity ? { identity, bible_dirty_since: FieldValue.serverTimestamp() } : {}),
             dossier_updated_at: FieldValue.serverTimestamp(),
             session_count: sessionCount,
             session_recaps: updatedRecaps,
         }, { merge: true });
     });
     console.log(`[ProcessChat] Session metadata + dossier updated for ${uid} (session ${sessionCount})`);
-}
-
-/**
- * The identity to save when the person said yes to new wording in the session,
- * with a title derived from it. Undefined when nothing changed.
- */
-async function newIdentity(agreed: string | null, current: Identity | undefined): Promise<Identity | undefined> {
-    const text = agreed?.trim().slice(0, IDENTITY_MAX_LENGTH);
-    if (!text || text === current?.text) return undefined;
-    const title = await deriveIdentityTitle(text, generateWithFallback).catch((error) => {
-        console.error('[ProcessChat] Identity title failed, keeping the old one:', error);
-        return current?.title || '';
-    });
-    return { text, title };
 }
 
 /** Hash of the author's phone number, or null when there is none. */
