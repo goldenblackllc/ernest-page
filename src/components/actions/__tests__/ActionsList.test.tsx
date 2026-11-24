@@ -125,4 +125,22 @@ describe("ActionsList", () => {
         fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[2]);
         await waitFor(() => expect(screen.getByText("Call Dad on Sunday")).toBeInTheDocument());
     });
+
+    it("keeps a removed action hidden when the server says it's already gone", async () => {
+        authFetch.mockResolvedValue(new Response("{}", { status: 404 }));
+        render(list());
+        fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[2]);
+        await waitFor(() => expect(authFetch).toHaveBeenCalled());
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(screen.queryByText("Call Dad on Sunday")).not.toBeInTheDocument();
+    });
+
+    it("goes back when a tick's action is not found", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        authFetch.mockResolvedValue(new Response("{}", { status: 404 }));
+        render(list());
+        fireEvent.click(screen.getAllByRole("checkbox")[2]);
+        await waitFor(() => expect(ticks()[2]).toBe("false"));
+    });
 });

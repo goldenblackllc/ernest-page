@@ -66,7 +66,10 @@ export function ActionsList({ user, actions, score, today, timeZone }: {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(change === "removed" ? { id } : { id, done: change.done, timeZone }),
             });
-            if (!res.ok) throw new Error(`Actions API returned ${res.status}`);
+            // A delete the server can't find is already gone (deleted in another
+            // tab, or merged by a session while this list was out of date): keep it hidden.
+            const gone = change === "removed" && res.status === 404;
+            if (!res.ok && !gone) throw new Error(`Actions API returned ${res.status}`);
         } catch (error) {
             console.error("Action update failed:", error);
             // Not saved: show the saved list again, unless a newer change to this action is waiting.
