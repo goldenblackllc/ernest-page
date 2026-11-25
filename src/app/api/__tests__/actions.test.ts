@@ -7,7 +7,7 @@ vi.mock("@/lib/firebase/admin", async () => (await import("@/test/fakeFirestore"
 vi.mock("firebase-admin/firestore", async () => (await import("@/test/fakeFirestore")).firestoreModuleMock());
 vi.mock("firebase-admin/auth", async () => (await import("@/test/fakeFirestore")).authModuleMock());
 
-import { PATCH, DELETE } from "../actions/route";
+import { GET, PATCH, DELETE } from "../actions/route";
 
 const USER = `users/${TEST_UID}`;
 // 11pm in New York on Oct 25 is already Oct 26 in UTC: ticks count for the person's own day
@@ -70,10 +70,24 @@ describe("/api/actions", () => {
         expect(score()).toBe(4);
     });
 
-    it("returns 404 for an action that doesn't exist, without writing", async () => {
-        expect((await tick("zz", true)).status).toBe(404);
+    it("returns 404 for an action that doesn't exist, without writing, with the saved list", async () => {
+        const res = await tick("zz", true);
+        expect(res.status).toBe(404);
+        expect(await res.json()).toEqual({ error: "Action not found", actions: stored(), score: 4 });
         expect((await call(DELETE, "DELETE", { id: "zz" })).status).toBe(404);
         expect(fakeDb.writes).toEqual([]);
+    });
+
+    it("replies to a change with the list and score as saved", async () => {
+        expect(await (await tick("a", true)).json()).toEqual({ actions: stored(), score: 5 });
+        expect(await (await call(DELETE, "DELETE", { id: "b" })).json()).toEqual({ actions: [stored()[0]], score: 5 });
+        // Asked for what is already saved: no write, the same reply
+        expect(await (await tick("a", true)).json()).toEqual({ actions: stored(), score: 5 });
+    });
+
+    it("reads the saved list and score", async () => {
+        const res = await GET(makeRequest("http://localhost/api/actions", { method: "GET", token: VALID_TOKEN }));
+        expect(await res.json()).toEqual({ actions: stored(), score: 4 });
     });
 
     it("returns 400 for a malformed body", async () => {

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, X } from "lucide-react";
 import type { User } from "firebase/auth";
 import { authFetch } from "@/lib/auth/authFetch";
 import { currentActions, kindOf, tickedToday, type Action } from "@functions/lib/actions";
+
+/** The actions and score as saved, as /api/actions replies with them. */
+export type SavedActions = { actions: Action[]; score: number };
 
 type Pending = { done: boolean } | "removed";
 
@@ -28,17 +31,21 @@ function pendingPoints(actions: Action[], pending: Record<string, Pending>, toda
  * The actions drawer's list (functions/src/lib/actions.ts): the score, then the
  * every-day actions, then the once ones. A tick counts for today: an every-day
  * action is open again tomorrow, and a ticked once action leaves after today.
- * Changes show at once and are sent to /api/actions. Each one is shown until the
- * profile subscription brings back the saved list with it, so nothing flickers
- * back in between.
+ *
+ * The page's subscription to the profile can fall behind the server, and a
+ * change to an action it no longer has would fail. So opening the list reads
+ * the saved list from /api/actions, and every change replies with the list as
+ * saved; each is handed to onSaved to show. Changes show at once, and each one
+ * is shown until a saved list has it, so nothing flickers back in between.
  */
-export function ActionsList({ user, actions, score, today, timeZone }: {
+export function ActionsList({ user, actions, score, today, timeZone, onSaved }: {
     user: User;
     actions: Action[];
     score: number;
     /** The person's local date, YYYY-MM-DD */
     today: string;
     timeZone: string;
+    onSaved: (saved: SavedActions) => void;
 }) {
     const t = useTranslations("actions");
     const [pending, setPending] = useState<Record<string, Pending>>({});
@@ -58,18 +65,39 @@ export function ActionsList({ user, actions, score, today, timeZone }: {
     const points = Math.max(0, score + pendingPoints(actions, pending, today));
     const doneToday = shown.filter(c => c.done).length;
 
+    // Requests are numbered so a slow reply never replaces a later one's list.
+    const sent = useRef(0);
+    const shownReply = useRef(0);
+
+    /** Calls /api/actions and shows the saved list it replies with. */
+    async function request(init?: RequestInit): Promise<Response> {
+        const number = ++sent.current;
+        const res = await authFetch(user, "/api/actions", init);
+        const body = await res.json().catch(() => null);
+        if (Array.isArray(body?.actions) && number > shownReply.current) {
+            shownReply.current = number;
+            onSaved({ actions: body.actions, score: body.score || 0 });
+        }
+        return res;
+    }
+
+    // Opening the list: read the saved list.
+    useEffect(() => {
+        request().catch(error => console.error("Reading actions failed:", error));
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- once each time the list opens
+    }, []);
+
     async function send(id: string, change: Pending) {
         setPending(prev => ({ ...prev, [id]: change }));
         try {
-            const res = await authFetch(user, "/api/actions", {
+            const res = await request({
                 method: change === "removed" ? "DELETE" : "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(change === "removed" ? { id } : { id, done: change.done, timeZone }),
             });
-            // A delete the server can't find is already gone (deleted in another
-            // tab, or merged by a session while this list was out of date): keep it hidden.
-            const gone = change === "removed" && res.status === 404;
-            if (!res.ok && !gone) throw new Error(`Actions API returned ${res.status}`);
+            // A 404 means the saved list no longer has the action (merged by a
+            // session, or deleted elsewhere); its reply has already shown that list.
+            if (!res.ok) throw new Error(`Actions API returned ${res.status}`);
         } catch (error) {
             console.error("Action update failed:", error);
             // Not saved: show the saved list again, unless a newer change to this action is waiting.

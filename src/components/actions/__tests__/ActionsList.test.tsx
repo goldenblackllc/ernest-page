@@ -16,13 +16,18 @@ const actions: Action[] = [
     { id: "c", text: "Rest when tired", kind: "daily", decided_on: "2026-10-22", done_on: "2026-10-24" },
     { id: "d", text: "Order the notebook", decided_on: "2026-10-21", done_on: "2026-10-24" },
 ];
+const onSaved = vi.fn();
 const list = (saved = actions, score = 7) =>
-    <ActionsList user={user} actions={saved} score={score} today={TODAY} timeZone="America/New_York" />;
+    <ActionsList user={user} actions={saved} score={score} today={TODAY} timeZone="America/New_York" onSaved={onSaved} />;
+const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+/** The calls that change an action, after the read on opening. */
+const changes = () => authFetch.mock.calls.filter(([, , init]) => init?.method);
 const ticks = () => screen.getAllByRole("checkbox").map(b => b.getAttribute("aria-checked"));
 
 beforeEach(() => {
     authFetch.mockReset();
-    authFetch.mockResolvedValue(new Response("{}", { status: 200 }));
+    onSaved.mockReset();
+    authFetch.mockImplementation(async () => reply({}));
 });
 
 describe("ActionsList", () => {
@@ -55,8 +60,8 @@ describe("ActionsList", () => {
 
     it("ticks an action at once, with its point, and sends it with the time zone", async () => {
         let finish!: (r: Response) => void;
-        authFetch.mockReturnValue(new Promise(resolve => { finish = resolve; }));
         render(list());
+        authFetch.mockReturnValue(new Promise(resolve => { finish = resolve; }));
         fireEvent.click(screen.getAllByRole("checkbox")[2]);
         expect(ticks()[2]).toBe("true");
         expect(screen.getByText("8 points")).toBeInTheDocument();
@@ -64,7 +69,7 @@ describe("ActionsList", () => {
             method: "PATCH",
             body: JSON.stringify({ id: "a", done: true, timeZone: "America/New_York" }),
         }));
-        finish(new Response("{}", { status: 200 }));
+        finish(reply({}));
     });
 
     it("takes the point back at once when today's tick is undone", () => {
@@ -84,14 +89,14 @@ describe("ActionsList", () => {
             method: "DELETE",
             body: JSON.stringify({ id: "a" }),
         }));
-        finish(new Response("{}", { status: 200 }));
+        finish(reply({}));
     });
 
     it("keeps a removed action hidden until the saved list drops it", async () => {
         const { rerender } = render(list());
         fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[2]);
         // The delete is saved, but the subscription hasn't brought the new list yet
-        await waitFor(() => expect(authFetch).toHaveBeenCalled());
+        await waitFor(() => expect(changes()).toHaveLength(1));
         await Promise.resolve();
         expect(screen.queryByText("Call Dad on Sunday")).not.toBeInTheDocument();
 
@@ -105,7 +110,7 @@ describe("ActionsList", () => {
     it("keeps a tick until the saved list shows it", async () => {
         const { rerender } = render(list());
         fireEvent.click(screen.getAllByRole("checkbox")[2]);
-        await waitFor(() => expect(authFetch).toHaveBeenCalled());
+        await waitFor(() => expect(changes()).toHaveLength(1));
         await Promise.resolve();
         // An update without the tick yet (another field changed) doesn't undo it
         rerender(list([...actions]));
@@ -120,25 +125,49 @@ describe("ActionsList", () => {
 
     it("goes back to the saved state when the request fails", async () => {
         vi.spyOn(console, "error").mockImplementation(() => {});
-        authFetch.mockResolvedValue(new Response("{}", { status: 500 }));
+        authFetch.mockImplementation(async () => reply({ error: "Server error" }, 500));
         render(list());
         fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[2]);
         await waitFor(() => expect(screen.getByText("Call Dad on Sunday")).toBeInTheDocument());
     });
 
-    it("keeps a removed action hidden when the server says it's already gone", async () => {
-        authFetch.mockResolvedValue(new Response("{}", { status: 404 }));
+    it("reads the saved list when it opens and hands it on", async () => {
+        const saved = actions.slice(0, 2);
+        authFetch.mockImplementation(async () => reply({ actions: saved, score: 9 }));
         render(list());
+        expect(authFetch).toHaveBeenCalledWith(user, "/api/actions", undefined);
+        await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ actions: saved, score: 9 }));
+    });
+
+    it("hands on the saved list a change's reply carries, a 404 too", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        render(list());
+        await waitFor(() => expect(authFetch).toHaveBeenCalledTimes(1));
+        const saved = actions.filter(c => c.id !== "a");
+        authFetch.mockImplementation(async () => reply({ error: "Action not found", actions: saved, score: 7 }, 404));
         fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[2]);
-        await waitFor(() => expect(authFetch).toHaveBeenCalled());
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(screen.queryByText("Call Dad on Sunday")).not.toBeInTheDocument();
+        await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ actions: saved, score: 7 }));
+    });
+
+    it("never lets a slow reply replace a later one's list", async () => {
+        render(list());
+        await waitFor(() => expect(authFetch).toHaveBeenCalledTimes(1));
+        let finishFirst!: (r: Response) => void;
+        authFetch.mockReturnValueOnce(new Promise(resolve => { finishFirst = resolve; }));
+        fireEvent.click(screen.getAllByRole("checkbox")[1]);
+        const later = actions.map(c => (c.id === "a" ? { ...c, done_on: TODAY } : c));
+        authFetch.mockImplementation(async () => reply({ actions: later, score: 9 }));
+        fireEvent.click(screen.getAllByRole("checkbox")[2]);
+        await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ actions: later, score: 9 }));
+
+        finishFirst(reply({ actions, score: 8 }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(onSaved).toHaveBeenCalledTimes(1);
     });
 
     it("goes back when a tick's action is not found", async () => {
         vi.spyOn(console, "error").mockImplementation(() => {});
-        authFetch.mockResolvedValue(new Response("{}", { status: 404 }));
+        authFetch.mockImplementation(async () => reply({ error: "Action not found", actions, score: 7 }, 404));
         render(list());
         fireEvent.click(screen.getAllByRole("checkbox")[2]);
         await waitFor(() => expect(ticks()[2]).toBe("false"));
